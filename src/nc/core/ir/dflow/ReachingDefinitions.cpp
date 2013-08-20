@@ -41,6 +41,16 @@ namespace dflow {
 namespace {
 
 /**
+ * \param a A memory location.
+ * \param b A memory location.
+ *
+ * \return True if the memory locations overlap, false otherwise.
+ */
+inline bool overlap(const MemoryLocation &a, const MemoryLocation &b) {
+    return a.domain() == b.domain() && a.addr() < b.endAddr() && b.addr() < a.endAddr();
+}
+
+/**
  * Predicate functor returning true iff the memory location of a reaching
  * definition overlaps the memory location passed to the constructor.
  */
@@ -92,17 +102,47 @@ class Before: public std::binary_function<const ReachingDefinition &, const Reac
 } // anonymous namespace
 
 void ReachingDefinitions::addDefinition(const MemoryLocation &memoryLocation, const Term *term) {
-    assert(memoryLocation.domain() != MemoryDomain::UNKNOWN);
+    assert(memoryLocation);
 
     killDefinitions(memoryLocation);
     
     definitions_.push_back(ReachingDefinition(memoryLocation, std::vector<const Term *>(1, term)));
 }
 
-void ReachingDefinitions::killDefinitions(const MemoryLocation &memoryLocation) {
-    assert(memoryLocation.domain() != MemoryDomain::UNKNOWN);
+void ReachingDefinitions::killDefinitions(const MemoryLocation &mloc) {
+    assert(mloc);
 
-    definitions_.erase(std::remove_if(definitions_.begin(), definitions_.end(), Overlap(memoryLocation)), definitions_.end());
+    if (definitions_.empty()) {
+        return;
+    }
+
+    std::vector<ReachingDefinition> newDefinitions;
+    newDefinitions.reserve(definitions_.size() + 1);
+
+    foreach (auto &def, definitions_) {
+        if (!overlap(def.first, mloc)) {
+            newDefinitions.push_back(std::move(def));
+        } else {
+            if (def.first.addr() < mloc.addr()) {
+                if (mloc.endAddr() < def.first.endAddr()) {
+                    newDefinitions.push_back(std::make_pair(
+                        MemoryLocation(mloc.domain(), def.first.addr(), mloc.addr() - def.first.addr()),
+                        def.second));
+                } else {
+                    newDefinitions.push_back(std::make_pair(
+                        MemoryLocation(mloc.domain(), def.first.addr(), mloc.addr() - def.first.addr()),
+                        std::move(def.second)));
+                }
+            }
+            if (mloc.endAddr() < def.first.endAddr()) {
+                newDefinitions.push_back(std::make_pair(
+                    MemoryLocation(mloc.domain(), mloc.endAddr(), def.first.endAddr() - mloc.endAddr()),
+                    std::move(def.second)));
+            }
+        }
+    }
+
+    definitions_ = std::move(newDefinitions);
 }
 
 const std::vector<const Term *> &ReachingDefinitions::getDefinitions(const MemoryLocation &memoryLocation) const {

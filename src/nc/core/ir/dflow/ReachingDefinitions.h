@@ -42,6 +42,7 @@ namespace dflow {
 /**
  * Pair of memory location and its definitions.
  */
+// TODO: remove
 typedef std::pair<MemoryLocation, std::vector<const Term *> > ReachingDefinition;
 
 /**
