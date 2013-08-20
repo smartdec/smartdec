@@ -25,7 +25,6 @@
 #include "ReachingDefinitions.h"
 
 #include <algorithm>
-#include <functional>
 
 #include <QTextStream>
 
@@ -49,44 +48,6 @@ namespace {
 inline bool overlap(const MemoryLocation &a, const MemoryLocation &b) {
     return a.domain() == b.domain() && a.addr() < b.endAddr() && b.addr() < a.endAddr();
 }
-
-/**
- * Predicate functor returning true iff the memory location of a reaching
- * definition overlaps the memory location passed to the constructor.
- */
-class Overlap: public std::unary_function<const ReachingDefinition &, bool> {
-    MemoryLocation sample_;
-
-    public:
-
-    Overlap(const MemoryLocation &sample): sample_(sample) {}
-
-    bool operator()(const MemoryLocation &mloc) const {
-        return sample_.domain() == mloc.domain() &&
-               mloc.addr() < sample_.addr() + sample_.size() &&
-               sample_.addr() < mloc.addr() + mloc.size();
-    }
-
-    bool operator()(const ReachingDefinition &def) const {
-        return operator()(def.first);
-    }
-};
-
-/**
- * Predicate returning true iff the memory location of a definition
- * is within the domain passed to the constructor.
- */
-class WithinDomain: public std::unary_function<const ReachingDefinition &, bool> {
-    Domain domain_;
-
-    public:
-
-    WithinDomain(Domain domain): domain_(domain) {}
-
-    bool operator()(const ReachingDefinition &def) const {
-        return def.first.domain() == domain_;
-    }
-};
 
 /**
  * Comparator establishing a total order on ReachingDefinition objects.
