@@ -40,18 +40,24 @@ class Term;
 namespace dflow {
 
 /**
- * Pair of memory location and its definitions.
- */
-// TODO: remove
-typedef std::pair<MemoryLocation, std::vector<const Term *> > ReachingDefinition;
-
-/**
  * Reaching definitions.
  */
 class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
-    std::vector<ReachingDefinition> definitions_; ///< The definitions: pairs of memory locations and sets of terms defining it.
+    /**
+     * Pairs of memory locations and terms defining them.
+     * The pairs are sorted by memory location.
+     * Terms are sorted using default comparator.
+     */
+    std::vector<std::pair<MemoryLocation, std::vector<const Term *>>> definitions_;
 
     public:
+
+    /**
+     * \return Pairs of memory locations and terms defining them.
+     *         The pairs are sorted by memory location.
+     *         Terms are sorted using default comparator.
+     */
+    const decltype(definitions_) &definitions() const { return definitions_; }
 
     /**
      * Clears the reaching definitions.
@@ -74,11 +80,11 @@ class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
     void killDefinitions(const MemoryLocation &memoryLocation);
 
     /**
-     * \return Definitions of given memory location.
-     *
      * \param[in] memoryLocation Memory location.
+     *
+     * \return Definitions of the memory locations contained in the given one.
      */
-    const std::vector<const Term *> &getDefinitions(const MemoryLocation &memoryLocation) const;
+    ReachingDefinitions getDefinitions(const MemoryLocation &memoryLocation) const;
 
     /**
      * \return All defined memory locations in the domain.
@@ -92,26 +98,21 @@ class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
      *
      * \param[in] those Reaching definitions.
      */
-    void join(ReachingDefinitions &those);
-
-    /**
-     * Sorts reaching definitions so that two sorted instances of reaching definitions can be compared for equality.
-     */
-    void sort();
+    void merge(const ReachingDefinitions &those);
 
     /**
      * \return True, if these and given reaching definitions are the same.
      *
      * \param[in] those Reaching definitions.
      */
-    bool operator==(ReachingDefinitions &those);
+    bool operator==(const ReachingDefinitions &those) { return definitions_ == those.definitions_; }
 
     /**
      * \return True, if these and given reaching definitions are different.
      *
      * \param[in] those Reaching definitions.
      */
-    bool operator!=(ReachingDefinitions &those) { return !(*this == those); }
+    bool operator!=(const ReachingDefinitions &those) { return !(*this == those); }
 
     void print(QTextStream &out) const;
 };

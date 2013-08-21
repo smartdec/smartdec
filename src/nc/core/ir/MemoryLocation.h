@@ -129,7 +129,7 @@ inline bool operator==(const MemoryLocation &a, const MemoryLocation &b) {
  * \param[in] a Memory location.
  * \param[in] b Memory location.
  *
- * \return True, if memory location a is in some sense is before memory location b.
+ * \return True if (a.domain(), a.addr(), b.size()) is lexicographically smaller than (a.domain(), a.addr(), b.size()), false otherwise.
  */
 inline bool operator<(const MemoryLocation &a, const MemoryLocation &b) {
     return a.domain() < b.domain() || (a.domain() == b.domain() && (a.addr() < b.addr() || (a.addr() == b.addr() && a.size() < b.size())));
