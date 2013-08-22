@@ -76,7 +76,7 @@ void DataflowAnalyzer::analyze(const Function *function, const CancellationToken
 
             /* Merge the reaching definitions from predecessors. */
             foreach (const BasicBlock *predecessor, cfg.getPredecessors(basicBlock)) {
-                context.definitions().join(outputDefinitions[predecessor]);
+                context.definitions().merge(outputDefinitions[predecessor]);
             }
 
             /* If this is a function entry, run the calling convention-specific code. */
@@ -292,7 +292,7 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
     if (const MemoryLocation &memoryLocation = dataflow().getMemoryLocation(term)) {
         if (!architecture()->isGlobalMemory(memoryLocation)) {
             if (term->isRead()) {
-                const auto &definitions = context.definitions().getDefinitions(memoryLocation);
+                auto definitions = context.definitions().getDefinitions(memoryLocation);
                 dataflow().setDefinitions(term, definitions);
 
                 Value *value = dataflow().getValue(term);

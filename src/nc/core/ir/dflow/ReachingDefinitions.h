@@ -60,6 +60,11 @@ class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
     const decltype(definitions_) &definitions() const { return definitions_; }
 
     /**
+     * \return True if the list of definitions is empty, false otherwise.
+     */
+    bool empty() const { return definitions_.empty(); }
+
+    /**
      * Clears the reaching definitions.
      */
     void clear() { definitions_.clear(); }

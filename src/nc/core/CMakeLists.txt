@@ -4,6 +4,16 @@ set(MOC_HEADERS
 
 set(SOURCES
     ir/dflow/ReachingDefinitions.cpp
+    ir/dflow/Dataflow.cpp
+    ir/dflow/Dataflow.h
+    ir/dflow/DataflowAnalyzer.cpp
+    ir/dflow/DataflowAnalyzer.h
+    ir/dflow/ReachingDefinitions.h
+    ir/dflow/SimulationContext.h
+    ir/dflow/Utils.cpp
+    ir/dflow/Utils.h
+    ir/dflow/Value.cpp
+    ir/dflow/Value.h
     Context.cpp
     Module.cpp
     Module.h
@@ -123,16 +133,6 @@ set(SOURCES
     ir/cgen/DefinitionGenerator.cpp
     ir/cgen/DefinitionGenerator.h
     ir/cgen/SwitchContext.h
-    ir/dflow/Dataflow.cpp
-    ir/dflow/Dataflow.h
-    ir/dflow/DataflowAnalyzer.cpp
-    ir/dflow/DataflowAnalyzer.h
-    ir/dflow/ReachingDefinitions.h
-    ir/dflow/SimulationContext.h
-    ir/dflow/Utils.cpp
-    ir/dflow/Utils.h
-    ir/dflow/Value.cpp
-    ir/dflow/Value.h
     ir/inlining/CallInliner.cpp
     ir/inlining/CallInliner.h
     ir/misc/ArrayAccess.h

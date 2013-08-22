@@ -203,6 +203,7 @@ public:
     inline const Choice *asChoice() const;
 
 protected:
+    // TODO: there can be only one flag set.
     /**
      * \returns                        Whether this term's flags were initialized.
      */

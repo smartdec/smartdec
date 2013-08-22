@@ -32,6 +32,7 @@
 
 #include <nc/core/ir/MemoryLocation.h>
 
+#include "ReachingDefinitions.h"
 #include "Value.h"
 
 namespace nc {
@@ -46,10 +47,17 @@ namespace dflow {
  * This class contains results of dataflow and constant propagation and folding analysis.
  */
 class Dataflow {
-    boost::unordered_map<const Term *, std::unique_ptr<Value> > values_; ///< Term values.
-    boost::unordered_map<const Term *, MemoryLocation> memoryLocations_; ///< Term memory locations.
-    boost::unordered_map<const Term *, std::unique_ptr<std::vector<const Term *> > > definitions_; ///< Term definitions.
-    boost::unordered_map<const Term *, std::unique_ptr<std::vector<const Term *> > > uses_; ///< Term uses.
+    /** Mapping from a term to a description of its value. */
+    boost::unordered_map<const Term *, std::unique_ptr<Value>> values_;
+
+    /** Mapping from a term to its location in memory. */
+    boost::unordered_map<const Term *, MemoryLocation> memoryLocations_;
+
+    /** Mapping from a term to the reaching definitions of the parts of its memory location. */
+    boost::unordered_map<const Term *, ReachingDefinitions> definitions_;
+
+    /** Mapping from a term to the list of terms reading its value. */
+    boost::unordered_map<const Term *, std::vector<const Term *>> uses_;
 
     public:
 
@@ -71,8 +79,8 @@ class Dataflow {
      * \param[in] term Term.
      *
      * \return Memory location occupied by the term. If no memory location
-     *         is associated with this term, an empty (default-constructed)
-     *         MemoryLocation object is returned.
+     *         is associated with this term, an invalid MemoryLocation object
+     *         is returned.
      */
     const ir::MemoryLocation &getMemoryLocation(const Term *term) const;
 
@@ -92,30 +100,29 @@ class Dataflow {
     void unsetMemoryLocation(const Term *term) { memoryLocations_.erase(term); }
 
     /**
-     * \param[in] term Valid pointer to a "read" term.
+     * \param[in] term Valid pointer to a read term.
      *
-     * \return List of term's definitions. If it has not been set before,
-     *         an empty vector is returned.
+     * \return List of term's definitions. If not set before, it is empty.
      */
-    const std::vector<const Term *> &getDefinitions(const Term *term) const;
+    const ReachingDefinitions &getDefinitions(const Term *term) const;
 
     /**
      * Sets the list of term's definitions.
      *
-     * \param[in] term Valid pointer to a "read" term.
-     * \param[in] definitions Set of terms being definitions of this "read" term.
+     * \param[in] term Valid pointer to a read term.
+     * \param[in] definitions Reaching definitions of this term.
      */
-    void setDefinitions(const Term *term, const std::vector<const Term *> &definitions);
+    void setDefinitions(const Term *term, const ReachingDefinitions &definitions);
 
     /**
      * Clears the set of term's definitions.
      *
-     * \param[in] term Valie pointer to a "read" term.
+     * \param[in] term Valid pointer to a read term.
      */
     void clearDefinitions(const Term *term);
 
     /**
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to a read term.
      *
      * \return List of term's uses. If it has not been set before,
      *         an empty vector is returned.
@@ -125,17 +132,17 @@ class Dataflow {
     /**
      * Adds a use of a term.
      *
-     * \param[in] term "Write" term being used.
-     * \param[in] use  "Read" term using the "write" term.
+     * \param[in] term Valid pointer to a write term.
+     * \param[in] use  Valid pointer to a read term reading given write term.
      */
     void addUse(const Term *term, const Term *use);
 
     /**
      * Clears the set of term's definitions.
      *
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to a write term.
      */
-    void clearUses(const Term *term) { uses_.erase(term); }
+    void clearUses(const Term *term);
 };
 
 } // namespace dflow

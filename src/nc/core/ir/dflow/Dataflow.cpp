@@ -24,6 +24,7 @@
 
 #include "Dataflow.h"
 
+#include <nc/common/Range.h>
 #include <nc/core/ir/Term.h>
 
 namespace nc {
@@ -32,6 +33,8 @@ namespace ir {
 namespace dflow {
 
 Value *Dataflow::getValue(const Term *term) {
+    assert(term != NULL);
+
     auto &result = values_[term];
     if (!result) {
         result.reset(new Value(term->size()));
@@ -40,20 +43,20 @@ Value *Dataflow::getValue(const Term *term) {
 }
 
 const Value *Dataflow::getValue(const Term *term) const {
+    assert(term != NULL);
+
     return const_cast<Dataflow *>(this)->getValue(term);
 }
 
 const ir::MemoryLocation &Dataflow::getMemoryLocation(const Term *term) const {
-    auto i = memoryLocations_.find(term);
-    if (i != memoryLocations_.end()) {
-        return i->second;
-    } else {
-        static const MemoryLocation empty;
-        return empty;
-    }
+    assert(term != NULL);
+
+    return nc::find(memoryLocations_, term);
 }
 
 void Dataflow::setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation) {
+    assert(term != NULL);
+
     if (!memoryLocation) {
         unsetMemoryLocation(term);
     } else {
@@ -61,56 +64,52 @@ void Dataflow::setMemoryLocation(const Term *term, const MemoryLocation &memoryL
     }
 }
 
-const std::vector<const Term *> &Dataflow::getDefinitions(const Term *term) const {
+const ReachingDefinitions &Dataflow::getDefinitions(const Term *term) const {
+    assert(term != NULL);
     assert(term->isRead());
 
-    auto i = definitions_.find(term);
-    if (i != definitions_.end()) {
-        return *i->second;
-    } else {
-        static const std::vector<const Term *> empty;
-        return empty;
-    }
+    return nc::find(definitions_, term);
 }
 
-void Dataflow::setDefinitions(const Term *term, const std::vector<const Term *> &definitions) {
+void Dataflow::setDefinitions(const Term *term, const ReachingDefinitions &definitions) {
+    assert(term != NULL);
     assert(term->isRead());
 
     if (definitions.empty()) {
         clearDefinitions(term);
     } else {
-        auto &pointer = definitions_[term];
-        if (pointer) {
-            *pointer = definitions;
-        } else {
-            pointer.reset(new std::vector<const Term *>(definitions));
-        }
+        definitions_[term] = definitions;
     }
 }
 
 void Dataflow::clearDefinitions(const Term *term) {
+    assert(term != NULL);
     assert(term->isRead());
 
     definitions_.erase(term);
 }
 
 const std::vector<const Term *> &Dataflow::getUses(const Term *term) const {
-    auto i = uses_.find(term);
-    if (i != uses_.end()) {
-        return *i->second;
-    } else {
-        static const std::vector<const Term *> empty;
-        return empty;
-    }
+    assert(term != NULL);
+    assert(term->isWrite());
+
+    return nc::find(uses_, term);
 }
 
 void Dataflow::addUse(const Term *term, const Term *use) {
-    auto &pointer = uses_[term];
-    if (!pointer) {
-        pointer.reset(new std::vector<const Term *>(1, use));
-    } else {
-        pointer->push_back(use);
-    }
+    assert(term != NULL);
+    assert(term->isWrite());
+    assert(use != NULL);
+    assert(use->isRead());
+
+    uses_[term].push_back(use);
+}
+
+void Dataflow::clearUses(const Term *term) {
+    assert(term != NULL);
+    assert(term->isWrite());
+
+    uses_.erase(term);
 }
 
 } // namespace dflow
