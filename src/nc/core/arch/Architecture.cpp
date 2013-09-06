@@ -29,8 +29,6 @@
 #include <nc/common/BitTwiddling.h>
 #include <nc/common/Foreach.h>
 
-#include <nc/core/arch/irgen/InstructionAnalyzer.h>
-
 #include "Operands.h"
 #include "Registers.h"
 
@@ -40,6 +38,7 @@ namespace arch {
 
 Architecture::Architecture():
     mBitness(0),
+    mByteOrder(ByteOrder::Unknown),
     mMaxInstructionSize(0),
     mInstructionDisassembler(NULL),
     mInstructionAnalyzer(NULL),
@@ -49,58 +48,65 @@ Architecture::Architecture():
     mInstructionPointer(NULL)
 {}
 
-void Architecture::initBitness(SmallBitSize bitness) {
+void Architecture::setBitness(SmallBitSize bitness) {
     assert(bitness > 0 && "Bitness must be a positive integer.");
     assert(mBitness == 0 && "Bitness cannot be reset.");
 
     mBitness = bitness;
 }
 
-void Architecture::initMaxInstructionSize(SmallBitSize size) {
-    assert(size > 0 && "Maximum instruction size must be a positive integer.");
-    assert(mMaxInstructionSize == 0 && "Maximum instruction cannot be reset.");
+void Architecture::setByteOrder(ByteOrder byteOrder) {
+    assert(mByteOrder == ByteOrder::Unknown && "Byte order is already set.");
+    assert(byteOrder != ByteOrder::Unknown && "Byte order cannot be set to unknown.");
+
+    mByteOrder = byteOrder;
+}
+
+void Architecture::setMaxInstructionSize(SmallBitSize size) {
+    assert(size > 0 && "Maximal instruction size must be a positive integer.");
+    assert(mMaxInstructionSize == 0 && "Maximal instruction size cannot be reset.");
 
     mMaxInstructionSize = size;
 }
 
-void Architecture::initInstructionDisassembler(disasm::InstructionDisassembler *disassembler) {
+void Architecture::setInstructionDisassembler(disasm::InstructionDisassembler *disassembler) {
     assert(disassembler != NULL);
-    assert(mInstructionDisassembler == NULL && "Instruction disassembler cannot be reset.");
+    assert(mInstructionDisassembler == NULL && "Instruction disassembler is already set.");
 
     mInstructionDisassembler = disassembler;
 }
 
-void Architecture::initInstructionPointer(const Register *reg) {
+void Architecture::setInstructionPointer(const Register *reg) {
     assert(reg != NULL);
-    assert(mInstructionPointer == NULL && "Instruction pointer cannot be reset.");
+    assert(mInstructionPointer == NULL && "Instruction pointer is already set.");
 
     mInstructionPointer = reg;
 }
 
-void Architecture::initInstructionAnalyzer(irgen::InstructionAnalyzer *instructionAnalyzer) {
+void Architecture::setInstructionAnalyzer(irgen::InstructionAnalyzer *instructionAnalyzer) {
     assert(instructionAnalyzer != NULL);
-    assert(mInstructionAnalyzer == NULL && "Instruction analyzer cannot be reset.");
+    assert(mInstructionAnalyzer == NULL && "Instruction analyzer is already set.");
 
     mInstructionAnalyzer = instructionAnalyzer;
 }
 
-void Architecture::initUniversalAnalyzer(const UniversalAnalyzer *universalAnalyzer) {
+void Architecture::setUniversalAnalyzer(const UniversalAnalyzer *universalAnalyzer) {
     assert(universalAnalyzer != NULL);
     assert(mUniversalAnalyzer == NULL && "Universal analyzer is already set.");
 
     mUniversalAnalyzer = universalAnalyzer;
 }
 
-void Architecture::initMnemonics(Mnemonics *mnemonics) {
+void Architecture::setMnemonics(Mnemonics *mnemonics) {
     assert(mnemonics != NULL);
-    assert(mMnemonics == NULL && "Instruction dictionary already initialized.");
+    assert(mMnemonics == NULL && "Instruction dictionary is already set.");
 
     mMnemonics = mnemonics;
 }
 
-void Architecture::initRegisters(Registers *registers) {
+void Architecture::setRegisters(Registers *registers) {
     assert(registers != NULL);
-    assert(mMnemonics == NULL && "Register container already initialized.");
+    assert(mMnemonics == NULL && "Register container is already set.");
 
     mRegisters = registers;
     foreach(const Register *regizter, registers->registers()) {

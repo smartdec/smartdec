@@ -46,14 +46,14 @@ IntelArchitecture::IntelArchitecture(Mode mode):
 {
     /* Init instruction analyzer. */
     mInstructionAnalyzer.reset(new IntelInstructionAnalyzer(this));
-    initInstructionAnalyzer(mInstructionAnalyzer.get());
+    setInstructionAnalyzer(mInstructionAnalyzer.get());
 
     /* Init universal analyzer. */
     static IntelUniversalAnalyzer universalAnalyzer;
-    initUniversalAnalyzer(&universalAnalyzer);
+    setUniversalAnalyzer(&universalAnalyzer);
 
     /* Init registers. */
-    initRegisters(IntelRegisters::instance());
+    setRegisters(IntelRegisters::instance());
 
     /* Init calling conventions. */
     mConventions[AMD64]   = new AMD64CallingConvention(this);
@@ -63,25 +63,25 @@ IntelArchitecture::IntelArchitecture(Mode mode):
     mConventions[STDCALL] = new StdcallCallingConvention(this);
 
     /* Init mnemonics. */
-    initMnemonics(IntelMnemonics::instance());
+    setMnemonics(IntelMnemonics::instance());
 
     /* Perform mode-dependent initialization. */
     switch(mode) {
     case REAL_MODE:
-        initBitness(16);
-        initInstructionPointer(IntelRegisters::ip());
+        setBitness(16);
+        setInstructionPointer(IntelRegisters::ip());
         mStackPointer = IntelRegisters::sp();
         mBasePointer  = IntelRegisters::bp();
         break;
     case PROTECTED_MODE:
-        initBitness(32);
-        initInstructionPointer(IntelRegisters::eip());
+        setBitness(32);
+        setInstructionPointer(IntelRegisters::eip());
         mStackPointer = IntelRegisters::esp();
         mBasePointer  = IntelRegisters::ebp();
         break;
     case LONG_MODE:
-        initBitness(64);
-        initInstructionPointer(IntelRegisters::rip());
+        setBitness(64);
+        setInstructionPointer(IntelRegisters::rip());
         mStackPointer = IntelRegisters::rsp();
         mBasePointer  = IntelRegisters::rbp();
         break;
@@ -89,11 +89,12 @@ IntelArchitecture::IntelArchitecture(Mode mode):
         unreachable();
     }
 
-    initMaxInstructionSize(15);
+    setByteOrder(arch::ByteOrder::LITTLE_ENDIAN);
+    setMaxInstructionSize(15);
 
     /* Init instruction disassembler. */
     mInstructionDisassembler.reset(new IntelInstructionDisassembler(this));
-    initInstructionDisassembler(mInstructionDisassembler.get());
+    setInstructionDisassembler(mInstructionDisassembler.get());
 }
 
 IntelArchitecture::~IntelArchitecture() {

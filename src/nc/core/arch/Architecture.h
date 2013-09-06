@@ -32,12 +32,17 @@
 
 #include <nc/common/SizedValue.h>
 #include <nc/common/Types.h>
-#include <nc/core/ir/MemoryLocation.h>
+
+#include "ByteOrder.h"
 
 namespace nc {
 namespace core {
 
 class UniversalAnalyzer;
+
+namespace ir {
+    class MemoryLocation;
+}
 
 namespace arch {
 
@@ -71,12 +76,17 @@ public:
     virtual ~Architecture();
 
     /**
-     * \returns                        Architecture's bitness.
+     * \returns Architecture's bitness (data pointer size).
      */
     SmallBitSize bitness() const { assert(mBitness); return mBitness; }
 
     /**
-     * \return                         Maximum length of an instruction.
+     * \return Architecture's byte order.
+     */
+    ByteOrder byteOrder() const { assert(mByteOrder != ByteOrder::Unknown); return mByteOrder; }
+
+    /**
+     * \return Maximal length of an instruction.
      */
     SmallByteSize maxInstructionSize() const { assert(mMaxInstructionSize); return mMaxInstructionSize; }
 
@@ -138,46 +148,55 @@ public:
 
 protected:
     /**
-     * \param bitness                  Architecture bitness.
+     * Sets the architecture's bitness.
+     *
+     * \param bitness Architecture's bitness.
      */
-    void initBitness(SmallBitSize bitness);
+    void setBitness(SmallBitSize bitness);
 
     /**
-     * \param size                     Architecture's maximum instruction size.
+     * Sets the architecture's byte order.
+     *
+     * \param byteOrder Byte order.
      */
-    void initMaxInstructionSize(SmallBitSize size);
+    void setByteOrder(ByteOrder byteOrder);
 
     /**
-     * \param disassembler             Valid pointer to the disassembler of a single instruction.
+     * \param size Architecture's maximum instruction size.
      */
-    void initInstructionDisassembler(disasm::InstructionDisassembler *disassembler);
+    void setMaxInstructionSize(SmallBitSize size);
+
+    /**
+     * \param disassembler Valid pointer to the disassembler of a single instruction.
+     */
+    void setInstructionDisassembler(disasm::InstructionDisassembler *disassembler);
 
     /**
      * \param instructionAnalyzer Valid pointer to the instruction analyzer for this architecture.
      */
-    void initInstructionAnalyzer(irgen::InstructionAnalyzer *instructionAnalyzer);
+    void setInstructionAnalyzer(irgen::InstructionAnalyzer *instructionAnalyzer);
 
     /**
      * \param universalAnalyzer Valid pointer to the universal analyzer for this architecture.
      */
-    void initUniversalAnalyzer(const UniversalAnalyzer *universalAnalyzer);
+    void setUniversalAnalyzer(const UniversalAnalyzer *universalAnalyzer);
 
     /**
      * \param mnemonics Valid pointer to the mnemonics container for this architecture.
      */
-    void initMnemonics(Mnemonics *mnemonics);
+    void setMnemonics(Mnemonics *mnemonics);
 
     /**
      * \param registers Valid pointer to the registers container for this architecture.
      */
-    void initRegisters(Registers *registers);
+    void setRegisters(Registers *registers);
 
     /**
      * Sets the operand being the instruction pointer.
      *
      * \param reg Instruction pointer register operand.
      */
-    void initInstructionPointer(const Register *reg);
+    void setInstructionPointer(const Register *reg);
 
 private:
     /**
@@ -189,6 +208,9 @@ private:
 
     /** Architecture's bitness. */
     SmallBitSize mBitness;
+
+    /** Architecture's byte order. */
+    ByteOrder mByteOrder;
 
     /** Maximum length of an instruction on this architecture. */
     SmallBitSize mMaxInstructionSize;
