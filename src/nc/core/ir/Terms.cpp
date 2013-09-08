@@ -100,33 +100,28 @@ void UnaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
     visitor(operand_.get());
 }
 
-boost::optional<SizedValue> UnaryOperator::apply(const SizedValue &a) const {
+dflow::AbstractValue UnaryOperator::apply(const dflow::AbstractValue &a) const {
     switch (operatorKind()) {
-        case BITWISE_NOT:
-            return SizedValue(~a.value(), size());
-        case LOGICAL_NOT:
-            return SizedValue(!a.value(), size());
+        case NOT:
+            return ~a;
         case NEGATION:
-            return SizedValue(-a.signedValue(), size());
+            return -a;
         case SIGN_EXTEND:
-            return SizedValue(a.signedValue(), size());
+            return dflow::AbstractValue(a).signExtend(size());
         case ZERO_EXTEND:
-            return SizedValue(a.value(), size());
-        case RESIZE:
-            return SizedValue(a.value(), size());
+            return dflow::AbstractValue(a).zeroExtend(size());
+        case TRUNCATE:
+            return dflow::AbstractValue(a).resize(size());
         default:
             unreachable();
-            return boost::none;
+            return dflow::AbstractValue();
     }
 }
 
 void UnaryOperator::print(QTextStream &out) const {
     switch (operatorKind()) {
-        case BITWISE_NOT:
+        case NOT:
             out << '~';
-            break;
-        case LOGICAL_NOT:
-            out << '!';
             break;
         case NEGATION:
             out << '-';
@@ -137,8 +132,8 @@ void UnaryOperator::print(QTextStream &out) const {
         case ZERO_EXTEND:
             out << "zero_extend ";
             break;
-        case RESIZE:
-            out << "resize ";
+        case TRUNCATE:
+            out << "truncate ";
             break;
         default:
             unreachable();
@@ -160,6 +155,9 @@ BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std
 BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right):
     Term(BINARY_OPERATOR, left->size()), operatorKind_(operatorKind), left_(std::move(left)), right_(std::move(right))
 {
+    assert(left_ != NULL);
+    assert(right_ != NULL);
+
     left_->initFlags(READ);
     right_->initFlags(READ);
 }
@@ -174,75 +172,47 @@ void BinaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
     visitor(right_.get());
 }
 
-boost::optional<SizedValue> BinaryOperator::apply(const SizedValue &a, const SizedValue &b) const {
+dflow::AbstractValue BinaryOperator::apply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const {
     switch (operatorKind()) {
-        case ADD:
-            return SizedValue(a.value() + b.value(), size());
-        case SUB:
-            return SizedValue(a.value() - b.value(), size());
-        case MUL:
-            return SizedValue(a.value() * b.value(), size());
-        case SIGNED_DIV:
-            if (b.value() != 0) {
-                return SizedValue(a.signedValue() / b.signedValue(), size());
-            } else {
-                return boost::none;
-            }
-        case UNSIGNED_DIV:
-            if (b.value() != 0) {
-                return SizedValue(a.value() / b.value(), size());
-            } else {
-                return boost::none;
-            }
-        case SIGNED_REM:
-            if (b.value() != 0) {
-                return SizedValue(a.signedValue() % b.signedValue(), size());
-            } else {
-                return boost::none;
-            }
-        case UNSIGNED_REM:
-            if (b.value() != 0) {
-                return SizedValue(a.value() % b.value(), size());
-            } else {
-                return boost::none;
-            }
-        case BITWISE_AND:
-            return SizedValue(a.value() & b.value(), size());
-        case LOGICAL_AND:
-            return SizedValue(a.value() && b.value(), size());
-        case BITWISE_OR:
-            return SizedValue(a.value() | b.value(), size());
-        case LOGICAL_OR:
-            return SizedValue(a.value() || b.value(), size());
-        case BITWISE_XOR:
-            return SizedValue(a.value() ^ b.value(), size());
+        case AND:
+            return a & b;
+        case OR:
+            return a | b;
+        case XOR:
+            return a ^ b;
         case SHL:
-            return SizedValue(a.value() << b.value(), size());
+            return a << b;
         case SHR:
-            return SizedValue(a.value() >> b.value(), size());
+            return dflow::UnsignedAbstractValue(a) >> b;
         case SAR:
-            return SizedValue(a.signedValue() >> b.value(), size());
+            return dflow::SignedAbstractValue(a) >> b;
+        case ADD:
+            return a + b;
+        case SUB:
+            return a - b;
+        case MUL:
+            return a * b;
+        case SIGNED_DIV:
+            return dflow::SignedAbstractValue(a) / b;
+        case UNSIGNED_DIV:
+            return dflow::UnsignedAbstractValue(a) / b;
+        case SIGNED_REM:
+            return dflow::SignedAbstractValue(a) % b;
+        case UNSIGNED_REM:
+            return dflow::UnsignedAbstractValue(a) % b;
         case EQUAL:
-            return SizedValue(a.value() == b.value(), size());
+            return a == b;
         case SIGNED_LESS:
-            return SizedValue(a.signedValue() < b.signedValue(), size());
+            return dflow::SignedAbstractValue(a) < b;
         case SIGNED_LESS_OR_EQUAL:
-            return SizedValue(a.signedValue() <= b.signedValue(), size());
-        case SIGNED_GREATER:
-            return SizedValue(a.signedValue() > b.signedValue(), size());
-        case SIGNED_GREATER_OR_EQUAL:
-            return SizedValue(a.signedValue() >= b.signedValue(), size());
+            return dflow::SignedAbstractValue(a) <= b;
         case UNSIGNED_LESS:
-            return SizedValue(a.value() < b.value(), size());
+            return dflow::UnsignedAbstractValue(a) < b;
         case UNSIGNED_LESS_OR_EQUAL:
-            return SizedValue(a.value() <= b.value(), size());
-        case UNSIGNED_GREATER:
-            return SizedValue(a.value() > b.value(), size());
-        case UNSIGNED_GREATER_OR_EQUAL:
-            return SizedValue(a.value() >= b.value(), size());
+            return dflow::UnsignedAbstractValue(a) <= b;
         default:
             unreachable();
-            return boost::none;
+            return dflow::AbstractValue();
     }
 }
 
@@ -253,6 +223,24 @@ BinaryOperator *BinaryOperator::doClone() const {
 void BinaryOperator::print(QTextStream &out) const {
     out << '(' << *left() << ' ';
     switch (operatorKind()) {
+        case AND:
+            out << '&';
+            break;
+        case OR:
+            out << '|';
+            break;
+        case XOR:
+            out << '^';
+            break;
+        case SHL:
+            out << "<<";
+            break;
+        case SHR:
+            out << ">>>";
+            break;
+        case SAR:
+            out << ">>";
+            break;
         case ADD:
             out << '+';
             break;
@@ -265,38 +253,14 @@ void BinaryOperator::print(QTextStream &out) const {
         case SIGNED_DIV:
             out << "(signed)/";
             break;
-        case UNSIGNED_DIV:
-            out << "(unsigned)/";
-            break;
         case SIGNED_REM:
             out << "(signed)%";
             break;
+        case UNSIGNED_DIV:
+            out << "(unsigned)/";
+            break;
         case UNSIGNED_REM:
             out << "(unsigned)%";
-            break;
-        case BITWISE_AND:
-            out << '&';
-            break;
-        case LOGICAL_AND:
-            out << "&&";
-            break;
-        case BITWISE_OR:
-            out << '|';
-            break;
-        case LOGICAL_OR:
-            out << "||";
-            break;
-        case BITWISE_XOR:
-            out << '^';
-            break;
-        case SHL:
-            out << "<<";
-            break;
-        case SHR:
-            out << ">>>";
-            break;
-        case SAR:
-            out << ">>";
             break;
         case EQUAL:
             out << "==";
@@ -307,23 +271,11 @@ void BinaryOperator::print(QTextStream &out) const {
         case SIGNED_LESS_OR_EQUAL:
             out << "(signed)<=";
             break;
-        case SIGNED_GREATER:
-            out << "(signed)>";
-            break;
-        case SIGNED_GREATER_OR_EQUAL:
-            out << "(signed)>=";
-            break;
         case UNSIGNED_LESS:
             out << "(unsigned)<";
             break;
         case UNSIGNED_LESS_OR_EQUAL:
             out << "(unsigned)<=";
-            break;
-        case UNSIGNED_GREATER:
-            out << "(unsigned)>";
-            break;
-        case UNSIGNED_GREATER_OR_EQUAL:
-            out << "(unsigned)>=";
             break;
         default:
             unreachable();

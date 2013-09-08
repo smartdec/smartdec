@@ -33,7 +33,7 @@
 namespace nc {
 
 /**
- * Integer value having a size and capable of returning its signed and unsigned value.
+ * Integer value with a size.
  */
 class SizedValue {
     /** The value. All its bits from size_ and higher are zero. */
@@ -56,7 +56,7 @@ class SizedValue {
         value_(bitTruncate(value, size)),
         size_(size)
     {
-        assert(0 <= size);
+        assert(size >= 0);
     }
 
     /**
@@ -84,7 +84,7 @@ class SizedValue {
      *
      * \return A copy of the value resized to given size.
      */
-    SizedValue resized(SmallBitSize size) const { return SizedValue(value(), size); }
+    SizedValue resized(SmallBitSize size) const { return SizedValue(value_, size); }
 };
 
 } // namespace nc

@@ -32,14 +32,18 @@ namespace nc {
 
 /**
  * \tparam T Integer type.
- * \param nbits Number of bits.
+ * \param[in] nbits Number of bits.
  *
  * \return Value of type T with bits [0..nbits-1] set.
  * In case T is narrower than nbits, returned value has all bits set.
  */
 template<class T>
 T bitMask(unsigned nbits) {
-    return nbits < sizeof(T) * CHAR_BIT ? (T(1) << nbits) - 1 : T(-1);
+    if (nbits < sizeof(T) * CHAR_BIT) {
+        return T(1) << nbits;
+    } else {
+        return T(-1);
+    }
 }
 
 /**
@@ -47,41 +51,109 @@ T bitMask(unsigned nbits) {
  * \param[in] value Integer value.
  * \param[in] nbits Number of bits.
  *
- * \return The input value truncated to the lowest nbits bits.
+ * \return Value shifted to the left by the given number of bits.
+ */
+template<class T>
+T shiftLeft(T value, unsigned nbits) {
+    if (nbits < sizeof(T) * CHAR_BIT) {
+        return value << nbits;
+    } else {
+        return 0;
+    }
+}
+
+/**
+ * \tparam T Integer type.
+ * \param[in] value Integer value.
+ * \param[in] nbits Number of bits.
+ *
+ * \return Value shifted to the right by the given number of bits.
+ */
+template<class T>
+T shiftRight(T value, unsigned nbits) {
+    if (nbits < sizeof(T) * CHAR_BIT) {
+        return value >> nbits;
+    } else {
+        return 0;
+    }
+}
+
+/**
+ * \tparam T Integer type.
+ * \param[in] value Integer value.
+ * \param[in] nbits Number of bits.
+ *
+ * \return The value shifted by the given number of bits.
+ * If the number of bits is positive, the shift is to the left.
+ * If the number of bits is negative, the shift is to the right.
+ */
+template<class T>
+T bitShift(T value, int nbits) {
+    if (nbits > 0) {
+        return shiftLeft(value, nbits);
+    } else if (nbits < 0) {
+        return shiftRight(value, nbits);
+    } else {
+        return value;
+    }
+}
+
+/**
+ * \tparam T Integer type.
+ * \param[in] value Integer value.
+ * \param[in] nbits Number of bits.
+ *
+ * \return The input value truncated to the lowest size bits.
  */
 template<class T>
 T bitTruncate(T value, unsigned nbits) {
-    return nbits < sizeof(T) * CHAR_BIT ? value & ((T(1) << nbits) - 1) : value;
+    return value & bitMask<T>(nbits);
 }
 
 /**
  * \tparam T Integer type.
  * \param[in] value Integer value with bits [nbits..\inf] cleared.
- * \param[in] nbits Number of bits, must not exceed the width of T.
+ * \param[in] nbits Number of bits.
+ *
+ * \return Negation of the value of the integer represented by bits [0..nbits-1] of value.
+ */
+template<class T>
+T bitNegate(T value, unsigned nbits) {
+    assert((value & bitMask<T>(nbits)) == value);
+
+    return (value ^ bitMask<T>(nbits)) + 1;
+}
+
+/**
+ * \tparam T Integer type.
+ * \param[in] value Integer value with bits [nbits..\inf] cleared.
+ * \param[in] nbits Number of bits.
  *
  * \return Absolute value of the integer represented by bits [0..nbits-1] of value.
  */
 template<class T>
 T bitAbs(T value, unsigned nbits) {
     assert((value & bitMask<T>(nbits)) == value);
-    assert(nbits <= sizeof(T) * CHAR_BIT);
 
-    return value & (T(1) << (nbits - 1)) ? (value ^ ((T(1) << nbits) - 1)) + 1 : value;
+    if (value & shiftLeft<T>(1, nbits - 1)) {
+        return bitNegate(value, nbits);
+    } else {
+        return value;
+    }
 }
 
 /**
  * \tparam T Integer type.
  * \param[in] value Integer value with bits [nbits..\inf] cleared.
- * \param[in] nbits Number of bits, must not exceed the width of T.
+ * \param[in] nbits Number of bits.
  *
  * \return Signed extension of the integer represented by bits [0..nbits-1] of value.
  */
 template<class T>
 T signExtend(T value, unsigned nbits) {
     assert((value & bitMask<T>(nbits)) == value);
-    assert(nbits <= sizeof(T) * CHAR_BIT);
 
-    const T mask = T(1) << (nbits - 1);
+    const T mask = shiftLeft<T>(1, nbits - 1);
     return (value ^ mask) - mask;
 }
 

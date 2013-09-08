@@ -25,9 +25,9 @@
 
 #include <nc/config.h>
 
-#include <boost/optional.hpp>
-
 #include <nc/common/SizedValue.h>
+
+#include <nc/core/ir/dflow/AbstractValue.h>
 
 #include "Term.h"
 
@@ -192,12 +192,11 @@ class UnaryOperator: public Term {
 
 public:
     enum {
-        BITWISE_NOT, ///< Bitwise NOT.
-        LOGICAL_NOT, ///< Logical NOT.
-        NEGATION, ///< Negation.
+        NOT, ///< Bitwise NOT.
+        NEGATION, ///< Integer negation.
         SIGN_EXTEND, ///< Sign extend.
         ZERO_EXTEND, ///< Zero extend.
-        RESIZE, ///< Just copy bits. Zero extend or truncate as necessary.
+        TRUNCATE, ///< Truncate.
         USER = 1000 ///< Base for user-defined operators.
     };
 
@@ -240,7 +239,7 @@ public:
      * \return                         Result of application of this unary operator to the given argument,
      *                                 or boost::none when the operator is not applicable.
      */
-    virtual boost::optional<SizedValue> apply(const SizedValue &a) const;
+    virtual dflow::AbstractValue apply(const dflow::AbstractValue &a) const;
 
     virtual void print(QTextStream &out) const override;
 
@@ -259,30 +258,24 @@ class BinaryOperator: public Term {
 
 public:
     enum {
+        AND, ///< Bitwise AND.
+        OR,  ///< Bitwise OR.
+        XOR, ///< Bitwise XOR.
+        SHL, ///< Bit shift left.
+        SHR, ///< Bit shift right.
+        SAR, ///< Arithmetic bit shift right.
         ADD, ///< Integer addition.
         SUB, ///< Integer subtraction.
         MUL, ///< Integer multiplication.
         SIGNED_DIV, ///< Signed integer division.
-        UNSIGNED_DIV, ///< Unsigned integer division.
         SIGNED_REM, ///< Signed integer remainder.
+        UNSIGNED_DIV, ///< Unsigned integer division.
         UNSIGNED_REM, ///< Unsigned integer remainder.
-        BITWISE_AND, ///< Bitwise AND.
-        LOGICAL_AND, ///< Logical AND.
-        BITWISE_OR, ///< Bitwise OR.
-        LOGICAL_OR, ///< Logical OR.
-        BITWISE_XOR, ///< Bitwise XOR.
-        SHL, ///< Bit shift left.
-        SHR, ///< Bit shift right.
-        SAR, ///< Arithmetic bit shift right.
-        EQUAL, ///< Equality operator for integers.
+        EQUAL, ///< Equality.
         SIGNED_LESS, ///< Integer signed less.
         SIGNED_LESS_OR_EQUAL, ///< Integer signed less or equal.
-        SIGNED_GREATER, ///< Integer signed greater.
-        SIGNED_GREATER_OR_EQUAL, ///< Signed greater or equal for integer.
         UNSIGNED_LESS, ///< Integer unsigned less.
         UNSIGNED_LESS_OR_EQUAL, ///< Integer unsigned less or equal.
-        UNSIGNED_GREATER, ///< Integer unsigned greater.
-        UNSIGNED_GREATER_OR_EQUAL, ///< Integer unsigned greater or equal.
         USER = 1000 ///< Base for user-defined operators.
     };
 
@@ -339,7 +332,7 @@ public:
      * \param b                        Right argument.
      * \return                         a op b, or boost::none if result is undefined.
      */
-    virtual boost::optional<SizedValue> apply(const SizedValue &a, const SizedValue &b) const;
+    virtual dflow::AbstractValue apply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const;
 
     virtual void print(QTextStream &out) const override;
 
