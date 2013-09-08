@@ -34,7 +34,7 @@
 #include <boost/range/value_type.hpp>
 
 namespace nc {
-    namespace range_protected {
+    namespace range_detail {
         template<class T>
         struct Void {
             typedef void type;
@@ -59,50 +59,70 @@ namespace nc {
             return Find<Range, T>()(range, value);
         }
 
-    } // namespace range_protected
+    } // namespace range_detail
 
     /**
      * This function performs a containment check on a given range. It uses
      * find method of the given range if it's available (as it is in case of
      * associative containers), and std::find algorithm if it's not.
      *
-     * @return True of the given range contains given element, false otherwise.
+     * \param range Range.
+     * \param value Value.
+     *
+     * \return True of the given range contains given element, false otherwise.
      */
     template<class Range, class T>
     bool contains(const Range &range, const T &value) {
-        return range_protected::find(range, value) != boost::end(range);
+        return range_detail::find(range, value) != boost::end(range);
     }
 
     /**
-     * Looks for the given key in a given associative range. Returns 
-     * const reference to corresponding value from the range if the
-     * key was found, and given default value otherwise.
+     * Looks for the given key in a given associative range.
+     *
+     * \param range Range.
+     * \param key Key.
+     * \param defaultValue Value to return when the range does not have an element with a given key.
+     *
+     * \return Const reference to corresponding value from the range if the key was found,
+     *         const reference to the default value otherwise.
      */
     template<class AssociativeRange>
     const typename boost::range_value<AssociativeRange>::type::second_type &
     find(const AssociativeRange &range, const typename boost::range_value<AssociativeRange>::type::first_type &key, const typename boost::range_value<AssociativeRange>::type::second_type &defaultValue) {
-        auto pos = range_protected::find(range, key);
+        auto pos = range_detail::find(range, key);
 
         return pos == boost::end(range) ? defaultValue : pos->second;
     }
 
+    /**
+     * Looks for the given key in a given associative range.
+     *
+     * \param range Range.
+     * \param key Key.
+     *
+     * \return Const reference to corresponding value from the range if the key was found,
+     *         const reference to the default constructed range value otherwise.
+     */
     template<class AssociativeRange>
     const typename boost::range_value<AssociativeRange>::type::second_type &
     find(const AssociativeRange &range, const typename boost::range_value<AssociativeRange>::type::first_type &key) {
-        static const typename boost::range_value<AssociativeRange>::type::second_type defaultValue = typename boost::range_value<AssociativeRange>::type::second_type();
+        static const auto defaultValue = typename boost::range_value<AssociativeRange>::type::second_type();
 
         return find(range, key, defaultValue);
     }
 
     /**
-     * Looks for the given key in a given associative range. Returns
-     * corresponding value from the range if the * key was found,
-     * and boost::none otherwise.
+     * Looks for the given key in a given associative range.
+     *
+     * \param range Range.
+     * \param key Key.
+     *
+     * \return Corresponding value from the range if the key was found, boost::none otherwise.
      */
     template<class AssociativeRange>
     boost::optional<typename boost::range_value<AssociativeRange>::type::second_type>
     find_optional(const AssociativeRange &range, const typename boost::range_value<AssociativeRange>::type::first_type &key) {
-        auto pos = range_protected::find(range, key);
+        auto pos = range_detail::find(range, key);
 
         if (pos != boost::end(range)) {
             return pos->second;
