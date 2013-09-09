@@ -24,28 +24,37 @@
 
 #include "Term.h"
 
-#include "Statement.h"
+#include "Statements.h"
 
 namespace nc { namespace core { namespace ir {
 
-namespace {
+const Term *Term::assignee() const {
+    assert(isWrite());
 
-class SetStatementVisitor: public Visitor<Term> {
-    const Statement *statement_;
-
-    public:
-
-    SetStatementVisitor(const Statement *statement): statement_(statement) {}
-
-    void operator()(Term *term) override {
-        term->setStatement(statement_);
-        term->visitChildTerms(*this);
+    if (statement()) {
+        if (auto assignment = statement()->as<Assignment>()) {
+            assert(assignment->left() == this);
+            return assignment->right();
+        }
     }
-};
 
-} // anonymous namespace
+    return NULL;
+}
 
 void Term::setStatementRecursively(const Statement *statement) {
+    class SetStatementVisitor: public Visitor<Term> {
+        const Statement *statement_;
+
+        public:
+
+        SetStatementVisitor(const Statement *statement): statement_(statement) {}
+
+        void operator()(Term *term) override {
+            term->setStatement(statement_);
+            term->visitChildTerms(*this);
+        }
+    };
+
     SetStatementVisitor visitor(statement);
     visitor(this);
 }

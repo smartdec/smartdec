@@ -55,10 +55,12 @@ void InlineAssembly::print(QTextStream &out) const {
 Assignment::Assignment(std::unique_ptr<Term> left, std::unique_ptr<Term> right):
     Statement(ASSIGNMENT), left_(std::move(left)), right_(std::move(right))
 {
-    assert(left_ && right_ && left_->size() == right_->size());
+    assert(left_);
+    assert(right_);
+    assert(left_->size() == right_->size());
 
-    left_->initFlags(Term::WRITE, right_.get());
-    right_->initFlags(Term::READ);
+    left_->setAccessType(Term::WRITE);
+    right_->setAccessType(Term::READ);
 
     left_->setStatementRecursively(this);
     right_->setStatementRecursively(this);
@@ -87,7 +89,7 @@ Kill::Kill(std::unique_ptr<Term> term):
 {
     assert(term_);
 
-    term_->initFlags(Term::KILL);
+    term_->setAccessType(Term::KILL);
     term_->setStatementRecursively(this);
 }
 
@@ -111,9 +113,9 @@ Call::Call(std::unique_ptr<Term> target):
     Statement(CALL), 
     target_(std::move(target))
 {
-    assert(target_ != NULL && "Jump target must be not NULL.");
+    assert(target_ != NULL);
 
-    target_->initFlags(Term::READ);
+    target_->setAccessType(Term::READ);
     target_->setStatementRecursively(this);
 }
 

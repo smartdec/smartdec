@@ -59,7 +59,7 @@ void MemoryLocationAccess::print(QTextStream &out) const {
 Dereference::Dereference(std::unique_ptr<Term> address, Domain domain, SmallBitSize size):
     Term(DEREFERENCE, size), domain_(domain), address_(std::move(address))
 {
-    address_->initFlags(READ);
+    address_->setAccessType(READ);
 }
 
 void Dereference::visitChildTerms(Visitor<Term> &visitor) {
@@ -81,7 +81,7 @@ UnaryOperator::UnaryOperator(int operatorKind, std::unique_ptr<Term> operand, Sm
 {
     assert(operand_ != NULL);
 
-    operand_->initFlags(READ);
+    operand_->setAccessType(READ);
 }
 
 UnaryOperator::UnaryOperator(int operatorKind, std::unique_ptr<Term> operand):
@@ -89,7 +89,7 @@ UnaryOperator::UnaryOperator(int operatorKind, std::unique_ptr<Term> operand):
     operatorKind_(operatorKind), 
     operand_(std::move(operand))
 {
-    operand_->initFlags(READ);
+    operand_->setAccessType(READ);
 }
 
 void UnaryOperator::visitChildTerms(Visitor<Term> &visitor) {
@@ -148,8 +148,8 @@ BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std
     assert(left_ != NULL);
     assert(right_ != NULL);
 
-    left_->initFlags(READ);
-    right_->initFlags(READ);
+    left_->setAccessType(READ);
+    right_->setAccessType(READ);
 }
 
 BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right):
@@ -158,8 +158,8 @@ BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std
     assert(left_ != NULL);
     assert(right_ != NULL);
 
-    left_->initFlags(READ);
-    right_->initFlags(READ);
+    left_->setAccessType(READ);
+    right_->setAccessType(READ);
 }
 
 void BinaryOperator::visitChildTerms(Visitor<Term> &visitor) {
@@ -292,8 +292,8 @@ Choice::Choice(std::unique_ptr<Term> preferredTerm, std::unique_ptr<Term> defaul
     assert(defaultTerm_ != NULL);
     assert(preferredTerm_->size() == defaultTerm_->size());
 
-    preferredTerm_->initFlags(READ);
-    defaultTerm_->initFlags(READ);
+    preferredTerm_->setAccessType(READ);
+    defaultTerm_->setAccessType(READ);
 }
 
 Choice *Choice::doClone() const {

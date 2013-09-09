@@ -54,7 +54,7 @@ class Statement;
 
 /**
  * Base class for different kinds of expressions of intermediate representation.
- * 
+ *
  * Terms are supposed to be immutable <i>at the interface level</i>.
  * That is, once created and initialized, they cannot be changed.
  * This is why there is no point in using <tt>const Term</tt> type.
@@ -78,22 +78,19 @@ public:
         USER = 1000 ///< Base for user-defined terms.
     };
 
-    enum Flags {
-        WRITE = 0x1,
-        READ  = 0x2,
-        KILL  = 0x4,
-        FLAGS_MASK = 0x7
+    /**
+     * Types of term's access.
+     */
+    enum AccessType {
+        NO_ACCESS, ///< Unknown, not set.
+        READ,      ///< Term is being read from.
+        WRITE,     ///< Term is being assigned to.
+        KILL       ///< Term is being killed.
     };
 
 private:
     SmallBitSize size_; ///< Size of this term's value in bits.
-
-    bool isRead_; ///< Term is read.
-    bool isWrite_; ///< Term is written.
-    bool isKill_; ///< Term is killed.
-
-    Term *assignee_; ///< RHS of assignment operator, whose LHS is this term.
-
+    AccessType accessType_; ///< Type of term's use.
     const Statement *statement_; ///< Statement that this term belongs to.
 
 public:
@@ -104,65 +101,63 @@ public:
      * \param[in] size                 Size of this term's value in bits.
      */
     Term(int kind, SmallBitSize size):
-        kind_(kind), size_(size),
-        isRead_(false), isWrite_(false), isKill_(false),
-        assignee_(0), statement_(NULL)
+        kind_(kind), size_(size), accessType_(NO_ACCESS), statement_(NULL)
     {
         assert(size != 0);
     }
 
     /**
-     * Initializes this term's flags.
-     * 
-     * \param[in] flags                Term flags.
-     * \param[in] assignee             Expression that is assigned to this term, if any.
-     */
-    void initFlags(int flags, Term *assignee = NULL) {
-        assert(!hasFlags());
-        assert((flags & ~FLAGS_MASK) == 0);
-
-        isRead_ = (flags & READ) != 0;
-        isWrite_ = (flags & WRITE) != 0;
-        isKill_ = (flags & KILL) != 0;
-        assignee_ = assignee;
-
-        assert(hasFlags());
-    }
-
-    /**
-     * \returns                        Size of this term's value in bits.
+     * \returns Size of this term's value in bits.
      */
     SmallBitSize size() const { return size_; }
 
     /**
-     * \return                         True, if term is used for reading.
+     * Sets the type of the term's use: read, write, or kill.
+     *
+     * \param[in] accessType Access type.
+     *
+     * \note Must be called only once for each term.
      */
-    bool isRead() const { assert(hasFlags()); return isRead_; }
+    void setAccessType(AccessType accessType) {
+        assert(accessType_ == NO_ACCESS);
+        assert(accessType == READ || accessType == WRITE || accessType == KILL);
+
+        accessType_ = accessType;
+    }
 
     /**
-     * \return                         True, if term is used for writing.
+     * \return True if term is used for reading, false otherwise.
      */
-    bool isWrite() const { assert(hasFlags()); return isWrite_; }
+    bool isRead() const { assert(accessType_ != NO_ACCESS); return accessType_ == READ; }
 
     /**
-     * \return                         True, if term is used for killing.
+     * \return True if term is used for writing, false otherwise.
      */
-    bool isKill() const { assert(hasFlags()); return isKill_; }
+    bool isWrite() const { assert(accessType_ != NO_ACCESS); return accessType_ == WRITE; }
 
     /**
-     * \return                         Expression that this term is assigned to.
+     * \return True if term is used for killing, false otherwise.
      */
-    Term *assignee() const { assert(isWrite()); return assignee_; }
+    bool isKill() const { assert(accessType_ != NO_ACCESS); return accessType_ == KILL; }
 
     /**
-     * \return                         Statement this term belongs to.
+     * \return Pointer to the statement this term belongs to. Can be NULL.
      */
     const Statement *statement() const { return statement_; }
 
     /**
-     * \param[in] statement            Statement this term belongs to.
+     * Sets the statement this term belongs to.
+     *
+     * \param[in] statement Valid pointer to the statement.
+     *
+     * \note Must be called only once for each term.
      */
-    void setStatement(const Statement *statement) { statement_ = statement; }
+    void setStatement(const Statement *statement) {
+        assert(statement_ == NULL);
+        assert(statement != NULL);
+
+        statement_ = statement;
+    }
 
     /**
      * Sets the statement that this term and child terms belong to.
@@ -170,6 +165,15 @@ public:
      * \param[in] statement            Statement this term and child terms belong to.
      */
     void setStatementRecursively(const Statement *statement);
+
+    /**
+     * \return If the term stands in the left hand side of an assignment,
+     *         returns the right hand size of this assignment. Otherwise,
+     *         NULL is returned.
+     *
+     * \note The method must be called only for write terms.
+     */
+    const Term *assignee() const;
 
     /**
      * Calls visitor for term's child terms.
@@ -203,13 +207,6 @@ public:
     inline const Choice *asChoice() const;
 
 protected:
-    // TODO: there can be only one flag set.
-    /**
-     * \returns                        Whether this term's flags were initialized.
-     */
-    bool hasFlags() const {
-        return isRead_ || isWrite_ || isKill_;
-    }
 
     /**
      * Actually clones the term.
@@ -225,9 +222,9 @@ protected:
  * Defines a compile-time mapping from term class to term kind.
  * Makes it possible to use the given class as an argument to <tt>Term::as</tt>
  * and <tt>Term::is</tt> template functions.
- * 
+ *
  * Must be used at global namespace.
- * 
+ *
  * \param CLASS                        Term class.
  * \param KIND                         Term kind.
  */
@@ -246,8 +243,8 @@ NC_REGISTER_TERM_CLASS(nc::core::ir::Choice,               nc::core::ir::Term::C
 
 namespace nc { namespace core { namespace ir {
 
-bool Term::isConstant() const { return is<Constant>(); } 
-bool Term::isIntrinsic() const { return is<Intrinsic>(); } 
+bool Term::isConstant() const { return is<Constant>(); }
+bool Term::isIntrinsic() const { return is<Intrinsic>(); }
 bool Term::isMemoryLocationAccess() const { return is<MemoryLocationAccess>(); }
 bool Term::isDereference() const { return is<Dereference>(); }
 bool Term::isUnaryOperator() const { return is<UnaryOperator>(); }
