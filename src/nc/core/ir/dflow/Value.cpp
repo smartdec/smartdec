@@ -24,9 +24,6 @@
 
 #include "Value.h"
 
-#include <QTextStream>
-
-#include <nc/common/Unused.h>
 #include <nc/common/BitTwiddling.h>
 
 namespace nc {
@@ -76,41 +73,13 @@ bool success = test();
 } // anonymous namespace
 #endif
 
-Value::Value(SmallBitSize size):
-    size_(size),
-    isConstant_(false), isNonconstant_(false), isStackOffset_(false), isNotStackOffset_(false),
-    isMultiplication_(false), isNotMultiplication_(false)
-{
-    if (size_ > MAX_SIZE) {
-        /* We don't track values in too large registers yet. */
-        makeNonconstant();
-        makeNotStackOffset();
-        makeNotMultiplication();
-    }
-}
-
-void Value::makeConstant(const SizedValue &value) {
-    SizedValue val = value.resized(size());
-
-    if (isConstant_) {
-        if (constantValue_.value() != val.value()) {
-            makeNonconstant();
-        }
-    } else {
-        isConstant_ = true;
-        constantValue_ = val;
-    }
-}
-
-void Value::forceConstant(const SizedValue &value) {
-    isConstant_ = true;
-    isNonconstant_ = false;
-
-    constantValue_ = value.resized(size());
-}
+Value::Value():
+    isStackOffset_(false), isNotStackOffset_(false),
+    isProduct_(false), isNotProduct_(false)
+{}
 
 void Value::makeStackOffset(SizedValue offset) {
-    SizedValue off = SizedValue(offset.value(), size());
+    SizedValue off = offset.value();
 
     if (isStackOffset_) {
         /*
@@ -129,26 +98,6 @@ void Value::makeStackOffset(SizedValue offset) {
     } else {
         isStackOffset_ = true;
         stackOffset_ = off;
-    }
-}
-
-void Value::join(const Value &that) {
-    if (that.isConstant()) {
-        makeConstant(that.constantValue());
-    } else if (that.isNonconstant()) {
-        makeNonconstant();
-    }
-
-    if (that.isStackOffset()) {
-        makeStackOffset(that.stackOffset());
-    } else if (that.isNotStackOffset()) {
-        makeNotStackOffset();
-    }
-
-    if (that.isMultiplication()) {
-        makeMultiplication();
-    } else if (that.isNotMultiplication()) {
-        makeNotMultiplication();
     }
 }
 

@@ -113,6 +113,15 @@ class MemoryLocation: public boost::equality_comparable1<MemoryLocation>, public
     MemoryLocation shifted(BitOffset offset) const {
         return MemoryLocation(domain_, addr_ + offset, size_);
     }
+
+    /**
+     * \param that Memory location.
+     *
+     * \return True if that is fully covered by *this.
+     */
+    bool covers(const MemoryLocation &that) const {
+        return domain() == that.domain() && addr() <= that.addr() && that.endAddr() <= endAddr();
+    }
 };
 
 /**

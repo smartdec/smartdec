@@ -27,6 +27,8 @@
 #include <nc/common/Range.h>
 #include <nc/core/ir/Term.h>
 
+#include "Value.h"
+
 namespace nc {
 namespace core {
 namespace ir {
@@ -35,9 +37,13 @@ namespace dflow {
 Value *Dataflow::getValue(const Term *term) {
     assert(term != NULL);
 
+    if (term->assignee()) {
+        term = term->assignee();
+    }
+
     auto &result = values_[term];
     if (!result) {
-        result.reset(new Value(term->size()));
+        result.reset(new Value());
     }
     return result.get();
 }
@@ -45,7 +51,18 @@ Value *Dataflow::getValue(const Term *term) {
 const Value *Dataflow::getValue(const Term *term) const {
     assert(term != NULL);
 
-    return const_cast<Dataflow *>(this)->getValue(term);
+    if (term->assignee()) {
+        term = term->assignee();
+    }
+
+    auto i = values_.find(term);
+
+    if (i != values_.end()) {
+        return i->second.get();
+    } else {
+        static const Value empty;
+        return &empty;
+    }
 }
 
 const ir::MemoryLocation &Dataflow::getMemoryLocation(const Term *term) const {

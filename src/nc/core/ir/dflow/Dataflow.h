@@ -26,7 +26,7 @@
 #include <nc/config.h>
 
 #include <vector>
-#include <memory> /* unique_ptr */
+#include <memory>
 
 #include <boost/unordered_map.hpp>
 
@@ -62,32 +62,35 @@ class Dataflow {
     public:
 
     /**
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to a term.
      *
-     * \return Value of the term.
+     * \return Valid pointer to the value description for this term.
+     *         If the term is being assigned to, the value description
+     *         for the right hand side of the assignment is returned.
      */
     Value *getValue(const Term *term);
 
     /**
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to a term.
      *
-     * \return Value of the term.
+     * \return Valid pointer to the value description for this term.
+     *         If the term is being assigned to, the value description
+     *         for the right hand side of the assignment is returned.
      */
     const Value *getValue(const Term *term) const;
 
     /**
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to a term.
      *
-     * \return Memory location occupied by the term. If no memory location
-     *         is associated with this term, an invalid MemoryLocation object
-     *         is returned.
+     * \return Memory location occupied by the term. If no memory location is associated
+     *         with this term, an invalid MemoryLocation object is returned.
      */
     const ir::MemoryLocation &getMemoryLocation(const Term *term) const;
 
     /**
      * Associates a memory location with given term.
      *
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to a term.
      * \param[in] memoryLocation Memory location.
      */
     void setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation);

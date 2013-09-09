@@ -108,13 +108,17 @@ void DataflowAnalyzer::analyze(const Function *function, const CancellationToken
         census(function);
 
         foreach (const Term *term, census.terms()) {
-            dataflow().clearUses(term);
+            if (term->isWrite()) {
+                dataflow().clearUses(term);
+            }
         }
 
         foreach (const Term *term, census.terms()) {
             if (term->isRead()) {
-                foreach (const Term *definition, dataflow().getDefinitions(term)) {
-                    dataflow().addUse(definition, term);
+                foreach (const auto &def, dataflow().getDefinitions(term).definitions()) {
+                    foreach (const Term *definition, def.second) {
+                        dataflow().addUse(definition, term);
+                    }
                 }
             }
         }
@@ -151,14 +155,8 @@ void DataflowAnalyzer::simulate(const Statement *statement, SimulationContext &c
             break;
         case Statement::ASSIGNMENT: {
             const Assignment *assignment = statement->asAssignment();
-
             simulate(assignment->right(), context);
             simulate(assignment->left(), context);
-
-            Value *leftValue = dataflow().getValue(assignment->left());
-            Value *rightValue = dataflow().getValue(assignment->right());
-            leftValue->join(*rightValue);
-
             break;
         }
         case Statement::KILL: {
@@ -186,8 +184,8 @@ void DataflowAnalyzer::simulate(const Statement *statement, SimulationContext &c
 
             if (callsData()) {
                 const Value *targetValue = dataflow().getValue(call->target());
-                if (targetValue->isConstant()) {
-                    callsData()->setCalledAddress(call, targetValue->constantValue().value());
+                if (targetValue->abstractValue().isConcrete()) {
+                    callsData()->setCalledAddress(call, targetValue->abstractValue().asConcrete().value());
                 }
                 if (calls::CallAnalyzer *callAnalyzer = callsData()->getCallAnalyzer(call)) {
                     callAnalyzer->simulateCall(context);
@@ -217,17 +215,17 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
             const Constant *constant = term->asConstant();
 
             Value *value = dataflow().getValue(constant);
-
-            value->makeConstant(constant->value());
+            value->setAbstractValue(constant->value());
             value->makeNotStackOffset();
-            value->makeNotMultiplication();
+            value->makeNotProduct();
             break;
         }
         case Term::INTRINSIC: /* FALLTHROUGH */
         case Term::UNDEFINED: {
             Value *value = dataflow().getValue(term);
+            value->setAbstractValue(AbstractValue(term->size(), -1, -1));
             value->makeNotStackOffset();
-            value->makeNotMultiplication();
+            value->makeNotProduct();
             break;
         }
         case Term::MEMORY_LOCATION_ACCESS: {
@@ -240,7 +238,8 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
                 access->statement() &&
                 access->statement()->instruction())
             {
-                dataflow().getValue(access)->forceConstant(access->statement()->instruction()->addr());
+                dataflow().getValue(access)->setAbstractValue(
+                    AbstractValue(term->size(), access->statement()->instruction()->addr()));
             }
             break;
         }
@@ -250,17 +249,17 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
             simulate(dereference->address(), context);
 
             const Value *addressValue = dataflow().getValue(dereference->address());
-            if (addressValue->isConstant()) {
+            if (addressValue->abstractValue().isConcrete()) {
                 if (dereference->domain() == MemoryDomain::MEMORY) {
-                    dataflow().setMemoryLocation(dereference,
-                        MemoryLocation(dereference->domain(), addressValue->constantValue().value() * CHAR_BIT, dereference->size()));
+                    dataflow().setMemoryLocation(dereference, MemoryLocation(dereference->domain(),
+                        addressValue->abstractValue().asConcrete().value() * CHAR_BIT, dereference->size()));
                 } else {
-                    dataflow().setMemoryLocation(dereference,
-                        MemoryLocation(dereference->domain(), addressValue->constantValue().value(), dereference->size()));
+                    dataflow().setMemoryLocation(dereference, MemoryLocation(dereference->domain(),
+                        addressValue->abstractValue().asConcrete().value(), dereference->size()));
                 }
             } else if (addressValue->isStackOffset()) {
                 dataflow().setMemoryLocation(dereference,
-                    MemoryLocation(MemoryDomain::STACK, addressValue->stackOffset().signedValue() * 8, dereference->size()));
+                    MemoryLocation(MemoryDomain::STACK, addressValue->stackOffset().signedValue() * CHAR_BIT, dereference->size()));
             } else {
                 dataflow().unsetMemoryLocation(dereference);
             }
@@ -289,22 +288,63 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
             break;
     }
 
-    if (const MemoryLocation &memoryLocation = dataflow().getMemoryLocation(term)) {
-        if (!architecture()->isGlobalMemory(memoryLocation)) {
+    if (const MemoryLocation &termLocation = dataflow().getMemoryLocation(term)) {
+        if (!architecture()->isGlobalMemory(termLocation)) {
             if (term->isRead()) {
-                auto definitions = context.definitions().getDefinitions(memoryLocation);
+                auto definitions = context.definitions().getDefinitions(termLocation);
                 dataflow().setDefinitions(term, definitions);
 
-                Value *value = dataflow().getValue(term);
-                foreach (const Term *definition, definitions) {
-                    value->join(*dataflow().getValue(definition));
+                Value *termValue = dataflow().getValue(term);
+                auto termAbstractValue = termValue->abstractValue();
+
+                foreach (const auto &def, definitions.definitions()) {
+                    auto &definedLocation = def.first;
+
+                    assert(termLocation.covers(definedLocation));
+
+                    foreach (const Term *definition, def.second) {
+                        auto definitionLocation = dataflow().getMemoryLocation(definition);
+
+                        if (!definitionLocation.covers(definedLocation)) {
+                            continue;
+                        }
+
+                        auto definitionValue = dataflow().getValue(definition);
+                        auto definitionAbstractValue = definitionValue->abstractValue();
+
+                        /*
+                         * Shift definition's abstract value to match term's location.
+                         */
+                        if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
+                            definitionAbstractValue.shift(definitionLocation.addr() - termLocation.addr());
+                        } else {
+                            definitionAbstractValue.shift(termLocation.endAddr() - definitionLocation.endAddr());
+                        }
+
+                        /*
+                         * Project the value to the defined location.
+                         */
+                        auto mask = bitMask<ConstantValue>(definedLocation.size());
+                        if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
+                            mask = bitShift(mask, definedLocation.addr() - termLocation.addr());
+                        } else {
+                            mask = bitShift(mask, termLocation.endAddr() - definedLocation.endAddr());
+                        }
+                        definitionAbstractValue.project(mask);
+
+                        termAbstractValue.merge(definitionAbstractValue);
+                    }
                 }
+
+                termValue->setAbstractValue(termAbstractValue.resize(term->size()));
+
+                // TODO: product, stack offset.
             }
             if (term->isWrite()) {
-                context.definitions().addDefinition(memoryLocation, term);
+                context.definitions().addDefinition(termLocation, term);
             }
             if (term->isKill()) {
-                context.definitions().killDefinitions(memoryLocation);
+                context.definitions().killDefinitions(termLocation);
             }
         } else {
             if (term->isRead()) {
@@ -324,14 +364,28 @@ void DataflowAnalyzer::simulateUnaryOperator(const UnaryOperator *unary, Simulat
     Value *value = dataflow().getValue(unary);
     Value *operandValue = dataflow().getValue(unary->operand());
 
-    if (operandValue->isConstant()) {
-        value->makeConstant(unary->apply(operandValue->constantValue()));
-    } else if (operandValue->isNonconstant()) {
-        value->makeNonconstant();
-    }
+    value->setAbstractValue(unary->apply(operandValue->abstractValue()));
 
-    value->makeNotStackOffset();
-    value->makeNotMultiplication();
+    switch (unary->operatorKind()) {
+        case UnaryOperator::SIGN_EXTEND:
+        case UnaryOperator::ZERO_EXTEND:
+        case UnaryOperator::TRUNCATE:
+            if (operandValue->isStackOffset()) {
+                value->makeStackOffset(operandValue->stackOffset());
+            } else if (operandValue->isNotStackOffset()) {
+                value->makeNotStackOffset();
+            }
+            if (operandValue->isProduct()) {
+                value->makeProduct();
+            } else if (operandValue->isNotProduct()) {
+                value->makeNotProduct();
+            }
+            break;
+        default:
+            value->makeNotStackOffset();
+            value->makeNotProduct();
+            break;
+    }
 }
 
 void DataflowAnalyzer::simulateBinaryOperator(const BinaryOperator *binary, SimulationContext &context) {
@@ -342,81 +396,47 @@ void DataflowAnalyzer::simulateBinaryOperator(const BinaryOperator *binary, Simu
     Value *leftValue = dataflow().getValue(binary->left());
     Value *rightValue = dataflow().getValue(binary->right());
 
-    /* Compute constant value. */
-    switch (binary->operatorKind()) {
-        case BinaryOperator::MUL:
-            if (leftValue->isConstant() && leftValue->constantValue().value() == 0) {
-                value->makeConstant(SizedValue(0));
-            } else if (rightValue->isConstant() && rightValue->constantValue().value() == 0) {
-                value->makeConstant(SizedValue(0));
-            } else if (leftValue->isConstant() && rightValue->isConstant()) {
-                value->makeConstant(binary->apply(leftValue->constantValue(), rightValue->constantValue()));
-            } else if (leftValue->isNonconstant() || rightValue->isNonconstant()) {
-                value->makeNonconstant();
-            }
-            break;
-
-        case BinaryOperator::SIGNED_DIV: /* FALLTHROUGH */
-        case BinaryOperator::SIGNED_REM: /* FALLTHROUGH */
-        case BinaryOperator::UNSIGNED_REM: /* FALLTHROUGH */
-        case BinaryOperator::UNSIGNED_DIV: /* FALLTHROUGH */
-            if (leftValue->isConstant() && leftValue->constantValue().value() == 0) {
-                value->makeConstant(SizedValue(0));
-            } else if (leftValue->isConstant() && rightValue->isConstant()) {
-                value->makeConstant(binary->apply(leftValue->constantValue(), rightValue->constantValue()));
-            } else {
-                value->makeNonconstant();
-            }
-            break;
-
-        default:
-            if (leftValue->isConstant() && rightValue->isConstant()) {
-                value->makeConstant(binary->apply(leftValue->constantValue(), rightValue->constantValue()));
-            } else if (leftValue->isNonconstant() || rightValue->isNonconstant()) {
-                value->makeNonconstant();
-            }
-            break;
-    }
+    value->setAbstractValue(binary->apply(leftValue->abstractValue(), rightValue->abstractValue()));
 
     /* Compute stack offset. */
     switch (binary->operatorKind()) {
         case BinaryOperator::ADD:
-            if (leftValue->isConstant()) {
+            if (leftValue->abstractValue().isConcrete()) {
                 if (rightValue->isStackOffset()) {
-                    value->makeStackOffset(leftValue->constantValue().signedValue() + rightValue->stackOffset().signedValue());
+                    value->makeStackOffset(leftValue->abstractValue().asConcrete().signedValue() + rightValue->stackOffset().signedValue());
                 } else if (rightValue->isNotStackOffset()) {
                     value->makeNotStackOffset();
                 }
-            } else if (leftValue->isNonconstant()) {
+            } else if (leftValue->abstractValue().isNondeterministic()) {
                 value->makeNotStackOffset();
             }
-            if (rightValue->isConstant()) {
+            if (rightValue->abstractValue().isConcrete()) {
                 if (leftValue->isStackOffset()) {
-                    value->makeStackOffset(leftValue->stackOffset().signedValue() + rightValue->constantValue().signedValue());
+                    value->makeStackOffset(leftValue->stackOffset().signedValue() + rightValue->abstractValue().asConcrete().signedValue());
                 } else if (leftValue->isNotStackOffset()) {
                     value->makeNotStackOffset();
                 }
-            } else if (rightValue->isNonconstant()) {
+            } else if (rightValue->abstractValue().isNondeterministic()) {
                 value->makeNotStackOffset();
             }
             break;
 
         case BinaryOperator::SUB:
-            if (leftValue->isStackOffset() && rightValue->isConstant()) {
-                value->makeStackOffset(leftValue->stackOffset().signedValue() - rightValue->constantValue().signedValue());
-            } else if (leftValue->isNotStackOffset() || rightValue->isNonconstant()) {
+            if (leftValue->isStackOffset() && rightValue->abstractValue().isConcrete()) {
+                value->makeStackOffset(leftValue->stackOffset().signedValue() - rightValue->abstractValue().asConcrete().signedValue());
+            } else if (leftValue->isNotStackOffset() || rightValue->abstractValue().isNondeterministic()) {
                 value->makeNotStackOffset();
             }
             break;
 
-        case BinaryOperator::BITWISE_AND:
+        case BinaryOperator::AND:
             /* Sometimes used for getting aligned stack pointer values. */
-            if (leftValue->isStackOffset() && rightValue->isConstant()) {
-                value->makeStackOffset(leftValue->stackOffset().value() & rightValue->constantValue().value());
-            } else if (rightValue->isStackOffset() && leftValue->isConstant()) {
-                value->makeStackOffset(rightValue->stackOffset().value() & leftValue->constantValue().value());
-            } else if ((leftValue->isNonconstant() && leftValue->isNotStackOffset()) ||
-                       (rightValue->isNonconstant() && rightValue->isNotStackOffset())) {
+            if (leftValue->isStackOffset() && rightValue->abstractValue().isConcrete()) {
+                value->makeStackOffset(leftValue->stackOffset().value() & rightValue->abstractValue().asConcrete().value());
+            } else if (rightValue->isStackOffset() && leftValue->abstractValue().isConcrete()) {
+                value->makeStackOffset(rightValue->stackOffset().value() & leftValue->abstractValue().asConcrete().value());
+            } else if ((leftValue->abstractValue().isNondeterministic() && leftValue->isNotStackOffset()) ||
+                       (rightValue->abstractValue().isNondeterministic() && rightValue->isNotStackOffset())) {
                 value->makeNotStackOffset();
             }
             break;
@@ -426,14 +446,14 @@ void DataflowAnalyzer::simulateBinaryOperator(const BinaryOperator *binary, Simu
             break;
     }
 
-    /* Compute multiplication flag. */
+    /* Compute product flag. */
     switch (binary->operatorKind()) {
         case BinaryOperator::MUL:
         case BinaryOperator::SHL:
-            value->makeMultiplication();
+            value->makeProduct();
             break;
         default:
-            value->makeNotMultiplication();
+            value->makeNotProduct();
             break;
     }
 }

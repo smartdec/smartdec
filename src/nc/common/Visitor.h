@@ -32,7 +32,7 @@ namespace nc {
  *
  * \tparam T Type of objects this visitor is for.
  */
-template <class T>
+template<class T>
 class Visitor {
 public:
     /**
@@ -62,8 +62,8 @@ private:
 
 /**
  * Factory function that creates visitor from the given functor.
- * 
- * \param function                     Functor to create visitor from.
+ *
+ * \param function Functor to create visitor from.
  */
 template<class T, class Function>
 detail::FunctionVisitor<T, Function> makeVisitor(const Function &function) {

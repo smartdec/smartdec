@@ -43,6 +43,8 @@ namespace dflow {
 const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
     assert(term != NULL);
 
+    // FIXME
+#if 0
     /* Terms that were already seen. */
     boost::unordered_set<const Term *> visited;
 
@@ -73,6 +75,7 @@ const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
             unreachable();
         }
     } while (!nc::contains(visited, term));
+#endif
 
     return term;
 }
