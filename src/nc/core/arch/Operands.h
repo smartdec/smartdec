@@ -24,18 +24,13 @@
 #pragma once
 
 #include <nc/config.h>
-#include <cassert>
 
-#include <string>
+#include <cassert>
 
 #include <boost/array.hpp>
 
 #include <nc/common/SizedValue.h>
-#include <nc/common/Printable.h>
 #include <nc/common/Types.h>
-#include <nc/common/CheckedCast.h>
-
-#include <nc/core/ir/MemoryLocation.h>
 
 #include "Operand.h"
 #include "Register.h"
@@ -43,7 +38,7 @@
 namespace nc { namespace core { namespace arch {
 
 /* TODO: move print() out of Operand. 
- * It is assembler- and architecture- dependent. */
+ * It is assembler- and architecture-dependent. */
 
 /**
  * Cached operand.
@@ -246,42 +241,6 @@ public:
 
 
 /**
- * Operand that is a bit subrange of another operand.
- */
-class BitRangeOperand: public UnaryOperand {
-    SmallBitOffset offset_;
-
-public:
-    /**
-     * Class constructor.
-     *
-     * For example, to get the operand that is the 3rd bit of some 
-     * other operand, pass <tt>offset = 2</tt> and <tt>size = 1</tt>.
-     *
-     * \param[in] operand              Operand.
-     * \param[in] offset               Bit offset.
-     * \param[in] size                 Size of the bit range.
-     */
-    BitRangeOperand(Operand *operand, SmallBitOffset offset, SmallBitSize size):
-        UnaryOperand(BIT_RANGE, size, operand),
-        offset_(offset)
-    {
-        assert(operand != NULL);
-        assert(size + offset <= operand->size());
-    }
-
-    /**
-     * \returns                        Bit offset.
-     */
-    SmallBitOffset offset() const {
-        return offset_;
-    }
-
-    virtual void print(QTextStream &out) const override;
-};
-
-
-/**
  * Constant operand.
  */
 class ConstantOperand: public CachedOperand {
@@ -333,10 +292,6 @@ const DereferenceOperand *Operand::asDereference() const {
     return as<DereferenceOperand>();
 }
 
-const BitRangeOperand *Operand::asBitRange() const {
-    return as<BitRangeOperand>();
-}
-
 const ConstantOperand *Operand::asConstant() const {
     return as<ConstantOperand>();
 }
@@ -344,4 +299,3 @@ const ConstantOperand *Operand::asConstant() const {
 }}} // namespace nc::core::arch
 
 /* vim:set et sts=4 sw=4: */
-

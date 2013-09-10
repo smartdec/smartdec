@@ -46,10 +46,6 @@ void DereferenceOperand::print(QTextStream &out) const {
     out << "[" << *operand() << "]:" << size();
 }
 
-void BitRangeOperand::print(QTextStream &out) const {
-    out << *operand() << ":" << offset() << ":" << size();
-}
-
 void ConstantOperand::print(QTextStream &out) const {
     int integerBase = out.integerBase();
     hex(out) << "0x" << value_.value();

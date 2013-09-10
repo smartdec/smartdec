@@ -3,30 +3,13 @@ set(MOC_HEADERS
 )
 
 set(SOURCES
-    ir/Statement.cpp
-    ir/Statement.h
-    ir/Statements.cpp
-    ir/Statements.h
-    ir/Term.cpp
-    ir/Terms.cpp
-    arch/Architecture.cpp
-    arch/Architecture.h
-    ir/dflow/Utils.cpp
-    ir/dflow/Utils.h
-    ir/dflow/ReachingDefinitions.cpp
-    ir/dflow/Dataflow.cpp
-    ir/dflow/Dataflow.h
-    ir/dflow/DataflowAnalyzer.cpp
-    ir/dflow/DataflowAnalyzer.h
-    ir/dflow/ReachingDefinitions.h
-    ir/dflow/SimulationContext.h
-    ir/dflow/Value.cpp
-    ir/dflow/Value.h
     Context.cpp
     Module.cpp
     Module.h
     UniversalAnalyzer.cpp
     UniversalAnalyzer.h
+    arch/Architecture.cpp
+    arch/Architecture.h
     arch/ByteOrder.h
     arch/Instruction.cpp
     arch/Instruction.h
@@ -85,7 +68,13 @@ set(SOURCES
     ir/MemoryLocation.h
     ir/Program.cpp
     ir/Program.h
+    ir/Statement.cpp
+    ir/Statement.h
+    ir/Statements.cpp
+    ir/Statements.h
+    ir/Term.cpp
     ir/Term.h
+    ir/Terms.cpp
     ir/Terms.h
     ir/calls/CallAnalyzer.h
     ir/calls/CallingConvention.h
@@ -134,6 +123,17 @@ set(SOURCES
     ir/cgen/DefinitionGenerator.cpp
     ir/cgen/DefinitionGenerator.h
     ir/cgen/SwitchContext.h
+    ir/dflow/Dataflow.cpp
+    ir/dflow/Dataflow.h
+    ir/dflow/DataflowAnalyzer.cpp
+    ir/dflow/DataflowAnalyzer.h
+    ir/dflow/ReachingDefinitions.cpp
+    ir/dflow/ReachingDefinitions.h
+    ir/dflow/SimulationContext.h
+    ir/dflow/Utils.cpp
+    ir/dflow/Utils.h
+    ir/dflow/Value.cpp
+    ir/dflow/Value.h
     ir/inlining/CallInliner.cpp
     ir/inlining/CallInliner.h
     ir/misc/ArrayAccess.h

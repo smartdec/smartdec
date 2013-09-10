@@ -39,7 +39,6 @@ class RegisterOperand;
 class AdditionOperand;
 class MultiplicationOperand;
 class DereferenceOperand;
-class BitRangeOperand;
 class ConstantOperand;
 
 /**
@@ -60,7 +59,6 @@ public:
         ADDITION,
         MULTIPLICATION,
         DEREFERENCE,
-        BIT_RANGE,
         CONSTANT,
         USER = 1000
     };
@@ -98,7 +96,6 @@ public:
     inline bool isAddition() const;
     inline bool isMultiplication() const;
     inline bool isDereference() const;
-    inline bool isBitRange() const;
     inline bool isConstant() const;
 
     /* The following functions are defined in Operands.h. */
@@ -107,7 +104,6 @@ public:
     inline const AdditionOperand *asAddition() const;
     inline const MultiplicationOperand *asMultiplication() const;
     inline const DereferenceOperand *asDereference() const;
-    inline const BitRangeOperand *asBitRange() const;
     inline const ConstantOperand *asConstant() const;
     inline bool isRegister(int registerNumber) const;
 
@@ -171,7 +167,6 @@ NC_REGISTER_OPERAND_CLASS(nc::core::arch::RegisterOperand,       nc::core::arch:
 NC_REGISTER_OPERAND_CLASS(nc::core::arch::AdditionOperand,       nc::core::arch::Operand::ADDITION)
 NC_REGISTER_OPERAND_CLASS(nc::core::arch::MultiplicationOperand, nc::core::arch::Operand::MULTIPLICATION)
 NC_REGISTER_OPERAND_CLASS(nc::core::arch::DereferenceOperand,    nc::core::arch::Operand::DEREFERENCE)
-NC_REGISTER_OPERAND_CLASS(nc::core::arch::BitRangeOperand,       nc::core::arch::Operand::BIT_RANGE)
 NC_REGISTER_OPERAND_CLASS(nc::core::arch::ConstantOperand,       nc::core::arch::Operand::CONSTANT)
 
 namespace nc { namespace core { namespace arch {
@@ -190,10 +185,6 @@ bool Operand::isMultiplication() const {
 
 bool Operand::isDereference() const {
     return is<DereferenceOperand>();
-}
-
-bool Operand::isBitRange() const {
-    return is<BitRangeOperand>();
 }
 
 bool Operand::isConstant() const {

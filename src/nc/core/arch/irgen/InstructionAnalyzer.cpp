@@ -115,24 +115,6 @@ std::unique_ptr<ir::Term> InstructionAnalyzer::doCreateTerm(const Operand *opera
             dereference->size()
         );
     }
-    case Operand::BIT_RANGE: {
-        const BitRangeOperand *bitRange = operand->asBitRange();
-
-        SmallBitSize operandSize = bitRange->operand()->size();
-
-        std::unique_ptr<ir::Term> result(new ir::BinaryOperator(
-            ir::BinaryOperator::BITWISE_AND,
-            std::make_unique<ir::BinaryOperator>(
-                ir::BinaryOperator::SHR,
-                createTerm(bitRange->operand()),
-                std::make_unique<ir::Constant>(SizedValue(bitRange->offset(), operandSize))
-            ),
-            std::make_unique<ir::Constant>(SizedValue((static_cast<ConstantValue>(1) << bitRange->size()) - 1, operandSize)),
-            bitRange->size()
-        ));
-
-        return result;
-    }
     case Operand::CONSTANT: {
         const ConstantOperand *constant = operand->asConstant();
 

@@ -107,9 +107,11 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
             const ir::dflow::Value *addressValue = dataflow.getValue(call->target());
 
             /* Record information about the function entry. */
-            if (addressValue->isConstant()) {
-                program()->addCalledAddress(addressValue->constantValue().value());
-                program()->createBasicBlock(addressValue->constantValue().value());
+            if (addressValue->abstractValue().isConcrete()) {
+                ByteAddr address = addressValue->abstractValue().asConcrete().value();
+
+                program()->addCalledAddress(address);
+                program()->createBasicBlock(address);
             } else {
                 foreach (ByteAddr address, getJumpTableEntries(call->target(), dataflow)) {
                     program()->addCalledAddress(address);
@@ -145,8 +147,8 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
 void IRGenerator::computeJumpTarget(ir::JumpTarget &target, const ir::dflow::Dataflow &dataflow) {
     if (target.address() && !target.basicBlock() && !target.table()) {
         const ir::dflow::Value *addressValue = dataflow.getValue(target.address());
-        if (addressValue->isConstant()) {
-            target.setBasicBlock(program()->createBasicBlock(addressValue->constantValue().value()));
+        if (addressValue->abstractValue().isConcrete()) {
+            target.setBasicBlock(program()->createBasicBlock(addressValue->abstractValue().asConcrete().value()));
         } else {
             auto entries = getJumpTableEntries(target.address(), dataflow);
             if (!entries.empty()) {
