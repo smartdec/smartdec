@@ -28,6 +28,11 @@ class AbstractValue {
     public:
 
     /**
+     * Constructs a value of zero size.
+     */
+    AbstractValue(): size_(0), zeroBits_(0), oneBits_(0) {}
+
+    /**
      * Constructor.
      *
      * \param size      Size of the abstract value.
@@ -37,7 +42,7 @@ class AbstractValue {
      * Given bit masks are truncated to the given size.
      */
     explicit
-    AbstractValue(SmallBitSize size = 0, ConstantValue zeroBits = 0, ConstantValue oneBits = 0) {
+    AbstractValue(SmallBitSize size, ConstantValue zeroBits, ConstantValue oneBits) {
         assert(size >= 0);
 
         size_ = size;

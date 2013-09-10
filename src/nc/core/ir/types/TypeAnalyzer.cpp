@@ -53,6 +53,8 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
     census(function);
 
     /* Join term types with types of definitions. */
+    // FIXME: adapt to new dflow
+#if 0
     foreach (const Term *term, census.terms()) {
         if (term->isRead()) {
             foreach (const Term *definition, dataflow().getDefinitions(term)) {
@@ -60,6 +62,7 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
             }
         }
     } 
+#endif
 
     /* Join types of terms used for return values. */
     if (callsData()) {
@@ -154,8 +157,7 @@ void TypeAnalyzer::analyze(const UnaryOperator *unary) {
     Type *operandType = types().getType(unary->operand());
 
     switch (unary->operatorKind()) {
-        case UnaryOperator::BITWISE_NOT: /* FALLTHROUGH */
-        case UnaryOperator::LOGICAL_NOT:
+        case UnaryOperator::NOT: /* FALLTHROUGH */
             operandType->makeInteger();
             type->makeInteger();
             break;
@@ -173,7 +175,7 @@ void TypeAnalyzer::analyze(const UnaryOperator *unary) {
                 type->makeUnsigned();
             }
             break;
-        case UnaryOperator::RESIZE:
+        case UnaryOperator::TRUNCATE:
             break;
         default:
             unreachable();
@@ -192,6 +194,60 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
     const dflow::Value *rightValue = dataflow().getValue(binary->right());
 
     switch (binary->operatorKind()) {
+        case BinaryOperator::AND: /* FALLTHROUGH */
+        case BinaryOperator::OR: /* FALLTHROUGH */
+        case BinaryOperator::XOR:
+            leftType->makeInteger();
+            rightType->makeInteger();
+            type->makeInteger();
+
+            leftType->makeUnsigned();
+            rightType->makeUnsigned();
+            type->makeUnsigned();
+            break;
+
+        case BinaryOperator::SHL:
+            leftType->makeInteger();
+            rightType->makeInteger();
+            type->makeInteger();
+
+            rightType->makeUnsigned();
+            if (leftType->isSigned()) {
+                type->makeSigned();
+            }
+            if (leftType->isUnsigned()) {
+                type->makeUnsigned();
+            }
+            if (type->isSigned()) {
+                leftType->makeSigned();
+            }
+            if (type->isUnsigned()) {
+                leftType->makeUnsigned();
+            }
+
+            if (rightValue->abstractValue().isConcrete()) {
+                type->updateFactor(leftType->factor() * (ConstantValue(1) << rightValue->abstractValue().asConcrete().value()));
+            }
+            break;
+
+        case BinaryOperator::SHR:
+            leftType->makeInteger();
+            rightType->makeInteger();
+            type->makeInteger();
+
+            leftType->makeUnsigned();
+            type->makeUnsigned();
+            break;
+
+        case BinaryOperator::SAR:
+            leftType->makeInteger();
+            rightType->makeInteger();
+            type->makeInteger();
+
+            leftType->makeSigned();
+            type->makeSigned();
+            break;
+
         case BinaryOperator::ADD:
             if (leftType->isInteger() && rightType->isInteger()) {
                 type->makeInteger();
@@ -218,18 +274,18 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
                     leftType->makeInteger();
                 }
                 if (!leftType->isPointer() && !rightType->isPointer()) {
-                    if (leftValue->isMultiplication()) {
+                    if (leftValue->isProduct()) {
                         rightType->makePointer();
-                    } else if (rightValue->isMultiplication()) {
+                    } else if (rightValue->isProduct()) {
                         leftType->makePointer();
-                    } else if (leftValue->isConstant()) {
-                        if (leftValue->constantValue().value() < 4096) {
+                    } else if (leftValue->abstractValue().isConcrete()) {
+                        if (leftValue->abstractValue().asConcrete().value() < 4096) {
                             leftType->makeInteger();
                         } else {
                             leftType->makePointer();
                         }
-                    } else if (rightValue->isConstant()) {
-                        if (rightValue->constantValue().value() < 4096) {
+                    } else if (rightValue->abstractValue().isConcrete()) {
+                        if (rightValue->abstractValue().asConcrete().value() < 4096) {
                             rightType->makeInteger();
                         } else {
                             rightType->makePointer();
@@ -257,33 +313,33 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
                 }
             }
 
-            if (rightValue->isConstant()) {
+            if (rightValue->abstractValue().isConcrete()) {
                 if (type == leftType) {
-                    type->updateFactor(rightValue->constantValue().absoluteValue());
+                    type->updateFactor(rightValue->abstractValue().asConcrete().absoluteValue());
                 } else {
 #ifdef NC_STRUCT_RECOVERY
                     if (!value->isStackOffset()) {
-                        leftType->addOffset(rightValue->constantValue().signedValue(), type);
+                        leftType->addOffset(rightValue->abstractValue().asConcrete().signedValue(), type);
                     }
 #endif
                 }
             }
-            if (leftValue->isConstant()) {
+            if (leftValue->abstractValue().isConcrete()) {
                 if (type == rightType) {
-                    type->updateFactor(leftValue->constantValue().absoluteValue());
+                    type->updateFactor(leftValue->abstractValue().asConcrete().absoluteValue());
                 } else {
 #ifdef NC_STRUCT_RECOVERY
                     if (!value->isStackOffset()) {
-                        rightType->addOffset(leftValue->constantValue().signedValue(), type);
+                        rightType->addOffset(leftValue->abstractValue().asConcrete().signedValue(), type);
                     }
 #endif
                 }
             }
 
-            if (leftType->isPointer() && rightValue->isMultiplication()) {
+            if (leftType->isPointer() && rightValue->isProduct()) {
                 type->makePointer(leftType->pointee());
             }
-            if (rightType->isPointer() && leftValue->isMultiplication()) {
+            if (rightType->isPointer() && leftValue->isProduct()) {
                 type->makePointer(rightType->pointee());
             }
             break;
@@ -319,19 +375,19 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
                 }
             }
 
-            if (rightValue->isConstant()) {
+            if (rightValue->abstractValue().isConcrete()) {
                 if (type == leftType) {
-                    type->updateFactor(rightValue->constantValue().absoluteValue());
+                    type->updateFactor(rightValue->abstractValue().asConcrete().absoluteValue());
                 } else {
 #ifdef NC_STRUCT_RECOVERY
                     if (!value->isStackOffset()) {
-                        leftType->addOffset(-rightValue->constantValue().signedValue(), type);
+                        leftType->addOffset(-rightValue->abstractValue().asConcrete().signedValue(), type);
                     }
 #endif
                 }
             }
 
-            if (leftType->isPointer() && rightValue->isMultiplication()) {
+            if (leftType->isPointer() && rightValue->isProduct()) {
                 type->makePointer(leftType->pointee());
             }
             break;
@@ -360,15 +416,25 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
                 }
             }
 
-            if (rightValue->isConstant()) {
-                type->updateFactor(leftType->factor() * rightValue->constantValue().value());
+            if (rightValue->abstractValue().isConcrete()) {
+                type->updateFactor(leftType->factor() * rightValue->abstractValue().asConcrete().value());
             }
-            if (leftValue->isConstant()) {
-                type->updateFactor(rightType->factor() * leftValue->constantValue().value());
+            if (leftValue->abstractValue().isConcrete()) {
+                type->updateFactor(rightType->factor() * leftValue->abstractValue().asConcrete().value());
             }
             break;
 
         case BinaryOperator::SIGNED_DIV:
+            leftType->makeInteger();
+            rightType->makeInteger();
+            type->makeInteger();
+
+            leftType->makeSigned();
+            rightType->makeSigned();
+            type->makeSigned();
+            break;
+
+        case BinaryOperator::SIGNED_REM:
             leftType->makeInteger();
             rightType->makeInteger();
             type->makeInteger();
@@ -392,16 +458,6 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
             type->makeUnsigned();
             break;
 
-        case BinaryOperator::SIGNED_REM:
-            leftType->makeInteger();
-            rightType->makeInteger();
-            type->makeInteger();
-
-            leftType->makeSigned();
-            rightType->makeSigned();
-            type->makeSigned();
-            break;
-
         case BinaryOperator::UNSIGNED_REM:
             type->makeInteger();
             leftType->makeInteger();
@@ -416,70 +472,12 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
             type->makeUnsigned();
             break;
 
-        case BinaryOperator::BITWISE_AND: /* FALLTHROUGH */
-        case BinaryOperator::LOGICAL_AND: /* FALLTHROUGH */
-        case BinaryOperator::BITWISE_OR: /* FALLTHROUGH */
-        case BinaryOperator::LOGICAL_OR: /* FALLTHROUGH */
-        case BinaryOperator::BITWISE_XOR:
-            leftType->makeInteger();
-            rightType->makeInteger();
-            type->makeInteger();
-
-            leftType->makeUnsigned();
-            rightType->makeUnsigned();
-            type->makeUnsigned();
-            break;
-
-        case BinaryOperator::SHL:
-            leftType->makeInteger();
-            rightType->makeInteger();
-            type->makeInteger();
-
-            rightType->makeUnsigned();
-            if (leftType->isSigned()) {
-                type->makeSigned();
-            }
-            if (leftType->isUnsigned()) {
-                type->makeUnsigned();
-            }
-            if (type->isSigned()) {
-                leftType->makeSigned();
-            }
-            if (type->isUnsigned()) {
-                leftType->makeUnsigned();
-            }
-
-            if (rightValue->isConstant()) {
-                type->updateFactor(leftType->factor() * (ConstantValue(1) << rightValue->constantValue().value()));
-            }
-            break;
-
-        case BinaryOperator::SHR:
-            leftType->makeInteger();
-            rightType->makeInteger();
-            type->makeInteger();
-
-            leftType->makeUnsigned();
-            type->makeUnsigned();
-            break;
-
-        case BinaryOperator::SAR:
-            leftType->makeInteger();
-            rightType->makeInteger();
-            type->makeInteger();
-
-            leftType->makeSigned();
-            type->makeSigned();
-            break;
-
         case BinaryOperator::EQUAL:
             leftType->unionSet(rightType);
             break;
 
         case BinaryOperator::SIGNED_LESS: /* FALLTHROUGH */
         case BinaryOperator::SIGNED_LESS_OR_EQUAL: /* FALLTHROUGH */
-        case BinaryOperator::SIGNED_GREATER: /* FALLTHROUGH */
-        case BinaryOperator::SIGNED_GREATER_OR_EQUAL:
             leftType->makeSigned();
             rightType->makeSigned();
             leftType->unionSet(rightType);
@@ -487,8 +485,6 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
 
         case BinaryOperator::UNSIGNED_LESS: /* FALLTHROUGH */
         case BinaryOperator::UNSIGNED_LESS_OR_EQUAL: /* FALLTHROUGH */
-        case BinaryOperator::UNSIGNED_GREATER: /* FALLTHROUGH */
-        case BinaryOperator::UNSIGNED_GREATER_OR_EQUAL:
             if (rightType->isSigned()) {
                 leftType->makeUnsigned();
             } else if (leftType->isSigned()) {

@@ -68,6 +68,9 @@ void GenericReturnAnalyzer::simulateReturn(dflow::SimulationContext &context) {
      * isn't sure himself, how he returns values), it is the candidate.
      */
     returnValueLocations_.clear();
+
+    // FIXME: adapt to new dflow
+#if 0
     foreach (const auto &pair, returnValues_) {
         foreach (const Term *definition, context.analyzer().dataflow().getDefinitions(pair.second.get())) {
             if (definition->statement() && !definition->statement()->isCall()) {
@@ -76,14 +79,15 @@ void GenericReturnAnalyzer::simulateReturn(dflow::SimulationContext &context) {
             }
         }
     }
+#endif
 }
 
 const Term *GenericReturnAnalyzer::getReturnValueTerm(const Term *term) {
     auto &result = returnValues_[term];
     if (!result) {
         result = term->clone();
-        result->initFlags(Term::READ);
-        result->setStatement(ret());
+        result->setAccessType(Term::READ);
+        result->setStatementRecursively(ret());
     }
     return result.get();
 }

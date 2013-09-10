@@ -51,7 +51,7 @@ GenericFunctionAnalyzer::GenericFunctionAnalyzer(const Function *function, const
     FunctionAnalyzer(function), addressAnalyzer_(addressAnalyzer)
 {
     stackPointer_.reset(new MemoryLocationAccess(convention()->stackPointer()));
-    stackPointer_->initFlags(Term::WRITE);
+    stackPointer_->setAccessType(Term::WRITE);
 
     entryStatements_.reserve(convention()->entryStatements().size());
     foreach (const Statement *statement, convention()->entryStatements()) {
@@ -137,7 +137,7 @@ const Term *GenericFunctionAnalyzer::getArgumentTerm(const MemoryLocation &memor
     auto &result = arguments_[memoryLocation];
     if (!result) {
         result.reset(new MemoryLocationAccess(memoryLocation));
-        result->initFlags(Term::WRITE);
+        result->setAccessType(Term::WRITE);
     }
     return result.get();
 }

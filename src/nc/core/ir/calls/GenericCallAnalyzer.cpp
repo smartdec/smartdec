@@ -94,6 +94,8 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
             bool argumentFound = false;
 
             foreach (const MemoryLocation &location, argument.locations()) {
+                // FIXME
+#if 0
                 foreach (const Term *definition, context.definitions().getDefinitions(location)) {
                     if (definition->statement() && !definition->statement()->isCall()) {
                         getArgumentTerm(location);
@@ -102,6 +104,7 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
                         break;
                     }
                 }
+#endif
                 if (argumentFound) {
                     break;
                 }
@@ -123,8 +126,8 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
          */
         if (!stackPointer_) {
             stackPointer_.reset(new MemoryLocationAccess(convention()->stackPointer()));
-            stackPointer_->initFlags(Term::READ);
-            stackPointer_->setStatement(call());
+            stackPointer_->setAccessType(Term::READ);
+            stackPointer_->setStatementRecursively(call());
         }
         context.analyzer().simulate(stackPointer_.get(), context);
 
@@ -181,12 +184,14 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
     /* Run simulation for all return value terms. */
     foreach (const auto &pair, returnValues_) {
         dflow::Value *value = context.analyzer().dataflow().getValue(pair.second.get());
-        value->makeNonconstant();
+        value->setAbstractValue(dflow::AbstractValue(pair.second->size(), -1, -1));
         value->makeNotStackOffset();
 
         context.analyzer().simulate(pair.second.get(), context);
     }
 
+    // FIXME: unnecessary?
+#if 0
     /* If return values can overlap, they kill each other and the following hack is necessary. */
     foreach (const auto &pair, returnValues_) {
         if (const MemoryLocation &memoryLocation = context.analyzer().dataflow().getMemoryLocation(pair.second.get())) {
@@ -195,6 +200,7 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
             context.definitions().join(definitions);
         }
     }
+#endif
 
     /* Remember possible return values being used. */
     returnValueLocations_.clear();
@@ -225,8 +231,8 @@ const Term *GenericCallAnalyzer::getArgumentTerm(const MemoryLocation &memoryLoc
             memoryLocation.domain() == MemoryDomain::STACK ?
                 memoryLocation.shifted(stackTop_) :
                 memoryLocation));
-        result->initFlags(Term::READ);
-        result->setStatement(call());
+        result->setAccessType(Term::READ);
+        result->setStatementRecursively(call());
     }
     return result.get();
 }
@@ -237,8 +243,8 @@ const Term *GenericCallAnalyzer::getReturnValueTerm(const Term *term) {
     auto &result = returnValues_[term];
     if (!result) {
         result = term->clone();
-        result->initFlags(Term::WRITE);
-        result->setStatement(call());
+        result->setAccessType(Term::WRITE);
+        result->setStatementRecursively(call());
     }
     return result.get();
 }

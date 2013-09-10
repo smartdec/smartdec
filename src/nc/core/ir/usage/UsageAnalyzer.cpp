@@ -201,7 +201,7 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
     assert(term != NULL);
 
 #ifdef NC_PREFER_CONSTANTS_TO_EXPRESSIONS
-    if (term->isRead() && dataflow()->getValue(term)->isConstant()) {
+    if (term->isRead() && dataflow()->getValue(term)->abstractValue().isConcrete()) {
         return;
     }
 #endif
@@ -215,8 +215,10 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
             break;
         case Term::MEMORY_LOCATION_ACCESS: {
             if (term->isRead()) {
-                foreach (const Term *definition, dataflow()->getDefinitions(term)) {
-                    makeUsed(definition);
+                foreach (auto &def, dataflow()->getDefinitions(term).definitions()) {
+                    foreach (const Term *definition, def.second) {
+                        makeUsed(definition);
+                    }
                 }
             } else if (term->isWrite()) {
                 if (term->assignee()) {
@@ -227,8 +229,10 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
         }
         case Term::DEREFERENCE: {
             if (term->isRead()) {
-                foreach (const Term *definition, dataflow()->getDefinitions(term)) {
-                    makeUsed(definition);
+                foreach (auto &def, dataflow()->getDefinitions(term).definitions()) {
+                    foreach (const Term *definition, def.second) {
+                        makeUsed(definition);
+                    }
                 }
             } else if (term->isWrite()) {
                 if (term->assignee()) {
@@ -238,7 +242,7 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
 
             const Dereference *dereference = term->asDereference();
             const dflow::Value *addressValue = dataflow()->getValue(dereference->address());
-            if (!addressValue->isStackOffset() && !addressValue->isConstant()) {
+            if (!addressValue->isStackOffset() && !addressValue->abstractValue().isConcrete()) {
                 makeUsed(dereference->address());
             }
             break;

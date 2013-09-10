@@ -239,7 +239,7 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
                 access->statement()->instruction())
             {
                 dataflow().getValue(access)->setAbstractValue(
-                    AbstractValue(term->size(), access->statement()->instruction()->addr()));
+                    SizedValue(term->size(), access->statement()->instruction()->addr()));
             }
             break;
         }
