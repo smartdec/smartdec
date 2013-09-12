@@ -54,6 +54,16 @@ class IntegerConstant: public Expression {
     IntegerConstant(Tree &tree, const SizedValue &value, const IntegerType *type);
 
     /**
+     * Class constructor.
+     *
+     * \param[in] tree Owning tree.
+     * \param[in] value Value.
+     * \param[in] type Type of the constant.
+     */
+    IntegerConstant(Tree &tree, ConstantValue value, const IntegerType *type);
+
+
+    /**
      * \return Value of the constant.
      */
     const SizedValue &value() const { return value_; }

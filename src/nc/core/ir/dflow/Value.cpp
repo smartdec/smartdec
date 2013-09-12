@@ -78,9 +78,7 @@ Value::Value():
     isProduct_(false), isNotProduct_(false)
 {}
 
-void Value::makeStackOffset(SizedValue offset) {
-    SizedValue off = offset.value();
-
+void Value::makeStackOffset(SignedConstantValue offset) {
     if (isStackOffset_) {
         /*
          * If we get different values of stack pointer from different
@@ -92,12 +90,12 @@ void Value::makeStackOffset(SizedValue offset) {
          *
          * Note: this assumes a stack growing down.
          */
-        if (stackOffset_.signedValue() < off.signedValue()) {
-            stackOffset_ = off;
+        if (stackOffset_ < offset) {
+            stackOffset_ = offset;
         }
     } else {
         isStackOffset_ = true;
-        stackOffset_ = off;
+        stackOffset_ = offset;
     }
 }
 

@@ -747,16 +747,16 @@ class IntelInstructionDisassemblerPrivate {
             case UD_OP_MEM:
                 return getDereference(operand);
             case UD_OP_PTR:
-                return architecture_->constantOperand(SizedValue(operand.lval.ptr.seg * 16 + operand.lval.ptr.off, operand.size));
+                return architecture_->constantOperand(SizedValue(operand.size, operand.lval.ptr.seg * 16 + operand.lval.ptr.off));
             case UD_OP_IMM:
                 /* Signed number, sign-extended to match the size of the other operand. */
-                return architecture_->constantOperand(SizedValue(getSignedValue(operand, operand.size), std::max(SmallBitSize(operand.size), lastOperandSize)));
+                return architecture_->constantOperand(SizedValue(lastOperandSize, getSignedValue(operand, operand.size), std::max(SmallBitSize(operand.size))));
             case UD_OP_JIMM:
-                return architecture_->constantOperand(SizedValue(ud_obj_.pc + getSignedValue(operand, operand.size), architecture_->bitness()));
+                return architecture_->constantOperand(SizedValue(architecture_->bitness(), ud_obj_.pc + getSignedValue(operand, operand.size)));
             case UD_OP_CONST:
                 /* This is some small constant value, like in "sar eax, 1". Its size is always zero. */
                 assert(operand.size == 0);
-                return architecture_->constantOperand(SizedValue(operand.lval.ubyte, 8));
+                return architecture_->constantOperand(SizedValue(8, operand.lval.ubyte));
             case UD_OP_REG:
                 return getRegisterOperand(operand.base);
             default:
@@ -954,7 +954,7 @@ class IntelInstructionDisassemblerPrivate {
                 if (operand.scale != 1) {
                     index = new core::arch::MultiplicationOperand(
                         index,
-                        architecture_->constantOperand(SizedValue(operand.scale, ud_obj_.adr_mode)),
+                        architecture_->constantOperand(SizedValue(ud_obj_.adr_mode, operand.scale)),
                         ud_obj_.adr_mode);
                 }
                 if (address) {
@@ -965,7 +965,7 @@ class IntelInstructionDisassemblerPrivate {
             }
         }
 
-        auto offsetValue = SizedValue(getUnsignedValue(operand, operand.offset), operand.offset);
+        auto offsetValue = SizedValue(operand.offset, getUnsignedValue(operand, operand.offset));
 
         if (offsetValue.value() || !address) {
             core::arch::ConstantOperand *offset = architecture_->constantOperand(offsetValue);

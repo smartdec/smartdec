@@ -912,7 +912,7 @@ protected:
             throw InvalidInstructionException(tr("size of a constant expression is unknown"));
         }
 
-        return std::make_unique<ir::Constant>(SizedValue(expression.value(), expression.size()));
+        return std::make_unique<ir::Constant>(SizedValue(expression.size(), expression.value()));
     }
 
     /**

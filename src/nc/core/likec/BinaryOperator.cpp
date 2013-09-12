@@ -282,8 +282,8 @@ Expression *BinaryOperator::rewrite() {
                                         std::make_unique<BinaryOperator>(tree(), operatorKind(),                            \
                                             typecast->releaseOperand(),                                                     \
                                             std::make_unique<IntegerConstant>(tree(),                                       \
-                                                SizedValue(constant->value().signedValue() * CHAR_BIT /                     \
-                                                    pointerType->pointeeType()->size(), constant->value().size()),          \
+                                                SizedValue(constant->value().size(), constant->value().signedValue() *      \
+                                                     CHAR_BIT / pointerType->pointeeType()->size()),                        \
                                                 constant->type())));                                                        \
                                 }                                                                                           \
                             }                                                                                               \

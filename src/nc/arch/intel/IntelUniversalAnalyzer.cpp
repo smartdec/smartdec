@@ -76,7 +76,7 @@ void IntelUniversalAnalyzer::createProgram(core::Context *context) const {
                                 statement,
                                 std::make_unique<core::ir::Assignment>(
                                     std::make_unique<core::ir::MemoryLocationAccess>(access->memoryLocation().shifted(32)),
-                                    std::make_unique<core::ir::Constant>(SizedValue(0, 32)))));
+                                    std::make_unique<core::ir::Constant>(SizedValue(32, 0)))));
                         }
                     }
                 }

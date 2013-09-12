@@ -27,7 +27,6 @@
 
 #include <cassert>
 
-#include <nc/common/SizedValue.h>
 #include <nc/common/Types.h>
 
 #include "AbstractValue.h"
@@ -46,7 +45,7 @@ class Value {
     bool isStackOffset_; ///< Value is a stack pointer with a known offset from the frame base.
     bool isNotStackOffset_; ///< Value is not a stack pointer with a known offset from the frame base.
 
-    SizedValue stackOffset_; ///< Offset to stack frame base (in bytes), if the value is a stack pointer.
+    SignedConstantValue stackOffset_; ///< Offset to stack frame base (in bytes), if the value is a stack pointer.
 
     bool isProduct_; ///< Value was computed via multiplication.
     bool isNotProduct_; ///< Value was computed not via multiplication.
@@ -87,7 +86,7 @@ class Value {
      *
      * \param[in] offset Offset to stack frame base.
      */
-    void makeStackOffset(SizedValue offset);
+    void makeStackOffset(SignedConstantValue offset);
 
     /**
      * Marks the value as not a stack pointer.
@@ -97,7 +96,7 @@ class Value {
     /**
      * \return Offset to stack frame base (in bytes), if the value is a stack pointer.
      */
-    const SizedValue &stackOffset() const { assert(isStackOffset()); return stackOffset_; }
+    SignedConstantValue stackOffset() const { assert(isStackOffset()); return stackOffset_; }
 
     /**
      * \return True, if the value has been computed via multiplication.

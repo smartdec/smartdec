@@ -36,25 +36,29 @@ namespace nc {
  * Integer value with a size.
  */
 class SizedValue {
-    /** The value. All its bits from size_ and higher are zero. */
-    ConstantValue value_;
-
     /** Size of the value. */
     SmallBitSize size_;
+
+    /** The value. All its bits from size_ and higher are zero. */
+    ConstantValue value_;
 
     public:
 
     /**
-     * Constructor.
-     *
-     * \param[in] value A value.
-     * \param[in] size A size.
-     *
-     * Given "value" is truncated to "size" bits.
+     * Constructs a value of zero size.
      */
-    SizedValue(ConstantValue value = 0, SmallBitSize size = sizeof(ConstantValue) * CHAR_BIT):
-        value_(bitTruncate(value, size)),
-        size_(size)
+    SizedValue(): size_(0), value_(0) {}
+
+    /**
+     * Constructs a value of a given size from a given value.
+     * Bits of the value higher than size-1 are discarded.
+     *
+     * \param[in] size Size of the value.
+     * \param[in] value Bits of the value.
+     */
+    SizedValue(SmallBitSize size, ConstantValue value):
+        size_(size),
+        value_(bitTruncate(value, size))
     {
         assert(size >= 0);
     }
@@ -75,16 +79,9 @@ class SizedValue {
     SignedConstantValue signedValue() const { return signExtend(value_, size_); }
 
     /**
-     * \return Absolute value of the value.
+     * \return Absolute value.
      */
     ConstantValue absoluteValue() const { return bitAbs(value_, size_); }
-
-    /**
-     * \param[in] size A size.
-     *
-     * \return A copy of the value resized to given size.
-     */
-    SizedValue resized(SmallBitSize size) const { return SizedValue(value_, size); }
 };
 
 } // namespace nc

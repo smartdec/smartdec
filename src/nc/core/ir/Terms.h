@@ -62,7 +62,7 @@ public:
      *
      * \param[in] value New value.
      */
-    void setValue(const SizedValue &value) { value_ = SizedValue(value.value(), size()); }
+    void setValue(ConstantValue value) { value_ = SizedValue(size(), value); }
 
     virtual void print(QTextStream &out) const override;
 

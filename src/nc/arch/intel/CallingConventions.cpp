@@ -78,7 +78,7 @@ AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architec
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         analyzer->createTerm(architecture->operands()->df()),
-        std::make_unique<core::ir::Constant>(SizedValue(0, architecture->operands()->df()->size()))
+        std::make_unique<core::ir::Constant>(SizedValue(architecture->operands()->df()->size(), 0))
     ));
 }
 
@@ -115,7 +115,7 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitectu
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         analyzer->createTerm(architecture->operands()->df()),
-        std::make_unique<core::ir::Constant>(SizedValue(0, architecture->operands()->df()->size()))
+        std::make_unique<core::ir::Constant>(SizedValue(architecture->operands()->df()->size(), 0))
     ));
 }
 
@@ -136,7 +136,7 @@ Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *arch
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         analyzer->createTerm(architecture->operands()->df()),
-        std::make_unique<core::ir::Constant>(SizedValue(0, architecture->operands()->df()->size()))
+        std::make_unique<core::ir::Constant>(SizedValue(architecture->operands()->df()->size(), 0))
     ));
 }
 
@@ -156,7 +156,7 @@ Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *arch
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         analyzer->createTerm(architecture->operands()->df()),
-        std::make_unique<core::ir::Constant>(SizedValue(0, architecture->operands()->df()->size()))
+        std::make_unique<core::ir::Constant>(SizedValue(architecture->operands()->df()->size(), 0))
     ));
 }
 
@@ -178,7 +178,7 @@ StdcallCallingConvention::StdcallCallingConvention(const IntelArchitecture *arch
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         analyzer->createTerm(architecture->operands()->df()),
-        std::make_unique<core::ir::Constant>(SizedValue(0, architecture->operands()->df()->size()))
+        std::make_unique<core::ir::Constant>(SizedValue(architecture->operands()->df()->size(), 0))
     ));
 }
 

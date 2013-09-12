@@ -104,7 +104,7 @@ class AbstractValue {
      * \return Concrete value of this abstract value, if this value is concrete.
      *         Otherwise, the behavior is undefined.
      */
-    SizedValue asConcrete() const { assert(isConcrete()); return SizedValue(oneBits_, size_); }
+    SizedValue asConcrete() const { assert(isConcrete()); return SizedValue(size_, oneBits_); }
 
     /**
      * Shifts the value by the given number of bits.
@@ -293,7 +293,7 @@ AbstractValue operator+(const AbstractValue &a, const AbstractValue &b) {
     assert(a.size() == b.size());
 
     if (a.isConcrete() && b.isConcrete()) {
-        return SizedValue(a.asConcrete().value() + b.asConcrete().value(), a.size());
+        return SizedValue(a.size(), a.asConcrete().value() + b.asConcrete().value());
     } else if (b.isConcrete() && b.asConcrete().value() == 0) {
         return a;
     } else if (a.isConcrete() && a.asConcrete().value() == 0) {
@@ -313,7 +313,7 @@ AbstractValue operator-(const AbstractValue &a, const AbstractValue &b) {
     assert(a.size() == b.size());
 
     if (a.isConcrete() && b.isConcrete()) {
-        return SizedValue(a.asConcrete().value() - b.asConcrete().value(), a.size());
+        return SizedValue(a.size(), a.asConcrete().value() - b.asConcrete().value());
     } else if (b.isConcrete() && b.asConcrete().value() == 0) {
         return a;
     } else if (a.isConcrete() && a.asConcrete().value() == 0) {
@@ -328,7 +328,7 @@ AbstractValue operator*(const AbstractValue &a, const AbstractValue &b) {
     assert(a.size() == b.size());
 
     if (a.isConcrete() && b.isConcrete()) {
-        return SizedValue(a.asConcrete().value() * b.asConcrete().value(), a.size());
+        return SizedValue(a.size(), a.asConcrete().value() * b.asConcrete().value());
     } else if (a.isConcrete() && a.asConcrete().value() == 0) {
         return a;
     } else if (b.isConcrete() && b.asConcrete().value() == 0) {
@@ -379,7 +379,7 @@ AbstractValue operator%(const UnsignedAbstractValue &a, const UnsignedAbstractVa
     } else if (a.isConcrete() && a.asConcrete().value() == 0) {
         return a;
     } else if (b.isConcrete() && b.asConcrete().value() == 1) {
-        return AbstractValue(a.size());
+        return SizedValue(a.size(), 0);
     } else {
         return AbstractValue(a.size(), -1, -1);
     }
@@ -396,7 +396,7 @@ AbstractValue operator%(const SignedAbstractValue &a, const SignedAbstractValue 
     } else if (a.isConcrete() && a.asConcrete().value() == 0) {
         return a;
     } else if (b.isConcrete() && b.asConcrete().value() == 1) {
-        return AbstractValue(a.size());
+        return SizedValue(a.size(), 0);
     } else {
         return AbstractValue(a.size(), -1, -1);
     }

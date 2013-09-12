@@ -57,7 +57,7 @@ class CompareAddress {
 GenericCallAnalyzer::GenericCallAnalyzer(const Call *call, const GenericDescriptorAnalyzer *addressAnalyzer):
     CallAnalyzer(call), addressAnalyzer_(addressAnalyzer), stackTop_(0)
 {
-    auto stackAmendmentConstant = std::make_unique<Constant>(SizedValue(0, convention()->stackPointer().size()));
+    auto stackAmendmentConstant = std::make_unique<Constant>(SizedValue(convention()->stackPointer().size(), 0));
     stackAmendmentConstant_ = stackAmendmentConstant.get();
 
     stackAmendmentStatement_.reset(
@@ -137,7 +137,7 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
          * If the stack pointer is valid, guess the arguments passed on the stack.
          */
         if (stackPointerValue->isStackOffset()) {
-            stackTop_ = stackPointerValue->stackOffset().signedValue() * CHAR_BIT;
+            stackTop_ = stackPointerValue->stackOffset() * CHAR_BIT;
 
             /* Let's examine reaching definition of stack memory locations... */
             std::vector<MemoryLocation> stackLocations = context.definitions().getDefinedMemoryLocationsWithin(MemoryDomain::STACK);
@@ -214,7 +214,7 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
     }
 
     /* Compute the stack pointer amendment. */
-    ByteSize amendment = convention()->firstArgumentOffset() / 8;
+    ByteOffset amendment = convention()->firstArgumentOffset() / 8;
     if (convention()->calleeCleanup() && addressAnalyzer()->argumentsSize()) {
         amendment += *addressAnalyzer()->argumentsSize();
     }

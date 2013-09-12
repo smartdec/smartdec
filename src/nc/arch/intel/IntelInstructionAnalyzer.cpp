@@ -1289,9 +1289,9 @@ std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::doCreateTerm(const cor
                 std::make_unique<core::ir::BinaryOperator>(
                     core::ir::BinaryOperator::ADD,
                     createTerm(operands->fpu_top()),
-                    std::make_unique<core::ir::Constant>(SizedValue(fpuStack->index(), 32))
+                    std::make_unique<core::ir::Constant>(SizedValue(32, fpuStack->index()))
                 ),
-                std::make_unique<core::ir::Constant>(SizedValue(operands->fpu_r0()->memoryLocation().size(), 32))
+                std::make_unique<core::ir::Constant>(SizedValue(32, operands->fpu_r0()->memoryLocation().size()))
             ),
             operands->fpu_r0()->memoryLocation().domain(),
             operands->fpu_r0()->size()
