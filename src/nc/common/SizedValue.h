@@ -50,17 +50,43 @@ class SizedValue {
     SizedValue(): size_(0), value_(0) {}
 
     /**
-     * Constructs a value of a given size from a given value.
-     * Bits of the value higher than size-1 are discarded.
+     * Constructor.
      *
      * \param[in] size Size of the value.
      * \param[in] value Bits of the value.
+     *
+     * The value is truncated to the lowest <em>size</em> bits.
      */
     SizedValue(SmallBitSize size, ConstantValue value):
         size_(size),
         value_(bitTruncate(value, size))
     {
         assert(size >= 0);
+    }
+
+    /**
+     * Helper class to construct values without truncation.
+     */
+    class Exact {};
+
+    /**
+     * Instance of the helper class to construct values without truncation.
+     */
+    static const Exact exact;
+
+    /**
+     * Constructor.
+     *
+     * \param[in] size  Size of the value.
+     * \param[in] value Bits of the value, with <em>size</em> and higher cleared.
+     * \param[in] exact Exact construction flag.
+     */
+    SizedValue(SmallBitSize size, ConstantValue value, Exact exact):
+        size_(size),
+        value_(value)
+    {
+        assert(size >= 0);
+        assert(bitTruncate(value, size) == value);
     }
 
     /**
