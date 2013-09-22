@@ -421,7 +421,7 @@ void DataflowAnalyzer::executeUnaryOperator(const UnaryOperator *unary, Executio
     Value *value = dataflow().getValue(unary);
     Value *operandValue = dataflow().getValue(unary->operand());
 
-    value->setAbstractValue(unary->apply(operandValue->abstractValue()));
+    value->setAbstractValue(unary->apply(operandValue->abstractValue()).merge(value->abstractValue()));
 
     switch (unary->operatorKind()) {
         case UnaryOperator::SIGN_EXTEND:
@@ -453,7 +453,7 @@ void DataflowAnalyzer::executeBinaryOperator(const BinaryOperator *binary, Execu
     Value *leftValue = dataflow().getValue(binary->left());
     Value *rightValue = dataflow().getValue(binary->right());
 
-    value->setAbstractValue(binary->apply(leftValue->abstractValue(), rightValue->abstractValue()));
+    value->setAbstractValue(binary->apply(leftValue->abstractValue(), rightValue->abstractValue()).merge(value->abstractValue()));
 
     /* Compute stack offset. */
     switch (binary->operatorKind()) {
