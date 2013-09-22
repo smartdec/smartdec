@@ -426,9 +426,9 @@ private:
 /**
  * Class for unary expressions.
  */
-template<int subkind, class E>
-class UnaryExpression: public UnaryExpressionBase<E, UnaryExpression<subkind, E> > {
-    typedef UnaryExpressionBase<E, UnaryExpression<subkind, E> > base_type;
+template<int operatorKind, class E>
+class UnaryExpression: public UnaryExpressionBase<E, UnaryExpression<operatorKind, E> > {
+    typedef UnaryExpressionBase<E, UnaryExpression<operatorKind, E> > base_type;
 public:
     NC_EXPRESSION(UnaryExpression);
 
@@ -450,9 +450,9 @@ public:
 /**
  * Class for binary expressions.
  */
-template<int subkind, class L, class R>
-class BinaryExpression: public BinaryExpressionBase<L, R, BinaryExpression<subkind, L, R> > {
-    typedef BinaryExpressionBase<L, R, BinaryExpression<subkind, L, R> > base_type;
+template<int operatorKind, class L, class R>
+class BinaryExpression: public BinaryExpressionBase<L, R, BinaryExpression<operatorKind, L, R> > {
+    typedef BinaryExpressionBase<L, R, BinaryExpression<operatorKind, L, R> > base_type;
 public:
     NC_EXPRESSION(BinaryExpression);
 
@@ -512,41 +512,40 @@ template<class Expression>
 struct expression_signedness: boost::mpl::int_<ExpressionSignedness::UNKNOWN> {};
 
 template<class Derived>
-struct expression_signedness<ExpressionBase<Derived> >: expression_signedness<Derived> {};
+struct expression_signedness<ExpressionBase<Derived>>: expression_signedness<Derived> {};
 
 template<int signedness, class E>
-struct expression_signedness<SignExpression<signedness, E> >: boost::mpl::int_<signedness> {};
+struct expression_signedness<SignExpression<signedness, E>>: boost::mpl::int_<signedness> {};
 
 /**
- * Metafuction that returns binary expression subkind based on signedness.
+ * Metafuction that returns binary expression operatorKind based on signedness.
  */
-template<int unsigned_subkind, int signedness>
-struct binary_subkind;
+template<int unsignedOperatorKind, int signedness>
+struct binary_operator_kind;
 
-template<int unsigned_subkind>
-struct binary_subkind<unsigned_subkind, ExpressionSignedness::UNSIGNED>: boost::mpl::int_<unsigned_subkind> {};
-
-template<>
-struct binary_subkind<ir::BinaryOperator::UNSIGNED_DIV, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_DIV> {};
+template<int unsignedOperatorKind>
+struct binary_operator_kind<unsignedOperatorKind, ExpressionSignedness::UNSIGNED>: boost::mpl::int_<unsignedOperatorKind> {};
 
 template<>
-struct binary_subkind<ir::BinaryOperator::UNSIGNED_REM, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_REM> {};
+struct binary_operator_kind<ir::BinaryOperator::UNSIGNED_DIV, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_DIV> {};
 
 template<>
-struct binary_subkind<ir::BinaryOperator::UNSIGNED_LESS, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_LESS> {};
+struct binary_operator_kind<ir::BinaryOperator::UNSIGNED_REM, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_REM> {};
 
 template<>
-struct binary_subkind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_LESS_OR_EQUAL> {};
+struct binary_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_LESS> {};
 
 template<>
-struct binary_subkind<ir::BinaryOperator::SHR, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SAR> {};
+struct binary_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_LESS_OR_EQUAL> {};
 
+template<>
+struct binary_operator_kind<ir::BinaryOperator::SHR, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SAR> {};
 
 /**
- * Metafunction that returns binary expression subkind based on signedness of the given expression.
+ * Metafunction that returns binary expression operatorKind based on signedness of the given expression.
  */
-template<int unsigned_subkind, class E>
-struct binary_expression_subkind: public binary_subkind<unsigned_subkind, expression_signedness<E>::value> {};
+template<int unsignedOperatorKind, class E>
+struct binary_expression_operator_kind: public binary_operator_kind<unsignedOperatorKind, expression_signedness<E>::value> {};
 
 
 // -------------------------------------------------------------------------- //
@@ -657,15 +656,15 @@ operator*(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_DIV, L>::value, L, R>
+inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_DIV, L>::value, L, R>
 operator/(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_DIV, L>::value, L, R>(left.derived(), right.derived());
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_DIV, L>::value, L, R>(left.derived(), right.derived());
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_REM, L>::value, L, R>
+inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_REM, L>::value, L, R>
 operator%(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_REM, L>::value, L, R>(left.derived(), right.derived());
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_REM, L>::value, L, R>(left.derived(), right.derived());
 }
 
 template<class L, class R>
@@ -693,9 +692,9 @@ operator<<(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::SHR, L>::value, L, R>
+inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::SHR, L>::value, L, R>
 operator>>(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::SHR, L>::value, L, R>(left.derived(), right.derived());
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::SHR, L>::value, L, R>(left.derived(), right.derived());
 }
 
 template<class L, class R>
@@ -705,27 +704,27 @@ operator==(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, L, R>
+inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, L, R>
 operator<(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, L, R>(left.derived(), right.derived(), 1);
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, L, R>(left.derived(), right.derived(), 1);
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, L, R>
+inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, L, R>
 operator<=(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, L, R>(left.derived(), right.derived(), 1);
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, L, R>(left.derived(), right.derived(), 1);
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>
+inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>
 operator>(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>(right.derived(), left.derived(), 1);
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>(right.derived(), left.derived(), 1);
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>
+inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>
 operator>=(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>(right.derived(), left.derived(), 1);
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>(right.derived(), left.derived(), 1);
 }
 
 template<class L, class R>
@@ -927,13 +926,13 @@ protected:
      * \param expression               Unary expression.
      * \returns                        Newly created term for the given expression.
      */
-    template<int subkind, class E>
-    std::unique_ptr<ir::Term> doCreateTerm(const UnaryExpression<subkind, E> &expression) const {
+    template<int operatorKind, class E>
+    std::unique_ptr<ir::Term> doCreateTerm(const UnaryExpression<operatorKind, E> &expression) const {
         if (!expression.size()) {
             throw InvalidInstructionException(tr("size of a unary expression is unknown"));
         }
 
-        return std::make_unique<ir::UnaryOperator>(subkind, createTerm(expression.operand()), expression.size());
+        return std::make_unique<ir::UnaryOperator>(operatorKind, createTerm(expression.operand()), expression.size());
     }
 
     /**
@@ -962,9 +961,9 @@ protected:
      * \param expression               Binary expression that change size to create term from.
      * \returns                        Newly created term for the given expression.
      */
-    template<int subkind, class L, class R>
-    std::unique_ptr<ir::Term> doCreateTerm(const BinaryExpression<subkind, L, R> &expression) const {
-        return std::make_unique<ir::BinaryOperator>(subkind, createTerm(expression.left()), createTerm(expression.right()), expression.size());
+    template<int operatorKind, class L, class R>
+    std::unique_ptr<ir::Term> doCreateTerm(const BinaryExpression<operatorKind, L, R> &expression) const {
+        return std::make_unique<ir::BinaryOperator>(operatorKind, createTerm(expression.left()), createTerm(expression.right()), expression.size());
     }
 
     /**
@@ -1140,13 +1139,13 @@ protected:
      * \param expression               Unary expression.
      * \param suggestedSize            Suggested size of the expression.
      */
-    template<int subkind, class E>
-    void doComputeSize(UnaryExpression<subkind, E> &expression, SmallBitSize suggestedSize) const {
+    template<int operatorKind, class E>
+    void doComputeSize(UnaryExpression<operatorKind, E> &expression, SmallBitSize suggestedSize) const {
         if (expression.size()) {
             computeSize(expression.operand(), expression.size());
         } else {
             computeSize(expression.operand(), suggestedSize);
-            switch (subkind) {
+            switch (operatorKind) {
                 case ir::UnaryOperator::SIGN_EXTEND:
                 case ir::UnaryOperator::ZERO_EXTEND:
                 case ir::UnaryOperator::TRUNCATE:
