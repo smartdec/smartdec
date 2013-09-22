@@ -54,6 +54,7 @@ public:
      * 
      * \param[in] module                Module.
      */
+    // TODO: refactor and remove module argument
     Image(const Module *module);
 
     /**
