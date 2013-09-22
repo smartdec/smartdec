@@ -56,7 +56,7 @@ class Dataflow;
 class ExecutionContext;
 
 /**
- * Dataflow analyzer.
+ * Implements a dataflow analysis based on abstract interpretation loop.
  */
 class DataflowAnalyzer {
     Dataflow &dataflow_; ///< Dataflow information.

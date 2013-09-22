@@ -56,13 +56,22 @@ namespace dflow {
 void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
     assert(function() != NULL);
 
+    /*
+     * Returns true if the given term does not cover given memory location.
+     */
+    auto doesNotCover = [this](const MemoryLocation &mloc, const Term *term) -> bool {
+        return !dataflow().getMemoryLocation(term).covers(mloc);
+    };
+
+    /* Control-flow graph to run abstract interpretation loop on. */
     CFG cfg(function()->basicBlocks());
 
-    /*
-     * Run abstract interpretation until reaching stationary point twice in a row.
-     */
-    boost::unordered_map<const BasicBlock *, ReachingDefinitions> outputDefinitions;
+    /* Mapping of a basic block to the definitions reaching its end. */
+    boost::unordered_map<const BasicBlock *, ReachingDefinitions> outDefinitions;
 
+    /*
+     * Running abstract interpretation until at fixpoint twice in a row.
+     */
     int niterations = 0;
     bool changed;
     bool fixpointReached = false;
@@ -78,8 +87,11 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
 
             /* Merge the reaching definitions from predecessors. */
             foreach (const BasicBlock *predecessor, cfg.getPredecessors(basicBlock)) {
-                context.definitions().merge(outputDefinitions[predecessor]);
+                context.definitions().merge(outDefinitions[predecessor]);
             }
+
+            /* Remove definitions that do not cover the memory location that they define. */
+            context.definitions().filterOut(doesNotCover);
 
             /* If this is a function entry, run the calling convention-specific code. */
             if (basicBlock == function()->entry()) {
@@ -96,7 +108,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
             }
 
             /* Something changed? */
-            ReachingDefinitions &definitions(outputDefinitions[basicBlock]);
+            ReachingDefinitions &definitions(outDefinitions[basicBlock]);
             if (definitions != context.definitions()) {
                 definitions = context.definitions();
                 changed = true;
@@ -117,8 +129,11 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
 
         foreach (const Term *term, census.terms()) {
             if (term->isRead()) {
-                foreach (const auto &def, dataflow().getDefinitions(term).definitions()) {
-                    foreach (const Term *definition, def.second) {
+                auto &definitions = dataflow().getDefinitions(term);
+                definitions.filterOut(doesNotCover);
+
+                foreach (const auto &pair, definitions.pairs()) {
+                    foreach (const Term *definition, pair.second) {
                         dataflow().addUse(definition, term);
                     }
                 }
@@ -340,8 +355,8 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term) {
     auto termValue = dataflow().getValue(term);
     auto termAbstractValue = termValue->abstractValue();
 
-    foreach (const auto &def, definitions.definitions()) {
-        auto &definedLocation = def.first;
+    foreach (const auto &pair, definitions.pairs()) {
+        auto &definedLocation = pair.first;
         assert(termLocation.covers(definedLocation));
 
         /*
@@ -354,7 +369,7 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term) {
             mask = bitShift(mask, termLocation.endAddr() - definedLocation.endAddr());
         }
 
-        foreach (const Term *definition, def.second) {
+        foreach (const Term *definition, pair.second) {
             auto definitionLocation = dataflow().getMemoryLocation(definition);
             assert(definitionLocation.covers(definedLocation));
 
@@ -373,6 +388,7 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term) {
             /* Project the value to the defined location. */
             definitionAbstractValue.project(mask);
 
+            /* Update term's value. */
             termAbstractValue.merge(definitionAbstractValue);
         }
     }
@@ -382,17 +398,17 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term) {
     /*
      * Merge stack offset and product flags.
      *
-     * Merge information only from terms that define lower bits of the term's value.
+     * Heuristic: merge information only from terms that define lower bits of the term's value.
      */
     const std::vector<const Term *> *lowerBitsDefinitions = NULL;
 
     if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
-        if (definitions.definitions().front().first.addr() == termLocation.addr()) {
-            lowerBitsDefinitions = &definitions.definitions().front().second;
+        if (definitions.pairs().front().first.addr() == termLocation.addr()) {
+            lowerBitsDefinitions = &definitions.pairs().front().second;
         }
     } else {
-        if (definitions.definitions().back().first.endAddr() == termLocation.endAddr()) {
-            lowerBitsDefinitions = &definitions.definitions().back().second;
+        if (definitions.pairs().back().first.endAddr() == termLocation.endAddr()) {
+            lowerBitsDefinitions = &definitions.pairs().back().second;
         }
     }
 
@@ -427,15 +443,15 @@ void DataflowAnalyzer::executeUnaryOperator(const UnaryOperator *unary, Executio
         case UnaryOperator::SIGN_EXTEND:
         case UnaryOperator::ZERO_EXTEND:
         case UnaryOperator::TRUNCATE:
-            if (operandValue->isStackOffset()) {
-                value->makeStackOffset(operandValue->stackOffset());
-            } else if (operandValue->isNotStackOffset()) {
+            if (operandValue->isNotStackOffset()) {
                 value->makeNotStackOffset();
+            } else if (operandValue->isStackOffset()) {
+                value->makeStackOffset(operandValue->stackOffset());
             }
-            if (operandValue->isProduct()) {
-                value->makeProduct();
-            } else if (operandValue->isNotProduct()) {
+            if (operandValue->isNotProduct()) {
                 value->makeNotProduct();
+            } else if (operandValue->isProduct()) {
+                value->makeProduct();
             }
             break;
         default:

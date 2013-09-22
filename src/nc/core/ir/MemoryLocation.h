@@ -117,7 +117,7 @@ class MemoryLocation: public boost::equality_comparable1<MemoryLocation>, public
     /**
      * \param that Memory location.
      *
-     * \return True if *this fully covers that.
+     * \return True if *this covers that.
      */
     bool covers(const MemoryLocation &that) const {
         return domain() == that.domain() && addr() <= that.addr() && that.endAddr() <= endAddr();

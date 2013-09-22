@@ -100,7 +100,14 @@ class Dataflow {
      *
      * \param[in] term Term.
      */
-    void unsetMemoryLocation(const Term *term) { memoryLocations_.erase(term); }
+    void unsetMemoryLocation(const Term *term);
+
+    /**
+     * \param[in] term Valid pointer to a read term.
+     *
+     * \return List of term's definitions. If not set before, it is empty.
+     */
+    ReachingDefinitions &getDefinitions(const Term *term);
 
     /**
      * \param[in] term Valid pointer to a read term.

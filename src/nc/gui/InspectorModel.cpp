@@ -204,10 +204,10 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
         if (term->isRead()) {
             InspectorItem *definitionsItem = item->addChild(tr("definitions"));
 
-            foreach (auto &def, dataflow->getDefinitions(term).definitions()) {
-                auto partItem = definitionsItem->addChild(def.first.toString());
-                foreach (auto definition, def.second) {
-                    partItem->addChild("", definition);
+            foreach (auto &pair, dataflow->getDefinitions(term).pairs()) {
+                auto pairItem = definitionsItem->addChild(pair.first.toString());
+                foreach (auto definition, pair.second) {
+                    pairItem->addChild("", definition);
                 }
             }
         }

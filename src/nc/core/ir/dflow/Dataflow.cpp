@@ -67,7 +67,6 @@ const Value *Dataflow::getValue(const Term *term) const {
 
 const ir::MemoryLocation &Dataflow::getMemoryLocation(const Term *term) const {
     assert(term != NULL);
-
     return nc::find(memoryLocations_, term);
 }
 
@@ -81,11 +80,9 @@ void Dataflow::setMemoryLocation(const Term *term, const MemoryLocation &memoryL
     }
 }
 
-const ReachingDefinitions &Dataflow::getDefinitions(const Term *term) const {
+void Dataflow::unsetMemoryLocation(const Term *term) {
     assert(term != NULL);
-    assert(term->isRead());
-
-    return nc::find(definitions_, term);
+    memoryLocations_.erase(term);
 }
 
 void Dataflow::setDefinitions(const Term *term, const ReachingDefinitions &definitions) {
@@ -104,6 +101,20 @@ void Dataflow::clearDefinitions(const Term *term) {
     assert(term->isRead());
 
     definitions_.erase(term);
+}
+
+ReachingDefinitions &Dataflow::getDefinitions(const Term *term) {
+    assert(term != NULL);
+    assert(term->isRead());
+
+    return definitions_[term];
+}
+
+const ReachingDefinitions &Dataflow::getDefinitions(const Term *term) const {
+    assert(term != NULL);
+    assert(term->isRead());
+
+    return nc::find(definitions_, term);
 }
 
 const std::vector<const Term *> &Dataflow::getUses(const Term *term) const {

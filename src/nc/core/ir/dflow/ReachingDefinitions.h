@@ -25,8 +25,10 @@
 
 #include <nc/config.h>
 
+#include <algorithm>
 #include <vector>
 
+#include <nc/common/Foreach.h>
 #include <nc/common/Printable.h>
 
 #include <nc/core/ir/MemoryLocation.h>
@@ -48,26 +50,26 @@ class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
      * The pairs are sorted by memory location.
      * Terms are sorted using default comparator.
      */
-    std::vector<std::pair<MemoryLocation, std::vector<const Term *>>> definitions_;
+    std::vector<std::pair<MemoryLocation, std::vector<const Term *>>> pairs_;
 
     public:
 
     /**
-     * \return Pairs of memory locations and terms defining them.
+     * \return Pairs of memory locations and vectors of terms defining them.
      *         The pairs are sorted by memory location.
      *         Terms are sorted using default comparator.
      */
-    const decltype(definitions_) &definitions() const { return definitions_; }
+    const decltype(pairs_) &pairs() const { return pairs_; }
 
     /**
-     * \return True if the list of definitions is empty, false otherwise.
+     * \return True if the list of pairs is empty, false otherwise.
      */
-    bool empty() const { return definitions_.empty(); }
+    bool empty() const { return pairs_.empty(); }
 
     /**
      * Clears the reaching definitions.
      */
-    void clear() { definitions_.clear(); }
+    void clear() { pairs_.clear(); }
 
     /**
      * Adds a definition of memory location, removing all previous definitions of overlapping memory locations.
@@ -110,14 +112,32 @@ class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
      *
      * \param[in] those Reaching definitions.
      */
-    bool operator==(const ReachingDefinitions &those) { return definitions_ == those.definitions_; }
+    bool operator==(const ReachingDefinitions &those) const { return pairs_ == those.pairs_; }
 
     /**
      * \return True, if these and given reaching definitions are different.
      *
      * \param[in] those Reaching definitions.
      */
-    bool operator!=(const ReachingDefinitions &those) { return !(*this == those); }
+    bool operator!=(const ReachingDefinitions &those) const { return !(*this == those); }
+
+    /**
+     * Removes all reaching definitions for which given predicate returns true.
+     *
+     * \param pred Predicate functor accepting two arguments: a memory location
+     *             and a valid pointer to a term covering this location.
+     * \tparam T Predicate functor type.
+     */
+    template<class T>
+    void filterOut(const T &pred) {
+        foreach (auto &pair, pairs_) {
+            pair.second.erase(
+                std::remove_if(pair.second.begin(), pair.second.end(),
+                    [&](const Term *term) -> bool { return pred(pair.first, term); }),
+                pair.second.end());
+        }
+        std::remove_if(pairs_.begin(), pairs_.end(), [](decltype(pairs_)::value_type &v) { return v.second.empty(); });
+    }
 
     void print(QTextStream &out) const;
 };
