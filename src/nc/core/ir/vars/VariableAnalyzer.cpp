@@ -24,6 +24,7 @@
 
 #include "VariableAnalyzer.h"
 
+#include <nc/common/DisjointSet.h>
 #include <nc/common/Foreach.h>
 
 #include <nc/core/ir/Term.h>
@@ -37,18 +38,75 @@ namespace core {
 namespace ir {
 namespace vars {
 
+namespace {
+
+class TermSet;
+class TermSet: public DisjointSet<TermSet> {};
+
+} // anonymous namespace
+
 void VariableAnalyzer::analyze(const Function *function) {
     ir::misc::CensusVisitor census(callsData());
     census(function);
 
+    boost::unordered_map<const Term *, std::unique_ptr<TermSet>> term2set;
+
+    /*
+     * Make a set for each read or write term.
+     */
     foreach (const Term *term, census.terms()) {
-        if (term->isRead()) {
-            Variable *variable = variables().getVariable(term);
-            
-            foreach (const Term *definition, dataflow().getDefinitions(term)) {
-                assert(dataflow().getMemoryLocation(term) == dataflow().getMemoryLocation(definition));
-                variable->unionSet(variables().getVariable(definition));
+        if (term->isRead() || term->isWrite()) {
+            term2set[term] = std::make_unique<TermSet>();
+        }
+    }
+
+    /*
+     * Join sets of definitions and uses.
+     */
+    foreach (const Term *term, census.terms()) {
+        if (term->isWrite()) {
+            auto termSet = term2set[term].get();
+
+            foreach (const Term *use, dataflow().getUses(term)) {
+                assert(dataflow().getMemoryLocation(term).overlaps(dataflow().getMemoryLocation(use)));
+
+                termSet->unionSet(term2set[use].get());
             }
+        }
+    }
+
+    boost::unordered_map<TermSet *, Variable *> set2variable;
+
+    /*
+     * Make a variable for each set.
+     */
+    foreach (auto &pair, term2set) {
+        auto set = pair.second->findSet();
+        auto &variable = set2variable[set];
+        if (!variable) {
+            variable = variables().makeVariable();
+        }
+    }
+
+    /*
+     * Compute a memory location for each variable.
+     */
+    foreach (auto &pair, term2set) {
+        auto set = pair.second->findSet();
+        auto variable = set2variable[set];
+        variables().setVariable(pair.first, variable);
+
+        auto &termLocation = dataflow().getMemoryLocation(pair.first);
+        assert(termLocation);
+
+        auto &variableLocation = variable->memoryLocation();
+        if (!variableLocation) {
+            variable->setMemoryLocation(termLocation);
+        } else {
+            assert(termLocation.domain() == variableLocation.domain());
+            auto addr = std::min(termLocation.addr(), variableLocation.addr());
+            auto endAddr = std::max(termLocation.endAddr(), variableLocation.endAddr());
+            variable->setMemoryLocation(MemoryLocation(termLocation.domain(), addr, endAddr - addr));
         }
     }
 }

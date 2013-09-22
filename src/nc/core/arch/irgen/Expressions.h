@@ -539,12 +539,6 @@ template<>
 struct binary_subkind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_LESS_OR_EQUAL> {};
 
 template<>
-struct binary_subkind<ir::BinaryOperator::UNSIGNED_GREATER, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_GREATER> {};
-
-template<>
-struct binary_subkind<ir::BinaryOperator::UNSIGNED_GREATER_OR_EQUAL, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SIGNED_GREATER_OR_EQUAL> {};
-
-template<>
 struct binary_subkind<ir::BinaryOperator::SHR, ExpressionSignedness::SIGNED>: boost::mpl::int_<ir::BinaryOperator::SAR> {};
 
 
@@ -615,15 +609,9 @@ dereference(const ExpressionBase<E> &expression, SmallBitSize size) {
 }
 
 template<class E>
-inline UnaryExpression<ir::UnaryOperator::BITWISE_NOT, E>
+inline UnaryExpression<ir::UnaryOperator::NOT, E>
 operator~(const ExpressionBase<E> &expression) {
-    return UnaryExpression<ir::UnaryOperator::BITWISE_NOT, E>(expression.derived());
-}
-
-template<class E>
-inline UnaryExpression<ir::UnaryOperator::LOGICAL_NOT,  E>
-operator!(const ExpressionBase<E> &expression) {
-    return UnaryExpression<ir::UnaryOperator::LOGICAL_NOT, E>(expression.derived(), 1);
+    return UnaryExpression<ir::UnaryOperator::NOT, E>(expression.derived());
 }
 
 template<class E>
@@ -645,9 +633,9 @@ zero_extend(const ExpressionBase<E> &expression) {
 }
 
 template<class E>
-inline UnaryExpression<ir::UnaryOperator::RESIZE, E>
-resize(const ExpressionBase<E> &expression, SmallBitSize size = 0) {
-    return UnaryExpression<ir::UnaryOperator::RESIZE, E>(expression.derived(), size);
+inline UnaryExpression<ir::UnaryOperator::TRUNCATE, E>
+truncate(const ExpressionBase<E> &expression, SmallBitSize size = 0) {
+    return UnaryExpression<ir::UnaryOperator::TRUNCATE, E>(expression.derived(), size);
 }
 
 template<class L, class R>
@@ -681,33 +669,21 @@ operator%(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::BITWISE_AND, L, R>
+inline BinaryExpression<ir::BinaryOperator::AND, L, R>
 operator&(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::BITWISE_AND, L, R>(left.derived(), right.derived());
+    return BinaryExpression<ir::BinaryOperator::AND, L, R>(left.derived(), right.derived());
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::LOGICAL_AND, L, R>
-operator&&(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::LOGICAL_AND, L, R>(left.derived(), right.derived(), 1);
-}
-
-template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::BITWISE_OR, L, R>
+inline BinaryExpression<ir::BinaryOperator::OR, L, R>
 operator|(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::BITWISE_OR, L, R>(left.derived(), right.derived());
+    return BinaryExpression<ir::BinaryOperator::OR, L, R>(left.derived(), right.derived());
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::LOGICAL_OR, L, R>
-operator||(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::LOGICAL_OR, L, R>(left.derived(), right.derived(), 1);
-}
-
-template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::BITWISE_XOR, L, R>
+inline BinaryExpression<ir::BinaryOperator::XOR, L, R>
 operator^(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::BITWISE_XOR, L, R>(left.derived(), right.derived());
+    return BinaryExpression<ir::BinaryOperator::XOR, L, R>(left.derived(), right.derived());
 }
 
 template<class L, class R>
@@ -741,15 +717,15 @@ operator<=(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_GREATER, L>::value, L, R>
+inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>
 operator>(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_GREATER, L>::value, L, R>(left.derived(), right.derived(), 1);
+    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>(right.derived(), left.derived(), 1);
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_GREATER_OR_EQUAL, L>::value, L, R>
+inline BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>
 operator>=(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_GREATER_OR_EQUAL, L>::value, L, R>(left.derived(), right.derived(), 1);
+    return BinaryExpression<binary_expression_subkind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>(right.derived(), left.derived(), 1);
 }
 
 template<class L, class R>
@@ -1173,7 +1149,7 @@ protected:
             switch (subkind) {
                 case ir::UnaryOperator::SIGN_EXTEND:
                 case ir::UnaryOperator::ZERO_EXTEND:
-                case ir::UnaryOperator::RESIZE:
+                case ir::UnaryOperator::TRUNCATE:
                     if (suggestedSize) {
                         expression.setSize(suggestedSize);
                     }

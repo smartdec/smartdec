@@ -29,7 +29,7 @@
 #include <nc/core/ir/MemoryDomain.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflow.h>
-#include <nc/core/ir/dflow/SimulationContext.h>
+#include <nc/core/ir/dflow/ExecutionContext.h>
 
 #include "IntelRegisters.h"
 
@@ -37,19 +37,17 @@ namespace nc {
 namespace arch {
 namespace intel {
 
-void IntelDataflowAnalyzer::simulate(const core::ir::Term *term, core::ir::dflow::SimulationContext &context) {
+void IntelDataflowAnalyzer::execute(const core::ir::Term *term, core::ir::dflow::ExecutionContext &context) {
     /* Do everything as usual. */
-    DataflowAnalyzer::simulate(term, context);
+    DataflowAnalyzer::execute(term, context);
 
-    /* but... */
-
-    /* If two values of fpu top register come here, force fpu top to zero. */
+    /* But, if two values of fpu top register come here, force fpu top to zero. */
     if (const core::ir::MemoryLocationAccess *access = term->asMemoryLocationAccess()) {
         if (access->isRead()) {
             if (access->memoryLocation() == IntelRegisters::fpu_top()->memoryLocation()) {
                 core::ir::dflow::Value *value = dataflow().getValue(term);
-                if (!value->isConstant()) {
-                    value->forceConstant(0);
+                if (!value->abstractValue().isConcrete()) {
+                    value->setAbstractValue(SizedValue(access->size(), 0));
                 }
             }
         }

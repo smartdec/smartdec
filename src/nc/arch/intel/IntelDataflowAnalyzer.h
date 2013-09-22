@@ -32,12 +32,16 @@ namespace intel {
 class IntelDataflowAnalyzer: public core::ir::dflow::DataflowAnalyzer {
     public:
 
-    IntelDataflowAnalyzer(core::ir::dflow::Dataflow &dataflow, const core::arch::Architecture *architecture,
-        core::ir::calls::CallsData *callsData):
-        core::ir::dflow::DataflowAnalyzer(dataflow, architecture, callsData)
+    IntelDataflowAnalyzer(
+        core::ir::dflow::Dataflow &dataflow,
+        const core::arch::Architecture *architecture,
+        const core::ir::Function *function,
+        core::ir::calls::CallsData *callsData
+    ):
+        core::ir::dflow::DataflowAnalyzer(dataflow, architecture, function, callsData)
     {}
 
-    virtual void simulate(const core::ir::Term *term, core::ir::dflow::SimulationContext &context) override;
+    virtual void execute(const core::ir::Term *term, core::ir::dflow::ExecutionContext &context) override;
 };
 
 } // namespace intel

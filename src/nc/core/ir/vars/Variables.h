@@ -29,6 +29,9 @@
 
 #include <boost/unordered_map.hpp>
 
+#include <nc/common/Range.h>
+#include <nc/common/make_unique.h>
+
 #include "Variable.h"
 
 namespace nc {
@@ -40,26 +43,58 @@ class Term;
 namespace vars {
 
 /**
- * Container for information about which term realizes which variable of reconstructed program.
+ * Information about reconstructed variables.
  */
 class Variables {
-    mutable boost::unordered_map<const Term *, std::unique_ptr<Variable> > variables_; ///< Mapping of terms to variables.
+    /** All variables. */
+    std::vector<std::unique_ptr<Variable>> variables_;
+
+    /** Mapping of terms to variables. */
+    boost::unordered_map<const Term *, Variable *> term2variable_;
 
     public:
 
     /**
-     * \param[in] term Term.
-     *
-     * \return Variable represented by this term.
+     * \return Valid pointer to a fresh variable owned by *this.
      */
-    Variable *getVariable(const Term *term);
+    Variable *makeVariable() {
+        auto variable = std::make_unique<Variable>();
+        auto result = variable.get();
+        variables_.push_back(std::move(variable));
+        return result;
+    }
 
     /**
-     * \param[in] term Term.
+     * \param term Valid pointer to a term.
      *
-     * \return Variable represented by this term.
+     * \return Pointer to the variable corresponding to the term. Can be NULL.
      */
-    const Variable *getVariable(const Term *term) const;
+    Variable *getVariable(const Term *term) {
+        assert(term != NULL);
+        return nc::find(term2variable_, term);
+    }
+
+    /**
+     * \param term Valid pointer to a term.
+     *
+     * \return Pointer to the variable corresponding to the term. Can be NULL.
+     */
+    const Variable *getVariable(const Term *term) const {
+        assert(term != NULL);
+        return nc::find(term2variable_, term);
+    }
+
+    /**
+     * Sets the variable corresponding to a term.
+     *
+     * \param term Valid pointer to a term.
+     * \param variable Valid pointer to the variable.
+     */
+    void setVariable(const Term *term, Variable *variable) {
+        assert(term != NULL);
+        assert(variable != NULL);
+        term2variable_[term] = variable;
+    }
 };
 
 } // namespace vars

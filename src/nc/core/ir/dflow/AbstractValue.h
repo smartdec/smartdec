@@ -123,7 +123,7 @@ class AbstractValue {
     /**
      * \return True if the value has a bit that can be both zero and one, false otherwise.
      */
-    bool isNondeterministic() const { return (zeroBits_ ^ oneBits_) != 0; }
+    bool isNondeterministic() const { return (zeroBits_ & oneBits_) != 0; }
 
     /**
      * \return Concrete value of this abstract value, if this value is concrete.

@@ -362,6 +362,8 @@ public:
      *
      * \param preferredTerm Preferred term (used if defined).
      * \param defaultTerm Default term (used if preferred term is not defined).
+     *
+     * \note Both terms must have the same size.
      */
     Choice(std::unique_ptr<Term> preferredTerm, std::unique_ptr<Term> defaultTerm);
 

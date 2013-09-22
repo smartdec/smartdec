@@ -156,7 +156,6 @@ set(SOURCES
     ir/vars/Variable.h
     ir/vars/VariableAnalyzer.cpp
     ir/vars/VariableAnalyzer.h
-    ir/vars/Variables.cpp
     ir/vars/Variables.h
     likec/ArgumentDeclaration.cpp
     likec/ArgumentDeclaration.h

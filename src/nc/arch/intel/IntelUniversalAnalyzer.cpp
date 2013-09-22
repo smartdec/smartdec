@@ -121,8 +121,8 @@ void IntelUniversalAnalyzer::detectCallingConvention(core::Context *context, con
 void IntelUniversalAnalyzer::analyzeDataflow(core::Context *context, const core::ir::Function *function) const {
     std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
 
-    intel::IntelDataflowAnalyzer analyzer(*dataflow, context->module()->architecture(), context->callsData());
-    analyzer.analyze(function, context->cancellationToken());
+    IntelDataflowAnalyzer(*dataflow, context->module()->architecture(), function, context->callsData())
+        .analyze(context->cancellationToken());
 
     context->setDataflow(function, std::move(dataflow));
 }

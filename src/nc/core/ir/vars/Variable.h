@@ -25,20 +25,38 @@
 
 #include <nc/config.h>
 
-#include <nc/common/DisjointSet.h>
+#include <cassert>
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace vars {
 
-class Variable;
-
 /**
  * Variable is a unique object associated with a set of terms representing
  * the same variable of reconstructed program.
  */
-class Variable: public DisjointSet<Variable> {};
+class Variable {
+    /** Memory location of the variable. */
+    MemoryLocation memoryLocation_;
+
+    public:
+
+    /**
+     * \return Memory location of the variable.
+     */
+    const MemoryLocation &memoryLocation() const { return memoryLocation_; }
+
+    /**
+     * Sets the memory location of the variable.
+     *
+     * \param memoryLocation Valid memory location.
+     */
+    void setMemoryLocation(const MemoryLocation &memoryLocation) {
+        assert(memoryLocation);
+        memoryLocation_ = memoryLocation;
+    }
+};
 
 } // namespace vars
 } // namespace ir

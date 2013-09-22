@@ -379,7 +379,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
         }
         case BT: {
             _[
-                cf() = resize(unsigned_(operand(0)) >> operand(1)),
+                cf() = truncate(unsigned_(operand(0)) >> operand(1)),
                 of() = undefined(),
                 sf() = undefined(),
                 zf() = undefined(),
@@ -561,7 +561,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             } else if (instr->prefixes() & prefixes::REPZ) {
                 body[jump(zf(), condition.basicBlock(), directSuccessor())];
             } else if (instr->prefixes() & prefixes::REPNZ) {
-                body[jump(!zf(), condition.basicBlock(), directSuccessor())];
+                body[jump(~zf(), condition.basicBlock(), directSuccessor())];
             } else {
                 body[jump(directSuccessor())];
             }
@@ -735,11 +735,11 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case JA: case JNBE: {
-            _[jump(choice(above(), !cf() && !zf()), operand(0), directSuccessor())];
+            _[jump(choice(above(), ~cf() & ~zf()), operand(0), directSuccessor())];
             break;
         }
         case JAE: case JNB: {
-            _[jump(choice(above_or_equal(), !cf()), operand(0), directSuccessor())];
+            _[jump(choice(above_or_equal(), ~cf()), operand(0), directSuccessor())];
             break;
         }
         case JB: case JNAE: {
@@ -747,7 +747,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case JBE: case JNA: {
-            _[jump(choice(below_or_equal(), cf() || zf()), operand(0), directSuccessor())];
+            _[jump(choice(below_or_equal(), cf() | zf()), operand(0), directSuccessor())];
             break;
         }
         case JC: {
@@ -755,15 +755,15 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case JCXZ: {
-            _[jump(!cx(), operand(0), directSuccessor())];
+            _[jump(~(cx() == constant(0)), operand(0), directSuccessor())];
             break;
         }
         case JECXZ: {
-            _[jump(!ecx(), operand(0), directSuccessor())];
+            _[jump(~(ecx() == constant(0)), operand(0), directSuccessor())];
             break;
         }
         case JRCXZ: {
-            _[jump(!rcx(), operand(0), directSuccessor())];
+            _[jump(~(rcx() == constant(0)), operand(0), directSuccessor())];
             break;
         }
         case JE: case JZ: {
@@ -771,7 +771,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case JG: case JNLE: {
-            _[jump(choice(greater(), !zf() || sf() == of()), operand(0), directSuccessor())];
+            _[jump(choice(greater(), ~zf() | sf() == of()), operand(0), directSuccessor())];
             break;
         }
         case JGE: case JNL: {
@@ -779,31 +779,31 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case JL: case JNGE: {
-            _[jump(choice(less(), !(sf() == of())), operand(0), directSuccessor())];
+            _[jump(choice(less(), ~(sf() == of())), operand(0), directSuccessor())];
             break;
         }
         case JLE: case JNG: {
-            _[jump(choice(less_or_equal(), zf() || !(sf() == of())), operand(0), directSuccessor())];
+            _[jump(choice(less_or_equal(), zf() | ~(sf() == of())), operand(0), directSuccessor())];
             break;
         }
         case JNC: {
-            _[jump(!cf(), operand(0), directSuccessor())];
+            _[jump(~cf(), operand(0), directSuccessor())];
             break;
         }
         case JNE: case JNZ: {
-            _[jump(!zf(), operand(0), directSuccessor())];
+            _[jump(~zf(), operand(0), directSuccessor())];
             break;
         }
         case JNO: {
-            _[jump(!of(), operand(0), directSuccessor())];
+            _[jump(~of(), operand(0), directSuccessor())];
             break;
         }
         case JNP: case JPO: {
-            _[jump(!pf(), operand(0), directSuccessor())];
+            _[jump(~pf(), operand(0), directSuccessor())];
             break;
         }
         case JNS: {
-            _[jump(!sf(), operand(0), directSuccessor())];
+            _[jump(~sf(), operand(0), directSuccessor())];
             break;
         }
         case JO: {
@@ -830,31 +830,31 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
 
             switch (instruction->mnemonic()->number()) {
                 case CMOVA:
-                    _[jump(choice(above(), !cf() && !zf()), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(choice(above(), ~cf() & ~zf()), then.basicBlock(), directSuccessor())]; break;
                 case CMOVAE: case CMOVNB:
-                    _[jump(choice(above_or_equal(), !cf()), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(choice(above_or_equal(), ~cf()), then.basicBlock(), directSuccessor())]; break;
                 case CMOVB:
                     _[jump(choice(below(), cf()), then.basicBlock(), directSuccessor())]; break;
                 case CMOVBE:
-                    _[jump(choice(below_or_equal(), cf() || zf()), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(choice(below_or_equal(), cf() | zf()), then.basicBlock(), directSuccessor())]; break;
                 case CMOVE: case CMOVZ:
                     _[jump(zf(), then.basicBlock(), directSuccessor())]; break;
                 case CMOVG:
-                    _[jump(choice(greater(), !zf() || sf() == of()), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(choice(greater(), ~zf() | sf() == of()), then.basicBlock(), directSuccessor())]; break;
                 case CMOVGE:
                     _[jump(choice(greater_or_equal(), sf() == of()), then.basicBlock(), directSuccessor())]; break;
                 case CMOVL:
-                    _[jump(choice(less(), !(sf() == of())), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(choice(less(), ~(sf() == of())), then.basicBlock(), directSuccessor())]; break;
                 case CMOVLE:
-                    _[jump(choice(less_or_equal(), zf() || !(sf() == of())), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(choice(less_or_equal(), zf() | ~(sf() == of())), then.basicBlock(), directSuccessor())]; break;
                 case CMOVNE: case CMOVNZ:
-                    _[jump(!zf(), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(~zf(), then.basicBlock(), directSuccessor())]; break;
                 case CMOVNO:
-                    _[jump(!of(), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(~of(), then.basicBlock(), directSuccessor())]; break;
                 case CMOVNP:
-                    _[jump(!pf(), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(~pf(), then.basicBlock(), directSuccessor())]; break;
                 case CMOVNS:
-                    _[jump(!sf(), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(~sf(), then.basicBlock(), directSuccessor())]; break;
                 case CMOVO:
                     _[jump(of(), then.basicBlock(), directSuccessor())]; break;
                 case CMOVP:
@@ -875,8 +875,10 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             if (const core::arch::DereferenceOperand *dereference = instr->operand(1)->asDereference()) {
                 if (instr->operand(0)->size() == dereference->operand()->size()) {
                     _[operand(0) = operand(dereference->operand())];
-                } else {
-                    _[operand(0) = resize(operand(dereference->operand()))];
+                } else if (instr->operand(0)->size() < dereference->operand()->size()) {
+                    _[operand(0) = truncate(operand(dereference->operand()))];
+                } else if (instr->operand(0)->size() > dereference->operand()->size()) {
+                    _[operand(0) = zero_extend(operand(dereference->operand()))];
                 }
             } else {
                 throw core::arch::irgen::InvalidInstructionException("lea's second argument must be a memory operand");
@@ -906,10 +908,10 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
                     _[jump(cx, operand(0), directSuccessor())];
                     break;
                 case LOOPE:
-                    _[jump(cx && zf(), operand(0), directSuccessor())];
+                    _[jump(cx & zf(), operand(0), directSuccessor())];
                     break;
                 case LOOPNE:
-                    _[jump(cx && !zf(), operand(0), directSuccessor())];
+                    _[jump(cx & ~zf(), operand(0), directSuccessor())];
                     break;
                 default:
                     unreachable();
@@ -924,7 +926,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
                 _[operand(0) = zero_extend(operand(1))];
             } else {
                 /* Happens in assignments to segment registers. Known bug of udis86. */
-                _[operand(0) = resize(operand(1))];
+                _[operand(0) = truncate(operand(1))];
             }
             break;
         }
@@ -938,7 +940,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
         }
         case NEG: {
             _[
-                cf() = !(operand(0) == constant(0)),
+                cf() = ~(operand(0) == constant(0)),
                 operand(0) = -operand(0),
                 pf() = intrinsic(),
                 zf() = operand(0) == constant(0),
@@ -1107,11 +1109,11 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case SETA: case SETNBE: {
-            _[operand(0) = zero_extend(choice(above(), !cf() && !zf()))];
+            _[operand(0) = zero_extend(choice(above(), ~cf() & ~zf()))];
             break;
         }
         case SETAE: case SETNB: {
-            _[operand(0) = zero_extend(choice(above_or_equal(), !cf()))];
+            _[operand(0) = zero_extend(choice(above_or_equal(), ~cf()))];
             break;
         }
         case SETB: case SETNAE: {
@@ -1119,7 +1121,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case SETBE: case SETNA: {
-            _[operand(0) = zero_extend(choice(below_or_equal(), cf() || zf()))];
+            _[operand(0) = zero_extend(choice(below_or_equal(), cf() | zf()))];
             break;
         }
         case SETC: {
@@ -1131,7 +1133,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case SETG: case SETNLE: {
-            _[operand(0) = zero_extend(choice(greater(), !zf() || sf() == of()))];
+            _[operand(0) = zero_extend(choice(greater(), ~zf() | sf() == of()))];
             break;
         }
         case SETGE: case SETNL: {
@@ -1139,31 +1141,31 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case SETL: case SETNGE: {
-            _[operand(0) = zero_extend(choice(less(), !(sf() == of())))];
+            _[operand(0) = zero_extend(choice(less(), ~(sf() == of())))];
             break;
         }
         case SETLE: case SETNG: {
-            _[operand(0) = zero_extend(choice(less_or_equal(), zf() || !(sf() == of())))];
+            _[operand(0) = zero_extend(choice(less_or_equal(), zf() | ~(sf() == of())))];
             break;
         }
         case SETNC: {
-            _[operand(0) = zero_extend(!cf())];
+            _[operand(0) = zero_extend(~cf())];
             break;
         }
         case SETNE: case SETNZ: {
-            _[operand(0) = zero_extend(!zf())];
+            _[operand(0) = zero_extend(~zf())];
             break;
         }
         case SETNO: {
-            _[operand(0) = zero_extend(!of())];
+            _[operand(0) = zero_extend(~of())];
             break;
         }
         case SETNP: case SETPO: {
-            _[operand(0) = zero_extend(!pf())];
+            _[operand(0) = zero_extend(~pf())];
             break;
         }
         case SETNS: {
-            _[operand(0) = zero_extend(!sf())];
+            _[operand(0) = zero_extend(~sf())];
             break;
         }
         case SETO: {

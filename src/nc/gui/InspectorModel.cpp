@@ -183,27 +183,32 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
 
         if (const core::ir::dflow::Value *value = dataflow->getValue(term)) {
             InspectorItem *valueItem = item->addChild(tr("value properties"));
-            if (value->isConstant()) {
-                valueItem->addChild(tr("constant value = %1").arg(value->constantValue().value()));
+            if (value->abstractValue().isConcrete()) {
+                valueItem->addChild(tr("constant value = %1").arg(value->abstractValue().asConcrete().value()));
             } else {
-                valueItem->addChild(tr("not a constant"));
+                valueItem->addChild(tr("zero bits = %1").arg(value->abstractValue().zeroBits(), 0, 16));
+                valueItem->addChild(tr("one bits = %1").arg(value->abstractValue().oneBits(), 0, 16));
             }
             if (value->isStackOffset()) {
-                valueItem->addChild(tr("stack offset = %1").arg(value->stackOffset().signedValue()));
+                valueItem->addChild(tr("stack offset = %1").arg(value->stackOffset()));
             } else {
                 valueItem->addChild(tr("not a stack offset"));
             }
-            if (value->isMultiplication()) {
-                valueItem->addChild(tr("is multiplication"));
-            } else if (value->isNotMultiplication()) {
-                valueItem->addChild(tr("is not multiplication"));
+            if (value->isProduct()) {
+                valueItem->addChild(tr("is product"));
+            } else if (value->isNotProduct()) {
+                valueItem->addChild(tr("is not product"));
             }
         }
 
         if (term->isRead()) {
             InspectorItem *definitionsItem = item->addChild(tr("definitions"));
-            foreach (const core::ir::Term *definition, dataflow->getDefinitions(term)) {
-                definitionsItem->addChild("", definition);
+
+            foreach (auto &def, dataflow->getDefinitions(term).definitions()) {
+                auto partItem = definitionsItem->addChild(def.first.toString());
+                foreach (auto definition, def.second) {
+                    partItem->addChild("", definition);
+                }
             }
         }
 

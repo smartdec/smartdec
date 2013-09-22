@@ -750,7 +750,7 @@ class IntelInstructionDisassemblerPrivate {
                 return architecture_->constantOperand(SizedValue(operand.size, operand.lval.ptr.seg * 16 + operand.lval.ptr.off));
             case UD_OP_IMM:
                 /* Signed number, sign-extended to match the size of the other operand. */
-                return architecture_->constantOperand(SizedValue(lastOperandSize, getSignedValue(operand, operand.size), std::max(SmallBitSize(operand.size))));
+                return architecture_->constantOperand(SizedValue(std::max(SmallBitSize(operand.size), lastOperandSize), getSignedValue(operand, operand.size)));
             case UD_OP_JIMM:
                 return architecture_->constantOperand(SizedValue(architecture_->bitness(), ud_obj_.pc + getSignedValue(operand, operand.size)));
             case UD_OP_CONST:
