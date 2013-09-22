@@ -53,14 +53,15 @@ namespace calls {
 namespace dflow {
 
 class Dataflow;
-class SimulationContext;
+class ExecutionContext;
 
 /**
- * Analyzer of function's dataflow.
+ * Dataflow analyzer.
  */
 class DataflowAnalyzer {
-    Dataflow &dataflow_; ///< Results of analyses.
+    Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Valid pointer to architecture description.
+    const Function *function_; ///< Analyzed function.
     calls::CallsData *callsData_; ///< Calls data.
 
     public:
@@ -70,10 +71,15 @@ class DataflowAnalyzer {
      *
      * \param dataflow An object where to store results of analyses.
      * \param architecture Valid pointer to architecture description.
+     * \param function Pointer to the analyzed function. Can be NULL.
      * \param callsData Pointer to the calls data. Can be NULL.
      */
-    DataflowAnalyzer(Dataflow &dataflow, const arch::Architecture *architecture, calls::CallsData *callsData = NULL):
-        dataflow_(dataflow), architecture_(architecture), callsData_(callsData)
+    DataflowAnalyzer(Dataflow &dataflow,
+        const arch::Architecture *architecture,
+        const Function *function = NULL,
+        calls::CallsData *callsData = NULL
+    ):
+        dataflow_(dataflow), architecture_(architecture), function_(function), callsData_(callsData)
     {
         assert(architecture != NULL);
     }
@@ -86,12 +92,11 @@ class DataflowAnalyzer {
     /**
      * An object where the results of analyses are stored.
      */
-    Dataflow &dataflow() { return dataflow_; }
+    Dataflow &dataflow() const { return dataflow_; }
 
     /**
-     * An object where the results of analyses are stored.
+     * \return Function being analyzed.
      */
-    const Dataflow &dataflow() const { return dataflow_; }
 
     /**
      * \return Valid pointer to architecture description.
@@ -99,51 +104,63 @@ class DataflowAnalyzer {
     const arch::Architecture *architecture() const { return architecture_; }
 
     /**
+     * \return Pointer to the analyzed function. Can be NULL.
+     */
+    const Function *function() const { return function_; }
+
+    /**
      * \return Pointer to the calls data. Can be NULL.
      */
     calls::CallsData *callsData() const { return callsData_; }
 
     /**
-     * Performs joint dataflow and constant propagation/folding analysis on a function.
+     * Performs joint reaching definitions and constant propagation/folding
+     * analysis on the function given to the constructor.
      *
-     * \param[in] function Function to analyze.
-     * \param[in] canceled Cancellation token.
+     * \param[in] canceled  Cancellation token.
      */
-    void analyze(const Function *function, const CancellationToken &canceled);
+    void analyze(const CancellationToken &canceled);
 
     /**
-     * Simulates execution of a statement.
+     * Executes a statement.
      *
-     * \param[in] statement             Valid pointer to a statement.
-     * \param     context               Simulation context.
+     * \param[in] statement Valid pointer to a statement.
+     * \param     context   Execution context.
      */
-    virtual void simulate(const Statement *statement, SimulationContext &context);
+    virtual void execute(const Statement *statement, ExecutionContext &context);
 
     /**
-     * Simulates computing of a term.
+     * Executes a term.
      *
-     * \param[in] term                  Valid pointer to a term.
-     * \param     context               Simulation context.
+     * \param[in] term      Valid pointer to a term.
+     * \param     context   Execution context.
      */
-    virtual void simulate(const Term *term, SimulationContext &context);
+    virtual void execute(const Term *term, ExecutionContext &context);
 
     protected:
 
     /**
-     * Simulates computing of a unary operator.
+     * Computes term's value by merging values of reaching definitions.
      *
-     * \param[in] unary                 Valid pointer to a UnaryOperator instance.
-     * \param     context               Simulation context.
+     * \param[in] term      Valid pointer to a term.
      */
-    virtual void simulateUnaryOperator(const UnaryOperator *unary, SimulationContext &context);
+    virtual void mergeReachingValues(const Term *term);
 
     /**
-     * Simulates computing of a binary operator.
+     * Executes a unary operator.
      *
-     * \param[in] binary                Valid pointer to a BinaryOperator instance.
-     * \param     context               Simulation context.
+     * \param[in] unary     Valid pointer to a UnaryOperator instance.
+     * \param     context   Execution context.
      */
-    virtual void simulateBinaryOperator(const BinaryOperator *binary, SimulationContext &context);
+    virtual void executeUnaryOperator(const UnaryOperator *unary, ExecutionContext &context);
+
+    /**
+     * Executes a binary operator.
+     *
+     * \param[in] binary    Valid pointer to a BinaryOperator instance.
+     * \param     context   Execution context.
+     */
+    virtual void executeBinaryOperator(const BinaryOperator *binary, ExecutionContext &context);
 };
 
 } // namespace dflow

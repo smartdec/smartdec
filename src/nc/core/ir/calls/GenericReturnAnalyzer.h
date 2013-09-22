@@ -82,7 +82,7 @@ public:
      */
     const std::vector<const Term *> &returnValueLocations() const { return returnValueLocations_; }
 
-    virtual void simulateReturn(dflow::SimulationContext &context) override;
+    virtual void executeReturn(dflow::ExecutionContext &context) override;
     virtual const Term *getReturnValueTerm(const Term *term) override;
     virtual void visitChildStatements(Visitor<const Statement> &visitor) const override;
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;

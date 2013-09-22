@@ -35,7 +35,7 @@ namespace core {
 namespace ir {
 
 namespace dflow {
-    class SimulationContext;
+    class ExecutionContext;
 }
 
 class Call;
@@ -71,11 +71,11 @@ public:
     const Call *call() const { return call_; }
 
     /**
-     * A method being called when specified call statement is simulated.
+     * A method being called when specified call statement is executed.
      * 
-     * \param context                  Simulation context.
+     * \param context Execution context.
      */
-    virtual void simulateCall(dflow::SimulationContext &context) = 0;
+    virtual void executeCall(dflow::ExecutionContext &context) = 0;
 
     /**
      * \param memoryLocation Memory location.
@@ -96,14 +96,14 @@ public:
     /**
      * Calls visitor for child statements.
      *
-     * \param[in] visitor              Visitor.
+     * \param[in] visitor Visitor.
      */
     virtual void visitChildStatements(Visitor<const Statement> &visitor) const = 0;
 
     /**
      * Calls visitor for child terms.
      *
-     * \param[in] visitor              Visitor.
+     * \param[in] visitor Visitor.
      */
     virtual void visitChildTerms(Visitor<const Term> &visitor) const = 0;
 };

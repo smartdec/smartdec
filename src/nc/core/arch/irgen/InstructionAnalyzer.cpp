@@ -86,7 +86,7 @@ std::unique_ptr<ir::Term> InstructionAnalyzer::doCreateTerm(const Operand *opera
             right = std::make_unique<ir::UnaryOperator>(ir::UnaryOperator::SIGN_EXTEND, std::move(right), size);
         }
 
-        return std::make_unique<ir::BinaryOperator>(ir::BinaryOperator::ADD, std::move(left), std::move(right));
+        return std::make_unique<ir::BinaryOperator>(ir::BinaryOperator::ADD, std::move(left), std::move(right), size);
     }
     case Operand::MULTIPLICATION: {
         const MultiplicationOperand *multiplication = operand->asMultiplication();
@@ -104,7 +104,7 @@ std::unique_ptr<ir::Term> InstructionAnalyzer::doCreateTerm(const Operand *opera
             right = std::make_unique<ir::UnaryOperator>(ir::UnaryOperator::ZERO_EXTEND, std::move(right), size);
         }
 
-        return std::make_unique<ir::BinaryOperator>(ir::BinaryOperator::MUL, std::move(left), std::move(right));
+        return std::make_unique<ir::BinaryOperator>(ir::BinaryOperator::MUL, std::move(left), std::move(right), size);
     }
     case Operand::DEREFERENCE: {
         const DereferenceOperand *dereference = operand->asDereference();

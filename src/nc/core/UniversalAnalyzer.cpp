@@ -217,8 +217,8 @@ void UniversalAnalyzer::computeTermToFunctionMapping(Context *context) const {
 void UniversalAnalyzer::analyzeDataflow(Context *context, const ir::Function *function) const {
     std::unique_ptr<ir::dflow::Dataflow> dataflow(new ir::dflow::Dataflow());
 
-    ir::dflow::DataflowAnalyzer analyzer(*dataflow, context->module()->architecture(), context->callsData());
-    analyzer.analyze(function, context->cancellationToken());
+    ir::dflow::DataflowAnalyzer(*dataflow, context->module()->architecture(), function, context->callsData())
+        .analyze(context->cancellationToken());
 
     context->setDataflow(function, std::move(dataflow));
 }

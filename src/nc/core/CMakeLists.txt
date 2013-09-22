@@ -127,9 +127,9 @@ set(SOURCES
     ir/dflow/Dataflow.h
     ir/dflow/DataflowAnalyzer.cpp
     ir/dflow/DataflowAnalyzer.h
+    ir/dflow/ExecutionContext.h
     ir/dflow/ReachingDefinitions.cpp
     ir/dflow/ReachingDefinitions.h
-    ir/dflow/SimulationContext.h
     ir/dflow/Utils.cpp
     ir/dflow/Utils.h
     ir/dflow/Value.cpp

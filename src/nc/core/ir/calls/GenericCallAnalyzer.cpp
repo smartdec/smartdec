@@ -29,7 +29,7 @@
 
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
-#include <nc/core/ir/dflow/SimulationContext.h>
+#include <nc/core/ir/dflow/ExecutionContext.h>
 #include <nc/core/ir/MemoryDomain.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
@@ -66,7 +66,8 @@ GenericCallAnalyzer::GenericCallAnalyzer(const Call *call, const GenericDescript
             std::make_unique<BinaryOperator>(
                 BinaryOperator::ADD, 
                 std::make_unique<MemoryLocationAccess>(convention()->stackPointer()), 
-                std::move(stackAmendmentConstant))));
+                std::move(stackAmendmentConstant),
+                convention()->stackPointer().size())));
 
     foreach (const Term *returnValue, convention()->returnValues()) {
         getReturnValueTerm(returnValue);
@@ -79,7 +80,7 @@ inline const GenericCallingConvention *GenericCallAnalyzer::convention() const {
     return addressAnalyzer()->convention();
 }
 
-void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
+void GenericCallAnalyzer::executeCall(dflow::ExecutionContext &context) {
     argumentLocations_.clear();
 
     /*
@@ -129,7 +130,7 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
             stackPointer_->setAccessType(Term::READ);
             stackPointer_->setStatementRecursively(call());
         }
-        context.analyzer().simulate(stackPointer_.get(), context);
+        context.analyzer().execute(stackPointer_.get(), context);
 
         const dflow::Value *stackPointerValue = context.analyzer().dataflow().getValue(stackPointer_.get());
 
@@ -166,9 +167,9 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
         }
     }
 
-    /* Run simulation for all argument terms. */
+    /* Execute all argument terms. */
     foreach (const auto &argument, arguments_) {
-        context.analyzer().simulate(argument.second.get(), context);
+        context.analyzer().execute(argument.second.get(), context);
     }
 
 #if 0
@@ -181,13 +182,13 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
     }
 #endif
 
-    /* Run simulation for all return value terms. */
+    /* Execute all return value terms. */
     foreach (const auto &pair, returnValues_) {
         dflow::Value *value = context.analyzer().dataflow().getValue(pair.second.get());
         value->setAbstractValue(dflow::AbstractValue(pair.second->size(), -1, -1));
         value->makeNotStackOffset();
 
-        context.analyzer().simulate(pair.second.get(), context);
+        context.analyzer().execute(pair.second.get(), context);
     }
 
     // FIXME: unnecessary?
@@ -220,8 +221,8 @@ void GenericCallAnalyzer::simulateCall(dflow::SimulationContext &context) {
     }
     stackAmendmentConstant_->setValue(amendment);
     
-    /* Simulate the amendment statement. */
-    context.analyzer().simulate(stackAmendmentStatement_.get(), context);
+    /* Execute the amendment statement. */
+    context.analyzer().execute(stackAmendmentStatement_.get(), context);
 }
 
 const Term *GenericCallAnalyzer::getArgumentTerm(const MemoryLocation &memoryLocation) {

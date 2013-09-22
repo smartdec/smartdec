@@ -701,7 +701,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
                 if (result1->size() == arg0->size()) {
                     _[operand(result1) = operand(arg0) * operand(0)];
                 } else {
-                    _[operand(result1) = sign_extend(operand(arg0)) * sign_extend(operand(0))];
+                    _[operand(result1) = sign_extend(operand(arg0)) * operand(0)];
                 }
                 if (result2) {
                     _[operand(result2) = intrinsic()];
@@ -1283,18 +1283,26 @@ std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::doCreateTerm(const cor
     case IntelOperands::FPU_STACK: {
         const FpuStackOperand *fpuStack = operand->as<FpuStackOperand>();
 
+        const SmallBitSize addressSize = 16;
+
         return std::make_unique<core::ir::Dereference>(
             std::make_unique<core::ir::BinaryOperator>(
                 core::ir::BinaryOperator::MUL,
-                std::make_unique<core::ir::BinaryOperator>(
-                    core::ir::BinaryOperator::ADD,
-                    createTerm(operands->fpu_top()),
-                    std::make_unique<core::ir::Constant>(SizedValue(32, fpuStack->index()))
+                std::make_unique<core::ir::UnaryOperator>(
+                    core::ir::UnaryOperator::ZERO_EXTEND,
+                    std::make_unique<core::ir::BinaryOperator>(
+                        core::ir::BinaryOperator::ADD,
+                        createTerm(operands->fpu_top()),
+                        std::make_unique<core::ir::Constant>(SizedValue(operands->fpu_top()->size(), fpuStack->index())),
+                        operands->fpu_top()->size()
+                    ),
+                    addressSize
                 ),
-                std::make_unique<core::ir::Constant>(SizedValue(32, operands->fpu_r0()->memoryLocation().size()))
+                std::make_unique<core::ir::Constant>(SizedValue(addressSize, operands->fpu_r0()->size())),
+                addressSize
             ),
             operands->fpu_r0()->memoryLocation().domain(),
-            operands->fpu_r0()->size()
+            addressSize
         );
     }
     default: 

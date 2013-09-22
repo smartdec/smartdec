@@ -33,7 +33,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
-#include <nc/core/ir/dflow/SimulationContext.h>
+#include <nc/core/ir/dflow/ExecutionContext.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
 
 #include <nc/common/Foreach.h>
@@ -76,13 +76,13 @@ inline const GenericCallingConvention *GenericFunctionAnalyzer::convention() con
     return addressAnalyzer()->convention();
 }
 
-void GenericFunctionAnalyzer::simulateEnter(dflow::SimulationContext &context) {
+void GenericFunctionAnalyzer::executeEnter(dflow::ExecutionContext &context) {
     /*
      * Detect all stack arguments used.
      */
     if (context.fixpointReached()) {
         misc::CensusVisitor census(NULL);
-        census(context.function());
+        census(context.analyzer().function());
 
         /* Estimate memory locations of arguments. */
         foreach (const Term *term, census.terms()) {
@@ -113,23 +113,23 @@ void GenericFunctionAnalyzer::simulateEnter(dflow::SimulationContext &context) {
     }
 
     /**
-     * Set stack pointer offset to zero and simulate him.
+     * Set stack pointer offset to zero and execute him.
      */
     context.analyzer().dataflow().getValue(stackPointer_.get())->makeStackOffset(0);
-    context.analyzer().simulate(stackPointer_.get(), context);
+    context.analyzer().execute(stackPointer_.get(), context);
 
     /*
-     * Run simulation for "enter statements".
+     * Execute entry statements.
      */
     foreach (const auto &statement, entryStatements_) {
-        context.analyzer().simulate(statement, context);
+        context.analyzer().execute(statement, context);
     }
 
     /*
-     * Run simulation for all argument terms.
+     * Execute all argument terms.
      */
     foreach (const auto &argument, arguments_) {
-        context.analyzer().simulate(argument.second.get(), context);
+        context.analyzer().execute(argument.second.get(), context);
     }
 }
 

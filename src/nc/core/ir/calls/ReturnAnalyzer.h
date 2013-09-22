@@ -35,7 +35,7 @@ namespace core {
 namespace ir {
 
 namespace dflow {
-    class SimulationContext;
+    class ExecutionContext;
 }
 
 class Return;
@@ -72,11 +72,11 @@ class ReturnAnalyzer {
     const Return *ret() const { return return_; }
 
     /**
-     * A method being called when specified return statement is simulated.
+     * A method being called when specified return statement is executed.
      * 
-     * \param context Simulation context.
+     * \param context Execution context.
      */
-    virtual void simulateReturn(dflow::SimulationContext &context) = 0;
+    virtual void executeReturn(dflow::ExecutionContext &context) = 0;
 
     /**
      * Returns a valid pointer to the term representing the argument designated by given term.

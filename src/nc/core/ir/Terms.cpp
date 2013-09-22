@@ -221,6 +221,7 @@ void BinaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
     visitor(right_.get());
 }
 
+// TODO: move to DataflowAnalyzer.
 dflow::AbstractValue BinaryOperator::apply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const {
     auto result = doApply(a, b);
     assert(result.size() == size());

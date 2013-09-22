@@ -94,7 +94,7 @@ public:
     const std::vector<MemoryLocation> &argumentLocations() const { return argumentLocations_; }
 
     virtual const std::vector<const Statement *> &entryStatements() const override { return entryStatements_; }
-    virtual void simulateEnter(dflow::SimulationContext &context) override;
+    virtual void executeEnter(dflow::ExecutionContext &context) override;
     virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) override;
     virtual void visitChildStatements(Visitor<const Statement> &visitor) const override;
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;

@@ -41,7 +41,7 @@ class Statement;
 class Term;
 
 namespace dflow {
-    class SimulationContext;
+    class ExecutionContext;
 }
 
 namespace calls {
@@ -81,11 +81,11 @@ class FunctionAnalyzer {
     virtual const std::vector<const Statement *> &entryStatements() const;
 
     /**
-     * Method run when function's entry node is being simulated.
+     * This method is called just before function's entry node gets executed.
      * 
-     * \param context Simulation context.
+     * \param context Execution context.
      */
-    virtual void simulateEnter(dflow::SimulationContext &context) = 0;
+    virtual void executeEnter(dflow::ExecutionContext &context) = 0;
 
     /**
      * Returns a valid pointer to the term representing the argument at given memory location.

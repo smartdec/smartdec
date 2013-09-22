@@ -35,14 +35,13 @@ namespace dflow {
 class DataflowAnalyzer;
 
 /**
- * Simulation context.
- * It is passed to simulate() methods of Statement and Term classes.
- * Context represents the state of simulated program.
+ * Execution context.
+ * It is passed to execute() methods of Statement and Term classes.
+ * Context represents the state of the interpreted program.
  */
-class SimulationContext {
-    DataflowAnalyzer &analyzer_; ///< DataflowAnalyzer performing the simulation.
+class ExecutionContext {
+    DataflowAnalyzer &analyzer_; ///< DataflowAnalyzer performing the execution.
     ReachingDefinitions definitions_; ///< Reaching definitions.
-    const Function *function_; ///< Function being simulated.
     bool fixpointReached_; ///< Whether stationary point in reaching definitions is reached.
 
     public:
@@ -50,31 +49,19 @@ class SimulationContext {
     /**
      * Class constructor.
      *
-     * \param analyzer                  DataflowAnalyzer performing the simulation.
-     * \param function                  Pointer to the function being simulated. Can be NULL.
+     * \param analyzer                  DataflowAnalyzer performing the execution.
      * \param fixpointReached           Flag which is true if reaching definitions didn't change
-     *                                  during last iteration of function's simulation.
+     *                                  during last iteration of function's execution.
      */
-    SimulationContext(DataflowAnalyzer &analyzer, const Function *function = NULL, bool fixpointReached = false):
+    ExecutionContext(DataflowAnalyzer &analyzer, bool fixpointReached = false):
         analyzer_(analyzer),
-        function_(function),
         fixpointReached_(fixpointReached)
     {}
 
     /**
-     * \return DataflowAnalyzer performing the simulation.
+     * \return DataflowAnalyzer performing the execution.
      */
-    DataflowAnalyzer &analyzer() { return analyzer_; }
-
-    /**
-     * \return DataflowAnalyzer performing the simulation.
-     */
-    const DataflowAnalyzer &analyzer() const { return analyzer_; }
-
-    /**
-     * \return Pointer to the function being simulated. Can be NULL.
-     */
-    const Function *function() const { return function_; }
+    DataflowAnalyzer &analyzer() const { return analyzer_; }
 
     /**
      * \return Whether stationary point in reaching definitions is reached.

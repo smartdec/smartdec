@@ -39,7 +39,7 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
-#include <nc/core/ir/dflow/SimulationContext.h>
+#include <nc/core/ir/dflow/ExecutionContext.h>
 #include <nc/core/ir/misc/ArrayAccess.h>
 #include <nc/core/ir/misc/PatternRecognition.h>
 
@@ -88,13 +88,13 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
     /* Prepare context for quick and dirty dataflow analysis. */
     ir::dflow::Dataflow dataflow;
     ir::dflow::DataflowAnalyzer analyzer(dataflow, module()->architecture(), NULL);
-    ir::dflow::SimulationContext context(analyzer);
+    ir::dflow::ExecutionContext context(analyzer);
 
     for (std::size_t i = 0; i < basicBlock->statements().size(); ++i) {
         ir::Statement *statement = basicBlock->statements()[i];
 
-        /* Simulate another statement. */
-        analyzer.simulate(statement, context);
+        /* Execute yet another statement. */
+        analyzer.execute(statement, context);
 
         if (statement->isInlineAssembly()) {
             /*
@@ -147,12 +147,15 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
 void IRGenerator::computeJumpTarget(ir::JumpTarget &target, const ir::dflow::Dataflow &dataflow) {
     if (target.address() && !target.basicBlock() && !target.table()) {
         const ir::dflow::Value *addressValue = dataflow.getValue(target.address());
+
         if (addressValue->abstractValue().isConcrete()) {
             target.setBasicBlock(program()->createBasicBlock(addressValue->abstractValue().asConcrete().value()));
         } else {
             auto entries = getJumpTableEntries(target.address(), dataflow);
+
             if (!entries.empty()) {
                 auto table = std::make_unique<ir::JumpTable>();
+
                 foreach (ByteAddr targetAddress, entries) {
                     table->push_back(ir::JumpTableEntry(targetAddress, program()->createBasicBlock(targetAddress)));
                 }

@@ -30,7 +30,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
-#include <nc/core/ir/dflow/SimulationContext.h>
+#include <nc/core/ir/dflow/ExecutionContext.h>
 
 #include <nc/common/Foreach.h>
 
@@ -56,9 +56,9 @@ inline const GenericCallingConvention *GenericReturnAnalyzer::convention() const
     return addressAnalyzer()->convention();
 }
 
-void GenericReturnAnalyzer::simulateReturn(dflow::SimulationContext &context) {
+void GenericReturnAnalyzer::executeReturn(dflow::ExecutionContext &context) {
     foreach (const auto &pair, returnValues_) {
-        context.analyzer().simulate(pair.second.get(), context);
+        context.analyzer().execute(pair.second.get(), context);
     }
     
     /* 

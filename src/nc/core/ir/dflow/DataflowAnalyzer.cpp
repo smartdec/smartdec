@@ -46,18 +46,20 @@
 #include <nc/core/ir/misc/CensusVisitor.h>
 
 #include "Dataflow.h"
-#include "SimulationContext.h"
+#include "ExecutionContext.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace dflow {
 
-void DataflowAnalyzer::analyze(const Function *function, const CancellationToken &canceled) {
-    CFG cfg(function->basicBlocks());
+void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
+    assert(function() != NULL);
+
+    CFG cfg(function()->basicBlocks());
 
     /*
-     * Run simulation until reaching stationary point twice in a row.
+     * Run abstract interpretation until reaching stationary point twice in a row.
      */
     boost::unordered_map<const BasicBlock *, ReachingDefinitions> outputDefinitions;
 
@@ -69,10 +71,10 @@ void DataflowAnalyzer::analyze(const Function *function, const CancellationToken
         changed = false;
 
         /*
-         * Compute definitions.
+         * Run abstract interpretation on all basic blocks.
          */
-        foreach (const BasicBlock *basicBlock, function->basicBlocks()) {
-            SimulationContext context(*this, function, fixpointReached);
+        foreach (const BasicBlock *basicBlock, function()->basicBlocks()) {
+            ExecutionContext context(*this, fixpointReached);
 
             /* Merge the reaching definitions from predecessors. */
             foreach (const BasicBlock *predecessor, cfg.getPredecessors(basicBlock)) {
@@ -80,17 +82,17 @@ void DataflowAnalyzer::analyze(const Function *function, const CancellationToken
             }
 
             /* If this is a function entry, run the calling convention-specific code. */
-            if (basicBlock == function->entry()) {
+            if (basicBlock == function()->entry()) {
                 if (callsData()) {
-                    if (calls::FunctionAnalyzer *functionAnalyzer = callsData()->getFunctionAnalyzer(function)) {
-                        functionAnalyzer->simulateEnter(context);
+                    if (calls::FunctionAnalyzer *functionAnalyzer = callsData()->getFunctionAnalyzer(function())) {
+                        functionAnalyzer->executeEnter(context);
                     }
                 }
             }
 
             /* Simulate all the statements in the basic block. */
             foreach (const Statement *statement, basicBlock->statements()) {
-                simulate(statement, context);
+                execute(statement, context);
             }
 
             /* Something changed? */
@@ -105,7 +107,7 @@ void DataflowAnalyzer::analyze(const Function *function, const CancellationToken
          * Compute uses.
          */
         misc::CensusVisitor census(callsData());
-        census(function);
+        census(function());
 
         foreach (const Term *term, census.terms()) {
             if (term->isWrite()) {
@@ -137,13 +139,14 @@ void DataflowAnalyzer::analyze(const Function *function, const CancellationToken
          * Do we loop infinitely?
          */
         if (++niterations >= 30) {
-            ncWarning("Didn't reach a fixpoint after %1 iterations while analyzing dataflow of %2. Giving up.", niterations, function->name());
+            ncWarning("Didn't reach a fixpoint after %1 iterations while analyzing dataflow of %2. Giving up.",
+                niterations, function()->name());
             break;
         }
     } while (changed && !canceled);
 }
 
-void DataflowAnalyzer::simulate(const Statement *statement, SimulationContext &context) {
+void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &context) {
     switch (statement->kind()) {
         case Statement::COMMENT:
             break;
@@ -154,33 +157,33 @@ void DataflowAnalyzer::simulate(const Statement *statement, SimulationContext &c
              */
             break;
         case Statement::ASSIGNMENT: {
-            const Assignment *assignment = statement->asAssignment();
-            simulate(assignment->right(), context);
-            simulate(assignment->left(), context);
+            auto assignment = statement->asAssignment();
+            execute(assignment->right(), context);
+            execute(assignment->left(), context);
             break;
         }
         case Statement::KILL: {
-            const Kill *kill = statement->asKill();
-            simulate(kill->term(), context);
+            auto kill = statement->asKill();
+            execute(kill->term(), context);
             break;
         }
         case Statement::JUMP: {
-            const Jump *jump = statement->asJump();
+            auto jump = statement->asJump();
 
             if (jump->condition()) {
-                simulate(jump->condition(), context);
+                execute(jump->condition(), context);
             }
             if (jump->thenTarget().address()) {
-                simulate(jump->thenTarget().address(), context);
+                execute(jump->thenTarget().address(), context);
             }
             if (jump->elseTarget().address()) {
-                simulate(jump->elseTarget().address(), context);
+                execute(jump->elseTarget().address(), context);
             }
             break;
         }
         case Statement::CALL: {
-            const Call *call = statement->asCall();
-            simulate(call->target(), context);
+            auto call = statement->asCall();
+            execute(call->target(), context);
 
             if (callsData()) {
                 const Value *targetValue = dataflow().getValue(call->target());
@@ -188,15 +191,15 @@ void DataflowAnalyzer::simulate(const Statement *statement, SimulationContext &c
                     callsData()->setCalledAddress(call, targetValue->abstractValue().asConcrete().value());
                 }
                 if (calls::CallAnalyzer *callAnalyzer = callsData()->getCallAnalyzer(call)) {
-                    callAnalyzer->simulateCall(context);
+                    callAnalyzer->executeCall(context);
                 }
             }
             break;
         }
         case Statement::RETURN: {
-            if (callsData() && context.function()) {
-                if (calls::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(context.function(), statement->asReturn())) {
-                    returnAnalyzer->simulateReturn(context);
+            if (function() && callsData()) {
+                if (calls::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function(), statement->asReturn())) {
+                    returnAnalyzer->executeReturn(context);
                 }
             }
             break;
@@ -207,13 +210,12 @@ void DataflowAnalyzer::simulate(const Statement *statement, SimulationContext &c
     }
 }
 
-void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
+void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
     assert(term != NULL);
 
     switch (term->kind()) {
         case Term::INT_CONST: {
-            const Constant *constant = term->asConstant();
-
+            auto constant = term->asConstant();
             Value *value = dataflow().getValue(constant);
             value->setAbstractValue(constant->value());
             value->makeNotStackOffset();
@@ -229,7 +231,7 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
             break;
         }
         case Term::MEMORY_LOCATION_ACCESS: {
-            const MemoryLocationAccess *access = term->asMemoryLocationAccess();
+            auto access = term->asMemoryLocationAccess();
             dataflow().setMemoryLocation(access, access->memoryLocation());
 
             /* The value of instruction pointer is always easy to guess. */
@@ -244,11 +246,11 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
             break;
         }
         case Term::DEREFERENCE: {
-            const Dereference *dereference = term->asDereference();
+            auto dereference = term->asDereference();
+            execute(dereference->address(), context);
 
-            simulate(dereference->address(), context);
-
-            const Value *addressValue = dataflow().getValue(dereference->address());
+            /* Compute memory location. */
+            auto addressValue = dataflow().getValue(dereference->address());
             if (addressValue->abstractValue().isConcrete()) {
                 if (dereference->domain() == MemoryDomain::MEMORY) {
                     dataflow().setMemoryLocation(dereference, MemoryLocation(dereference->domain(),
@@ -266,15 +268,15 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
             break;
         }
         case Term::UNARY_OPERATOR:
-            simulateUnaryOperator(term->asUnaryOperator(), context);
+            executeUnaryOperator(term->asUnaryOperator(), context);
             break;
         case Term::BINARY_OPERATOR:
-            simulateBinaryOperator(term->asBinaryOperator(), context);
+            executeBinaryOperator(term->asBinaryOperator(), context);
             break;
         case Term::CHOICE: {
-            const Choice *choice = term->asChoice();
-            simulate(choice->preferredTerm(), context);
-            simulate(choice->defaultTerm(), context);
+            auto choice = term->asChoice();
+            execute(choice->preferredTerm(), context);
+            execute(choice->defaultTerm(), context);
 
             if (!dataflow().getDefinitions(choice->preferredTerm()).empty()) {
                 *dataflow().getValue(choice) = *dataflow().getValue(choice->preferredTerm());
@@ -288,57 +290,15 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
             break;
     }
 
+    /*
+     * Update reaching definitions.
+     */
     if (const MemoryLocation &termLocation = dataflow().getMemoryLocation(term)) {
         if (!architecture()->isGlobalMemory(termLocation)) {
+            /* Access to a local variable. */
             if (term->isRead()) {
-                auto definitions = context.definitions().getDefinitions(termLocation);
-                dataflow().setDefinitions(term, definitions);
-
-                Value *termValue = dataflow().getValue(term);
-                auto termAbstractValue = termValue->abstractValue();
-
-                foreach (const auto &def, definitions.definitions()) {
-                    auto &definedLocation = def.first;
-
-                    assert(termLocation.covers(definedLocation));
-
-                    foreach (const Term *definition, def.second) {
-                        auto definitionLocation = dataflow().getMemoryLocation(definition);
-
-                        if (!definitionLocation.covers(definedLocation)) {
-                            continue;
-                        }
-
-                        auto definitionValue = dataflow().getValue(definition);
-                        auto definitionAbstractValue = definitionValue->abstractValue();
-
-                        /*
-                         * Shift definition's abstract value to match term's location.
-                         */
-                        if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
-                            definitionAbstractValue.shift(definitionLocation.addr() - termLocation.addr());
-                        } else {
-                            definitionAbstractValue.shift(termLocation.endAddr() - definitionLocation.endAddr());
-                        }
-
-                        /*
-                         * Project the value to the defined location.
-                         */
-                        auto mask = bitMask<ConstantValue>(definedLocation.size());
-                        if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
-                            mask = bitShift(mask, definedLocation.addr() - termLocation.addr());
-                        } else {
-                            mask = bitShift(mask, termLocation.endAddr() - definedLocation.endAddr());
-                        }
-                        definitionAbstractValue.project(mask);
-
-                        termAbstractValue.merge(definitionAbstractValue);
-                    }
-                }
-
-                termValue->setAbstractValue(termAbstractValue.resize(term->size()));
-
-                // TODO: product, stack offset.
+                dataflow().setDefinitions(term, context.definitions().getDefinitions(termLocation));
+                mergeReachingValues(term);
             }
             if (term->isWrite()) {
                 context.definitions().addDefinition(termLocation, term);
@@ -347,19 +307,116 @@ void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
                 context.definitions().killDefinitions(termLocation);
             }
         } else {
+            /* Access to a global variable. */
             if (term->isRead()) {
                 dataflow().clearDefinitions(term);
             }
         }
     } else {
+        /* Access to an unknown location. */
         if (term->isRead()) {
             dataflow().clearDefinitions(term);
         }
     }
 }
 
-void DataflowAnalyzer::simulateUnaryOperator(const UnaryOperator *unary, SimulationContext &context) {
-    simulate(unary->operand(), context);
+void DataflowAnalyzer::mergeReachingValues(const Term *term) {
+    assert(term);
+    assert(term->isRead());
+
+    /* If term has no reaching definitions, nothing to do. */
+    auto &definitions = dataflow().getDefinitions(term);
+    if (definitions.empty()) {
+        return;
+    }
+
+    /* If there are reaching definitions, the term must have a memory location. */
+    auto termLocation = dataflow().getMemoryLocation(term);
+    assert(termLocation);
+
+    /*
+     * Merge abstract values.
+     */
+    auto termValue = dataflow().getValue(term);
+    auto termAbstractValue = termValue->abstractValue();
+
+    foreach (const auto &def, definitions.definitions()) {
+        auto &definedLocation = def.first;
+        assert(termLocation.covers(definedLocation));
+
+        /*
+         * Mask of bits inside termAbstractValue which are covered by the definedLocation.
+         */
+        auto mask = bitMask<ConstantValue>(definedLocation.size());
+        if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
+            mask = bitShift(mask, definedLocation.addr() - termLocation.addr());
+        } else {
+            mask = bitShift(mask, termLocation.endAddr() - definedLocation.endAddr());
+        }
+
+        foreach (const Term *definition, def.second) {
+            auto definitionLocation = dataflow().getMemoryLocation(definition);
+            assert(definitionLocation.covers(definedLocation));
+
+            auto definitionValue = dataflow().getValue(definition);
+            auto definitionAbstractValue = definitionValue->abstractValue();
+
+            /*
+             * Shift definition's abstract value to match term's location.
+             */
+            if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
+                definitionAbstractValue.shift(definitionLocation.addr() - termLocation.addr());
+            } else {
+                definitionAbstractValue.shift(termLocation.endAddr() - definitionLocation.endAddr());
+            }
+
+            /* Project the value to the defined location. */
+            definitionAbstractValue.project(mask);
+
+            termAbstractValue.merge(definitionAbstractValue);
+        }
+    }
+
+    termValue->setAbstractValue(termAbstractValue.resize(term->size()));
+
+    /*
+     * Merge stack offset and product flags.
+     *
+     * Merge information only from terms that define lower bits of the term's value.
+     */
+    const std::vector<const Term *> *lowerBitsDefinitions = NULL;
+
+    if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
+        if (definitions.definitions().front().first.addr() == termLocation.addr()) {
+            lowerBitsDefinitions = &definitions.definitions().front().second;
+        }
+    } else {
+        if (definitions.definitions().back().first.endAddr() == termLocation.endAddr()) {
+            lowerBitsDefinitions = &definitions.definitions().back().second;
+        }
+    }
+
+    if (lowerBitsDefinitions) {
+        foreach (auto definition, *lowerBitsDefinitions) {
+            auto definitionValue = dataflow().getValue(definition);
+
+            if (definitionValue->isNotStackOffset()) {
+                termValue->makeNotStackOffset();
+            } else if (definitionValue->isStackOffset()) {
+                termValue->makeStackOffset(definitionValue->stackOffset());
+            }
+
+            if (definitionValue->isNotProduct()) {
+                termValue->makeNotProduct();
+            } else if (definitionValue->isProduct()) {
+                termValue->makeProduct();
+            }
+        }
+    }
+}
+
+void DataflowAnalyzer::executeUnaryOperator(const UnaryOperator *unary, ExecutionContext &context) {
+    execute(unary->operand(), context);
 
     Value *value = dataflow().getValue(unary);
     Value *operandValue = dataflow().getValue(unary->operand());
@@ -388,9 +445,9 @@ void DataflowAnalyzer::simulateUnaryOperator(const UnaryOperator *unary, Simulat
     }
 }
 
-void DataflowAnalyzer::simulateBinaryOperator(const BinaryOperator *binary, SimulationContext &context) {
-    simulate(binary->left(), context);
-    simulate(binary->right(), context);
+void DataflowAnalyzer::executeBinaryOperator(const BinaryOperator *binary, ExecutionContext &context) {
+    execute(binary->left(), context);
+    execute(binary->right(), context);
 
     Value *value = dataflow().getValue(binary);
     Value *leftValue = dataflow().getValue(binary->left());
