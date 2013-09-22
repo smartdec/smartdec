@@ -42,7 +42,7 @@ namespace ir {
  * Constant integer.
  */
 class Constant: public Term {
-    SizedValue value_; ///< Value of the constant.
+    ConstantValue value_; ///< Value of the constant.
 
 public:
     /**
@@ -50,24 +50,24 @@ public:
      *
      * \param[in] value                Value of the constant.
      */
-    Constant(const SizedValue &value): Term(INT_CONST, value.size()), value_(value) {}
+    Constant(const SizedValue &value): Term(INT_CONST, value.size()), value_(value.value()) {}
 
     /**
      * \return Value of the constant. Bits starting from size() and higher are zero.
      */
-    const SizedValue &value() const { return value_; }
+    SizedValue value() const { return SizedValue(size(), value_, SizedValue::exact); }
 
     /**
      * Sets the value of the constant.
      *
      * \param[in] value New value.
      */
-    void setValue(ConstantValue value) { value_ = SizedValue(size(), value); }
+    void setValue(ConstantValue value) { value_ = bitTruncate(value, size()); }
 
     virtual void print(QTextStream &out) const override;
 
 protected:
-    virtual Constant *doClone() const { return new Constant(value()); }
+    virtual Constant *doClone() const override;
 };
 
 /**
@@ -85,8 +85,8 @@ public:
     /**
      * Constructor.
      *
-     * \param[in] intrinsicKind         Kind of the convention.
-     * \param[in] size                  Size of this term's value in bits.
+     * \param[in] intrinsicKind Kind of the intrinsic.
+     * \param[in] size          Size of this term's value in bits.
      */
     Intrinsic(int intrinsicKind, SmallBitSize size):
         Term(INTRINSIC, size), intrinsicKind_(intrinsicKind)
@@ -95,7 +95,7 @@ public:
     virtual void print(QTextStream &out) const override;
 
 protected:
-    virtual Intrinsic *doClone() const { return new Intrinsic(intrinsicKind(), size()); }
+    virtual Intrinsic *doClone() const override;
 };
 
 /**
@@ -106,14 +106,14 @@ public:
     /**
      * Constructor.
      * 
-     * \param[in] size                 Size of this term's value in bits.
+     * \param[in] size Size of this term's value in bits.
      */
     Undefined(SmallBitSize size): Term(UNDEFINED, size) {}
 
     virtual void print(QTextStream &out) const override;
 
 protected:
-    virtual Undefined *doClone() const { return new Undefined(size()); }
+    virtual Undefined *doClone() const override;
 };
 
 /**
@@ -138,7 +138,7 @@ public:
     virtual void print(QTextStream &out) const override;
 
 protected:
-    virtual MemoryLocationAccess *doClone() const { return new MemoryLocationAccess(memoryLocation()); }
+    virtual MemoryLocationAccess *doClone() const override;
 };
 
 /**
@@ -179,11 +179,11 @@ public:
     virtual void print(QTextStream &out) const override;
 
 protected:
-    virtual Dereference *doClone() const { return new Dereference(address()->clone(), domain(), size()); }
+    virtual Dereference *doClone() const override;
 };
 
 /**
- * Base class for unary operators.
+ * Unary operator.
  */
 class UnaryOperator: public Term {
     NC_CLASS_WITH_KINDS(UnaryOperator, operatorKind)
@@ -203,29 +203,23 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] operatorKind         Subkind of the unary operator.
-     * \param[in] operand              The operand of the unary operator.
-     * \param[in] size                 Size of this term's value in bits.
+     * \param[in] operatorKind  Subkind of the unary operator.
+     * \param[in] operand       The operand of the unary operator.
+     * \param[in] size          Size of this term's value in bits.
+     *
+     * \note If operator's kind is NOT or NEGATION, operator's size must be equal to operand's size.
+     * \note If operator's kind is *_EXTEND, operator's size must be strictly greater than operand's size.
+     * \note If operator's kind is TRUNCATE, operator's size must be strictly smaller than operand's size.
      */
     UnaryOperator(int operatorKind, std::unique_ptr<Term> operand, SmallBitSize size);
 
     /**
-     * Class constructor. 
-     * 
-     * Size is taken from the given operand.
-     * 
-     * \param[in] operatorKind         Subkind of the unary operator.
-     * \param[in] operand              The operand of the unary operator.
-     */
-    UnaryOperator(int operatorKind, std::unique_ptr<Term> operand);
-
-    /**
-     * \return                         The operand of the unary operator.
+     * \return Valid pointer to the operand of this operator.
      */
     Term *operand() { return operand_.get(); }
 
     /**
-     * \return                         The operand of the unary operator.
+     * \return Valid pointer to the operand of this operator.
      */
     const Term *operand() const { return operand_.get(); }
 
@@ -233,22 +227,31 @@ public:
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
 
     /**
-     * Applies the unary operator to the integer argument.
+     * Applies the operator to an abstract value.
      *
-     * \param a                        Argument.
-     * \return                         Result of application of this unary operator to the given argument,
-     *                                 or boost::none when the operator is not applicable.
+     * \param a Operand value.
+     *
+     * \return Resulting abstract value. Its size is equal to this->size().
      */
-    virtual dflow::AbstractValue apply(const dflow::AbstractValue &a) const;
+    dflow::AbstractValue apply(const dflow::AbstractValue &a) const;
 
     virtual void print(QTextStream &out) const override;
 
 protected:
-    virtual UnaryOperator *doClone() const { return new UnaryOperator(operatorKind(), operand()->clone(), size()); }
+    /**
+     * Actually applies the unary operator to an abstract value.
+     *
+     * \param a Operand value.
+     *
+     * \return Resulting abstract value. Its size must be equal to this->size().
+     */
+    virtual dflow::AbstractValue doApply(const dflow::AbstractValue &a) const;
+
+    virtual UnaryOperator *doClone() const override;
 };
 
 /**
- * Base class for binary operators.
+ * Binary operator.
  */
 class BinaryOperator: public Term {
     NC_CLASS_WITH_KINDS(BinaryOperator, operatorKind)
@@ -281,44 +284,38 @@ public:
 
     /**
      * Class constructor.
-     * 
-     * Size of left and right operands is expected to be equal.
      *
-     * \param[in] operatorKind         Subkind of the binary operator.
-     * \param[in] left                 Left operand.
-     * \param[in] right                Right operand.
-     * \param[in] size                 Size of this term's value in bits.
+     * \param[in] operatorKind  Subkind of the binary operator.
+     * \param[in] left          Left operand.
+     * \param[in] right         Right operand.
+     * \param[in] size          Size of this term's value in bits.
+     *
+     * \note If operator's kind is AND, OR, XOR, ADD, SUB, MUL, *_DIV, *_REM,
+     *       then operator's size and operands' sizes must be equal.
+     * \note If operator's kind is SHL, SHR, SAR,
+     *       then operator's size must be equal to left operand's size.
+     * \note If operator's kind is EQUAL, *_LESS, *_LESS_OR_EQUAL,
+     *       then operand's sizes must be equal, and operator's size must be 1.
      */
     BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right, SmallBitSize size);
 
     /**
-     * Class constructor.
-     * 
-     * Size is taken from the given operands.
-     *
-     * \param[in] operatorKind         Subkind of the binary operator.
-     * \param[in] left                 Left operand.
-     * \param[in] right                Right operand.
-     */
-    BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right);
-
-    /**
-     * \return                         Left operand.
+     * \return Valid pointer to the left operand of this operator.
      */
     Term *left() { return left_.get(); }
 
     /**
-     * \return                         Left operand.
+     * \return Valid pointer to the left operand of this operator.
      */
     const Term *left() const { return left_.get(); }
 
     /**
-     * \return                         Right operand.
+     * \return Valid pointer to the right operand of this operator.
      */
     Term *right() { return right_.get(); }
 
     /**
-     * \return                         Right operand.
+     * \return Valid pointer to the right operand of this operator.
      */
     const Term *right() const { return right_.get(); }
 
@@ -326,17 +323,28 @@ public:
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
 
     /**
-     * Applies the binary operator to two integer arguments.
+     * Applies this operator to abstract values.
      *
-     * \param a                        Left argument.
-     * \param b                        Right argument.
-     * \return                         a op b, or boost::none if result is undefined.
+     * \param a Left operand value.
+     * \param b Right operand value.
+     *
+     * \return Resulting abstract value. Its size is equal to this->size().
      */
     virtual dflow::AbstractValue apply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const;
 
     virtual void print(QTextStream &out) const override;
 
 protected:
+    /**
+     * Applies this operator to abstract values.
+     *
+     * \param a Left operand value.
+     * \param b Right operand value.
+     *
+     * \return Resulting abstract value. Its size must be equal to this->size().
+     */
+    virtual dflow::AbstractValue doApply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const;
+
     virtual BinaryOperator *doClone() const;
 };
 

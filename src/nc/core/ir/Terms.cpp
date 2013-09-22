@@ -34,14 +34,26 @@ namespace nc {
 namespace core {
 namespace ir {
 
+Constant *Constant::doClone() const {
+    return new Constant(value());
+}
+
 void Constant::print(QTextStream &out) const {
     int integerBase = out.integerBase();
     hex(out) << "0x" << value().value();
     out.setIntegerBase(integerBase);
 }
 
+Intrinsic *Intrinsic::doClone() const {
+    return new Intrinsic(intrinsicKind(), size());
+}
+
 void Intrinsic::print(QTextStream &out) const {
     out << "intrinsic";
+}
+
+Undefined *Undefined::doClone() const {
+    return new Undefined(size());
 }
 
 void Undefined::print(QTextStream &out) const {
@@ -52,6 +64,10 @@ MemoryLocationAccess::MemoryLocationAccess(const MemoryLocation &memoryLocation)
     Term(MEMORY_LOCATION_ACCESS, memoryLocation.size<SmallBitSize>()), memoryLocation_(memoryLocation)
 {}
 
+MemoryLocationAccess *MemoryLocationAccess::doClone() const {
+    return new MemoryLocationAccess(memoryLocation());
+}
+
 void MemoryLocationAccess::print(QTextStream &out) const {
     out << memoryLocation_;
 }
@@ -60,6 +76,10 @@ Dereference::Dereference(std::unique_ptr<Term> address, Domain domain, SmallBitS
     Term(DEREFERENCE, size), domain_(domain), address_(std::move(address))
 {
     address_->setAccessType(READ);
+}
+
+Dereference *Dereference::doClone() const {
+    return new Dereference(address()->clone(), domain(), size());
 }
 
 void Dereference::visitChildTerms(Visitor<Term> &visitor) {
@@ -82,14 +102,22 @@ UnaryOperator::UnaryOperator(int operatorKind, std::unique_ptr<Term> operand, Sm
     assert(operand_ != NULL);
 
     operand_->setAccessType(READ);
+
+    switch (operatorKind) {
+        case NOT: case NEGATION:
+            assert(size == operand_->size());
+            break;
+        case SIGN_EXTEND: case ZERO_EXTEND:
+            assert(size > operand_->size());
+            break;
+        case TRUNCATE:
+            assert(size < operand_->size());
+            break;
+    }
 }
 
-UnaryOperator::UnaryOperator(int operatorKind, std::unique_ptr<Term> operand):
-    Term(UNARY_OPERATOR, operand->size()), 
-    operatorKind_(operatorKind), 
-    operand_(std::move(operand))
-{
-    operand_->setAccessType(READ);
+UnaryOperator *UnaryOperator::doClone() const {
+    return new UnaryOperator(operatorKind(), operand()->clone(), size());
 }
 
 void UnaryOperator::visitChildTerms(Visitor<Term> &visitor) {
@@ -101,6 +129,12 @@ void UnaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
 }
 
 dflow::AbstractValue UnaryOperator::apply(const dflow::AbstractValue &a) const {
+    auto result = doApply(a);
+    assert(result.size() == size());
+    return result;
+}
+
+dflow::AbstractValue UnaryOperator::doApply(const dflow::AbstractValue &a) const {
     switch (operatorKind()) {
         case NOT:
             return ~a;
@@ -150,16 +184,31 @@ BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std
 
     left_->setAccessType(READ);
     right_->setAccessType(READ);
+
+    switch (operatorKind) {
+        case AND: case OR: case XOR:
+        case ADD: case SUB: case MUL:
+        case SIGNED_DIV: case SIGNED_REM:
+        case UNSIGNED_DIV: case UNSIGNED_REM:
+            assert(left_->size() == right_->size());
+            assert(size == left_->size());
+            break;
+
+        case SHL: case SHR: case SAR:
+            assert(size == left_->size());
+            break;
+
+        case EQUAL:
+        case SIGNED_LESS: case SIGNED_LESS_OR_EQUAL:
+        case UNSIGNED_LESS: case UNSIGNED_LESS_OR_EQUAL:
+            assert(left_->size() == right_->size());
+            assert(size == 1);
+            break;
+    }
 }
 
-BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right):
-    Term(BINARY_OPERATOR, left->size()), operatorKind_(operatorKind), left_(std::move(left)), right_(std::move(right))
-{
-    assert(left_ != NULL);
-    assert(right_ != NULL);
-
-    left_->setAccessType(READ);
-    right_->setAccessType(READ);
+BinaryOperator *BinaryOperator::doClone() const {
+    return new BinaryOperator(operatorKind(), left()->clone(), right()->clone(), size());
 }
 
 void BinaryOperator::visitChildTerms(Visitor<Term> &visitor) {
@@ -173,6 +222,12 @@ void BinaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
 }
 
 dflow::AbstractValue BinaryOperator::apply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const {
+    auto result = doApply(a, b);
+    assert(result.size() == size());
+    return result;
+}
+
+dflow::AbstractValue BinaryOperator::doApply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const {
     switch (operatorKind()) {
         case AND:
             return a & b;
@@ -214,10 +269,6 @@ dflow::AbstractValue BinaryOperator::apply(const dflow::AbstractValue &a, const 
             unreachable();
             return dflow::AbstractValue();
     }
-}
-
-BinaryOperator *BinaryOperator::doClone() const {
-    return new BinaryOperator(operatorKind(), left()->clone(), right()->clone(), size());
 }
 
 void BinaryOperator::print(QTextStream &out) const {
@@ -283,7 +334,6 @@ void BinaryOperator::print(QTextStream &out) const {
     }
     out << ' ' << *right() << ')';
 }
-
 
 Choice::Choice(std::unique_ptr<Term> preferredTerm, std::unique_ptr<Term> defaultTerm):
     Term(CHOICE, preferredTerm->size()), preferredTerm_(std::move(preferredTerm)), defaultTerm_(std::move(defaultTerm))
