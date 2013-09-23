@@ -99,7 +99,7 @@ class DefinitionGenerator: public DeclarationGenerator {
     /**
      * \return Context with the analyzer program.
      */
-    core::Context &context() const { return parent().context(); }
+    Context &context() const { return parent().context(); }
 
     /**
      * \return Dataflow information about the function.

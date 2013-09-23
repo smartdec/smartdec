@@ -65,7 +65,7 @@ namespace cgen {
  */
 class CodeGenerator: boost::noncopyable {
     /** Context with the analyzed program. */
-    core::Context &context_;
+    Context &context_;
 
     /** Abstract syntax tree to generate code in. */
     likec::Tree &tree_;
@@ -93,7 +93,7 @@ public:
      * \param context Context with the analyzed program.
      * \param tree Abstract syntax tree to generate code in.
      */
-    CodeGenerator(core::Context &context, likec::Tree &tree):
+    CodeGenerator(Context &context, likec::Tree &tree):
         context_(context), tree_(tree), serial_(0)
     {}
 
@@ -105,7 +105,7 @@ public:
     /**
      * \return Context with the analyzer program.
      */
-    core::Context &context() const { return context_; }
+    Context &context() const { return context_; }
 
     /**
      * \return Abstract syntax tree to generate code in.
