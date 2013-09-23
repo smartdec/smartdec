@@ -40,7 +40,7 @@ namespace nc {
 template<class T>
 T bitMask(unsigned nbits) {
     if (nbits < sizeof(T) * CHAR_BIT) {
-        return T(1) << nbits;
+        return (T(1) << nbits) - 1;
     } else {
         return T(-1);
     }
