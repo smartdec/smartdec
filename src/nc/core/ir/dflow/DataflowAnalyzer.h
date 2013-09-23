@@ -41,6 +41,7 @@ namespace ir {
 
 class BasicBlock;
 class Function;
+class MemoryLocation;
 class Statement;
 class Term;
 class UnaryOperator;
@@ -55,6 +56,7 @@ namespace dflow {
 class AbstractValue;
 class Dataflow;
 class ExecutionContext;
+class ReachingDefinitions;
 
 /**
  * Implements a dataflow analysis based on abstract interpretation loop.
@@ -141,19 +143,12 @@ class DataflowAnalyzer {
     protected:
 
     /**
-     * Computes term's value by merging values of reaching definitions.
-     *
-     * \param[in] term      Valid pointer to a term.
-     */
-    virtual void mergeReachingValues(const Term *term);
-
-    /**
      * Executes a unary operator.
      *
      * \param[in] unary     Valid pointer to a UnaryOperator instance.
      * \param     context   Execution context.
      */
-    virtual void executeUnaryOperator(const UnaryOperator *unary, ExecutionContext &context);
+    void executeUnaryOperator(const UnaryOperator *unary, ExecutionContext &context);
 
     /**
      * Executes a binary operator.
@@ -161,7 +156,7 @@ class DataflowAnalyzer {
      * \param[in] binary    Valid pointer to a BinaryOperator instance.
      * \param     context   Execution context.
      */
-    virtual void executeBinaryOperator(const BinaryOperator *binary, ExecutionContext &context);
+    void executeBinaryOperator(const BinaryOperator *binary, ExecutionContext &context);
 
     /**
      * Applies a unary operator to an abstract value.
@@ -171,7 +166,7 @@ class DataflowAnalyzer {
      *
      * \return Resulting abstract value. Its size is equal to unary->size().
      */
-    virtual AbstractValue apply(const UnaryOperator *unary, const AbstractValue &a);
+    AbstractValue apply(const UnaryOperator *unary, const AbstractValue &a);
 
     /**
      * Applies a binary operator to an abstract value.
@@ -182,7 +177,26 @@ class DataflowAnalyzer {
      *
      * \return Resulting abstract value. Its size is equal to unary->size().
      */
-    virtual AbstractValue apply(const BinaryOperator *binary, const AbstractValue &a, const AbstractValue &b);
+    AbstractValue apply(const BinaryOperator *binary, const AbstractValue &a, const AbstractValue &b);
+
+    /**
+     * Remembers the new memory location of a term, updates reaching definitions
+     * in the execution context accordingly.
+     *
+     * \param term              Valid pointer to a term.
+     * \param newMemoryLocation Memory location of this term. Can be invalid.
+     * \param context           Execution context.
+     */
+    void setMemoryLocation(const Term *term, const MemoryLocation &newMemoryLocation, ExecutionContext &context);
+
+    /**
+     * Computes term's value by merging values of reaching definitions.
+     *
+     * \param term          Valid pointer to a read term.
+     * \param termLocation  Valid memory location of this term.
+     * \param definitions   Reaching definitions of this memory location.
+     */
+    void mergeReachingValues(const Term *term, const MemoryLocation &termLocation, const ReachingDefinitions &definitions);
 };
 
 } // namespace dflow

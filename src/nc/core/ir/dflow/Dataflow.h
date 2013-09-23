@@ -122,7 +122,7 @@ class Dataflow {
      * \param[in] term Valid pointer to a read term.
      * \param[in] definitions Reaching definitions of this term.
      */
-    void setDefinitions(const Term *term, const ReachingDefinitions &definitions);
+    void setDefinitions(const Term *term, ReachingDefinitions &&definitions);
 
     /**
      * Clears the set of term's definitions.

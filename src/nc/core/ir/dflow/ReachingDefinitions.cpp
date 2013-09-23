@@ -44,7 +44,7 @@ void ReachingDefinitions::addDefinition(const MemoryLocation &mloc, const Term *
     killDefinitions(mloc);
     
     auto i = std::lower_bound(pairs_.begin(), pairs_.end(), mloc,
-        [](const std::pair<MemoryLocation, std::vector<const Term *>> &a, const MemoryLocation &b) -> bool {
+        [](decltype(pairs_)::value_type &a, const MemoryLocation &b) -> bool {
             return a.first < b;
         });
 

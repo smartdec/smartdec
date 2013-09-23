@@ -85,14 +85,14 @@ void Dataflow::unsetMemoryLocation(const Term *term) {
     memoryLocations_.erase(term);
 }
 
-void Dataflow::setDefinitions(const Term *term, const ReachingDefinitions &definitions) {
+void Dataflow::setDefinitions(const Term *term, ReachingDefinitions &&definitions) {
     assert(term != NULL);
     assert(term->isRead());
 
     if (definitions.empty()) {
         clearDefinitions(term);
     } else {
-        definitions_[term] = definitions;
+        definitions_[term] = std::move(definitions);
     }
 }
 

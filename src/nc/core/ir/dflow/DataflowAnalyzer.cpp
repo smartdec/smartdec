@@ -248,7 +248,7 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
         }
         case Term::MEMORY_LOCATION_ACCESS: {
             auto access = term->asMemoryLocationAccess();
-            dataflow().setMemoryLocation(access, access->memoryLocation());
+            setMemoryLocation(access, access->memoryLocation(), context);
 
             /* The value of instruction pointer is always easy to guess. */
             if (architecture()->instructionPointer() &&
@@ -269,17 +269,29 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
             auto addressValue = dataflow().getValue(dereference->address());
             if (addressValue->abstractValue().isConcrete()) {
                 if (dereference->domain() == MemoryDomain::MEMORY) {
-                    dataflow().setMemoryLocation(dereference, MemoryLocation(dereference->domain(),
-                        addressValue->abstractValue().asConcrete().value() * CHAR_BIT, dereference->size()));
+                    setMemoryLocation(
+                        dereference,
+                        MemoryLocation(
+                            dereference->domain(),
+                            addressValue->abstractValue().asConcrete().value() * CHAR_BIT,
+                            dereference->size()),
+                        context);
                 } else {
-                    dataflow().setMemoryLocation(dereference, MemoryLocation(dereference->domain(),
-                        addressValue->abstractValue().asConcrete().value(), dereference->size()));
+                    setMemoryLocation(
+                        dereference,
+                            MemoryLocation(
+                                dereference->domain(),
+                                addressValue->abstractValue().asConcrete().value(),
+                                dereference->size()),
+                        context);
                 }
             } else if (addressValue->isStackOffset()) {
-                dataflow().setMemoryLocation(dereference,
-                    MemoryLocation(MemoryDomain::STACK, addressValue->stackOffset() * CHAR_BIT, dereference->size()));
+                setMemoryLocation(
+                    dereference,
+                    MemoryLocation(MemoryDomain::STACK, addressValue->stackOffset() * CHAR_BIT, dereference->size()),
+                    context);
             } else {
-                dataflow().unsetMemoryLocation(dereference);
+                setMemoryLocation(dereference, MemoryLocation(), context);
             }
             break;
         }
@@ -305,50 +317,62 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
             ncWarning("Unknown term kind: '%1'.", static_cast<int>(term->kind()));
             break;
     }
+}
+
+void DataflowAnalyzer::setMemoryLocation(const Term *term, const MemoryLocation &newMemoryLocation, ExecutionContext &context) {
+    auto oldMemoryLocation = dataflow().getMemoryLocation(term);
 
     /*
-     * Update reaching definitions.
+     * If the term has changed its location, remember the new location.
      */
-    if (const MemoryLocation &termLocation = dataflow().getMemoryLocation(term)) {
-        if (!architecture()->isGlobalMemory(termLocation)) {
-            /* Access to a local variable. */
-            if (term->isRead()) {
-                dataflow().setDefinitions(term, context.definitions().getDefinitions(termLocation));
-                mergeReachingValues(term);
-            }
-            if (term->isWrite()) {
-                context.definitions().addDefinition(termLocation, term);
-            }
-            if (term->isKill()) {
-                context.definitions().killDefinitions(termLocation);
-            }
-        } else {
-            /* Access to a global variable. */
-            if (term->isRead()) {
-                dataflow().clearDefinitions(term);
-            }
+    if (oldMemoryLocation != newMemoryLocation) {
+        dataflow().setMemoryLocation(term, newMemoryLocation);
+
+        /*
+         * If the term is a write and had a memory location before,
+         * reaching definitions can record that it defines the old
+         * memory location. Fix this.
+         */
+        if (oldMemoryLocation && term->isWrite()) {
+            context.definitions().filterOut(
+                [term](const MemoryLocation &, const Term *definition) -> bool {
+                    return definition == term;
+                }
+            );
+        }
+    }
+
+    /*
+     * If the term has a memory location and not a global variable,
+     * remember or update reaching definitions accordingly.
+     */
+    if (newMemoryLocation && !architecture()->isGlobalMemory(newMemoryLocation)) {
+        if (term->isRead()) {
+            auto definitions = context.definitions().getDefinitions(newMemoryLocation);
+            mergeReachingValues(term, newMemoryLocation, definitions);
+            dataflow().setDefinitions(term, std::move(definitions));
+        }
+        if (term->isWrite()) {
+            context.definitions().addDefinition(newMemoryLocation, term);
+        }
+        if (term->isKill()) {
+            context.definitions().killDefinitions(newMemoryLocation);
         }
     } else {
-        /* Access to an unknown location. */
         if (term->isRead()) {
             dataflow().clearDefinitions(term);
         }
     }
 }
 
-void DataflowAnalyzer::mergeReachingValues(const Term *term) {
+void DataflowAnalyzer::mergeReachingValues(const Term *term, const MemoryLocation &termLocation, const ReachingDefinitions &definitions) {
     assert(term);
     assert(term->isRead());
+    assert(termLocation);
 
-    /* If term has no reaching definitions, nothing to do. */
-    auto &definitions = dataflow().getDefinitions(term);
     if (definitions.empty()) {
         return;
     }
-
-    /* If there are reaching definitions, the term must have a memory location. */
-    auto termLocation = dataflow().getMemoryLocation(term);
-    assert(termLocation);
 
     /*
      * Merge abstract values.
@@ -372,7 +396,7 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term) {
 
         foreach (const Term *definition, pair.second) {
             auto definitionLocation = dataflow().getMemoryLocation(definition);
-            assert(definitionLocation.covers(definedLocation)); // TODO: currently does not always hold
+            assert(definitionLocation.covers(definedLocation));
 
             auto definitionValue = dataflow().getValue(definition);
             auto definitionAbstractValue = definitionValue->abstractValue();
@@ -545,7 +569,7 @@ AbstractValue DataflowAnalyzer::apply(const UnaryOperator *unary, const Abstract
         case UnaryOperator::TRUNCATE:
             return dflow::AbstractValue(a).resize(unary->size());
         default:
-            unreachable();
+            ncWarning("Unknown unary operator kind: %1", unary->operatorKind());
             return dflow::AbstractValue();
     }
 }
@@ -589,7 +613,7 @@ AbstractValue DataflowAnalyzer::apply(const BinaryOperator *binary, const Abstra
         case BinaryOperator::UNSIGNED_LESS_OR_EQUAL:
             return dflow::UnsignedAbstractValue(a) <= b;
         default:
-            unreachable();
+            ncWarning("Unknown binary operator kind: %1", binary->operatorKind());
             return dflow::AbstractValue();
     }
 }
