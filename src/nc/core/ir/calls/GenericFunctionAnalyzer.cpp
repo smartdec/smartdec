@@ -34,6 +34,7 @@
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
 #include <nc/core/ir/dflow/ExecutionContext.h>
+#include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
 
 #include <nc/common/Foreach.h>

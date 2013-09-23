@@ -30,10 +30,12 @@
 
 #include <boost/unordered_map.hpp>
 
+#include <nc/common/Range.h>
+
 #include <nc/core/ir/MemoryLocation.h>
+#include <nc/core/ir/Term.h>
 
 #include "ReachingDefinitions.h"
-#include "Value.h"
 
 namespace nc {
 namespace core {
@@ -42,6 +44,8 @@ namespace ir {
 class Term;
 
 namespace dflow {
+
+class Value;
 
 /**
  * This class contains results of dataflow and constant propagation and folding analysis.
@@ -60,6 +64,16 @@ class Dataflow {
     boost::unordered_map<const Term *, std::vector<const Term *>> uses_;
 
     public:
+
+    /**
+     * Constructor.
+     */
+    Dataflow();
+
+    /**
+     * Destructor.
+     */
+    ~Dataflow();
 
     /**
      * \param[in] term Valid pointer to a term.
@@ -85,7 +99,10 @@ class Dataflow {
      * \return Memory location occupied by the term. If no memory location is associated
      *         with this term, an invalid MemoryLocation object is returned.
      */
-    const ir::MemoryLocation &getMemoryLocation(const Term *term) const;
+    const ir::MemoryLocation &getMemoryLocation(const Term *term) const {
+        assert(term != NULL);
+        return nc::find(memoryLocations_, term);
+    }
 
     /**
      * Associates a memory location with given term.
@@ -93,43 +110,32 @@ class Dataflow {
      * \param[in] term Valid pointer to a term.
      * \param[in] memoryLocation Memory location.
      */
-    void setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation);
-
-    /**
-     * Marks given term as not associated with any memory location.
-     *
-     * \param[in] term Term.
-     */
-    void unsetMemoryLocation(const Term *term);
+    void setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation) {
+        assert(term != NULL);
+        memoryLocations_[term] = memoryLocation;
+    }
 
     /**
      * \param[in] term Valid pointer to a read term.
      *
      * \return List of term's definitions. If not set before, it is empty.
      */
-    ReachingDefinitions &getDefinitions(const Term *term);
+    ReachingDefinitions &getDefinitions(const Term *term) {
+        assert(term != NULL);
+        assert(term->isRead());
+        return definitions_[term];
+    }
 
     /**
      * \param[in] term Valid pointer to a read term.
      *
      * \return List of term's definitions. If not set before, it is empty.
      */
-    const ReachingDefinitions &getDefinitions(const Term *term) const;
-
-    /**
-     * Sets the list of term's definitions.
-     *
-     * \param[in] term Valid pointer to a read term.
-     * \param[in] definitions Reaching definitions of this term.
-     */
-    void setDefinitions(const Term *term, ReachingDefinitions &&definitions);
-
-    /**
-     * Clears the set of term's definitions.
-     *
-     * \param[in] term Valid pointer to a read term.
-     */
-    void clearDefinitions(const Term *term);
+    const ReachingDefinitions &getDefinitions(const Term *term) const {
+        assert(term != NULL);
+        assert(term->isRead());
+        return nc::find(definitions_, term);
+    }
 
     /**
      * \param[in] term Valid pointer to a read term.
@@ -137,22 +143,23 @@ class Dataflow {
      * \return List of term's uses. If it has not been set before,
      *         an empty vector is returned.
      */
-    const std::vector<const Term *> &getUses(const Term *term) const;
+    std::vector<const Term *> &getUses(const Term *term) {
+        assert(term != NULL);
+        assert(term->isWrite());
+        return uses_[term];
+    }
 
     /**
-     * Adds a use of a term.
+     * \param[in] term Valid pointer to a read term.
      *
-     * \param[in] term Valid pointer to a write term.
-     * \param[in] use  Valid pointer to a read term reading given write term.
+     * \return List of term's uses. If it has not been set before,
+     *         an empty vector is returned.
      */
-    void addUse(const Term *term, const Term *use);
-
-    /**
-     * Clears the set of term's definitions.
-     *
-     * \param[in] term Valid pointer to a write term.
-     */
-    void clearUses(const Term *term);
+    const std::vector<const Term *> &getUses(const Term *term) const {
+        assert(term != NULL);
+        assert(term->isWrite());
+        return nc::find(uses_, term);
+    }
 };
 
 } // namespace dflow

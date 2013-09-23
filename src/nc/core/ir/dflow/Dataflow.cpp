@@ -24,15 +24,16 @@
 
 #include "Dataflow.h"
 
-#include <nc/common/Range.h>
-#include <nc/core/ir/Term.h>
-
 #include "Value.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace dflow {
+
+Dataflow::Dataflow() {}
+
+Dataflow::~Dataflow() {}
 
 Value *Dataflow::getValue(const Term *term) {
     assert(term != NULL);
@@ -63,81 +64,6 @@ const Value *Dataflow::getValue(const Term *term) const {
         static const Value empty;
         return &empty;
     }
-}
-
-const ir::MemoryLocation &Dataflow::getMemoryLocation(const Term *term) const {
-    assert(term != NULL);
-    return nc::find(memoryLocations_, term);
-}
-
-void Dataflow::setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation) {
-    assert(term != NULL);
-
-    if (!memoryLocation) {
-        unsetMemoryLocation(term);
-    } else {
-        memoryLocations_[term] = memoryLocation;
-    }
-}
-
-void Dataflow::unsetMemoryLocation(const Term *term) {
-    assert(term != NULL);
-    memoryLocations_.erase(term);
-}
-
-void Dataflow::setDefinitions(const Term *term, ReachingDefinitions &&definitions) {
-    assert(term != NULL);
-    assert(term->isRead());
-
-    if (definitions.empty()) {
-        clearDefinitions(term);
-    } else {
-        definitions_[term] = std::move(definitions);
-    }
-}
-
-void Dataflow::clearDefinitions(const Term *term) {
-    assert(term != NULL);
-    assert(term->isRead());
-
-    definitions_.erase(term);
-}
-
-ReachingDefinitions &Dataflow::getDefinitions(const Term *term) {
-    assert(term != NULL);
-    assert(term->isRead());
-
-    return definitions_[term];
-}
-
-const ReachingDefinitions &Dataflow::getDefinitions(const Term *term) const {
-    assert(term != NULL);
-    assert(term->isRead());
-
-    return nc::find(definitions_, term);
-}
-
-const std::vector<const Term *> &Dataflow::getUses(const Term *term) const {
-    assert(term != NULL);
-    assert(term->isWrite());
-
-    return nc::find(uses_, term);
-}
-
-void Dataflow::addUse(const Term *term, const Term *use) {
-    assert(term != NULL);
-    assert(term->isWrite());
-    assert(use != NULL);
-    assert(use->isRead());
-
-    uses_[term].push_back(use);
-}
-
-void Dataflow::clearUses(const Term *term) {
-    assert(term != NULL);
-    assert(term->isWrite());
-
-    uses_.erase(term);
 }
 
 } // namespace dflow

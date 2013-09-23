@@ -48,6 +48,7 @@
 
 #include "Dataflow.h"
 #include "ExecutionContext.h"
+#include "Value.h"
 
 namespace nc {
 namespace core {
@@ -124,7 +125,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
 
         foreach (const Term *term, census.terms()) {
             if (term->isWrite()) {
-                dataflow().clearUses(term);
+                dataflow().getUses(term).clear();
             }
         }
 
@@ -135,7 +136,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
 
                 foreach (const auto &pair, definitions.pairs()) {
                     foreach (const Term *definition, pair.second) {
-                        dataflow().addUse(definition, term);
+                        dataflow().getUses(definition).push_back(term);
                     }
                 }
             }
@@ -348,9 +349,9 @@ void DataflowAnalyzer::setMemoryLocation(const Term *term, const MemoryLocation 
      */
     if (newMemoryLocation && !architecture()->isGlobalMemory(newMemoryLocation)) {
         if (term->isRead()) {
-            auto definitions = context.definitions().getDefinitions(newMemoryLocation);
+            auto &definitions = dataflow().getDefinitions(term);
+            context.definitions().project(newMemoryLocation, definitions);
             mergeReachingValues(term, newMemoryLocation, definitions);
-            dataflow().setDefinitions(term, std::move(definitions));
         }
         if (term->isWrite()) {
             context.definitions().addDefinition(newMemoryLocation, term);
@@ -359,8 +360,8 @@ void DataflowAnalyzer::setMemoryLocation(const Term *term, const MemoryLocation 
             context.definitions().killDefinitions(newMemoryLocation);
         }
     } else {
-        if (term->isRead()) {
-            dataflow().clearDefinitions(term);
+        if (term->isRead() && oldMemoryLocation) {
+            dataflow().getDefinitions(term).clear();
         }
     }
 }

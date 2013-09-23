@@ -40,6 +40,7 @@
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
 #include <nc/core/ir/dflow/ExecutionContext.h>
+#include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/misc/ArrayAccess.h>
 #include <nc/core/ir/misc/PatternRecognition.h>
 

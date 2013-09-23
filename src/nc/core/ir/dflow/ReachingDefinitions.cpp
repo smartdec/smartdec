@@ -87,10 +87,10 @@ void ReachingDefinitions::killDefinitions(const MemoryLocation &mloc) {
     pairs_ = std::move(result);
 }
 
-ReachingDefinitions ReachingDefinitions::getDefinitions(const MemoryLocation &mloc) const {
+void ReachingDefinitions::project(const MemoryLocation &mloc, ReachingDefinitions &result) const {
     assert(mloc);
 
-    ReachingDefinitions result;
+    result.clear();
 
     foreach (const auto &pair, pairs_) {
         if (pair.first.domain() == mloc.domain()) {
@@ -104,8 +104,6 @@ ReachingDefinitions ReachingDefinitions::getDefinitions(const MemoryLocation &ml
             }
         }
     }
-
-    return result;
 }
 
 std::vector<MemoryLocation> ReachingDefinitions::getDefinedMemoryLocationsWithin(Domain domain) const {

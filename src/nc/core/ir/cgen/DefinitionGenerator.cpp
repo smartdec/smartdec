@@ -55,6 +55,7 @@
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/Switch.h>
 #include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/types/Type.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/ir/usage/Usage.h>

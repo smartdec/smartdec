@@ -87,11 +87,10 @@ class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
     void killDefinitions(const MemoryLocation &memoryLocation);
 
     /**
-     * \param[in] memoryLocation Memory location.
-     *
-     * \return Definitions of the memory locations contained in the given one.
+     * \param[in]  memoryLocation   Memory location.
+     * \param[out] result           Definitions of the memory locations contained in the given one.
      */
-    ReachingDefinitions getDefinitions(const MemoryLocation &memoryLocation) const;
+    void project(const MemoryLocation &memoryLocation, ReachingDefinitions &result) const;
 
     /**
      * \return All defined memory locations in the domain.

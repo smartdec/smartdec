@@ -28,6 +28,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/Utils.h>
+#include <nc/core/ir/dflow/Value.h>
 
 #include "ArrayAccess.h"
 #include "BoundsCheck.h"

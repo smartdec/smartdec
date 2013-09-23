@@ -29,7 +29,7 @@
 #include <nc/core/ir/MemoryDomain.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflow.h>
-#include <nc/core/ir/dflow/ExecutionContext.h>
+#include <nc/core/ir/dflow/Value.h>
 
 #include "IntelRegisters.h"
 

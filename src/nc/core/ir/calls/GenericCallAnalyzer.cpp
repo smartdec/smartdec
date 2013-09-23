@@ -27,12 +27,13 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/ir/dflow/Dataflow.h>
-#include <nc/core/ir/dflow/DataflowAnalyzer.h>
-#include <nc/core/ir/dflow/ExecutionContext.h>
 #include <nc/core/ir/MemoryDomain.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
+#include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/DataflowAnalyzer.h>
+#include <nc/core/ir/dflow/ExecutionContext.h>
+#include <nc/core/ir/dflow/Value.h>
 
 #include "GenericCallingConvention.h"
 #include "GenericDescriptorAnalyzer.h"

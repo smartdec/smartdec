@@ -43,6 +43,7 @@
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/Switch.h>
 #include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
 
 #include "Usage.h"
