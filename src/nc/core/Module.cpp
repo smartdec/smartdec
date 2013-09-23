@@ -45,7 +45,7 @@
 namespace nc { namespace core {
 
 Module::Module():
-    mImage(new image::Image(this)),
+    mImage(new image::Image()),
     mDemangler(new mangling::Demangler)
 {}
 

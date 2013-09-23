@@ -26,6 +26,10 @@
 
 #include <cstdint> /* For std::uintptr_t. */
 
+#include <nc/common/Foreach.h>
+#include <nc/common/Unreachable.h>
+#include <nc/common/make_unique.h>
+
 #include <nc/core/Context.h>
 #include <nc/core/Module.h>
 #include <nc/core/arch/Architecture.h>
@@ -33,12 +37,9 @@
 #include <nc/core/arch/Registers.h>
 #ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Reader.h>
+#include <nc/core/image/Section.h>
 #endif
-
-#include <nc/common/Foreach.h>
-#include <nc/common/Unreachable.h>
-#include <nc/common/make_unique.h>
-
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Jump.h>
@@ -991,29 +992,23 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const B
     }
 }
 
-#ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
-namespace {
-
-bool isAscii(const QString &string) {
-    foreach (QChar c, string) {
-        if (c >= 0x80) {
-            return false;
-        }
-    }
-    return true;
-}
-
-} // anonymous namespace
-#endif
-
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term *term, const SizedValue &value) {
     const types::Type *type = types().getType(term);
 
 #ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
     if (type->pointee() && type->pointee()->size() == 1) {
-        foreach (const core::image::Section *section, parent().context().module()->image()->sections()) {
+        auto isAscii = [](const QString &string) {
+            foreach (QChar c, string) {
+                if (c >= 0x80) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        foreach (auto section, parent().context().module()->image()->sections()) {
             if (section->isAllocated() && section->containsAddress(value.value())) {
-                QString string = section->readAsciizString(value.value(), 1024);
+                QString string = image::Reader(section, parent().context().module()->architecture()).readAsciizString(value.value(), 1024);
 
                 if (!string.isNull() && isAscii(string)) {
                     return std::make_unique<likec::String>(tree(), string);

@@ -34,6 +34,7 @@
 #include <nc/core/Module.h>
 #include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Section.h>
 #include <nc/core/input/ParseError.h>
 
 #include "pe.h"
@@ -175,8 +176,9 @@ class PeParserPrivate {
                 throw core::input::ParseError(tr("Cannot read section header #%1.").arg(i));
             }
 
-            core::image::Section *section = module_->image()->createSection(
-                getString(sectionHeader.Name), sectionHeader.VirtualAddress, sectionHeader.SizeOfRawData);
+            auto section = std::make_unique<core::image::Section>(
+                getString(sectionHeader.Name), sectionHeader.VirtualAddress, sectionHeader.SizeOfRawData
+            );
 
             section->setAllocated((sectionHeader.Characteristics & IMAGE_SCN_MEM_DISCARDABLE) == 0);
             section->setReadable(sectionHeader.Characteristics & IMAGE_SCN_MEM_READ);
@@ -192,6 +194,8 @@ class PeParserPrivate {
                 section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(source_->read(sectionHeader.SizeOfRawData)));
             }
             source_->seek(pos);
+
+            module_->image()->addSection(std::move(section));
         }
     }
 

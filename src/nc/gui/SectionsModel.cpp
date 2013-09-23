@@ -30,6 +30,7 @@
 
 #include <nc/core/Module.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Section.h>
 
 namespace nc { namespace gui {
 

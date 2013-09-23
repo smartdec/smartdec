@@ -38,6 +38,7 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/arch/disasm/Disassembler.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Section.h>
 #include <nc/core/input/Parser.h>
 #include <nc/core/input/ParserRepository.h>
 #include <nc/core/ir/Functions.h>

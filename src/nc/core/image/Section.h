@@ -31,16 +31,18 @@
 
 #include <nc/common/Types.h>
 
-#include "Reader.h"
+#include "ByteSource.h"
 
 namespace nc {
 namespace core {
 namespace image {
 
+class Image;
+
 /**
  * Section of an executable file.
  */
-class Section: public Reader {
+class Section: public ByteSource {
     QString name_; ///< Name of the section.
 
     ByteAddr addr_; ///< Linear address of section start.
@@ -58,25 +60,21 @@ class Section: public Reader {
 
     std::unique_ptr<ByteSource> externalByteSource_; ///< External source of this section's bytes.
 
+    const Image *image_; ///< Image this section belongs to.
+
 public:
 
     /**
      * Class constructor.
      *
-     * \param[in] module                Module.
-     * \param[in] name                  Name of the section.
-     * \param[in] addr                  Linear address of the section's start.
-     * \param[in] size                  Size of the section.
+     * \param[in] name  Name of the section.
+     * \param[in] addr  Linear address of the section's start.
+     * \param[in] size  Size of the section.
      */
-    Section(const Module *module, const QString &name, ByteAddr addr, ByteSize size);
+    Section(const QString &name, ByteAddr addr, ByteSize size);
 
     /**
-     * Virtual destructor.
-     */
-    virtual ~Section() {}
-
-    /**
-     * \return                         Name of the section.
+     * \return Name of the section.
      */
     const QString &name() const { return name_; }
 
@@ -214,6 +212,18 @@ public:
      * \param byteSource Pointer to the new external byte source. Can be NULL.
      */
     void setExternalByteSource(std::unique_ptr<ByteSource> byteSource) { externalByteSource_ = std::move(byteSource); }
+
+    /**
+     * Sets the image this section belongs to.
+     *
+     * \param image Pointer to the image. Can be NULL.
+     */
+    void setImage(const Image *image) { image_ = image; }
+
+    /**
+     * \return Pointer to the image this section belongs to. Can be NULL.
+     */
+    const Image *image() const { return image_; }
 
     virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 };

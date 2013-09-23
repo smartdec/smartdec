@@ -33,8 +33,9 @@
 #include <nc/common/Conversions.h>
 #include <nc/common/Foreach.h>
 
-#include <nc/core/image/Image.h>
 #include <nc/core/Module.h>
+#include <nc/core/image/Image.h>
+#include <nc/core/image/Section.h>
 
 Q_DECLARE_METATYPE(const nc::core::image::Section *)
 

@@ -38,30 +38,40 @@
 namespace nc {
 namespace core {
 
-class Module;
+namespace arch {
+    class Architecture;
+}
 
 namespace image {
 
 class Reader: public ByteSource {
-    const Module *module_; ///< Module.
+    const ByteSource *externalByteSource_; ///< External byte source.
+    const arch::Architecture *architecture_; ///< Architecture.
 
     public:
 
     /**
      * Constructor.
      *
-     * \param module Valid pointer to a module.
+     * \param module Valid pointer to the architecture.
+     * \param externalByteSource Valid pointer to the byte source to take bytes from.
      */
-    Reader(const Module *module):
-        module_(module)
+    Reader(const ByteSource *externalByteSource, const arch::Architecture *architecture):
+        externalByteSource_(externalByteSource), architecture_(architecture)
     {
-        assert(module != NULL);
+        assert(externalByteSource_ != NULL);
+        assert(architecture_ != NULL);
     }
 
     /**
-     * \return Valid pointer to the module.
+     * \return Valid pointer to the architecture.
      */
-    const Module *module() const { return module_; }
+    const arch::Architecture *architecture() const { return architecture_; }
+
+    /**
+     * \return Valid pointer to the external byte source.
+     */
+    const ByteSource *externalByteSource() const { return externalByteSource_; }
 
     /**
      * \param[in] addr                 Linear address.
@@ -71,7 +81,7 @@ class Reader: public ByteSource {
      *                                 or boost::none if reading has failed.
      */
     template<class T> boost::optional<T> readType(ByteAddr addr) const {
-        // TODO: architecture, byte order.
+        // TODO: byte order.
 
         T result;
         if (readBytes(addr, &result, sizeof(result)) == sizeof(T)) {
@@ -107,6 +117,8 @@ class Reader: public ByteSource {
      * \return                         Pointer value, or boost::none in case of a failure.
      */
     boost::optional<ByteAddr> readPointer(ByteAddr addr, ByteSize size) const;
+
+    virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 };
 
 } // namespace image

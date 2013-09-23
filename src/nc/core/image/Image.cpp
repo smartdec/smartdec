@@ -24,29 +24,28 @@
 
 #include "Image.h"
 
+#include <cassert>
+
 #include <nc/common/Foreach.h>
-#include <nc/common/Warnings.h>
+
+#include "Section.h"
 
 namespace nc {
 namespace core {
 namespace image {
 
-Image::Image(const Module *module): Reader(module) {}
+Image::Image() {}
 
-Image::~Image() {
-    foreach (Section *section, sections_) {
-        delete section;
-    }
-}
+Image::~Image() {}
 
-Section *Image::createSection(const QString &name, ByteAddr addr, ByteSize size) {
-    std::unique_ptr<Section> result(new Section(module(), name, addr, size));
-    sections_.push_back(result.get());
-    return result.release();
+void Image::addSection(std::unique_ptr<Section> section) {
+    assert(section != NULL);
+    section->setImage(this);
+    sections_.push_back(std::move(section));
 }
 
 const Section *Image::getSectionContainingAddress(ByteAddr addr) const {
-    foreach (Section *section, sections_) {
+    foreach (auto section, sections()) {
         if (section->containsAddress(addr)) {
             return section;
         }
@@ -55,7 +54,7 @@ const Section *Image::getSectionContainingAddress(ByteAddr addr) const {
 }
 
 const Section *Image::getSectionByName(const QString &name) const {
-    foreach (Section *section, sections_) {
+    foreach (auto section, sections()) {
         if (section->name() == name) {
             return section;
         }

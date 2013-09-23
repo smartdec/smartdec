@@ -54,7 +54,7 @@ QString Reader::readAsciizString(ByteAddr addr, ByteSize maxSize) const {
 }
 
 boost::optional<ByteAddr> Reader::readPointer(ByteAddr addr) const {
-    return readPointer(addr, module()->architecture()->bitness() / 8);
+    return readPointer(addr, architecture()->bitness() / 8);
 }
 
 boost::optional<ByteAddr> Reader::readPointer(ByteAddr addr, ByteSize size) const {
@@ -66,6 +66,14 @@ boost::optional<ByteAddr> Reader::readPointer(ByteAddr addr, ByteSize size) cons
         return result;
     } else {
         return boost::none;
+    }
+}
+
+ByteSize Reader::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
+    if (externalByteSource()) {
+        return externalByteSource()->readBytes(addr, buf, size);
+    } else {
+        return 0;
     }
 }
 

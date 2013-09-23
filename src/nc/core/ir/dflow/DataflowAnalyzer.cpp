@@ -361,7 +361,7 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term) {
         assert(termLocation.covers(definedLocation));
 
         /*
-         * Mask of bits inside termAbstractValue which are covered by the definedLocation.
+         * Mask of bits inside termAbstractValue which are covered by definedLocation.
          */
         auto mask = bitMask<ConstantValue>(definedLocation.size());
         if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
@@ -372,6 +372,8 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term) {
 
         foreach (const Term *definition, pair.second) {
             auto definitionLocation = dataflow().getMemoryLocation(definition);
+            assert(definitionLocation.covers(definedLocation)); // TODO: currently does not always hold
+
             auto definitionValue = dataflow().getValue(definition);
             auto definitionAbstractValue = definitionValue->abstractValue();
 

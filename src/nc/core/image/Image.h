@@ -25,10 +25,12 @@
 
 #include <nc/config.h>
 
+#include <QtGlobal>
+
+#include <memory>
 #include <vector>
 
-#include "Reader.h"
-#include "Section.h"
+#include "ByteSource.h"
 
 QT_BEGIN_NAMESPACE
 class QString;
@@ -36,45 +38,39 @@ QT_END_NAMESPACE
 
 namespace nc {
 namespace core {
-
-class Module;
-
 namespace image {
+
+class Section;
 
 /**
  * Binary file image.
  */
-class Image: public Reader {
-    std::vector<Section *> sections_; ///< Sections of the executable file.
+class Image: public ByteSource {
+    std::vector<std::unique_ptr<Section>> sections_; ///< Sections of the executable file.
     std::unique_ptr<ByteSource> externalByteSource_; ///< External source of this image's bytes.
 
 public:
     /**
-     * Class constructor.
-     * 
-     * \param[in] module                Module.
+     * Constructor.
      */
-    // TODO: refactor and remove module argument
-    Image(const Module *module);
+    Image();
 
     /**
-     * Virtual destructor.
+     * Destructor.
      */
-    virtual ~Image();
+    ~Image();
 
     /**
-     * Creates a new section.
+     * Adds a new section.
      *
-     * \param name                      Section name.
-     * \param addr                      Section's address.
-     * \param size                      Section's size.
+     * \param section Valid pointer to a section.
      */
-    Section *createSection(const QString &name, ByteAddr addr, ByteSize size);
+    void addSection(std::unique_ptr<Section> section);
 
     /**
-     * \return                         Sections of the executable file.
+     * \return Sections of the executable file.
      */
-    const std::vector<Section *> &sections() const { return sections_; }
+    const std::vector<Section *> &sections() const { return reinterpret_cast<const std::vector<Section *> &>(sections_); }
 
     /**
      * \param[in] addr                 Linear address.

@@ -31,8 +31,10 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/core/Module.h>
-#include <nc/core/image/Image.h>
 #include <nc/core/image/BufferByteSource.h>
+#include <nc/core/image/Image.h>
+#include <nc/core/image/Reader.h>
+#include <nc/core/image/Section.h>
 #include <nc/core/input/ParseError.h>
 
 #include "elf32.h"
@@ -113,7 +115,7 @@ class ElfParserPrivate {
         std::size_t initialSectionsCount = module_->image()->sections().size();
 
         foreach (const Shdr &shdr, shdrs) {
-            core::image::Section *section = module_->image()->createSection(QString(), shdr.sh_addr, shdr.sh_size);
+            auto section = std::make_unique<core::image::Section>(QString(), shdr.sh_addr, shdr.sh_size);
 
             section->setAllocated(shdr.sh_flags & SHF_ALLOC);
             section->setReadable();
@@ -127,25 +129,30 @@ class ElfParserPrivate {
             if (source_->seek(shdr.sh_offset)) {
                 section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(source_->read(shdr.sh_size)));
             }
+
+            module_->image()->addSection(std::move(section));
         }
 
         if (ehdr.e_shstrndx < shdrs.size()) {
-            const core::image::Section *shstrtab = module_->image()->sections()[initialSectionsCount + ehdr.e_shstrndx];
+            auto shstrtab = module_->image()->sections()[initialSectionsCount + ehdr.e_shstrndx];
+            core::image::Reader reader(shstrtab, module_->architecture());
 
             for (std::size_t i = 0; i < shdrs.size(); ++i) {
                 module_->image()->sections()[initialSectionsCount + i]->setName(
-                    shstrtab->readAsciizString(shdrs[i].sh_name, shstrtab->size()));
+                    reader.readAsciizString(shdrs[i].sh_name, shstrtab->size()));
             }
         }
 
         if (const core::image::Section *symtab = module_->image()->getSectionByName(".symtab")) {
             if (const core::image::Section *strtab = module_->image()->getSectionByName(".strtab")) {
+                core::image::Reader strtabReader(strtab, module_->architecture());
+
                 Sym sym;
                 for (ByteAddr addr = symtab->addr(); addr < symtab->endAddr(); addr += sizeof(sym)) {
                     if (symtab->readBytes(addr, &sym, sizeof(sym)) != sizeof(sym)) {
                         break;
                     }
-                    module_->addName(sym.st_value, strtab->readAsciizString(sym.st_name, strtab->size()));
+                    module_->addName(sym.st_value, strtabReader.readAsciizString(sym.st_name, strtab->size()));
                 }
             }
         }

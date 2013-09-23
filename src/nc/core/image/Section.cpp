@@ -24,15 +24,14 @@
 
 #include "Section.h"
 
-#include <nc/core/Module.h>
-#include <nc/core/image/Image.h>
+#include "Image.h"
 
 namespace nc {
 namespace core {
 namespace image {
 
-Section::Section(const Module *module, const QString &name, ByteAddr addr, ByteSize size):
-    Reader(module), name_(name), addr_(addr), size_(size),
+Section::Section(const QString &name, ByteAddr addr, ByteSize size):
+    name_(name), addr_(addr), size_(size),
     isAllocated_(false),
     isReadable_(false), isWritable_(false), isExecutable_(false),
     isCode_(false), isData_(false), isBss_(false)
@@ -41,8 +40,8 @@ Section::Section(const Module *module, const QString &name, ByteAddr addr, ByteS
 ByteSize Section::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
     if (externalByteSource()) {
         return externalByteSource()->readBytes(addr - addr_, buf, size);
-    } else if (module()->image()->externalByteSource()) {
-        return module()->image()->externalByteSource()->readBytes(addr, buf, size);
+    } else if (image()) {
+        return image()->readBytes(addr, buf, size);
     } else {
         return 0;
     }

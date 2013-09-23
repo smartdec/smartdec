@@ -24,16 +24,16 @@
 
 #include "IRGenerator.h"
 
-#include <nc/core/Module.h>
-#include <nc/core/arch/Architecture.h>
-#include <nc/core/arch/Instructions.h>
-#include <nc/core/image/Image.h>
-
 #include <nc/common/Foreach.h>
 #include <nc/common/Range.h>
 #include <nc/common/Warnings.h>
 #include <nc/common/make_unique.h>
 
+#include <nc/core/Module.h>
+#include <nc/core/arch/Architecture.h>
+#include <nc/core/arch/Instructions.h>
+#include <nc/core/image/Image.h>
+#include <nc/core/image/Reader.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
@@ -177,8 +177,10 @@ std::vector<ByteAddr> IRGenerator::getJumpTableEntries(const ir::Term *target, c
     const std::size_t maxTableEntries = 65536;
     const ByteSize entrySize = target->size() / CHAR_BIT;
 
+    image::Reader reader(module()->image(), module()->architecture());
+
     ByteAddr address = arrayAccess.base();
-    while (boost::optional<ByteAddr> entry = module()->image()->readPointer(address, entrySize)) {
+    while (boost::optional<ByteAddr> entry = reader.readPointer(address, entrySize)) {
         if (!instructions()->get(*entry)) {
             break;
         }

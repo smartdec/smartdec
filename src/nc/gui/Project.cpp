@@ -33,6 +33,7 @@
 #include <nc/core/Module.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Section.h>
 
 #include "CommandQueue.h"
 #include "Decompile.h"

@@ -33,6 +33,7 @@
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Section.h>
 #include <nc/core/input/Parser.h>
 #include <nc/core/input/ParserRepository.h>
 
