@@ -42,7 +42,7 @@ Value *Dataflow::getValue(const Term *term) {
         term = term->assignee();
     }
 
-    auto &result = values_[term];
+    auto &result = term2value_[term];
     if (!result) {
         result.reset(new Value());
     }
@@ -56,9 +56,8 @@ const Value *Dataflow::getValue(const Term *term) const {
         term = term->assignee();
     }
 
-    auto i = values_.find(term);
-
-    if (i != values_.end()) {
+    auto i = term2value_.find(term);
+    if (i != term2value_.end()) {
         return i->second.get();
     } else {
         static const Value empty;

@@ -44,7 +44,6 @@
 #include <nc/core/ir/calls/CallsData.h>
 #include <nc/core/ir/calls/FunctionAnalyzer.h>
 #include <nc/core/ir/calls/ReturnAnalyzer.h>
-#include <nc/core/ir/misc/CensusVisitor.h>
 
 #include "Dataflow.h"
 #include "ExecutionContext.h"
@@ -98,7 +97,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
             /* If this is a function entry, run the calling convention-specific code. */
             if (basicBlock == function()->entry()) {
                 if (callsData()) {
-                    if (calls::FunctionAnalyzer *functionAnalyzer = callsData()->getFunctionAnalyzer(function())) {
+                    if (auto functionAnalyzer = callsData()->getFunctionAnalyzer(function())) {
                         functionAnalyzer->executeEnter(context);
                     }
                 }
@@ -120,24 +119,16 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
         /*
          * Compute uses.
          */
-        misc::CensusVisitor census(callsData());
-        census(function());
-
-        foreach (const Term *term, census.terms()) {
-            if (term->isWrite()) {
-                dataflow().getUses(term).clear();
-            }
+        foreach (auto &termAndUses, dataflow().term2uses()) {
+            termAndUses.second.clear();
         }
 
-        foreach (const Term *term, census.terms()) {
-            if (term->isRead()) {
-                auto &definitions = dataflow().getDefinitions(term);
-                definitions.filterOut(doesNotCover);
+        foreach (auto &termAndDefinitions, dataflow().term2definitions()) {
+            termAndDefinitions.second.filterOut(doesNotCover);
 
-                foreach (const auto &pair, definitions.pairs()) {
-                    foreach (const Term *definition, pair.second) {
-                        dataflow().getUses(definition).push_back(term);
-                    }
+            foreach (const auto &pair, termAndDefinitions.second.pairs()) {
+                foreach (const Term *definition, pair.second) {
+                    dataflow().getUses(definition).push_back(termAndDefinitions.first);
                 }
             }
         }
@@ -207,7 +198,7 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
                 if (targetValue->abstractValue().isConcrete()) {
                     callsData()->setCalledAddress(call, targetValue->abstractValue().asConcrete().value());
                 }
-                if (calls::CallAnalyzer *callAnalyzer = callsData()->getCallAnalyzer(call)) {
+                if (auto callAnalyzer = callsData()->getCallAnalyzer(call)) {
                     callAnalyzer->executeCall(context);
                 }
             }
@@ -215,7 +206,7 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
         }
         case Statement::RETURN: {
             if (function() && callsData()) {
-                if (calls::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function(), statement->asReturn())) {
+                if (auto returnAnalyzer = callsData()->getReturnAnalyzer(function(), statement->asReturn())) {
                     returnAnalyzer->executeReturn(context);
                 }
             }
@@ -331,7 +322,7 @@ void DataflowAnalyzer::setMemoryLocation(const Term *term, const MemoryLocation 
 
         /*
          * If the term is a write and had a memory location before,
-         * reaching definitions can record that it defines the old
+         * reaching definitions can indicate that it defines the old
          * memory location. Fix this.
          */
         if (oldMemoryLocation && term->isWrite()) {

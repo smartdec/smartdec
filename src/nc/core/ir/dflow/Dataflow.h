@@ -52,16 +52,16 @@ class Value;
  */
 class Dataflow {
     /** Mapping from a term to a description of its value. */
-    boost::unordered_map<const Term *, std::unique_ptr<Value>> values_;
+    boost::unordered_map<const Term *, std::unique_ptr<Value>> term2value_;
 
     /** Mapping from a term to its location in memory. */
-    boost::unordered_map<const Term *, MemoryLocation> memoryLocations_;
+    boost::unordered_map<const Term *, MemoryLocation> term2location_;
 
     /** Mapping from a term to the reaching definitions of the parts of its memory location. */
-    boost::unordered_map<const Term *, ReachingDefinitions> definitions_;
+    boost::unordered_map<const Term *, ReachingDefinitions> term2definitions_;
 
     /** Mapping from a term to the list of terms reading its value. */
-    boost::unordered_map<const Term *, std::vector<const Term *>> uses_;
+    boost::unordered_map<const Term *, std::vector<const Term *>> term2uses_;
 
     public:
 
@@ -101,7 +101,7 @@ class Dataflow {
      */
     const ir::MemoryLocation &getMemoryLocation(const Term *term) const {
         assert(term != NULL);
-        return nc::find(memoryLocations_, term);
+        return nc::find(term2location_, term);
     }
 
     /**
@@ -112,8 +112,18 @@ class Dataflow {
      */
     void setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation) {
         assert(term != NULL);
-        memoryLocations_[term] = memoryLocation;
+        term2location_[term] = memoryLocation;
     }
+
+    /**
+     * \return Mapping from a term to its reaching definitions.
+     */
+    decltype(term2definitions_) &term2definitions() { return term2definitions_; }
+
+    /**
+     * \return Mapping from a term to its reaching definitions.
+     */
+    const decltype(term2definitions_) &term2definitions() const { return term2definitions_; }
 
     /**
      * \param[in] term Valid pointer to a read term.
@@ -123,7 +133,7 @@ class Dataflow {
     ReachingDefinitions &getDefinitions(const Term *term) {
         assert(term != NULL);
         assert(term->isRead());
-        return definitions_[term];
+        return term2definitions_[term];
     }
 
     /**
@@ -134,8 +144,18 @@ class Dataflow {
     const ReachingDefinitions &getDefinitions(const Term *term) const {
         assert(term != NULL);
         assert(term->isRead());
-        return nc::find(definitions_, term);
+        return nc::find(term2definitions_, term);
     }
+
+    /**
+     * \return Mapping from a term to its uses.
+     */
+    decltype(term2uses_) &term2uses() { return term2uses_; }
+
+    /**
+     * \return Mapping from a term to its uses.
+     */
+    const decltype(term2uses_) &term2uses() const { return term2uses_; }
 
     /**
      * \param[in] term Valid pointer to a read term.
@@ -146,7 +166,7 @@ class Dataflow {
     std::vector<const Term *> &getUses(const Term *term) {
         assert(term != NULL);
         assert(term->isWrite());
-        return uses_[term];
+        return term2uses_[term];
     }
 
     /**
@@ -158,7 +178,7 @@ class Dataflow {
     const std::vector<const Term *> &getUses(const Term *term) const {
         assert(term != NULL);
         assert(term->isWrite());
-        return nc::find(uses_, term);
+        return nc::find(term2uses_, term);
     }
 };
 
