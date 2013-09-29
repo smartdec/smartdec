@@ -185,19 +185,22 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
             InspectorItem *valueItem = item->addChild(tr("value properties"));
             if (value->abstractValue().isConcrete()) {
                 valueItem->addChild(tr("constant value = %1").arg(value->abstractValue().asConcrete().value()));
+                valueItem->addChild(tr("signed constant value = %1").arg(value->abstractValue().asConcrete().signedValue()));
             } else {
                 valueItem->addChild(tr("zero bits = %1").arg(value->abstractValue().zeroBits(), 0, 16));
                 valueItem->addChild(tr("one bits = %1").arg(value->abstractValue().oneBits(), 0, 16));
             }
             if (value->isStackOffset()) {
                 valueItem->addChild(tr("stack offset = %1").arg(value->stackOffset()));
+            } else if (value->isNotStackOffset()) {
+                valueItem->addChild(tr("definitely not a stack offset"));
             } else {
                 valueItem->addChild(tr("not a stack offset"));
             }
             if (value->isProduct()) {
-                valueItem->addChild(tr("is product"));
+                valueItem->addChild(tr("is a product"));
             } else if (value->isNotProduct()) {
-                valueItem->addChild(tr("is not product"));
+                valueItem->addChild(tr("is not a product"));
             }
         }
 

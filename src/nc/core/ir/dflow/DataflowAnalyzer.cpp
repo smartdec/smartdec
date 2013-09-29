@@ -489,36 +489,35 @@ void DataflowAnalyzer::executeBinaryOperator(const BinaryOperator *binary, Execu
 
     /* Compute stack offset. */
     switch (binary->operatorKind()) {
-        case BinaryOperator::ADD:
-            if (leftValue->abstractValue().isConcrete()) {
-                if (rightValue->isStackOffset()) {
-                    value->makeStackOffset(leftValue->abstractValue().asConcrete().signedValue() + rightValue->stackOffset());
-                } else if (rightValue->isNotStackOffset()) {
-                    value->makeNotStackOffset();
-                }
-            } else if (leftValue->abstractValue().isNondeterministic()) {
-                value->makeNotStackOffset();
-            }
-            if (rightValue->abstractValue().isConcrete()) {
-                if (leftValue->isStackOffset()) {
+        case BinaryOperator::ADD: {
+            if (leftValue->isStackOffset()) {
+                if (rightValue->abstractValue().isConcrete()) {
                     value->makeStackOffset(leftValue->stackOffset() + rightValue->abstractValue().asConcrete().signedValue());
-                } else if (leftValue->isNotStackOffset()) {
+                } else if (rightValue->abstractValue().isNondeterministic()) {
                     value->makeNotStackOffset();
                 }
-            } else if (rightValue->abstractValue().isNondeterministic()) {
+            }
+            if (rightValue->isStackOffset()) {
+                if (leftValue->abstractValue().isConcrete()) {
+                    value->makeStackOffset(rightValue->stackOffset() + leftValue->abstractValue().asConcrete().signedValue());
+                } else if (leftValue->abstractValue().isNondeterministic()) {
+                    value->makeNotStackOffset();
+                }
+            }
+            if (leftValue->isNotStackOffset() && rightValue->isNotStackOffset()) {
                 value->makeNotStackOffset();
             }
             break;
-
-        case BinaryOperator::SUB:
+        }
+        case BinaryOperator::SUB: {
             if (leftValue->isStackOffset() && rightValue->abstractValue().isConcrete()) {
                 value->makeStackOffset(leftValue->stackOffset() - rightValue->abstractValue().asConcrete().signedValue());
             } else if (leftValue->isNotStackOffset() || rightValue->abstractValue().isNondeterministic()) {
                 value->makeNotStackOffset();
             }
             break;
-
-        case BinaryOperator::AND:
+        }
+        case BinaryOperator::AND: {
             /* Sometimes used for getting aligned stack pointer values. */
             if (leftValue->isStackOffset() && rightValue->abstractValue().isConcrete()) {
                 value->makeStackOffset(leftValue->stackOffset() & rightValue->abstractValue().asConcrete().value());
@@ -529,10 +528,11 @@ void DataflowAnalyzer::executeBinaryOperator(const BinaryOperator *binary, Execu
                 value->makeNotStackOffset();
             }
             break;
-
-        default:
+        }
+        default: {
             value->makeNotStackOffset();
             break;
+        }
     }
 
     /* Compute product flag. */

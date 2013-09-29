@@ -68,6 +68,8 @@ class Value {
      * Sets the abstract value of the term.
      *
      * \param value New abstract value.
+     *
+     * The value is resized to the size given to constructor of this class.
      */
     void setAbstractValue(AbstractValue value) { abstractValue_ = value.resize(abstractValue_.size()); }
 
