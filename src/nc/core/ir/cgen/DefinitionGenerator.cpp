@@ -1009,7 +1009,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
 
         foreach (auto section, parent().context().module()->image()->sections()) {
             if (section->isAllocated() && section->containsAddress(value.value())) {
-                QString string = image::Reader(section, parent().context().module()->architecture()).readAsciizString(value.value(), 1024);
+                QString string = image::Reader(section).readAsciizString(value.value(), 1024);
 
                 if (!string.isNull() && isAscii(string)) {
                     return std::make_unique<likec::String>(tree(), string);

@@ -380,7 +380,7 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term, const MemoryLocatio
          * Mask of bits inside termAbstractValue which are covered by definedLocation.
          */
         auto mask = bitMask<ConstantValue>(definedLocation.size());
-        if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
+        if (architecture()->byteOrder() == ByteOrder::LittleEndian) {
             mask = bitShift(mask, definedLocation.addr() - termLocation.addr());
         } else {
             mask = bitShift(mask, termLocation.endAddr() - definedLocation.endAddr());
@@ -396,7 +396,7 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term, const MemoryLocatio
             /*
              * Shift definition's abstract value to match term's location.
              */
-            if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
+            if (architecture()->byteOrder() == ByteOrder::LittleEndian) {
                 definitionAbstractValue.shift(definitionLocation.addr() - termLocation.addr());
             } else {
                 definitionAbstractValue.shift(termLocation.endAddr() - definitionLocation.endAddr());
@@ -419,7 +419,7 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term, const MemoryLocatio
      */
     const std::vector<const Term *> *lowerBitsDefinitions = NULL;
 
-    if (architecture()->byteOrder() == arch::ByteOrder::LittleEndian) {
+    if (architecture()->byteOrder() == ByteOrder::LittleEndian) {
         if (definitions.pairs().front().first.addr() == termLocation.addr()) {
             lowerBitsDefinitions = &definitions.pairs().front().second;
         }

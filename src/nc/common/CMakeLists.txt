@@ -4,6 +4,7 @@ set(MOC_HEADERS
 
 set(SOURCES
     BitTwiddling.h
+    ByteOrder.h
     CancellationToken.h
     CheckedCast.h
     Conversions.cpp

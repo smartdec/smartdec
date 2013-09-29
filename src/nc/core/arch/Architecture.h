@@ -30,10 +30,9 @@
 
 #include <boost/unordered_map.hpp>
 
+#include <nc/common/ByteOrder.h>
 #include <nc/common/SizedValue.h>
 #include <nc/common/Types.h>
-
-#include "ByteOrder.h"
 
 namespace nc {
 namespace core {

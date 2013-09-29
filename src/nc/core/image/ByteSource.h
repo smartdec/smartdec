@@ -45,11 +45,11 @@ class ByteSource {
     /**
      * Reads a sequence of bytes from the image.
      *
-     * \param[in] addr                 Linear address of the first byte to read.
-     * \param[out] buf                 Buffer to write bytes to.
-     * \param[in] size                 Number of bytes to read.
+     * \param[in] addr  Linear address of the first byte to read.
+     * \param[out] buf  Valid pointer to the buffer to read into.
+     * \param[in] size  Number of bytes to read.
      *
-     * \return                         Number of bytes actually read and copied into the buffer.
+     * \return Number of bytes actually read and copied into the buffer.
      */
     virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const = 0;
 };

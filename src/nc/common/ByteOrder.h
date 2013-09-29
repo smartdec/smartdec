@@ -5,11 +5,13 @@
 
 #include <nc/config.h>
 
+#include <algorithm>
+
 #include <QSysInfo>
 
+#include <nc/common/Types.h>
+
 namespace nc {
-namespace core {
-namespace arch {
 
 /**
  * Byte order of an architecture.
@@ -41,14 +43,31 @@ class ByteOrder {
      */
     operator Type() const { return value_; }
 
+    /**
+     * Converts a sequence of bytes representing an integer value in 'from'
+     * byte order to a sequence of bytes representing this value in 'to'
+     * byte order.
+     *
+     * \param[in,out] buf   Valid pointer to the sequence of bytes.
+     * \param[in]     size  Size of the byte sequence.
+     * \param[in]     from  Valid source byte order.
+     * \param[in]     to    Valid destination byte order.
+     */
+    static void convert(void *buf, ByteSize size, ByteOrder from, ByteOrder to) {
+        assert(from != Unknown);
+        assert(to != Unknown);
+
+        if (from != to) {
+            std::reverse(static_cast<char *>(buf), static_cast<char *>(buf) + size);
+        }
+    }
+
     private:
 
     /** Actual value. */
     Type value_;
 };
 
-} // namespace arch
-} // namespace core
 } // namespace nc
 
 /* vim:set et sts=4 sw=4: */

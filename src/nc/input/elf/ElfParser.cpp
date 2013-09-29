@@ -135,7 +135,7 @@ class ElfParserPrivate {
 
         if (ehdr.e_shstrndx < shdrs.size()) {
             auto shstrtab = module_->image()->sections()[initialSectionsCount + ehdr.e_shstrndx];
-            core::image::Reader reader(shstrtab, module_->architecture());
+            core::image::Reader reader(shstrtab);
 
             for (std::size_t i = 0; i < shdrs.size(); ++i) {
                 module_->image()->sections()[initialSectionsCount + i]->setName(
@@ -145,7 +145,7 @@ class ElfParserPrivate {
 
         if (const core::image::Section *symtab = module_->image()->getSectionByName(".symtab")) {
             if (const core::image::Section *strtab = module_->image()->getSectionByName(".strtab")) {
-                core::image::Reader strtabReader(strtab, module_->architecture());
+                core::image::Reader strtabReader(strtab);
 
                 Sym sym;
                 for (ByteAddr addr = symtab->addr(); addr < symtab->endAddr(); addr += sizeof(sym)) {

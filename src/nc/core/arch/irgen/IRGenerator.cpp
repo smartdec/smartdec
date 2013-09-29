@@ -178,10 +178,10 @@ std::vector<ByteAddr> IRGenerator::getJumpTableEntries(const ir::Term *target, c
     const std::size_t maxTableEntries = 65536;
     const ByteSize entrySize = target->size() / CHAR_BIT;
 
-    image::Reader reader(module()->image(), module()->architecture());
+    image::Reader reader(module()->image());
 
     ByteAddr address = arrayAccess.base();
-    while (boost::optional<ByteAddr> entry = reader.readPointer(address, entrySize)) {
+    while (auto entry = reader.readInt<ByteAddr>(address, entrySize, module()->architecture()->byteOrder())) {
         if (!instructions()->get(*entry)) {
             break;
         }

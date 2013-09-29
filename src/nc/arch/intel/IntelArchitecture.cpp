@@ -89,7 +89,7 @@ IntelArchitecture::IntelArchitecture(Mode mode):
         unreachable();
     }
 
-    setByteOrder(core::arch::ByteOrder::LittleEndian);
+    setByteOrder(ByteOrder::LittleEndian);
     setMaxInstructionSize(15);
 
     /* Init instruction disassembler. */

@@ -25,48 +25,40 @@
 
 #include <nc/config.h>
 
+#include <algorithm>
 #include <cassert>
-
-#include <QString>
+#include <cstdlib>
+#include <memory>
 
 #include <boost/optional.hpp>
 
-#include <nc/common/Types.h>
+#include <nc/common/ByteOrder.h>
 
 #include "ByteSource.h"
 
+QT_BEGIN_NAMESPACE
+class QString;
+QT_END_NAMESPACE
+
 namespace nc {
 namespace core {
-
-namespace arch {
-    class Architecture;
-}
-
 namespace image {
 
 class Reader: public ByteSource {
     const ByteSource *externalByteSource_; ///< External byte source.
-    const arch::Architecture *architecture_; ///< Architecture.
 
     public:
 
     /**
      * Constructor.
      *
-     * \param module Valid pointer to the architecture.
      * \param externalByteSource Valid pointer to the byte source to take bytes from.
      */
-    Reader(const ByteSource *externalByteSource, const arch::Architecture *architecture):
-        externalByteSource_(externalByteSource), architecture_(architecture)
+    Reader(const ByteSource *externalByteSource):
+        externalByteSource_(externalByteSource)
     {
         assert(externalByteSource_ != NULL);
-        assert(architecture_ != NULL);
     }
-
-    /**
-     * \return Valid pointer to the architecture.
-     */
-    const arch::Architecture *architecture() const { return architecture_; }
 
     /**
      * \return Valid pointer to the external byte source.
@@ -74,20 +66,49 @@ class Reader: public ByteSource {
     const ByteSource *externalByteSource() const { return externalByteSource_; }
 
     /**
-     * \param[in] addr                 Linear address.
-     * \tparam T                       Type of value to read.
+     * Reads a sequence of bytes from the external byte source.
      *
-     * \return                         Value of type T at given linear address, 
-     *                                 or boost::none if reading has failed.
+     * \param[in] addr  Linear address of the first byte to read.
+     * \param[out] buf  Valid pointer to the buffer to read into.
+     * \param[in] size  Number of bytes to read.
+     *
+     * \return Number of bytes actually read and copied into the buffer.
      */
-    template<class T> boost::optional<T> readType(ByteAddr addr) const {
-        // TODO: byte order.
+    virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 
-        T result;
-        if (readBytes(addr, &result, sizeof(result)) == sizeof(T)) {
-            return result;
-        } else {
+    /**
+     * Reads an integer value.
+     *
+     * \param[in] addr      Address to read from.
+     * \param[in] size      Size of the integer value.
+     * \param[in] byteOrder Byte order used for storing the integer value.
+     *
+     * \tparam T Result type.
+     *
+     * \return The integer value on success, boost::none on failure.
+     *         If sizeof(T) < size, the lower bytes are returned.
+     *         If sizeof(T) > size, the value is zero-extended.
+     */
+    template<class T>
+    boost::optional<T> readInt(ByteAddr addr, ByteSize size, ByteOrder byteOrder) const {
+        assert(byteOrder != ByteOrder::Unknown);
+
+        char buf[std::max<ByteSize>(size, sizeof(T))];
+
+        if (readBytes(addr, buf, size) != size) {
             return boost::none;
+        }
+
+        if (size < sizeof(T)) {
+            memset(buf + size, 0, sizeof(T) - size);
+        }
+
+        ByteOrder::convert(buf, size, byteOrder, ByteOrder::Current);
+
+        if (ByteOrder::Current == ByteOrder::LittleEndian) {
+            return *reinterpret_cast<T *>(buf);
+        } else {
+            return *reinterpret_cast<T *>(buf + size - sizeof(T));
         }
     }
 
@@ -100,25 +121,6 @@ class Reader: public ByteSource {
      * \return                         ASCIIZ string without zero char terminator on success, NULL string on failure.
      */
     QString readAsciizString(ByteAddr addr, ByteSize maxSize) const;
-
-    /**
-     * Reads a pointer of the size equal to the bitness of the module's architecture.
-     *
-     * \param[in] addr                 Linear address of the pointer.
-     * \return                         Pointer value, or boost::none in case of a failure.
-     */
-    boost::optional<ByteAddr> readPointer(ByteAddr addr) const;
-
-    /**
-     * Reads a pointer of the given size.
-     *
-     * \param[in] addr                 Linear address of the pointer.
-     * \param[in] size                 Pointer size.
-     * \return                         Pointer value, or boost::none in case of a failure.
-     */
-    boost::optional<ByteAddr> readPointer(ByteAddr addr, ByteSize size) const;
-
-    virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 };
 
 } // namespace image
