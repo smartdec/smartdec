@@ -20,7 +20,6 @@ set(SOURCES
     Logger.h
     PrintCallback.h
     Printable.h
-    QtRange.h
     Range.h
     RangeClass.h
     SizedValue.h
