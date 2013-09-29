@@ -30,7 +30,6 @@ set(SOURCES
     Visitor.h
     Warnings.h
     make_unique.h
-    select1st.h
 )
 
 if(NOT ${NC_USE_THREADS})

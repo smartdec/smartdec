@@ -26,8 +26,6 @@
 
 #include <algorithm> /* std::transform() */
 
-#include <nc/common/select1st.h>
-
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
@@ -110,7 +108,7 @@ void GenericFunctionAnalyzer::executeEnter(dflow::ExecutionContext &context) {
 
         argumentLocations_.clear();
         std::transform(arguments_.begin(), arguments_.end(), std::back_inserter(argumentLocations_),
-            select1st<boost::unordered_map<MemoryLocation, std::unique_ptr<Term>>::value_type>());
+            [](std::pair<const MemoryLocation, std::unique_ptr<Term>> &x) { return x.first; });
     }
 
     /**
