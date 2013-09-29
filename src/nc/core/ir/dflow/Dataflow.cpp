@@ -44,25 +44,13 @@ Value *Dataflow::getValue(const Term *term) {
 
     auto &result = term2value_[term];
     if (!result) {
-        result.reset(new Value());
+        result.reset(new Value(term->size()));
     }
     return result.get();
 }
 
 const Value *Dataflow::getValue(const Term *term) const {
-    assert(term != NULL);
-
-    if (term->assignee()) {
-        term = term->assignee();
-    }
-
-    auto i = term2value_.find(term);
-    if (i != term2value_.end()) {
-        return i->second.get();
-    } else {
-        static const Value empty;
-        return &empty;
-    }
+    return const_cast<Dataflow *>(this)->getValue(term);
 }
 
 } // namespace dflow

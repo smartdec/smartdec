@@ -29,9 +29,7 @@
 namespace nc { namespace core { namespace ir {
 
 const Term *Term::assignee() const {
-    assert(isWrite());
-
-    if (statement()) {
+    if (isWrite() && statement()) {
         if (auto assignment = statement()->as<Assignment>()) {
             assert(assignment->left() == this);
             return assignment->right();

@@ -170,8 +170,6 @@ public:
      * \return If the term stands in the left hand side of an assignment,
      *         returns the right hand size of this assignment. Otherwise,
      *         NULL is returned.
-     *
-     * \note The method must be called only for write terms.
      */
     const Term *assignee() const;
 

@@ -54,8 +54,10 @@ class Value {
 
     /**
      * Class constructor.
+     *
+     * \param size Size of the term.
      */
-    Value();
+    Value(SmallBitSize size);
 
     /**
      * \return Abstract value of the term.
@@ -65,9 +67,9 @@ class Value {
     /**
      * Sets the abstract value of the term.
      *
-     * \param value New value.
+     * \param value New abstract value.
      */
-    void setAbstractValue(const AbstractValue &value) { abstractValue_ = value; }
+    void setAbstractValue(AbstractValue value) { abstractValue_ = value.resize(abstractValue_.size()); }
 
     /**
      * \return True if the value is stack pointer with a known offset

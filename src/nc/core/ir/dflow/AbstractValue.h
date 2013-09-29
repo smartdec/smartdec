@@ -357,8 +357,12 @@ AbstractValue operator*(const AbstractValue &a, const AbstractValue &b) {
         return SizedValue(a.size(), a.asConcrete().value() * b.asConcrete().value());
     } else if (a.isConcrete() && a.asConcrete().value() == 0) {
         return a;
+    } else if (a.isConcrete() && a.asConcrete().value() == 1) {
+        return b;
     } else if (b.isConcrete() && b.asConcrete().value() == 0) {
         return b;
+    } else if (b.isConcrete() && b.asConcrete().value() == 1) {
+        return a;
     } else {
         return AbstractValue(a.size(), -1, -1);
     }
@@ -372,6 +376,8 @@ AbstractValue operator/(const UnsignedAbstractValue &a, const UnsignedAbstractVa
         return AbstractValue();
     } else if (a.isConcrete() && b.isConcrete()) {
         return SizedValue(a.size(), a.asConcrete().value() / b.asConcrete().value());
+    } else if (b.isConcrete() && b.asConcrete().value() == 1) {
+        return a;
     } else if (a.isConcrete() && a.asConcrete().value() == 0) {
         return a;
     } else {
@@ -387,6 +393,8 @@ AbstractValue operator/(const SignedAbstractValue &a, const SignedAbstractValue 
         return AbstractValue();
     } else if (a.isConcrete() && b.isConcrete()) {
         return SizedValue(a.size(), a.asConcrete().signedValue() / b.asConcrete().signedValue());
+    } else if (b.isConcrete() && b.asConcrete().value() == 1) {
+        return a;
     } else if (a.isConcrete() && a.asConcrete().value() == 0) {
         return a;
     } else {

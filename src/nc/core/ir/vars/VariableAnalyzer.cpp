@@ -52,10 +52,10 @@ void VariableAnalyzer::analyze(const Function *function) {
     boost::unordered_map<const Term *, std::unique_ptr<TermSet>> term2set;
 
     /*
-     * Make a set for each read or write term.
+     * Make a set for each read or write term which has a memory location.
      */
     foreach (const Term *term, census.terms()) {
-        if (term->isRead() || term->isWrite()) {
+        if ((term->isRead() || term->isWrite()) && dataflow().getMemoryLocation(term)) {
             term2set[term] = std::make_unique<TermSet>();
         }
     }
@@ -63,13 +63,14 @@ void VariableAnalyzer::analyze(const Function *function) {
     /*
      * Join sets of definitions and uses.
      */
-    foreach (const Term *term, census.terms()) {
+    foreach (auto &pair, term2set) {
+        auto term = pair.first;
+
         if (term->isWrite()) {
-            auto termSet = term2set[term].get();
+            auto termSet = pair.second.get();
 
             foreach (const Term *use, dataflow().getUses(term)) {
                 assert(dataflow().getMemoryLocation(term).overlaps(dataflow().getMemoryLocation(use)));
-
                 termSet->unionSet(term2set[use].get());
             }
         }
@@ -99,14 +100,13 @@ void VariableAnalyzer::analyze(const Function *function) {
         auto &termLocation = dataflow().getMemoryLocation(pair.first);
         assert(termLocation);
 
-        auto &variableLocation = variable->memoryLocation();
-        if (!variableLocation) {
-            variable->setMemoryLocation(termLocation);
-        } else {
+        if (auto &variableLocation = variable->memoryLocation()) {
             assert(termLocation.domain() == variableLocation.domain());
             auto addr = std::min(termLocation.addr(), variableLocation.addr());
             auto endAddr = std::max(termLocation.endAddr(), variableLocation.endAddr());
             variable->setMemoryLocation(MemoryLocation(termLocation.domain(), addr, endAddr - addr));
+        } else {
+            variable->setMemoryLocation(termLocation);
         }
     }
 }

@@ -28,7 +28,6 @@
 
 #include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/Unreachable.h>
 #include <nc/common/Warnings.h>
 
 #include <nc/core/arch/Architecture.h>
@@ -60,7 +59,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
     /*
      * Returns true if the given term does not cover given memory location.
      */
-    auto doesNotCover = [this](const MemoryLocation &mloc, const Term *term) -> bool {
+    auto notCovered = [this](const MemoryLocation &mloc, const Term *term) -> bool {
         return !dataflow().getMemoryLocation(term).covers(mloc);
     };
 
@@ -92,7 +91,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
             }
 
             /* Remove definitions that do not cover the memory location that they define. */
-            context.definitions().filterOut(doesNotCover);
+            context.definitions().filterOut(notCovered);
 
             /* If this is a function entry, run the calling convention-specific code. */
             if (basicBlock == function()->entry()) {
@@ -124,7 +123,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
         }
 
         foreach (auto &termAndDefinitions, dataflow().term2definitions()) {
-            termAndDefinitions.second.filterOut(doesNotCover);
+            termAndDefinitions.second.filterOut(notCovered);
 
             foreach (const auto &pair, termAndDefinitions.second.pairs()) {
                 foreach (const Term *definition, pair.second) {
@@ -213,7 +212,7 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
             break;
         }
         default:
-            ncWarning("Unsupported statement kind: '%1'.", static_cast<int>(statement->kind()));
+            ncWarning("Unknown statement kind: '%1'.", static_cast<int>(statement->kind()));
             break;
     }
 }

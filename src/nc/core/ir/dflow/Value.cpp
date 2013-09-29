@@ -73,7 +73,8 @@ bool success = test();
 } // anonymous namespace
 #endif
 
-Value::Value():
+Value::Value(SmallBitSize size):
+    abstractValue_(size, 0, 0),
     isStackOffset_(false), isNotStackOffset_(false),
     isProduct_(false), isNotProduct_(false)
 {}
