@@ -26,7 +26,7 @@ class ByteOrder {
         Unknown      = -1,                     ///< Unknown/undefined.
         BigEndian    = QSysInfo::BigEndian,    ///< Highest byte first.
         LittleEndian = QSysInfo::LittleEndian, ///< Lowest byte first.
-        Current      = QSysInfo::ByteOrder     ///< Current byte order.
+        Current      = QSysInfo::ByteOrder     ///< Host byte order.
     };
 
     /**
