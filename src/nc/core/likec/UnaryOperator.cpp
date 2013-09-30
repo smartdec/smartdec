@@ -91,6 +91,10 @@ const Type *UnaryOperator::getType() const {
 Expression *UnaryOperator::rewrite() {
     rewriteChild(operand_);
 
+    if (operatorKind() == BITWISE_NOT && operand()->getType()->size() == 1) {
+        setOperatorKind(LOGICAL_NOT);
+    }
+
     switch (operatorKind()) {
         case DEREFERENCE: {
             if (UnaryOperator *unary = operand()->as<UnaryOperator>()) {
