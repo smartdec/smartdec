@@ -441,7 +441,7 @@ AbstractValue operator==(const AbstractValue &a, const AbstractValue &b) {
     assert(a.size() == b.size());
 
     return AbstractValue(1,
-        (a.oneBits() ^ b.oneBits()) || (a.zeroBits() ^ b.zeroBits()),
+        (a.zeroBits() & b.oneBits()) || (a.oneBits() & b.zeroBits()),
         ((a.zeroBits() & b.zeroBits()) | (a.oneBits() & b.oneBits())) == bitMask<ConstantValue>(a.size()),
         AbstractValue::exact);
 }

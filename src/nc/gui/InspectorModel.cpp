@@ -204,6 +204,10 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
             }
         }
 
+        if (auto &memoryLocation = dataflow->getMemoryLocation(term)) {
+            item->addChild(tr("computed memory location = %1").arg(memoryLocation.toString()));
+        }
+
         if (term->isRead()) {
             InspectorItem *definitionsItem = item->addChild(tr("definitions"));
 
