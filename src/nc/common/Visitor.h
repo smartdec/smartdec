@@ -44,7 +44,8 @@ public:
 };
 
 
-namespace detail {
+namespace visitor_detail {
+
 template<class T, class Function>
 class FunctionVisitor: public Visitor<T> {
 public:
@@ -58,7 +59,7 @@ private:
     Function mFunction;
 };
 
-} // namespace detail
+} // namespace visitor_detail
 
 /**
  * Factory function that creates visitor from the given functor.
@@ -66,8 +67,8 @@ private:
  * \param function Functor to create visitor from.
  */
 template<class T, class Function>
-detail::FunctionVisitor<T, Function> makeVisitor(const Function &function) {
-    return detail::FunctionVisitor<T, Function>(function);
+visitor_detail::FunctionVisitor<T, Function> makeVisitor(const Function &function) {
+    return visitor_detail::FunctionVisitor<T, Function>(function);
 }
 
 } // namespace nc

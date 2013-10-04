@@ -20,7 +20,7 @@
 //#include <arx/utility/Unused.h>
 #include "Unused.h"
 
-namespace nc { namespace detail {
+namespace nc { namespace warnings_detail {
 
     inline void warningInternal(const char *functionName, const QString &s) {
         qWarning("%s: %s", functionName, qPrintable(s));
@@ -74,24 +74,24 @@ namespace nc { namespace detail {
         return "null";
     }
 
-}} // namespace nc::detail
+}} // namespace nc::warnings_detail
 
 
 
 #define ncWarning(MSG, ...)                                                      \
-    ::nc::detail::operators::invokeInternal(&::nc::detail::warningInternal,  Q_FUNC_INFO, QString(MSG), ##__VA_ARGS__)
+    ::nc::warnings_detail::operators::invokeInternal(&::nc::warnings_detail::warningInternal,  Q_FUNC_INFO, QString(MSG), ##__VA_ARGS__)
 
 #define ncCritical(MSG, ...)                                                     \
-    ::nc::detail::operators::invokeInternal(&::nc::detail::criticalInternal, Q_FUNC_INFO, QString(MSG), ##__VA_ARGS__)
+    ::nc::warnings_detail::operators::invokeInternal(&::nc::warnings_detail::criticalInternal, Q_FUNC_INFO, QString(MSG), ##__VA_ARGS__)
 
 #define ncFatal(MSG, ...)                                                        \
-    ::nc::detail::operators::invokeInternal(&::nc::detail::fatalInternal,    Q_FUNC_INFO, QString(MSG), ##__VA_ARGS__)
+    ::nc::warnings_detail::operators::invokeInternal(&::nc::warnings_detail::fatalInternal,    Q_FUNC_INFO, QString(MSG), ##__VA_ARGS__)
 
 
 
 #define NC_NULL_PARAMETER_I(MACRO, PARAMETER) {                                 \
     NC_UNUSED(PARAMETER); /* Show compilation error if parameter name is mistyped. */ \
-    MACRO("Unexpected %1 parameter '%2'.", ::nc::detail::nullName(PARAMETER), BOOST_PP_STRINGIZE(PARAMETER)); \
+    MACRO("Unexpected %1 parameter '%2'.", ::nc::warnings_detail::nullName(PARAMETER), BOOST_PP_STRINGIZE(PARAMETER)); \
 }
 
 /**

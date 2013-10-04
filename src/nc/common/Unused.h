@@ -26,12 +26,12 @@
 #include <nc/config.h>
 
 namespace nc { 
-namespace detail {
+namespace unused_detail {
 
 template<class T>
 inline void unused(const T &) {}
 
-} // namespace detail
+} // namespace unused_detail
 } // namespace nc
 
 
@@ -44,4 +44,4 @@ inline void unused(const T &) {}
  *
  * \param x Unused argument or variable.
  */
-#define NC_UNUSED(x) ::nc::detail::unused(x)
+#define NC_UNUSED(x) ::nc::unused_detail::unused(x)
