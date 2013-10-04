@@ -771,7 +771,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case JG: case JNLE: {
-            _[jump(choice(greater(), ~zf() | sf() == of()), operand(0), directSuccessor())];
+            _[jump(choice(greater(), ~zf() | (sf() == of())), operand(0), directSuccessor())];
             break;
         }
         case JGE: case JNL: {
@@ -840,7 +840,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
                 case CMOVE: case CMOVZ:
                     _[jump(zf(), then.basicBlock(), directSuccessor())]; break;
                 case CMOVG:
-                    _[jump(choice(greater(), ~zf() | sf() == of()), then.basicBlock(), directSuccessor())]; break;
+                    _[jump(choice(greater(), ~zf() | (sf() == of())), then.basicBlock(), directSuccessor())]; break;
                 case CMOVGE:
                     _[jump(choice(greater_or_equal(), sf() == of()), then.basicBlock(), directSuccessor())]; break;
                 case CMOVL:
@@ -1133,7 +1133,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case SETG: case SETNLE: {
-            _[operand(0) = zero_extend(choice(greater(), ~zf() | sf() == of()))];
+            _[operand(0) = zero_extend(choice(greater(), ~zf() | (sf() == of())))];
             break;
         }
         case SETGE: case SETNL: {
