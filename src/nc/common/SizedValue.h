@@ -29,6 +29,7 @@
 
 #include <nc/common/BitTwiddling.h>
 #include <nc/common/Types.h>
+#include <nc/common/Unused.h>
 
 namespace nc {
 
@@ -42,8 +43,7 @@ class SizedValue {
     /** The value. All its bits from size_ and higher are zero. */
     ConstantValue value_;
 
-    public:
-
+public:
     /**
      * Constructs a value of zero size.
      */
@@ -64,11 +64,13 @@ class SizedValue {
         assert(size >= 0);
     }
 
+private:
     /**
      * Helper class to construct values without truncation.
      */
     class Exact {};
 
+public:
     /**
      * Instance of the helper class to construct values without truncation.
      */
@@ -85,6 +87,7 @@ class SizedValue {
         size_(size),
         value_(value)
     {
+        NC_UNUSED(exact);
         assert(size >= 0);
         assert(bitTruncate(value, size) == value);
     }

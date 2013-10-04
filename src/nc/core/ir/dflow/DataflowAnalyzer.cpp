@@ -576,9 +576,9 @@ AbstractValue DataflowAnalyzer::apply(const BinaryOperator *binary, const Abstra
         case BinaryOperator::SHL:
             return a << b;
         case BinaryOperator::SHR:
-            return dflow::UnsignedAbstractValue(a) >> b;
+            return a.asUnsigned() >> b;
         case BinaryOperator::SAR:
-            return dflow::SignedAbstractValue(a) >> b;
+            return a.asSigned() >> b;
         case BinaryOperator::ADD:
             return a + b;
         case BinaryOperator::SUB:
@@ -586,23 +586,23 @@ AbstractValue DataflowAnalyzer::apply(const BinaryOperator *binary, const Abstra
         case BinaryOperator::MUL:
             return a * b;
         case BinaryOperator::SIGNED_DIV:
-            return dflow::SignedAbstractValue(a) / b;
-        case BinaryOperator::UNSIGNED_DIV:
-            return dflow::UnsignedAbstractValue(a) / b;
+            return a.asSigned() / b;
         case BinaryOperator::SIGNED_REM:
-            return dflow::SignedAbstractValue(a) % b;
+            return a.asSigned() % b;
+        case BinaryOperator::UNSIGNED_DIV:
+            return a.asUnsigned() / b;
         case BinaryOperator::UNSIGNED_REM:
-            return dflow::UnsignedAbstractValue(a) % b;
+            return a.asUnsigned() % b;
         case BinaryOperator::EQUAL:
             return a == b;
         case BinaryOperator::SIGNED_LESS:
-            return dflow::SignedAbstractValue(a) < b;
+            return a.asSigned() < b;
         case BinaryOperator::SIGNED_LESS_OR_EQUAL:
-            return dflow::SignedAbstractValue(a) <= b;
+            return a.asSigned() <= b;
         case BinaryOperator::UNSIGNED_LESS:
-            return dflow::UnsignedAbstractValue(a) < b;
+            return a.asUnsigned() < b;
         case BinaryOperator::UNSIGNED_LESS_OR_EQUAL:
-            return dflow::UnsignedAbstractValue(a) <= b;
+            return a.asUnsigned() <= b;
         default:
             ncWarning("Unknown binary operator kind: %1", binary->operatorKind());
             return dflow::AbstractValue();
