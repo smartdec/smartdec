@@ -43,8 +43,6 @@ namespace dflow {
 const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
     assert(term != NULL);
 
-    // FIXME
-#if 0
     /* Terms that were already seen. */
     boost::unordered_set<const Term *> visited;
 
@@ -58,11 +56,14 @@ const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
                 break;
             }
         } else if (term->isRead()) {
-            const std::vector<const Term *> &definitions = dataflow.getDefinitions(term);
+            auto &definitions = dataflow.getDefinitions(term);
 
-            if (definitions.size() == 1) {
-                term = definitions.front();
-            } else if (const Choice *choice = term->as<Choice>()) {
+            if (definitions.pairs().size() == 1 &&
+                definitions.pairs().front().first == dataflow.getMemoryLocation(term) &&
+                definitions.pairs().front().second.size() == 1)
+            {
+                term = definitions.pairs().front().second.front();
+            } else if (auto choice = term->as<Choice>()) {
                 if (!dataflow.getDefinitions(choice->preferredTerm()).empty()) {
                     term = choice->preferredTerm();
                 } else {
@@ -75,7 +76,6 @@ const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
             unreachable();
         }
     } while (!nc::contains(visited, term));
-#endif
 
     return term;
 }
