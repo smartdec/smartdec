@@ -27,20 +27,37 @@
 
 #include <cassert>
 
+#include <nc/core/ir/MemoryLocation.h>
+
 namespace nc {
 namespace core {
 namespace ir {
+
+class Term;
+
 namespace vars {
 
 /**
- * Variable is a unique object associated with a set of terms representing
- * the same variable of reconstructed program.
+ * Class containing information about a reconstructed variable.
  */
 class Variable {
     /** Memory location of the variable. */
     MemoryLocation memoryLocation_;
 
+    /** Terms belonging to the variable. */
+    std::vector<const Term *> terms_;
+
     public:
+
+    /**
+     * Constructor.
+     *
+     * \param memoryLocation Memory location of the variable.
+     * \param terms Terms belonging to the variable.
+     */
+    Variable(const MemoryLocation &memoryLocation, std::vector<const Term *> terms):
+        memoryLocation_(memoryLocation), terms_(std::move(terms))
+    {}
 
     /**
      * \return Memory location of the variable.
@@ -48,14 +65,9 @@ class Variable {
     const MemoryLocation &memoryLocation() const { return memoryLocation_; }
 
     /**
-     * Sets the memory location of the variable.
-     *
-     * \param memoryLocation Valid memory location.
+     * \return Terms belonging to the variable.
      */
-    void setMemoryLocation(const MemoryLocation &memoryLocation) {
-        assert(memoryLocation);
-        memoryLocation_ = memoryLocation;
-    }
+    const std::vector<const Term *> &terms() const { return terms_; }
 };
 
 } // namespace vars

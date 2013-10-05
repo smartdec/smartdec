@@ -30,7 +30,6 @@
 #include <boost/unordered_map.hpp>
 
 #include <nc/common/Range.h>
-#include <nc/common/make_unique.h>
 
 #include "Variable.h"
 
@@ -43,7 +42,7 @@ class Term;
 namespace vars {
 
 /**
- * Information about reconstructed variables.
+ * Class containing information about reconstructed variables.
  */
 class Variables {
     /** All variables. */
@@ -55,24 +54,11 @@ class Variables {
     public:
 
     /**
-     * \return Valid pointer to a fresh variable owned by *this.
-     */
-    Variable *makeVariable() {
-        auto variable = std::make_unique<Variable>();
-        auto result = variable.get();
-        variables_.push_back(std::move(variable));
-        return result;
-    }
-
-    /**
-     * \param term Valid pointer to a term.
+     * Adds information about reconstructed variable.
      *
-     * \return Pointer to the variable corresponding to the term. Can be NULL.
+     * \param variable Valid pointer to the information about the variable.
      */
-    Variable *getVariable(const Term *term) {
-        assert(term != NULL);
-        return nc::find(term2variable_, term);
-    }
+    void addVariable(std::unique_ptr<Variable> variable);
 
     /**
      * \param term Valid pointer to a term.
@@ -82,18 +68,6 @@ class Variables {
     const Variable *getVariable(const Term *term) const {
         assert(term != NULL);
         return nc::find(term2variable_, term);
-    }
-
-    /**
-     * Sets the variable corresponding to a term.
-     *
-     * \param term Valid pointer to a term.
-     * \param variable Valid pointer to the variable.
-     */
-    void setVariable(const Term *term, Variable *variable) {
-        assert(term != NULL);
-        assert(variable != NULL);
-        term2variable_[term] = variable;
     }
 };
 

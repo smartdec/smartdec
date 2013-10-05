@@ -159,7 +159,7 @@ likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(co
         QString basename(QLatin1String("v"));
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
-        if(const MemoryLocationAccess *access = term->asMemoryLocationAccess()) {
+        if (const MemoryLocationAccess *access = term->asMemoryLocationAccess()) {
             if (const arch::Register *reg = context().module()->architecture()->registers()->regizter(access->memoryLocation())) {
                 basename = reg->lowercaseName();
                 if (basename.isEmpty() || basename[basename.size() - 1].isDigit()) {
@@ -805,22 +805,12 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
         }
         case Term::MEMORY_LOCATION_ACCESS: {
             auto access = term->asMemoryLocationAccess();
-            if (context().module()->architecture()->isGlobalMemory(access->memoryLocation())) {
-                return std::make_unique<likec::VariableIdentifier>(tree(),
-                    parent().makeGlobalVariableDeclaration(access->memoryLocation(), types().getType(term)));
-            } else {
-                return std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(term));
-            }
+            return makeVariableAccess(access, access->memoryLocation());
         }
         case Term::DEREFERENCE: {
             auto dereference = term->asDereference();
             if (auto &memoryLocation = dataflow().getMemoryLocation(term)) {
-                if (context().module()->architecture()->isGlobalMemory(memoryLocation)) {
-                    return std::make_unique<likec::VariableIdentifier>(tree(),
-                        parent().makeGlobalVariableDeclaration(memoryLocation, types().getType(term)));
-                } else {
-                    return std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(dereference));
-                }
+                return makeVariableAccess(dereference, memoryLocation);
             } else {
                 auto type = types().getType(dereference);
                 auto addressType = types().getType(dereference->address());
@@ -1040,6 +1030,19 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
             value,
             tree().makeIntegerType(type->size(), type->isUnsigned())
         ));
+}
+
+std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const Term *term, const MemoryLocation &memoryLocation) {
+    assert(term != NULL);
+    assert(memoryLocation);
+
+    if (context().module()->architecture()->isGlobalMemory(memoryLocation)) {
+        return std::make_unique<likec::VariableIdentifier>(tree(),
+            parent().makeGlobalVariableDeclaration(memoryLocation, types().getType(term)));
+    } else {
+        // TODO: generate proper pointer arithmetics if memoryLocation != variable->memoryLocation.
+        return std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(term));
+    }
 }
 
 bool DefinitionGenerator::isIntermediate(const Term *term) const {

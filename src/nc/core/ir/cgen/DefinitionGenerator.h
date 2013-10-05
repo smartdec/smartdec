@@ -318,6 +318,14 @@ class DefinitionGenerator: public DeclarationGenerator {
     virtual std::unique_ptr<likec::Expression> makeConstant(const Term *term, const SizedValue &value);
 
     /**
+     * Creates an access to a variable associated with a term.
+     *
+     * \param term Valid pointer to the term.
+     * \param memoryLocation Valid memory location of this term.
+     */
+    virtual std::unique_ptr<likec::Expression> makeVariableAccess(const Term *term, const MemoryLocation &memoryLocation);
+
+    /**
      * \param[in] term Valid pointer to a term.
      *
      * \return True if this term represents a variable which is defined once and used once.

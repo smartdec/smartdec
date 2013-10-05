@@ -24,8 +24,11 @@
 
 #include "VariableAnalyzer.h"
 
+#include <algorithm>
+
 #include <nc/common/DisjointSet.h>
 #include <nc/common/Foreach.h>
+#include <nc/common/make_unique.h>
 
 #include <nc/core/ir/Term.h>
 #include <nc/core/ir/dflow/Dataflow.h>
@@ -76,38 +79,36 @@ void VariableAnalyzer::analyze(const Function *function) {
         }
     }
 
-    boost::unordered_map<TermSet *, Variable *> set2variable;
+    boost::unordered_map<TermSet *, std::vector<const Term *>> set2terms;
 
     /*
-     * Make a variable for each set.
+     * Compute the terms belonging to each set.
      */
     foreach (auto &pair, term2set) {
-        auto set = pair.second->findSet();
-        auto &variable = set2variable[set];
-        if (!variable) {
-            variable = variables().makeVariable();
-        }
+        set2terms[pair.second->findSet()].push_back(pair.first);
     }
 
     /*
-     * Compute a memory location for each variable.
+     * Create variables.
      */
-    foreach (auto &pair, term2set) {
-        auto set = pair.second->findSet();
-        auto variable = set2variable[set];
-        variables().setVariable(pair.first, variable);
+    foreach (auto &pair, set2terms) {
+        auto &terms = pair.second;
 
-        auto &termLocation = dataflow().getMemoryLocation(pair.first);
-        assert(termLocation);
+        auto merge = [](const MemoryLocation &a, const MemoryLocation &b) -> MemoryLocation {
+            if (!a) {
+                return b;
+            } else {
+                assert(a.domain() == b.domain());
+                auto addr = std::min(a.addr(), b.addr());
+                auto endAddr = std::max(a.endAddr(), b.endAddr());
+                return MemoryLocation(a.domain(), addr, endAddr - addr);
+            }
+        };
 
-        if (auto &variableLocation = variable->memoryLocation()) {
-            assert(termLocation.domain() == variableLocation.domain());
-            auto addr = std::min(termLocation.addr(), variableLocation.addr());
-            auto endAddr = std::max(termLocation.endAddr(), variableLocation.endAddr());
-            variable->setMemoryLocation(MemoryLocation(termLocation.domain(), addr, endAddr - addr));
-        } else {
-            variable->setMemoryLocation(termLocation);
-        }
+        auto memoryLocation = std::accumulate(terms.begin(), terms.end(), MemoryLocation(),
+            [&](const MemoryLocation &a, const Term *term) { return merge(a, dataflow().getMemoryLocation(term)); });
+
+        variables().addVariable(std::make_unique<Variable>(memoryLocation, std::move(terms)));
     }
 }
 
