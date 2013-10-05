@@ -53,16 +53,20 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
     census(function);
 
     /* Join term types with types of definitions. */
-    // FIXME: adapt to new dflow
-#if 0
     foreach (const Term *term, census.terms()) {
         if (term->isRead()) {
-            foreach (const Term *definition, dataflow().getDefinitions(term)) {
-                types().getType(term)->unionSet(types().getType(definition));
+            auto &definitions = dataflow().getDefinitions(term);
+
+            /* Join only if the memory locations of the term and its definitions coincide. */
+            if (definitions.pairs().size() == 1 &&
+                definitions.pairs().front().first == dataflow().getMemoryLocation(term))
+            {
+                foreach (const Term *definition, definitions.pairs().front().second) {
+                    types().getType(term)->unionSet(types().getType(definition));
+                }
             }
         }
     } 
-#endif
 
     /* Join types of terms used for return values. */
     if (callsData()) {
