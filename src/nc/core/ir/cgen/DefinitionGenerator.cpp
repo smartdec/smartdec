@@ -153,25 +153,45 @@ likec::ArgumentDeclaration *DefinitionGenerator::makeArgumentDeclaration(const T
     return result;
 }
 
-likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(const Term *term) {
-    likec::VariableDeclaration *&result = variableDeclarations_[variables().getVariable(term)];
-    if (!result) {
-        QString basename(QLatin1String("v"));
+const likec::Type *DefinitionGenerator::makeLocalVariableType(const vars::Variable *variable) {
+    assert(variable != NULL);
+
+    foreach (auto term, variable->terms()) {
+        if (dataflow().getMemoryLocation(term) == variable->memoryLocation()) {
+            return parent().makeType(types().getType(term));
+        }
+    }
+
+    return tree().makeIntegerType(variable->memoryLocation().size(), true);
+}
+
+QString DefinitionGenerator::makeLocalVariableName(const vars::Variable *variable) {
+    QString basename(QLatin1String("v"));
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
+    foreach (auto term, variable->terms()) {
         if (const MemoryLocationAccess *access = term->asMemoryLocationAccess()) {
-            if (const arch::Register *reg = context().module()->architecture()->registers()->regizter(access->memoryLocation())) {
+            if (auto reg = context().module()->architecture()->registers()->getRegister(access->memoryLocation())) {
                 basename = reg->lowercaseName();
                 if (basename.isEmpty() || basename[basename.size() - 1].isDigit()) {
                     basename.push_back('_');
                 }
+                break;
             }
         }
+    }
 #endif
 
+    return QString("%1%2").arg(basename).arg(++serial_);
+}
+
+likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(const vars::Variable *variable) {
+    assert(variable != NULL);
+
+    likec::VariableDeclaration *&result = variableDeclarations_[variable];
+    if (!result) {
         auto variableDeclaration = std::make_unique<likec::VariableDeclaration>(tree(),
-            QString("%1%2").arg(basename).arg(++serial_),
-            parent().makeType(types().getType(term)));
+            makeLocalVariableName(variable), makeLocalVariableType(variable));
 
         result = variableDeclaration.get();
         definition()->block()->addDeclaration(std::move(variableDeclaration));
@@ -1040,8 +1060,10 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const
         return std::make_unique<likec::VariableIdentifier>(tree(),
             parent().makeGlobalVariableDeclaration(memoryLocation, types().getType(term)));
     } else {
+        auto variable = variables().getVariable(term);
+
         // TODO: generate proper pointer arithmetics if memoryLocation != variable->memoryLocation.
-        return std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(term));
+        return std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(variable));
     }
 }
 

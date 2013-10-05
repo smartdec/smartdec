@@ -52,12 +52,14 @@ class Variable {
     /**
      * Constructor.
      *
-     * \param memoryLocation Memory location of the variable.
+     * \param memoryLocation Valid memory location of the variable.
      * \param terms Terms belonging to the variable.
      */
     Variable(const MemoryLocation &memoryLocation, std::vector<const Term *> terms):
         memoryLocation_(memoryLocation), terms_(std::move(terms))
-    {}
+    {
+        assert(memoryLocation);
+    }
 
     /**
      * \return Memory location of the variable.

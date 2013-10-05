@@ -81,7 +81,7 @@ public:
      * \returns                        Register for the given memory location,
      *                                 or NULL if there is no such register.
      */
-    const Register *regizter(const ir::MemoryLocation &location) const {
+    const Register *getRegister(const ir::MemoryLocation &location) const {
         return mRegisterByLocation.value(location, NULL);
     }
 
@@ -90,7 +90,7 @@ public:
      * \return                         Corresponding register, or NULL if 
      *                                 register with such name doesn't exist.
      */
-    const Register *regizter(const QString &name) const {
+    const Register *getRegister(const QString &name) const {
         return mRegisterByName.value(name, NULL);
     }
 

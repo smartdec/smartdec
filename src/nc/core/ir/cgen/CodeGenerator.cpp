@@ -178,7 +178,7 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const M
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
         if (name.isEmpty()) {
-            if (const arch::Register *reg = context().module()->architecture()->registers()->regizter(memoryLocation)) {
+            if (const arch::Register *reg = context().module()->architecture()->registers()->getRegister(memoryLocation)) {
                 name = reg->lowercaseName();
             }
         }

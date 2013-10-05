@@ -101,8 +101,8 @@ likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const 
     QString name;
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
-    if (term->kind() == Term::MEMORY_LOCATION_ACCESS) {
-        if (const arch::Register *regizter = parent().context().module()->architecture()->registers()->regizter(term->asMemoryLocationAccess()->memoryLocation())) {
+    if (auto access = term->asMemoryLocationAccess()) {
+        if (auto regizter = parent().context().module()->architecture()->registers()->getRegister(access->memoryLocation())) {
             name = regizter->lowercaseName();
         }
     }

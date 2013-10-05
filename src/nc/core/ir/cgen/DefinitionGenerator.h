@@ -154,14 +154,32 @@ class DefinitionGenerator: public DeclarationGenerator {
     likec::ArgumentDeclaration *makeArgumentDeclaration(const Term *term);
 
     /**
-     * Returns a declaration of variable for given term.
+     * Computes a LikeC type for a given local variable.
+     *
+     * \param variable Valid pointer to a variable.
+     *
+     * \return Valid pointer to the suitable LikeC type for this variable.
+     */
+    const likec::Type *makeLocalVariableType(const vars::Variable *variable);
+
+    /**
+     * Invents a name for the given local variable.
+     *
+     * \param variable Valid pointer to a variable.
+     *
+     * \return Suitable name for this variable.
+     */
+    QString makeLocalVariableName(const vars::Variable *variable);
+
+    /**
+     * Returns a declaration of a given variable.
      * If necessary, the declaration is created and added to current function's code.
      *
-     * \param[in] term Valid pointer to a term.
+     * \param[in] variable Valid pointer to the variable.
      *
-     * \return Local variable declaration for the term.
+     * \return Valid pointer to the local variable declaration.
      */
-    likec::VariableDeclaration *makeLocalVariableDeclaration(const Term *term);
+    likec::VariableDeclaration *makeLocalVariableDeclaration(const vars::Variable *variable);
 
     /**
      * \param[in] basicBlock Valid pointer to a basic block.
