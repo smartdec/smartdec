@@ -43,48 +43,48 @@ void ReachingDefinitions::addDefinition(const MemoryLocation &mloc, const Term *
 
     killDefinitions(mloc);
     
-    auto i = std::lower_bound(pairs_.begin(), pairs_.end(), mloc,
-        [](decltype(pairs_)::value_type &a, const MemoryLocation &b) -> bool {
-            return a.first < b;
+    auto i = std::lower_bound(chunks_.begin(), chunks_.end(), mloc,
+        [](const Chunk &a, const MemoryLocation &b) -> bool {
+            return a.location() < b;
         });
 
-    pairs_.insert(i, std::make_pair(mloc, std::vector<const Term *>(1, term)));
+    chunks_.insert(i, Chunk(mloc, std::vector<const Term *>(1, term)));
 }
 
 void ReachingDefinitions::killDefinitions(const MemoryLocation &mloc) {
     assert(mloc);
 
-    if (pairs_.empty()) {
+    if (chunks_.empty()) {
         return;
     }
 
-    std::vector<std::pair<MemoryLocation, std::vector<const Term *>>> result;
-    result.reserve(pairs_.size() + 1);
+    std::vector<Chunk> result;
+    result.reserve(chunks_.size() + 1);
 
-    foreach (auto &pair, pairs_) {
-        if (!mloc.overlaps(pair.first)) {
-            result.push_back(std::move(pair));
+    foreach (auto &chunk, chunks_) {
+        if (!mloc.overlaps(chunk.location())) {
+            result.push_back(std::move(chunk));
         } else {
-            if (pair.first.addr() < mloc.addr()) {
-                if (mloc.endAddr() < pair.first.endAddr()) {
-                    result.push_back(std::make_pair(
-                        MemoryLocation(mloc.domain(), pair.first.addr(), mloc.addr() - pair.first.addr()),
-                        pair.second));
+            if (chunk.location().addr() < mloc.addr()) {
+                if (mloc.endAddr() < chunk.location().endAddr()) {
+                    result.push_back(Chunk(
+                        MemoryLocation(mloc.domain(), chunk.location().addr(), mloc.addr() - chunk.location().addr()),
+                        chunk.definitions()));
                 } else {
-                    result.push_back(std::make_pair(
-                        MemoryLocation(mloc.domain(), pair.first.addr(), mloc.addr() - pair.first.addr()),
-                        std::move(pair.second)));
+                    result.push_back(Chunk(
+                        MemoryLocation(mloc.domain(), chunk.location().addr(), mloc.addr() - chunk.location().addr()),
+                        std::move(chunk.definitions())));
                 }
             }
-            if (mloc.endAddr() < pair.first.endAddr()) {
-                result.push_back(std::make_pair(
-                    MemoryLocation(mloc.domain(), mloc.endAddr(), pair.first.endAddr() - mloc.endAddr()),
-                    std::move(pair.second)));
+            if (mloc.endAddr() < chunk.location().endAddr()) {
+                result.push_back(Chunk(
+                    MemoryLocation(mloc.domain(), mloc.endAddr(), chunk.location().endAddr() - mloc.endAddr()),
+                    std::move(chunk.definitions())));
             }
         }
     }
 
-    pairs_ = std::move(result);
+    chunks_ = std::move(result);
 }
 
 void ReachingDefinitions::project(const MemoryLocation &mloc, ReachingDefinitions &result) const {
@@ -92,15 +92,15 @@ void ReachingDefinitions::project(const MemoryLocation &mloc, ReachingDefinition
 
     result.clear();
 
-    foreach (const auto &pair, pairs_) {
-        if (pair.first.domain() == mloc.domain()) {
-            auto addr = std::max(pair.first.addr(), mloc.addr());
-            auto endAddr = std::min(pair.first.endAddr(), mloc.endAddr());
+    foreach (const auto &chunk, chunks_) {
+        if (chunk.location().domain() == mloc.domain()) {
+            auto addr = std::max(chunk.location().addr(), mloc.addr());
+            auto endAddr = std::min(chunk.location().endAddr(), mloc.endAddr());
 
             if (addr < endAddr) {
-                result.pairs_.push_back(
-                    std::make_pair(MemoryLocation(mloc.domain(), addr, endAddr - addr),
-                    pair.second));
+                result.chunks_.push_back(Chunk(
+                    MemoryLocation(mloc.domain(), addr, endAddr - addr),
+                    chunk.definitions()));
             }
         }
     }
@@ -108,11 +108,11 @@ void ReachingDefinitions::project(const MemoryLocation &mloc, ReachingDefinition
 
 std::vector<MemoryLocation> ReachingDefinitions::getDefinedMemoryLocationsWithin(Domain domain) const {
     std::vector<MemoryLocation> result;
-    result.reserve(pairs_.size());
+    result.reserve(chunks_.size());
 
-    foreach (const auto &pair, pairs_) {
-        if (pair.first.domain() == domain) {
-            result.push_back(pair.first);
+    foreach (const auto &chunk, chunks_) {
+        if (chunk.location().domain() == domain) {
+            result.push_back(chunk.location());
         }
     }
 
@@ -120,21 +120,21 @@ std::vector<MemoryLocation> ReachingDefinitions::getDefinedMemoryLocationsWithin
 }
 
 void ReachingDefinitions::merge(const ReachingDefinitions &those) {
-    std::vector<std::pair<MemoryLocation, std::vector<const Term *>>> result;
-    result.reserve(pairs_.size() + those.pairs_.size());
+    std::vector<Chunk> result;
+    result.reserve(chunks_.size() + those.chunks_.size());
 
-    auto i = pairs_.begin();
-    auto iend = pairs_.end();
+    auto i = chunks_.begin();
+    auto iend = chunks_.end();
 
-    auto j = those.pairs_.begin();
-    auto jend = those.pairs_.end();
+    auto j = those.chunks_.begin();
+    auto jend = those.chunks_.end();
 
     while (i != iend || j != jend) {
-        auto a = i != iend ? i->first : MemoryLocation();
-        auto b = j != jend ? j->first : MemoryLocation();
+        auto a = i != iend ? i->location() : MemoryLocation();
+        auto b = j != jend ? j->location() : MemoryLocation();
 
         if (!result.empty()) {
-            const auto &c = result.back().first;
+            const auto &c = result.back().location();
             if (c.domain() == a.domain() && c.endAddr() > a.addr()) {
                 a = MemoryLocation(a.domain(), c.endAddr(), a.endAddr() - c.endAddr());
             }
@@ -144,54 +144,54 @@ void ReachingDefinitions::merge(const ReachingDefinitions &those) {
         }
 
         if (!b) {
-            result.push_back(std::make_pair(a, i->second));
+            result.push_back(Chunk(a, i->definitions()));
             ++i;
         } else if (!a) {
-            result.push_back(std::make_pair(b, j->second));
+            result.push_back(Chunk(b, j->definitions()));
             ++j;
         } else if (a.domain() < b.domain()) {
-            result.push_back(std::make_pair(a, i->second));
+            result.push_back(Chunk(a, i->definitions()));
             ++i;
         } else if (b.domain() < a.domain()) {
-            result.push_back(std::make_pair(b, j->second));
+            result.push_back(Chunk(b, j->definitions()));
             ++j;
         } else if (a.endAddr() <= b.addr()) {
-            result.push_back(std::make_pair(a, i->second));
+            result.push_back(Chunk(a, i->definitions()));
             ++i;
         } else if (b.endAddr() <= a.addr()) {
-            result.push_back(std::make_pair(b, j->second));
+            result.push_back(Chunk(b, j->definitions()));
             ++j;
         } else if (a.addr() < b.addr()) {
-            result.push_back(std::make_pair(MemoryLocation(a.domain(), a.addr(), b.addr() - a.addr()), i->second));
+            result.push_back(Chunk(MemoryLocation(a.domain(), a.addr(), b.addr() - a.addr()), i->definitions()));
         } else if (b.addr() < a.addr()) {
-            result.push_back(std::make_pair(MemoryLocation(b.domain(), b.addr(), a.addr() - b.addr()), j->second));
+            result.push_back(Chunk(MemoryLocation(b.domain(), b.addr(), a.addr() - b.addr()), j->definitions()));
         } else {
             std::vector<const Term *> merged;
-            merged.reserve(i->second.size() + j->second.size());
-            std::set_union(i->second.begin(), i->second.end(), j->second.begin(), j->second.end(), std::back_inserter(merged));
+            merged.reserve(i->definitions().size() + j->definitions().size());
+            std::set_union(i->definitions().begin(), i->definitions().end(), j->definitions().begin(), j->definitions().end(), std::back_inserter(merged));
 
             if (a.size() < b.size()) {
-                result.push_back(std::make_pair(a, std::move(merged)));
+                result.push_back(Chunk(a, std::move(merged)));
                 ++i;
             } else if (b.size() < a.size()) {
-                result.push_back(std::make_pair(b, std::move(merged)));
+                result.push_back(Chunk(b, std::move(merged)));
                 ++j;
             } else {
-                result.push_back(std::make_pair(a, std::move(merged)));
+                result.push_back(Chunk(a, std::move(merged)));
                 ++i;
                 ++j;
             }
         }
     }
 
-    pairs_ = std::move(result);
+    chunks_ = std::move(result);
 }
 
 void ReachingDefinitions::print(QTextStream &out) const {
     out << '{';
-    foreach (const auto &pair, pairs_) {
-        out << pair.first << ':';
-        foreach (const Term *term, pair.second) {
+    foreach (const auto &chunk, chunks_) {
+        out << chunk.location() << ':';
+        foreach (const Term *term, chunk.definitions()) {
             out << ' ' << *term;
         }
         out << ';';

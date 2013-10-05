@@ -216,8 +216,8 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
             break;
         case Term::MEMORY_LOCATION_ACCESS: {
             if (term->isRead()) {
-                foreach (auto &pair, dataflow()->getDefinitions(term).pairs()) {
-                    foreach (const Term *definition, pair.second) {
+                foreach (auto &chunk, dataflow()->getDefinitions(term).chunks()) {
+                    foreach (const Term *definition, chunk.definitions()) {
                         makeUsed(definition);
                     }
                 }
@@ -230,8 +230,8 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
         }
         case Term::DEREFERENCE: {
             if (term->isRead()) {
-                foreach (auto &pair, dataflow()->getDefinitions(term).pairs()) {
-                    foreach (const Term *definition, pair.second) {
+                foreach (auto &chunk, dataflow()->getDefinitions(term).chunks()) {
+                    foreach (const Term *definition, chunk.definitions()) {
                         makeUsed(definition);
                     }
                 }

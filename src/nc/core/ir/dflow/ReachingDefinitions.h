@@ -26,6 +26,7 @@
 #include <nc/config.h>
 
 #include <algorithm>
+#include <cassert>
 #include <vector>
 
 #include <nc/common/Foreach.h>
@@ -45,31 +46,79 @@ namespace dflow {
  * Reaching definitions.
  */
 class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
+public:
+    /*
+     * Memory location and the list of terms defining this memory location.
+     */
+    class Chunk {
+        MemoryLocation location_; ///< Memory location.
+        std::vector<const Term *> definitions_; ///< Terms defining this memory location.
+
+        public:
+
+        /*
+         * Constructor.
+         *
+         * \param location      Valid memory location.
+         * \param definitions   List of terms defining this memory location.
+         */
+        Chunk(const MemoryLocation &location, std::vector<const Term *> definitions):
+            location_(location), definitions_(std::move(definitions))
+        {
+            assert(location);
+        }
+
+        /**
+         * \return Memory location.
+         */
+        const MemoryLocation &location() const { return location_; }
+
+        /**
+         * \return List of terms defining the memory location.
+         */
+        std::vector<const Term *> &definitions() { return definitions_; }
+
+        /**
+         * \return List of terms defining the memory location.
+         */
+        const std::vector<const Term *> &definitions() const { return definitions_; }
+
+        /**
+         * \param that Another object of the same type.
+         *
+         * \return True if *this and that have the same memory location and list of terms,
+         *         false otherwise.
+         */
+        bool operator==(const Chunk &that) const {
+            return location_ == that.location_ && definitions_ == that.definitions_;
+        }
+    };
+
+private:
     /**
      * Pairs of memory locations and terms defining them.
      * The pairs are sorted by memory location.
      * Terms are sorted using default comparator.
      */
-    std::vector<std::pair<MemoryLocation, std::vector<const Term *>>> pairs_;
+    std::vector<Chunk> chunks_;
 
-    public:
-
+public:
     /**
      * \return Pairs of memory locations and vectors of terms defining them.
      *         The pairs are sorted by memory location.
      *         Terms are sorted using default comparator.
      */
-    const decltype(pairs_) &pairs() const { return pairs_; }
+    const std::vector<Chunk> &chunks() const { return chunks_; }
 
     /**
-     * \return True if the list of pairs is empty, false otherwise.
+     * \return True if the list of pairs (chunks) is empty, false otherwise.
      */
-    bool empty() const { return pairs_.empty(); }
+    bool empty() const { return chunks_.empty(); }
 
     /**
      * Clears the reaching definitions.
      */
-    void clear() { pairs_.clear(); }
+    void clear() { chunks_.clear(); }
 
     /**
      * Adds a definition of memory location, removing all previous definitions of overlapping memory locations.
@@ -111,7 +160,7 @@ class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
      *
      * \param[in] those Reaching definitions.
      */
-    bool operator==(const ReachingDefinitions &those) const { return pairs_ == those.pairs_; }
+    bool operator==(const ReachingDefinitions &those) const { return chunks_ == those.chunks_; }
 
     /**
      * \return True, if these and given reaching definitions are different.
@@ -129,13 +178,13 @@ class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
      */
     template<class T>
     void filterOut(const T &pred) {
-        foreach (auto &pair, pairs_) {
-            pair.second.erase(
-                std::remove_if(pair.second.begin(), pair.second.end(),
-                    [&](const Term *term) -> bool { return pred(pair.first, term); }),
-                pair.second.end());
+        foreach (auto &chunk, chunks_) {
+            chunk.definitions().erase(
+                std::remove_if(chunk.definitions().begin(), chunk.definitions().end(),
+                    [&](const Term *term) -> bool { return pred(chunk.location(), term); }),
+                chunk.definitions().end());
         }
-        std::remove_if(pairs_.begin(), pairs_.end(), [](decltype(pairs_)::value_type &v) { return v.second.empty(); });
+        std::remove_if(chunks_.begin(), chunks_.end(), [](decltype(chunks_)::value_type &v) { return v.definitions().empty(); });
     }
 
     void print(QTextStream &out) const;

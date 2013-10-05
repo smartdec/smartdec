@@ -125,8 +125,8 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
         foreach (auto &termAndDefinitions, dataflow().term2definitions()) {
             termAndDefinitions.second.filterOut(notCovered);
 
-            foreach (const auto &pair, termAndDefinitions.second.pairs()) {
-                foreach (const Term *definition, pair.second) {
+            foreach (const auto &chunk, termAndDefinitions.second.chunks()) {
+                foreach (const Term *definition, chunk.definitions()) {
                     dataflow().getUses(definition).push_back(termAndDefinitions.first);
                 }
             }
@@ -371,23 +371,22 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term, const MemoryLocatio
     auto termValue = dataflow().getValue(term);
     auto termAbstractValue = termValue->abstractValue();
 
-    foreach (const auto &pair, definitions.pairs()) {
-        auto &definedLocation = pair.first;
-        assert(termLocation.covers(definedLocation));
+    foreach (const auto &chunk, definitions.chunks()) {
+        assert(termLocation.covers(chunk.location()));
 
         /*
-         * Mask of bits inside termAbstractValue which are covered by definedLocation.
+         * Mask of bits inside termAbstractValue which are covered by chunk's location.
          */
-        auto mask = bitMask<ConstantValue>(definedLocation.size());
+        auto mask = bitMask<ConstantValue>(chunk.location().size());
         if (architecture()->byteOrder() == ByteOrder::LittleEndian) {
-            mask = bitShift(mask, definedLocation.addr() - termLocation.addr());
+            mask = bitShift(mask, chunk.location().addr() - termLocation.addr());
         } else {
-            mask = bitShift(mask, termLocation.endAddr() - definedLocation.endAddr());
+            mask = bitShift(mask, termLocation.endAddr() - chunk.location().endAddr());
         }
 
-        foreach (const Term *definition, pair.second) {
+        foreach (auto definition, chunk.definitions()) {
             auto definitionLocation = dataflow().getMemoryLocation(definition);
-            assert(definitionLocation.covers(definedLocation));
+            assert(definitionLocation.covers(chunk.location()));
 
             auto definitionValue = dataflow().getValue(definition);
             auto definitionAbstractValue = definitionValue->abstractValue();
@@ -419,12 +418,12 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term, const MemoryLocatio
     const std::vector<const Term *> *lowerBitsDefinitions = NULL;
 
     if (architecture()->byteOrder() == ByteOrder::LittleEndian) {
-        if (definitions.pairs().front().first.addr() == termLocation.addr()) {
-            lowerBitsDefinitions = &definitions.pairs().front().second;
+        if (definitions.chunks().front().location().addr() == termLocation.addr()) {
+            lowerBitsDefinitions = &definitions.chunks().front().definitions();
         }
     } else {
-        if (definitions.pairs().back().first.endAddr() == termLocation.endAddr()) {
-            lowerBitsDefinitions = &definitions.pairs().back().second;
+        if (definitions.chunks().back().location().endAddr() == termLocation.endAddr()) {
+            lowerBitsDefinitions = &definitions.chunks().back().definitions();
         }
     }
 

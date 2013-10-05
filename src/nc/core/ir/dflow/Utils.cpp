@@ -58,11 +58,11 @@ const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
         } else if (term->isRead()) {
             auto &definitions = dataflow.getDefinitions(term);
 
-            if (definitions.pairs().size() == 1 &&
-                definitions.pairs().front().first == dataflow.getMemoryLocation(term) &&
-                definitions.pairs().front().second.size() == 1)
+            if (definitions.chunks().size() == 1 &&
+                definitions.chunks().front().location() == dataflow.getMemoryLocation(term) &&
+                definitions.chunks().front().definitions().size() == 1)
             {
-                term = definitions.pairs().front().second.front();
+                term = definitions.chunks().front().definitions().front();
             } else if (auto choice = term->as<Choice>()) {
                 if (!dataflow.getDefinitions(choice->preferredTerm()).empty()) {
                     term = choice->preferredTerm();

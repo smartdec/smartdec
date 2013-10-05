@@ -211,10 +211,10 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
         if (term->isRead()) {
             InspectorItem *definitionsItem = item->addChild(tr("definitions"));
 
-            foreach (auto &pair, dataflow->getDefinitions(term).pairs()) {
-                auto pairItem = definitionsItem->addChild(pair.first.toString());
-                foreach (auto definition, pair.second) {
-                    pairItem->addChild("", definition);
+            foreach (auto &chunk, dataflow->getDefinitions(term).chunks()) {
+                auto chunkItem = definitionsItem->addChild(chunk.location().toString());
+                foreach (auto definition, chunk.definitions()) {
+                    chunkItem->addChild("", definition);
                 }
             }
         }
