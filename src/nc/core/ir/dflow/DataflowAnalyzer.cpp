@@ -110,7 +110,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
             /* Something changed? */
             ReachingDefinitions &definitions(outDefinitions[basicBlock]);
             if (definitions != context.definitions()) {
-                definitions = context.definitions();
+                definitions = std::move(context.definitions());
                 changed = true;
             }
         }
