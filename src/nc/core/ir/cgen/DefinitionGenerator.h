@@ -339,9 +339,9 @@ class DefinitionGenerator: public DeclarationGenerator {
      * Creates an access to a variable associated with a term.
      *
      * \param term Valid pointer to the term.
-     * \param memoryLocation Valid memory location of this term.
+     * \param termLocation Valid memory location of this term.
      */
-    virtual std::unique_ptr<likec::Expression> makeVariableAccess(const Term *term, const MemoryLocation &memoryLocation);
+    virtual std::unique_ptr<likec::Expression> makeVariableAccess(const Term *term, const MemoryLocation &termLocation);
 
     /**
      * \param[in] term Valid pointer to a term.

@@ -171,12 +171,14 @@ QString DefinitionGenerator::makeLocalVariableName(const vars::Variable *variabl
 #ifdef NC_REGISTER_VARIABLE_NAMES
     foreach (auto term, variable->terms()) {
         if (const MemoryLocationAccess *access = term->asMemoryLocationAccess()) {
-            if (auto reg = context().module()->architecture()->registers()->getRegister(access->memoryLocation())) {
-                basename = reg->lowercaseName();
-                if (basename.isEmpty() || basename[basename.size() - 1].isDigit()) {
-                    basename.push_back('_');
+            if (access->memoryLocation() == variable->memoryLocation()) {
+                if (auto reg = context().module()->architecture()->registers()->getRegister(access->memoryLocation())) {
+                    basename = reg->lowercaseName();
+                    if (basename.isEmpty() || basename[basename.size() - 1].isDigit()) {
+                        basename.push_back('_');
+                    }
+                    break;
                 }
-                break;
             }
         }
     }
@@ -1052,18 +1054,50 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
         ));
 }
 
-std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const Term *term, const MemoryLocation &memoryLocation) {
+std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const Term *term, const MemoryLocation &termLocation) {
     assert(term != NULL);
-    assert(memoryLocation);
+    assert(termLocation);
 
-    if (context().module()->architecture()->isGlobalMemory(memoryLocation)) {
+    if (context().module()->architecture()->isGlobalMemory(termLocation)) {
         return std::make_unique<likec::VariableIdentifier>(tree(),
-            parent().makeGlobalVariableDeclaration(memoryLocation, types().getType(term)));
+            parent().makeGlobalVariableDeclaration(termLocation, types().getType(term)));
     } else {
         auto variable = variables().getVariable(term);
+        auto identifier = std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(variable));
 
-        // TODO: generate proper pointer arithmetics if memoryLocation != variable->memoryLocation.
-        return std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(variable));
+        if (termLocation == variable->memoryLocation()) {
+            return std::move(identifier);
+        } else {
+            /*
+             * Generate pointer arithmetics to get to the right part of the variable.
+             *
+             * Note: this does not handle the case of non-byte-aligned locations.
+             * However, I am not sure whether they can be reliably handled in C at all.
+             */
+            auto variableAddress = std::make_unique<likec::Typecast>(tree(),
+                tree().makeIntegerType(tree().pointerSize(), false),
+                std::make_unique<likec::UnaryOperator>(tree(),
+                    likec::UnaryOperator::REFERENCE,
+                    std::move(identifier)));
+
+            std::unique_ptr<likec::Expression> termAddress;
+            if (termLocation.addr() == variable->memoryLocation().addr()) {
+                termAddress = std::move(variableAddress);
+            } else {
+                termAddress = std::make_unique<likec::BinaryOperator>(tree(),
+                    likec::BinaryOperator::ADD,
+                    std::move(variableAddress),
+                    std::make_unique<likec::IntegerConstant>(tree(),
+                        (termLocation.addr() - variable->memoryLocation().addr()) / CHAR_BIT,
+                        tree().makeIntegerType(tree().pointerSize(), false)));
+            }
+
+            return std::make_unique<likec::UnaryOperator>(tree(),
+                likec::UnaryOperator::DEREFERENCE,
+                std::make_unique<likec::Typecast>(tree(),
+                    tree().makePointerType(parent().makeType(types().getType(term))),
+                    std::move(termAddress)));
+        }
     }
 }
 
