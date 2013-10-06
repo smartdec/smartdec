@@ -44,6 +44,10 @@ const Architecture *ArchitectureRepository::getArchitecture(const QString &name)
     return NULL;
 }
 
+const std::vector<const Architecture *> &ArchitectureRepository::architectures() const {
+    return reinterpret_cast<const std::vector<const Architecture *> &>(architectures_);
+}
+
 }}} // namespace nc::core::arch
 
 /* vim:set et sts=4 sw=4: */

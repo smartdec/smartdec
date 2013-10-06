@@ -26,8 +26,6 @@
 
 #include <cassert>
 
-#include <QHash>
-
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
@@ -38,46 +36,35 @@
 
 namespace nc { namespace core { namespace input {
 
-Q_GLOBAL_STATIC_WITH_INITIALIZER(ParserRepository, parserRepository, {
-    /* Register default parsers. */
-    x->registerParser(std::make_unique<nc::input::elf::ElfParser>());
-    x->registerParser(std::make_unique<nc::input::pe::PeParser>());
-});
-
-class ParserRepositoryPrivate {
-public:
-    ~ParserRepositoryPrivate() {
-        foreach(Parser *parser, parsers) {
-            delete parser;
-        }
-    }
-
-    QHash<QString, Parser *> name2parser;
-    std::vector<Parser *> parsers;
-};
-
-ParserRepository::ParserRepository(): 
-    d(new ParserRepositoryPrivate()) 
-{}
-
 ParserRepository *ParserRepository::instance() {
-    return parserRepository();
+    static auto repository = []() -> ParserRepository {
+        ParserRepository result;
+        result.registerParser(std::make_unique<nc::input::elf::ElfParser>());
+        result.registerParser(std::make_unique<nc::input::pe::PeParser>());
+        return result;
+    }();
+
+    return &repository;
 }
 
 void ParserRepository::registerParser(std::unique_ptr<Parser> parser) {
     assert(parser != NULL);
     assert(!getParser(parser->name()) && "Cannot register two parsers with the same name.");
 
-    d->name2parser[parser->name()] = parser.get();
-    d->parsers.push_back(parser.release());
+    parsers_.push_back(std::move(parser));
 }
 
-Parser *ParserRepository::getParser(const QString &name) {
-    return d->name2parser.value(name);
+const Parser *ParserRepository::getParser(const QString &name) const {
+    foreach (auto parser, parsers()) {
+        if (parser->name() == name) {
+            return parser;
+        }
+    }
+    return NULL;
 }
 
-const std::vector<Parser *> &ParserRepository::parsers() const {
-    return d->parsers;
+const std::vector<const Parser *> &ParserRepository::parsers() const {
+    return reinterpret_cast<const std::vector<const Parser *> &>(parsers_);
 }
 
 }}} // namespace nc::core::input

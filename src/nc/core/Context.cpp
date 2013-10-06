@@ -182,9 +182,9 @@ void Context::parse(const QString &filename) {
 
     logToken() << tr("Choosing a parser for %1...").arg(filename);
 
-    input::Parser *suitableParser = NULL;
+    const input::Parser *suitableParser = NULL;
 
-    foreach(input::Parser *parser, input::ParserRepository::instance()->parsers()) {
+    foreach(const input::Parser *parser, input::ParserRepository::instance()->parsers()) {
         logToken() << tr("Trying %1 parser...").arg(parser->name());
         if (parser->canParse(&source)) {
             suitableParser = parser;

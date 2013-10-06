@@ -45,9 +45,7 @@ public:
     /**
      * \returns List of all registered architectures.
      */
-    const std::vector<const Architecture *> &architectures() const {
-        return reinterpret_cast<const std::vector<const Architecture *> &>(architectures_);
-    }
+    const std::vector<const Architecture *> &architectures() const;
 };
 
 }}} // namespace nc::core::arch

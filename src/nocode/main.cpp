@@ -188,8 +188,8 @@ void help() {
     qout << "Usage: " << self << " [options] [--] file..." << endl;
     qout << endl;
     qout << "Options:" << endl;
-    qout << "  --help, -h                  Produce this help message and exit." << endl;
-    qout << "  --list-parsers              List available parsers and exit." << endl;
+    qout << "  --help, -h                  Produce this help message and quit." << endl;
+    qout << "  --list-parsers              List available parsers and quit." << endl;
     qout << "  --inline-function=ADDR      Inline a function with given address everywhere." << endl;
     qout << "  --inline-call=ADDR          Inline a call at given address." << endl;
     qout << "  --print-instructions[=FILE] Dump parsed instructions to the file." << endl;
@@ -205,7 +205,7 @@ void help() {
 
 void listParsers() {
     qout << "Available parsers:" << endl;
-    foreach(nc::core::input::Parser *parser, nc::core::input::ParserRepository::instance()->parsers()) {
+    foreach(auto parser, nc::core::input::ParserRepository::instance()->parsers()) {
         qout << "  " << parser->name() << endl;
     }
 }
