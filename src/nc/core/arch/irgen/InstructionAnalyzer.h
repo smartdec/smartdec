@@ -42,6 +42,7 @@ namespace arch {
 
 class Instruction;
 class Operand;
+class Register;
 
 namespace irgen {
 
@@ -51,19 +52,27 @@ namespace irgen {
 class InstructionAnalyzer {
 public:
     /**
-     * \param[in] operand              Operand.
-     * \return                         Intermediate representation of the given 
-     *                                 operand as a term.
+     * Creates intermediate representation of an instruction and adds newly created statements to
+     * the intermediate representation of the program.
+     *
+     * \param[in] instruction   Valid pointer to the instruction to generate intermediate representation for.
+     * \param[out] program      Valid pointer to the intermediate representation of a program.
+     */
+    void createStatements(const Instruction *instruction, ir::Program *program) const;
+
+    /**
+     * \param[in] operand Valid pointer to an operand.
+     *
+     * \return Intermediate representation of the given operand as a term.
      */
     std::unique_ptr<ir::Term> createTerm(const Operand *operand) const;
 
     /**
-     * Creates intermediate representation of an instruction and adds newly created statements to the control flow graph.
+     * \param[in] reg Valid pointer to a register.
      *
-     * \param[in] instruction           Valid pointer to the instruction to generate intermediate representation for.
-     * \param[out] program              Valid pointer to the intermediate representation of a program.
+     * \return Valid pointer to the intermediate representation of this register as a term.
      */
-    void createStatements(const Instruction *instruction, ir::Program *program) const;
+    std::unique_ptr<ir::Term> createTerm(const Register *reg) const;
 
 protected:
     /**

@@ -316,8 +316,6 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
         return cachedDirectSuccessor;
     };
 
-    const IntelOperands *operands = mArchitecture->operands();
-
     IntelExpressionFactory factory(mArchitecture, instr);
     IntelExpressionFactoryCallback _(factory, program->getBasicBlockForInstruction(instr));
 
@@ -390,31 +388,31 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case CALL: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
-            core::arch::RegisterOperand *ip = mArchitecture->registerOperand(mArchitecture->instructionPointer());
+            auto sp = mArchitecture->stackPointer();
+            auto ip = mArchitecture->instructionPointer();
 
             _[
-                operand(sp) = operand(sp) - constant(ip->size() / CHAR_BIT),
-                *operand(sp) = operand(ip),
+                regizter(sp) = regizter(sp) - constant(ip->size() / CHAR_BIT),
+                *regizter(sp) = regizter(ip),
                 call(operand(0))
             ];
             break;
         }
         case CBW: {
             _[
-                operand(operands->ax()) = sign_extend(operand(operands->al()))
+                regizter(IntelRegisters::ax()) = sign_extend(regizter(IntelRegisters::al()))
             ];
             break;
         }
         case CWDE: {
             _[
-                operand(operands->eax()) = sign_extend(operand(operands->ax()))
+                regizter(IntelRegisters::eax()) = sign_extend(regizter(IntelRegisters::ax()))
             ];
             break;
         }
         case CDQE: {
             _[
-                operand(operands->rax()) = sign_extend(operand(operands->eax()))
+                regizter(IntelRegisters::rax()) = sign_extend(regizter(IntelRegisters::eax()))
             ];
             break;
         }
@@ -594,10 +592,10 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
         }
         case CPUID: {
             _[
-                operand(operands->eax())= intrinsic(),
-                operand(operands->ebx())= intrinsic(),
-                operand(operands->ecx())= intrinsic(),
-                operand(operands->edx())= intrinsic()
+                regizter(IntelRegisters::eax())= intrinsic(),
+                regizter(IntelRegisters::ebx())= intrinsic(),
+                regizter(IntelRegisters::ecx())= intrinsic(),
+                regizter(IntelRegisters::edx())= intrinsic()
             ];
             break;
         }
@@ -669,42 +667,42 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
              */
             if (instr->operands().size() == 1) {
                 /* result2:result1 = arg0 * op0 */
-                core::arch::RegisterOperand *arg0;
-                core::arch::RegisterOperand *result1;
-                core::arch::RegisterOperand *result2;
+                const core::arch::Register *arg0;
+                const core::arch::Register *result1;
+                const core::arch::Register *result2;
 
                 switch (instr->operand(0)->size()) {
                     case 8:
-                        arg0 = operands->al();
-                        result1 = operands->ax();
+                        arg0 = IntelRegisters::al();
+                        result1 = IntelRegisters::ax();
 			result2 = 0;
                         break;
                     case 16:
-                        arg0 = operands->ax();
-                        result1 = operands->ax();
-                        result2 = operands->dx();
+                        arg0 = IntelRegisters::ax();
+                        result1 = IntelRegisters::ax();
+                        result2 = IntelRegisters::dx();
                         break;
                     case 32:
-                        arg0 = operands->eax();
-                        result1 = operands->eax();
-                        result2 = operands->edx();
+                        arg0 = IntelRegisters::eax();
+                        result1 = IntelRegisters::eax();
+                        result2 = IntelRegisters::edx();
                         break;
                     case 64:
-                        arg0 = operands->rax();
-                        result1 = operands->rax();
-                        result2 = operands->rdx();
+                        arg0 = IntelRegisters::rax();
+                        result1 = IntelRegisters::rax();
+                        result2 = IntelRegisters::rdx();
                         break;
                     default:
                         throw core::arch::irgen::InvalidInstructionException("strange argument size");
                 }
 
                 if (result1->size() == arg0->size()) {
-                    _[operand(result1) = operand(arg0) * operand(0)];
+                    _[regizter(result1) = regizter(arg0) * operand(0)];
                 } else {
-                    _[operand(result1) = sign_extend(operand(arg0)) * operand(0)];
+                    _[regizter(result1) = sign_extend(regizter(arg0)) * operand(0)];
                 }
                 if (result2) {
-                    _[operand(result2) = intrinsic()];
+                    _[regizter(result2) = intrinsic()];
                 }
             } else if (instr->operands().size() == 2) {
                 _[operand(0) = operand(0) * operand(1)];
@@ -886,13 +884,13 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case LEAVEW: case LEAVE: case LEAVED: case LEAVEQ: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
-            core::arch::RegisterOperand *bp = mArchitecture->registerOperand(mArchitecture->basePointer());
+            auto sp = mArchitecture->stackPointer();
+            auto bp = mArchitecture->basePointer();
 
             _[
-                operand(sp) = operand(bp),
-                operand(bp) = *operand(sp),
-                operand(sp) = operand(sp) + constant(bp->size() / CHAR_BIT)
+                regizter(sp) = regizter(bp),
+                regizter(bp) = *regizter(sp),
+                regizter(sp) = regizter(sp) + constant(bp->size() / CHAR_BIT)
             ];
             break;
         }
@@ -977,80 +975,80 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case POP: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
+            auto sp = mArchitecture->stackPointer();
             _[
-                operand(0) = *operand(sp),
-                operand(sp) = operand(sp) + constant(instr->operand(0)->size() / CHAR_BIT)
+                operand(0) = *regizter(sp),
+                regizter(sp) = regizter(sp) + constant(instr->operand(0)->size() / CHAR_BIT)
             ];
             break;
         }
         case PUSH: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
+            auto sp = mArchitecture->stackPointer();
             _[
-                operand(sp) = operand(sp) - constant(instr->operand(0)->size() / CHAR_BIT),
-                *operand(sp) = operand(0)
+                regizter(sp) = regizter(sp) - constant(instr->operand(0)->size() / CHAR_BIT),
+                *regizter(sp) = operand(0)
             ];
             break;
         }
         case POPFW: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
+            auto sp = mArchitecture->stackPointer();
             _[
-                *operand(sp) = flags(),
-                operand(sp) = operand(sp) + constant(2)
+                *regizter(sp) = flags(),
+                regizter(sp) = regizter(sp) + constant(2)
             ];
             break;
         }
         case POPFD: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
+            auto sp = mArchitecture->stackPointer();
             _[
-                eflags() = *operand(sp),
-                operand(sp) = operand(sp) + constant(4)
+                eflags() = *regizter(sp),
+                regizter(sp) = regizter(sp) + constant(4)
             ];
             break;
         }
         case POPFQ: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
+            auto sp = mArchitecture->stackPointer();
             _[
-                rflags() = *operand(sp),
-                operand(sp) = operand(sp) + constant(8)
+                rflags() = *regizter(sp),
+                regizter(sp) = regizter(sp) + constant(8)
             ];
             break;
         }
         case PUSHFW: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
+            auto sp = mArchitecture->stackPointer();
             _[
-                operand(sp) = operand(sp) - constant(2),
-                *operand(sp) = flags()
+                regizter(sp) = regizter(sp) - constant(2),
+                *regizter(sp) = flags()
             ];
             break;
         }
         case PUSHFD: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
+            auto sp = mArchitecture->stackPointer();
             _[
-                operand(sp) = operand(sp) - constant(4),
-                *operand(sp) = eflags() & constant(0x00fcffff)
+                regizter(sp) = regizter(sp) - constant(4),
+                *regizter(sp) = eflags() & constant(0x00fcffff)
             ];
             break;
         }
         case PUSHFQ: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
+            auto sp = mArchitecture->stackPointer();
             _[
-                operand(sp) = operand(sp) - constant(8),
-                *operand(sp) = rflags() & constant(0x00fcffff)
+                regizter(sp) = regizter(sp) - constant(8),
+                *regizter(sp) = rflags() & constant(0x00fcffff)
             ];
             break;
         }
         case RET: {
-            core::arch::RegisterOperand *sp = mArchitecture->registerOperand(mArchitecture->stackPointer());
-            core::arch::RegisterOperand *ip = mArchitecture->registerOperand(mArchitecture->instructionPointer());
+            auto sp = mArchitecture->stackPointer();
+            auto ip = mArchitecture->instructionPointer();
 
             _[
-                operand(ip) = *operand(sp),
-                operand(sp) = operand(sp) + constant(ip->size() / CHAR_BIT)
+                regizter(ip) = *regizter(sp),
+                regizter(sp) = regizter(sp) + constant(ip->size() / CHAR_BIT)
             ];
 
             if (instr->operands().size() == 1) {
-                _[operand(sp) = operand(sp) + operand(0)];
+                _[regizter(sp) = regizter(sp) + operand(0)];
             }
 
             _[return_()];
@@ -1278,34 +1276,34 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
     }
 }
 
-std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::doCreateTerm(const core::arch::Operand *operand) const {
-    const IntelOperands *operands = mArchitecture->operands();
-    
-    switch (operand->kind()) {
-    case IntelOperands::FPU_STACK: {
-        const FpuStackOperand *fpuStack = operand->as<FpuStackOperand>();
+std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::createFpuStackTerm(int index) const {
+    const SmallBitSize addressSize = 16;
 
-        const SmallBitSize addressSize = 16;
-
-        return std::make_unique<core::ir::Dereference>(
-            std::make_unique<core::ir::BinaryOperator>(
-                core::ir::BinaryOperator::MUL,
-                std::make_unique<core::ir::UnaryOperator>(
-                    core::ir::UnaryOperator::ZERO_EXTEND,
-                    std::make_unique<core::ir::BinaryOperator>(
-                        core::ir::BinaryOperator::ADD,
-                        createTerm(operands->fpu_top()),
-                        std::make_unique<core::ir::Constant>(SizedValue(operands->fpu_top()->size(), fpuStack->index())),
-                        operands->fpu_top()->size()
-                    ),
-                    addressSize
+    return std::make_unique<core::ir::Dereference>(
+        std::make_unique<core::ir::BinaryOperator>(
+            core::ir::BinaryOperator::MUL,
+            std::make_unique<core::ir::UnaryOperator>(
+                core::ir::UnaryOperator::ZERO_EXTEND,
+                std::make_unique<core::ir::BinaryOperator>(
+                    core::ir::BinaryOperator::ADD,
+                    createTerm(IntelRegisters::fpu_top()),
+                    std::make_unique<core::ir::Constant>(SizedValue(IntelRegisters::fpu_top()->size(), index)),
+                    IntelRegisters::fpu_top()->size()
                 ),
-                std::make_unique<core::ir::Constant>(SizedValue(addressSize, operands->fpu_r0()->size())),
                 addressSize
             ),
-            operands->fpu_r0()->memoryLocation().domain(),
+            std::make_unique<core::ir::Constant>(SizedValue(addressSize, IntelRegisters::fpu_r0()->size())),
             addressSize
-        );
+        ),
+        IntelRegisters::fpu_r0()->memoryLocation().domain(),
+        addressSize
+    );
+}
+
+std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::doCreateTerm(const core::arch::Operand *operand) const {
+    switch (operand->kind()) {
+    case IntelOperands::FPU_STACK: {
+        return createFpuStackTerm(operand->as<FpuStackOperand>()->index());
     }
     default: 
         return core::arch::irgen::InstructionAnalyzer::doCreateTerm(operand);

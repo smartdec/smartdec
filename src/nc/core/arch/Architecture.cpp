@@ -24,15 +24,10 @@
 
 #include "Architecture.h"
 
-#include <boost/range/adaptor/map.hpp>
-
-#include <nc/common/BitTwiddling.h>
 #include <nc/common/Foreach.h>
 
+#include <nc/core/ir/MemoryLocation.h>
 #include <nc/core/ir/calls/CallingConvention.h>
-
-#include "Operands.h"
-#include "Registers.h"
 
 namespace nc {
 namespace core {
@@ -50,14 +45,13 @@ Architecture::Architecture():
     mInstructionPointer(NULL)
 {}
 
-Architecture::~Architecture() {
-    foreach(Operand *operand, mConstantOperands | boost::adaptors::map_values) {
-        delete operand;
-    }
+Architecture::~Architecture() {}
 
-    foreach(Operand *operand, mRegisterOperandByNumber) {
-        delete operand;
-    }
+void Architecture::setName(QString name) {
+    assert(mName.isEmpty() && "Name must be non-empty.");
+    assert(!name.isEmpty() && "Name cannot be reset.");
+
+    mName = std::move(name);
 }
 
 void Architecture::setBitness(SmallBitSize bitness) {
@@ -121,42 +115,6 @@ void Architecture::setRegisters(Registers *registers) {
     assert(mMnemonics == NULL && "Register container is already set.");
 
     mRegisters = registers;
-    foreach(const Register *regizter, registers->registers()) {
-        addRegisterOperand(regizter);
-    }
-}
-
-RegisterOperand *Architecture::registerOperand(int number) const {
-    if (number < 0 || static_cast<std::size_t>(number) >= mRegisterOperandByNumber.size())
-        return NULL;
-        
-    return mRegisterOperandByNumber[number];
-}
-
-RegisterOperand *Architecture::registerOperand(const Register *regizter) const {
-    return registerOperand(regizter->number());
-}
-
-void Architecture::addRegisterOperand(const Register *regizter) {
-    assert(regizter != NULL);
-
-    int number = regizter->number();
-
-    assert(number >= 0);
-    assert(registerOperand(regizter) == NULL); /* No re-registration. */
-
-    if(static_cast<std::size_t>(number) >= mRegisterOperandByNumber.size())
-        mRegisterOperandByNumber.resize((number + 1) * 2, NULL);
-    
-    mRegisterOperandByNumber[number] = new RegisterOperand(regizter);
-}
-
-ConstantOperand *Architecture::constantOperand(const SizedValue &value) const {
-    auto &result = mConstantOperands[std::make_pair(value.value(), value.size())];
-    if (!result) {
-        result = new ConstantOperand(value);
-    }
-    return result;
 }
 
 bool Architecture::isGlobalMemory(const ir::MemoryLocation &memoryLocation) const {

@@ -40,7 +40,7 @@ namespace nc {
 namespace core {
 
 namespace arch {
-    class RegisterOperand;
+    class Register;
 }
 
 namespace ir {
@@ -80,11 +80,11 @@ class Argument {
     /**
      * Adds memory location of given register to the list of locations where the argument can be stored.
      *
-     * \param reg                       Valid pointer to register operand.
+     * \param reg                       Valid pointer to a register.
      *
      * \return                          *this.
      */
-    Argument &operator<<(const core::arch::RegisterOperand *reg);
+    Argument &operator<<(const core::arch::Register *reg);
 };
 
 /**

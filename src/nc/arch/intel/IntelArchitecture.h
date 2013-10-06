@@ -27,8 +27,6 @@
 
 #include <nc/core/arch/Architecture.h>
 
-#include <boost/array.hpp>
-
 namespace nc {
 
 namespace core {
@@ -86,13 +84,6 @@ public:
      */
     const core::arch::Register *basePointer() const { return mBasePointer; }
 
-    /**
-     * \param index FPU stack index.
-     *
-     * \returns Valid pointer to the operand for the given FPU stack index.
-     */
-    FpuStackOperand *fpuStackOperand(int index) const;
-
 protected:
     friend class IntelRegisters;
 
@@ -107,9 +98,6 @@ private:
 
     /** Stack frame base pointer register. */
     const core::arch::Register *mBasePointer;
-
-    /** Cached FPU stack operands. */
-    mutable boost::unordered_map<int, FpuStackOperand *> mFpuStackOperands;
 };
 
 } // namespace intel

@@ -27,8 +27,6 @@
 #include <algorithm>
 #include <cassert>
 
-#include <boost/range/size.hpp>
-
 #include <nc/common/CheckedCast.h>
 #include <nc/common/Unreachable.h>
 
@@ -38,6 +36,7 @@
 #include "IntelArchitecture.h"
 #include "IntelInstruction.h"
 #include "IntelMnemonics.h"
+#include "IntelOperandCache.h"
 #include "IntelRegisters.h"
 
 namespace nc {
@@ -46,12 +45,13 @@ namespace intel {
 
 class IntelInstructionDisassemblerPrivate {
     const IntelArchitecture *architecture_;
+    IntelOperandCache operandCache_;
     ud_t ud_obj_;
 
     public:
 
     IntelInstructionDisassemblerPrivate(const IntelArchitecture *architecture):
-        architecture_(architecture)
+        architecture_(architecture), operandCache_(architecture)
     {
         assert(architecture != NULL);
 
@@ -747,16 +747,16 @@ class IntelInstructionDisassemblerPrivate {
             case UD_OP_MEM:
                 return getDereference(operand);
             case UD_OP_PTR:
-                return architecture_->constantOperand(SizedValue(operand.size, operand.lval.ptr.seg * 16 + operand.lval.ptr.off));
+                return operandCache_.getConstantOperand(SizedValue(operand.size, operand.lval.ptr.seg * 16 + operand.lval.ptr.off));
             case UD_OP_IMM:
                 /* Signed number, sign-extended to match the size of the other operand. */
-                return architecture_->constantOperand(SizedValue(std::max(SmallBitSize(operand.size), lastOperandSize), getSignedValue(operand, operand.size)));
+                return operandCache_.getConstantOperand(SizedValue(std::max(SmallBitSize(operand.size), lastOperandSize), getSignedValue(operand, operand.size)));
             case UD_OP_JIMM:
-                return architecture_->constantOperand(SizedValue(architecture_->bitness(), ud_obj_.pc + getSignedValue(operand, operand.size)));
+                return operandCache_.getConstantOperand(SizedValue(architecture_->bitness(), ud_obj_.pc + getSignedValue(operand, operand.size)));
             case UD_OP_CONST:
                 /* This is some small constant value, like in "sar eax, 1". Its size is always zero. */
                 assert(operand.size == 0);
-                return architecture_->constantOperand(SizedValue(8, operand.lval.ubyte));
+                return operandCache_.getConstantOperand(SizedValue(8, operand.lval.ubyte));
             case UD_OP_REG:
                 return getRegisterOperand(operand.base);
             default:
@@ -792,7 +792,7 @@ class IntelInstructionDisassemblerPrivate {
         switch (type) {
 
         #define REG(ud_name, nc_name) case UD_R_##ud_name: number = IntelRegisters::nc_name; break;
-        #define REG_ST(n) case UD_R_ST##n: return architecture_->fpuStackOperand(n);
+        #define REG_ST(n) case UD_R_ST##n: return operandCache_.getFpuStackOperand(n);
 
         REG(AL, AL)
         REG(CL, CL)
@@ -941,7 +941,7 @@ class IntelInstructionDisassemblerPrivate {
             return NULL;
         }
 
-        return architecture_->registerOperand(number);
+        return operandCache_.getRegisterOperand(number);
     }
 
     core::arch::DereferenceOperand *getDereference(const ud_operand &operand) {
@@ -954,7 +954,7 @@ class IntelInstructionDisassemblerPrivate {
                 if (operand.scale != 1) {
                     index = new core::arch::MultiplicationOperand(
                         index,
-                        architecture_->constantOperand(SizedValue(ud_obj_.adr_mode, operand.scale)),
+                        operandCache_.getConstantOperand(SizedValue(ud_obj_.adr_mode, operand.scale)),
                         ud_obj_.adr_mode);
                 }
                 if (address) {
@@ -968,7 +968,7 @@ class IntelInstructionDisassemblerPrivate {
         auto offsetValue = SizedValue(operand.offset, getUnsignedValue(operand, operand.offset));
 
         if (offsetValue.value() || !address) {
-            core::arch::ConstantOperand *offset = architecture_->constantOperand(offsetValue);
+            core::arch::ConstantOperand *offset = operandCache_.getConstantOperand(offsetValue);
 
             if (address) {
                 address = new core::arch::AdditionOperand(address, offset, ud_obj_.adr_mode);

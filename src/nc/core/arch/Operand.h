@@ -105,7 +105,6 @@ public:
     inline const MultiplicationOperand *asMultiplication() const;
     inline const DereferenceOperand *asDereference() const;
     inline const ConstantOperand *asConstant() const;
-    inline bool isRegister(int registerNumber) const;
 
 protected:
     friend class Architecture; /* Architecture can delete operands directly. */

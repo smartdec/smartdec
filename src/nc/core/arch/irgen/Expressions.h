@@ -37,6 +37,7 @@
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/arch/Operand.h>
+#include <nc/core/arch/Registers.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Terms.h>
@@ -581,6 +582,11 @@ regizter(int number) {
     return RegisterExpression(number);
 }
 
+inline RegisterExpression
+regizter(const Register *reg) {
+    return regizter(reg->number());
+}
+
 template<class E>
 inline SignExpression<ExpressionSignedness::SIGNED, E>
 signed_(const ExpressionBase<E> &expression) {
@@ -911,7 +917,8 @@ protected:
      * \returns                        Newly created term for the given expression.
      */
     std::unique_ptr<ir::Term> doCreateTerm(const RegisterExpression &expression) const {
-        return mInstructionAnalyzer->createTerm(mArchitecture->registerOperand(expression.number()));
+        return std::make_unique<ir::MemoryLocationAccess>(
+            mArchitecture->registers()->getRegister(expression.number())->memoryLocation());
     }
 
     /**
@@ -1119,7 +1126,7 @@ protected:
         NC_UNUSED(suggestedSize);
 
         if (!expression.size()) {
-            expression.setSize(mArchitecture->registerOperand(expression.number())->size());
+            expression.setSize(mArchitecture->registers()->getRegister(expression.number())->memoryLocation().size());
         }
     }
 

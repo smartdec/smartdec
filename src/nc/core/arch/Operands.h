@@ -37,6 +37,8 @@
 
 namespace nc { namespace core { namespace arch {
 
+class Register;
+
 /* TODO: move print() out of Operand. 
  * It is assembler- and architecture-dependent. */
 
@@ -150,20 +152,10 @@ public:
         return register_;
     }
 
-    /**
-     * \returns                        Register number.
-     */
-    int number() const { return register_->number(); }
-
-    /**
-     * \return                         Corresponding abstract memory location of the register.
-     */
-    const ir::MemoryLocation &memoryLocation() const { return register_->memoryLocation(); }
-
     virtual void print(QTextStream &out) const override;
 
 protected:
-    friend class Architecture; /* Calls constructor. */
+    friend class OperandCache; /* Calls constructor. */
 
     /**
      * Class constructor.
@@ -255,7 +247,7 @@ public:
     virtual void print(QTextStream &out) const override;
 
 protected:
-    friend class Architecture; /* Calls constructor. */
+    friend class OperandCache; /* Calls constructor. */
 
     /**
      * Class constructor.
@@ -271,10 +263,6 @@ protected:
 /*
  * Operand implementation follows.
  */
-
-bool Operand::isRegister(int registerNumber) const {
-    return isRegister() && as<RegisterOperand>()->number() == registerNumber;
-}
 
 const RegisterOperand *Operand::asRegister() const {
     return as<RegisterOperand>();

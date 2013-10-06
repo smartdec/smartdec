@@ -24,8 +24,6 @@
 
 #include "IntelArchitecture.h"
 
-#include <boost/range/adaptor/map.hpp>
-
 #include <nc/common/Foreach.h>
 #include <nc/common/Unreachable.h>
 #include <nc/common/make_unique.h>
@@ -45,23 +43,18 @@ namespace intel {
 IntelArchitecture::IntelArchitecture(Mode mode):
     mOperands(new IntelOperands(this))
 {
-    /* Init instruction analyzer. */
     mInstructionAnalyzer.reset(new IntelInstructionAnalyzer(this));
     setInstructionAnalyzer(mInstructionAnalyzer.get());
 
-    /* Init universal analyzer. */
     static IntelUniversalAnalyzer universalAnalyzer;
     setUniversalAnalyzer(&universalAnalyzer);
 
-    /* Init registers. */
     setRegisters(IntelRegisters::instance());
-
-    /* Init mnemonics. */
     setMnemonics(IntelMnemonics::instance());
 
-    /* Perform mode-dependent initialization. */
     switch(mode) {
     case REAL_MODE:
+        setName("8086");
         setBitness(16);
         setInstructionPointer(IntelRegisters::ip());
         mStackPointer = IntelRegisters::sp();
@@ -69,6 +62,7 @@ IntelArchitecture::IntelArchitecture(Mode mode):
         addCallingConvention(std::make_unique<Cdecl16CallingConvention>(this));
         break;
     case PROTECTED_MODE:
+        setName("i386");
         setBitness(32);
         setInstructionPointer(IntelRegisters::eip());
         mStackPointer = IntelRegisters::esp();
@@ -77,6 +71,7 @@ IntelArchitecture::IntelArchitecture(Mode mode):
         addCallingConvention(std::make_unique<Stdcall32CallingConvention>(this));
         break;
     case LONG_MODE:
+        setName("x86-64");
         setBitness(64);
         setInstructionPointer(IntelRegisters::rip());
         mStackPointer = IntelRegisters::rsp();
@@ -89,26 +84,14 @@ IntelArchitecture::IntelArchitecture(Mode mode):
     }
 
     setByteOrder(ByteOrder::LittleEndian);
+
     setMaxInstructionSize(15);
 
-    /* Init instruction disassembler. */
     mInstructionDisassembler.reset(new IntelInstructionDisassembler(this));
     setInstructionDisassembler(mInstructionDisassembler.get());
 }
 
-IntelArchitecture::~IntelArchitecture() {
-    foreach(FpuStackOperand *operand, mFpuStackOperands | boost::adaptors::map_values) {
-        delete operand;
-    }
-}
-
-FpuStackOperand *IntelArchitecture::fpuStackOperand(int index) const {
-    auto &result = mFpuStackOperands[index];
-    if (!result) {
-        result = new FpuStackOperand(index);
-    }
-    return result;
-}
+IntelArchitecture::~IntelArchitecture() {}
 
 } // namespace intel
 } // namespace arch

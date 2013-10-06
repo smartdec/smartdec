@@ -13,6 +13,8 @@ set(SOURCES
     IntelInstructionDisassembler.h
     IntelMnemonics.cpp
     IntelMnemonics.h
+    IntelOperandCache.cpp
+    IntelOperandCache.h
     IntelOperands.cpp
     IntelOperands.h
     IntelRegisters.cpp

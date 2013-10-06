@@ -42,12 +42,6 @@ namespace core {
 namespace arch {
 namespace irgen {
 
-std::unique_ptr<ir::Term> InstructionAnalyzer::createTerm(const Operand *operand) const {
-    assert(operand != NULL);
-
-    return doCreateTerm(operand);
-}
-
 void InstructionAnalyzer::createStatements(const Instruction *instruction, ir::Program *program) const {
     assert(instruction);
 
@@ -62,13 +56,23 @@ void InstructionAnalyzer::createStatements(const Instruction *instruction, ir::P
 }
 
 void InstructionAnalyzer::doCreateStatements(const Instruction * /*instruction*/, ir::Program * /*program*/) const {
-    return;
+    unreachable();
+}
+
+std::unique_ptr<ir::Term> InstructionAnalyzer::createTerm(const Operand *operand) const {
+    assert(operand != NULL);
+
+    return doCreateTerm(operand);
+}
+
+std::unique_ptr<ir::Term> InstructionAnalyzer::createTerm(const Register *reg) const {
+    return std::make_unique<ir::MemoryLocationAccess>(reg->memoryLocation());
 }
 
 std::unique_ptr<ir::Term> InstructionAnalyzer::doCreateTerm(const Operand *operand) const {
     switch(operand->kind()) {
     case Operand::REGISTER: {
-        return std::make_unique<ir::MemoryLocationAccess>(operand->asRegister()->memoryLocation());
+        return createTerm(operand->asRegister()->regizter());
     }
     case Operand::ADDITION: {
         const AdditionOperand *addition = operand->asAddition();

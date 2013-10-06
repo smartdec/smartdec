@@ -37,13 +37,6 @@ namespace nc {
 namespace arch {
 namespace intel {
 
-#define REG(lowercase, uppercase, domain, offset, size, comment)                \
-core::arch::RegisterOperand *IntelOperands::lowercase() const {                 \
-    return architecture_->registerOperand(IntelRegisters::uppercase);           \
-}
-#include "IntelRegisterTable.i"
-#undef REG
-
 FpuStackOperand::FpuStackOperand(int index):
     core::arch::CachedOperand(IntelOperands::FPU_STACK, IntelRegisters::fpu_r0()->memoryLocation().size<SmallBitSize>()),
     index_(index)

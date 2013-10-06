@@ -6,6 +6,7 @@
 #include <nc/config.h>
 
 #include <algorithm>
+#include <cassert>
 
 #include <QSysInfo>
 

@@ -25,13 +25,12 @@
 
 #include <nc/config.h>
 
-#include <utility> /* For std::pair. */
+#include <memory>
 #include <vector>
 
-#include <boost/unordered_map.hpp>
+#include <QString>
 
 #include <nc/common/ByteOrder.h>
-#include <nc/common/SizedValue.h>
 #include <nc/common/Types.h>
 
 namespace nc {
@@ -57,19 +56,17 @@ namespace irgen {
     class InstructionAnalyzer;
 }
 
-class ConstantOperand;
 class Mnemonics;
 class Register;
-class RegisterOperand;
 class Registers;
 
 /**
- * Architecture.
+ * Immutable class describing an architecture.
  */
 class Architecture {
 public:
     /**
-     * Default constructor.
+     * Constructor.
      */
     Architecture();
 
@@ -77,6 +74,11 @@ public:
      * Virtual destructor.
      */
     virtual ~Architecture();
+
+    /**
+     * \return Name of the architecture.
+     */
+    const QString &name() const { return mName; }
 
     /**
      * \returns Architecture's bitness (data pointer size).
@@ -119,26 +121,7 @@ public:
     const Registers *registers() const { return mRegisters; }
 
     /**
-     * \param number                   Register number.
-     * \returns                        Operand for the given register number,
-     *                                 or NULL if no such register number exists.
-     */
-    RegisterOperand *registerOperand(int number) const;
-
-    /**
-     * \param regizter                 Register.
-     * \returns                        Operand for the given register.
-     */
-    RegisterOperand *registerOperand(const Register *regizter) const;
-
-    /**
-     * \param value                    Constant value.
-     * \returns                        Operand for the given constant value.
-     */
-    ConstantOperand *constantOperand(const SizedValue &value) const;
-
-    /**
-     * \return                         Pointer to instruction pointer register. Can be NULL.
+     * \return Pointer to instruction pointer register. Can be NULL.
      */
     const Register *instructionPointer() const { return mInstructionPointer; }
 
@@ -162,6 +145,14 @@ public:
     const ir::calls::CallingConvention *getCallingConvention(const QString &name) const;
 
 protected:
+    /**
+     * Sets the name of the architecture.
+     * The name must be sent only once.
+     *
+     * \param name Non-empty new name of the architecture.
+     */
+    void setName(QString name);
+
     /**
      * Sets the architecture's bitness.
      *
@@ -222,12 +213,8 @@ protected:
     void addCallingConvention(std::unique_ptr<ir::calls::CallingConvention> convention);
 
 private:
-    /**
-     * Creates cached register operand for the given register.
-     * 
-     * \param regizter  Register to register.
-     */
-    void addRegisterOperand(const Register *regizter);
+    /** Name of the architecture. */
+    QString mName;
 
     /** Architecture's bitness. */
     SmallBitSize mBitness;
@@ -255,12 +242,6 @@ private:
 
     /** Instruction pointer register. */
     const Register *mInstructionPointer;
-
-    /** Cached register operands. */
-    std::vector<RegisterOperand *> mRegisterOperandByNumber;
-
-    /** Cached constant operands. */
-    mutable boost::unordered_map<std::pair<ConstantValue, SmallBitSize>, ConstantOperand *> mConstantOperands;
 
     /** Calling conventions. */
     std::vector<std::unique_ptr<ir::calls::CallingConvention>> callingConventions_;

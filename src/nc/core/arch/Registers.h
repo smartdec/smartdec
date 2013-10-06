@@ -69,7 +69,7 @@ public:
      * \returns                        Register for the given number, or NULL if
      *                                 no such register exists.
      */
-    const Register *regizter(int number) const {
+    const Register *getRegister(int number) const {
         if(number < 0 || static_cast<std::size_t>(number) >= mRegisterByNumber.size())
             return NULL;
 
@@ -115,22 +115,23 @@ protected:
      * Registers the given register. This register container takes ownership of
      * the given register.
      * 
-     * \param[in] regizter             Register to register.
+     * \param[in] reg   Valid pointer to a register.
      */
-    void registerRegister(Register *regizter) {
-        assert(regizter != NULL);
-        assert(this->regizter(regizter->number()) == NULL); /* Re-registration not allowed. */
+    void registerRegister(Register *reg) {
+        assert(reg != NULL);
+        assert(getRegister(reg->number()) == NULL); /* Re-registration not allowed. */
 
-        mRegisters.push_back(regizter);
+        mRegisters.push_back(reg);
 
-        mRegisterByName[regizter->lowercaseName()] = regizter;
-        mRegisterByName[regizter->uppercaseName()] = regizter;
+        mRegisterByName[reg->lowercaseName()] = reg;
+        mRegisterByName[reg->uppercaseName()] = reg;
 
-        if(static_cast<std::size_t>(regizter->number()) >= mRegisterByNumber.size())
-            mRegisterByNumber.resize((regizter->number() + 1) * 2);
-        mRegisterByNumber[regizter->number()] = regizter;
+        if (static_cast<std::size_t>(reg->number()) >= mRegisterByNumber.size()) {
+            mRegisterByNumber.resize((reg->number() + 1) * 2);
+        }
+        mRegisterByNumber[reg->number()] = reg;
 
-        mRegisterByLocation[regizter->memoryLocation()] = regizter;
+        mRegisterByLocation[reg->memoryLocation()] = reg;
     }
 
     /**
@@ -139,11 +140,11 @@ protected:
      * \param[in] number               Register number.
      */
     void registerStackPointer(int number) {
-        assert(regizter(number) != NULL); /* Register number must be registered. */
+        assert(getRegister(number) != NULL); /* Register number must be registered. */
         assert(!mStackPointerNumbers.contains(number)); /* Re-registration not allowed. */
 
         mStackPointerNumbers.insert(number);
-        mStackPointerLocations.insert(regizter(number)->memoryLocation());
+        mStackPointerLocations.insert(getRegister(number)->memoryLocation());
     }
 
 private:
@@ -180,16 +181,16 @@ public:
         return instance()->Registers::registers();
     }
 
-    static const Register *regizter(int number) {
-        return instance()->Registers::regizter(number);
+    static const Register *getRegister(int number) {
+        return instance()->Registers::getRegister(number);
     }
 
-    static const Register *regizter(const ir::MemoryLocation &location) {
-        return instance()->Registers::regizter(location);
+    static const Register *getRegister(const ir::MemoryLocation &location) {
+        return instance()->Registers::getRegister(location);
     }
 
-    static const Register *regizter(const QString &name) {
-        return instance()->Registers::regizter(name);
+    static const Register *getRegister(const QString &name) {
+        return instance()->Registers::getRegister(name);
     }
 
     static bool isStackPointer(int number) {

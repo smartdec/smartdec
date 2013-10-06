@@ -38,7 +38,7 @@ namespace core {
 namespace ir {
 namespace calls {
 
-Argument &Argument::operator<<(const arch::RegisterOperand *reg) {
+Argument &Argument::operator<<(const arch::Register *reg) {
     assert(reg != NULL);
 
     return *this << reg->memoryLocation();

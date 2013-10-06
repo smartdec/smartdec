@@ -17,7 +17,7 @@
 
     /* Register numbers. */
     enum {
-#define REG(lowercase, uppercase, domain, offset, size, comment)                \
+#define REG(lowercase, uppercase, domain, offset, size, comment)\
         uppercase,
 #include REGISTER_TABLE
 #undef REG
@@ -27,7 +27,7 @@
     /* Register accessors. */
 #define REG(lowercase, uppercase, domain, offset, size, comment)\
     static const nc::core::arch::Register *lowercase() {        \
-        return regizter(uppercase);                             \
+        return getRegister(uppercase);                          \
     }
 #include REGISTER_TABLE
 #undef REG

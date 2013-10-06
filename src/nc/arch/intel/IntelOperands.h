@@ -44,12 +44,6 @@ public:
         FPU_STACK = core::arch::Operand::USER
     };
 
-    /* Operand accessors. */
-#define REG(lowercase, uppercase, domain, offset, size, comment)                \
-    core::arch::RegisterOperand *lowercase() const;
-#include "IntelRegisterTable.i"
-#undef REG
-
 private:
     IntelArchitecture *architecture_;
 };
@@ -60,7 +54,7 @@ private:
  */
 class FpuStackOperand: public core::arch::CachedOperand {
 protected:
-    friend class IntelArchitecture; /* Calls constructor. */
+    friend class IntelOperandCache; /* Calls constructor. */
 
     /**
      * Class constructor.
@@ -73,7 +67,7 @@ protected:
 
 public:
     /**
-     * \return                         Index of accessed element.
+     * \return Index of accessed element.
      */
     int index() const { return index_; }
 

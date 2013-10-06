@@ -17,6 +17,8 @@ set(SOURCES
     arch/Mnemonic.h
     arch/Mnemonics.h
     arch/Operand.h
+    arch/OperandCache.cpp
+    arch/OperandCache.h
     arch/Operands.cpp
     arch/Operands.h
     arch/Register.h
