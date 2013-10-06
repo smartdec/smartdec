@@ -39,7 +39,9 @@ namespace nc {
 namespace arch {
 namespace intel {
 
-AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architecture): core::ir::calls::GenericCallingConvention() {
+AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architecture):
+    core::ir::calls::GenericCallingConvention(QLatin1String("amd64"))
+{
     const IntelOperands *operands = architecture->operands();
 
     setStackPointer(operands->rsp()->memoryLocation());
@@ -82,7 +84,9 @@ AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architec
     ));
 }
 
-Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitecture *architecture): core::ir::calls::GenericCallingConvention() {
+Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitecture *architecture):
+    core::ir::calls::GenericCallingConvention(QLatin1String("microsoft64"))
+{
     const IntelOperands *operands = architecture->operands();
 
     setStackPointer(operands->rsp()->memoryLocation());
@@ -119,7 +123,9 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitectu
     ));
 }
 
-Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *architecture): core::ir::calls::GenericCallingConvention() {
+Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *architecture):
+    core::ir::calls::GenericCallingConvention(QLatin1String("cdecl32"))
+{
     const IntelOperands *operands = architecture->operands();
 
     setStackPointer(operands->esp()->memoryLocation());
@@ -140,7 +146,9 @@ Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *arch
     ));
 }
 
-Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *architecture): core::ir::calls::GenericCallingConvention() {
+Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *architecture):
+    core::ir::calls::GenericCallingConvention(QLatin1String("cdecl16"))
+{
     const IntelOperands *operands = architecture->operands();
 
     setStackPointer(operands->sp()->memoryLocation());
@@ -160,7 +168,9 @@ Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *arch
     ));
 }
 
-StdcallCallingConvention::StdcallCallingConvention(const IntelArchitecture *architecture): core::ir::calls::GenericCallingConvention() {
+Stdcall32CallingConvention::Stdcall32CallingConvention(const IntelArchitecture *architecture):
+    core::ir::calls::GenericCallingConvention(QLatin1String("stdcall32"))
+{
     const IntelOperands *operands = architecture->operands();
 
     setStackPointer(operands->esp()->memoryLocation());

@@ -41,6 +41,10 @@ class UniversalAnalyzer;
 
 namespace ir {
     class MemoryLocation;
+
+    namespace calls {
+        class CallingConvention;
+    }
 }
 
 namespace arch {
@@ -145,6 +149,18 @@ public:
      */
     virtual bool isGlobalMemory(const ir::MemoryLocation &memoryLocation) const;
 
+    /**
+     * \return List of available calling conventions.
+     */
+    const std::vector<const ir::calls::CallingConvention *> &callingConventions() const {
+        return reinterpret_cast<const std::vector<const ir::calls::CallingConvention *> &>(callingConventions_);
+    }
+
+    /**
+     * \return Pointer to the calling convention with the given name. Can be NULL.
+     */
+    const ir::calls::CallingConvention *getCallingConvention(const QString &name) const;
+
 protected:
     /**
      * Sets the architecture's bitness.
@@ -197,11 +213,19 @@ protected:
      */
     void setInstructionPointer(const Register *reg);
 
+    /**
+     * Adds a calling convention.
+     * There must be no calling convention with the same name in the repository.
+     *
+     * \param convention Valid pointer to the calling convention.
+     */
+    void addCallingConvention(std::unique_ptr<ir::calls::CallingConvention> convention);
+
 private:
     /**
      * Creates cached register operand for the given register.
      * 
-     * \param regizter                 Register to register.
+     * \param regizter  Register to register.
      */
     void addRegisterOperand(const Register *regizter);
 
@@ -237,6 +261,9 @@ private:
 
     /** Cached constant operands. */
     mutable boost::unordered_map<std::pair<ConstantValue, SmallBitSize>, ConstantOperand *> mConstantOperands;
+
+    /** Calling conventions. */
+    std::vector<std::unique_ptr<ir::calls::CallingConvention>> callingConventions_;
 };
 
 } // namespace arch

@@ -97,7 +97,9 @@ void IntelUniversalAnalyzer::detectCallingConvention(core::Context *context, con
             if (index != -1) {
                 ByteSize argumentsSize;
                 if (stringToInt(symbol.mid(index + 1), &argumentsSize)) {
-                    context->callsData()->setCallingConvention(descriptor, architecture->callingConvention(IntelArchitecture::STDCALL));
+                    context->callsData()->setCallingConvention(
+                        descriptor,
+                        architecture->getCallingConvention(QLatin1String("stdcall32")));
                     checked_cast<core::ir::calls::GenericDescriptorAnalyzer *>(context->callsData()->getDescriptorAnalyzer(descriptor))->setArgumentsSize(argumentsSize);
                     return;
                 }
@@ -107,13 +109,13 @@ void IntelUniversalAnalyzer::detectCallingConvention(core::Context *context, con
 
     switch (context->module()->architecture()->bitness()) {
         case 16:
-            context->callsData()->setCallingConvention(descriptor, architecture->callingConvention(IntelArchitecture::CDECL16));
+            context->callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("cdecl16")));
             break;
         case 32:
-            context->callsData()->setCallingConvention(descriptor, architecture->callingConvention(IntelArchitecture::CDECL32));
+            context->callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("cdecl32")));
             break;
         case 64:
-            context->callsData()->setCallingConvention(descriptor, architecture->callingConvention(IntelArchitecture::AMD64));
+            context->callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("amd64")));
             break;
     }
 }

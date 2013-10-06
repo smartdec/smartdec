@@ -28,6 +28,7 @@
 
 #include <nc/common/Foreach.h>
 #include <nc/common/Unreachable.h>
+#include <nc/common/make_unique.h>
 
 #include "CallingConventions.h"
 #include "IntelInstructionAnalyzer.h"
@@ -55,13 +56,6 @@ IntelArchitecture::IntelArchitecture(Mode mode):
     /* Init registers. */
     setRegisters(IntelRegisters::instance());
 
-    /* Init calling conventions. */
-    mConventions[AMD64]   = new AMD64CallingConvention(this);
-    mConventions[MS64]    = new Microsoft64CallingConvention(this);
-    mConventions[CDECL32] = new Cdecl32CallingConvention(this);
-    mConventions[CDECL16] = new Cdecl16CallingConvention(this);
-    mConventions[STDCALL] = new StdcallCallingConvention(this);
-
     /* Init mnemonics. */
     setMnemonics(IntelMnemonics::instance());
 
@@ -72,18 +66,23 @@ IntelArchitecture::IntelArchitecture(Mode mode):
         setInstructionPointer(IntelRegisters::ip());
         mStackPointer = IntelRegisters::sp();
         mBasePointer  = IntelRegisters::bp();
+        addCallingConvention(std::make_unique<Cdecl16CallingConvention>(this));
         break;
     case PROTECTED_MODE:
         setBitness(32);
         setInstructionPointer(IntelRegisters::eip());
         mStackPointer = IntelRegisters::esp();
         mBasePointer  = IntelRegisters::ebp();
+        addCallingConvention(std::make_unique<Cdecl32CallingConvention>(this));
+        addCallingConvention(std::make_unique<Stdcall32CallingConvention>(this));
         break;
     case LONG_MODE:
         setBitness(64);
         setInstructionPointer(IntelRegisters::rip());
         mStackPointer = IntelRegisters::rsp();
         mBasePointer  = IntelRegisters::rbp();
+        addCallingConvention(std::make_unique<AMD64CallingConvention>(this));
+        addCallingConvention(std::make_unique<Microsoft64CallingConvention>(this));
         break;
     default:
         unreachable();
@@ -98,9 +97,6 @@ IntelArchitecture::IntelArchitecture(Mode mode):
 }
 
 IntelArchitecture::~IntelArchitecture() {
-    foreach(core::ir::calls::CallingConvention *convention, mConventions) {
-        delete convention;
-    }
     foreach(FpuStackOperand *operand, mFpuStackOperands | boost::adaptors::map_values) {
         delete operand;
     }

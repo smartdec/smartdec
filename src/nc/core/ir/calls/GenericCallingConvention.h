@@ -148,9 +148,11 @@ public:
 
     /**
      * Class constructor.
+     *
+     * \param name Name of the calling convention.
      */
-    GenericCallingConvention():
-        firstArgumentOffset_(0), argumentAlignment_(0), calleeCleanup_(false)
+    GenericCallingConvention(QString name):
+        CallingConvention(std::move(name)), firstArgumentOffset_(0), argumentAlignment_(0), calleeCleanup_(false)
     {}
 
     /**

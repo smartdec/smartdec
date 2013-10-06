@@ -25,6 +25,8 @@
 
 #include <nc/config.h>
 
+#include <QString>
+
 #include <memory> /* std::unique_ptr */
 
 namespace nc {
@@ -38,12 +40,26 @@ class DescriptorAnalyzer;
  * An interface for a factory of address analyzers.
  */
 class CallingConvention {
+    QString name_; ///< Name of the calling convention.
+
     public:
+
+    /**
+     * Constructor.
+     *
+     * \paran name Name of the calling convention.
+     */
+    CallingConvention(QString name): name_(std::move(name)) {}
 
     /**
      * Virtual destructor.
      */
     virtual ~CallingConvention() {}
+
+    /**
+     * \return Name of the calling convention.
+     */
+    const QString &name() const { return name_; }
 
     /**
      * \return Pointer to a new instance of DescriptorAnalyzer. Can be NULL.

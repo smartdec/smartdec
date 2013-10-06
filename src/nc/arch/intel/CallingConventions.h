@@ -80,12 +80,12 @@ public:
 /**
  * 32-bit stdcall calling convention.
  */
-class StdcallCallingConvention: public core::ir::calls::GenericCallingConvention {
+class Stdcall32CallingConvention: public core::ir::calls::GenericCallingConvention {
 public:
     /**
      * Class constructor.
      */
-    StdcallCallingConvention(const IntelArchitecture *architecture);
+    Stdcall32CallingConvention(const IntelArchitecture *architecture);
 };
 
 } // namespace intel

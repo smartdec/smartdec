@@ -29,6 +29,8 @@
 #include <nc/common/BitTwiddling.h>
 #include <nc/common/Foreach.h>
 
+#include <nc/core/ir/calls/CallingConvention.h>
+
 #include "Operands.h"
 #include "Registers.h"
 
@@ -47,6 +49,16 @@ Architecture::Architecture():
     mRegisters(NULL),
     mInstructionPointer(NULL)
 {}
+
+Architecture::~Architecture() {
+    foreach(Operand *operand, mConstantOperands | boost::adaptors::map_values) {
+        delete operand;
+    }
+
+    foreach(Operand *operand, mRegisterOperandByNumber) {
+        delete operand;
+    }
+}
 
 void Architecture::setBitness(SmallBitSize bitness) {
     assert(bitness > 0 && "Bitness must be a positive integer.");
@@ -114,16 +126,6 @@ void Architecture::setRegisters(Registers *registers) {
     }
 }
 
-Architecture::~Architecture() {
-    foreach(Operand *operand, mConstantOperands | boost::adaptors::map_values) {
-        delete operand;
-    }
-
-    foreach(Operand *operand, mRegisterOperandByNumber) {
-        delete operand;
-    }
-}
-
 RegisterOperand *Architecture::registerOperand(int number) const {
     if (number < 0 || static_cast<std::size_t>(number) >= mRegisterOperandByNumber.size())
         return NULL;
@@ -159,6 +161,23 @@ ConstantOperand *Architecture::constantOperand(const SizedValue &value) const {
 
 bool Architecture::isGlobalMemory(const ir::MemoryLocation &memoryLocation) const {
     return memoryLocation.domain() == ir::MemoryDomain::MEMORY;
+}
+
+void Architecture::addCallingConvention(std::unique_ptr<ir::calls::CallingConvention> convention) {
+    assert(convention != NULL);
+    assert(getCallingConvention(convention->name()) == NULL &&
+           "No two calling conventions with the same name allowed.");
+
+    callingConventions_.push_back(std::move(convention));
+}
+
+const ir::calls::CallingConvention *Architecture::getCallingConvention(const QString &name) const {
+    foreach (auto convention, callingConventions()) {
+        if (convention->name() == name) {
+            return convention;
+        }
+    }
+    return NULL;
 }
 
 } // namespace arch

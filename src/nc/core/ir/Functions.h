@@ -47,7 +47,7 @@ class Function;
  */
 class Functions: public PrintableBase<Functions>, boost::noncopyable {
     /** The functions. */
-    std::vector<Function *> functions_;
+    std::vector<std::unique_ptr<Function>> functions_;
 
     /** Mapping from an entry address to the list of functions with this address. */
     boost::unordered_map<ByteAddr, std::vector<Function *>> entry2functions_;
@@ -57,6 +57,11 @@ class Functions: public PrintableBase<Functions>, boost::noncopyable {
 
 public:
     /**
+     * Constructor.
+     */
+    Functions();
+
+    /**
      * Destructor.
      */
     ~Functions();
@@ -64,7 +69,9 @@ public:
     /**
      * \return Intermediate representations of functions.
      */
-    const std::vector<Function *> &functions() const { return functions_; }
+    const std::vector<Function *> &functions() const {
+        return reinterpret_cast<const std::vector<Function *> &>(functions_);
+    }
 
     /**
      * Adds intermediate representation of a function and takes ownership of it.

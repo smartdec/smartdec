@@ -51,16 +51,6 @@ class IntelRegisters;
 
 class IntelArchitecture: public core::arch::Architecture {
 public:
-    /** Calling convention numbers. */
-    enum Convention {
-        AMD64,
-        MS64,
-        CDECL32,
-        CDECL16,
-        STDCALL,
-        CONVENTION_COUNT
-    };
-
     /**
      * Processor mode.
      */
@@ -87,13 +77,6 @@ public:
     }
 
     /**
-     * \param convention Calling convention number.
-     *
-     * \return Valid pointer to the calling convention.
-     */
-    const core::ir::calls::CallingConvention *callingConvention(Convention convention) const { return mConventions[convention]; }
-
-    /**
      * \return Valid pointer to the stack pointer register.
      */
     const core::arch::Register *stackPointer() const { return mStackPointer; }
@@ -114,7 +97,6 @@ protected:
     friend class IntelRegisters;
 
 private:
-    boost::array<core::ir::calls::CallingConvention *, CONVENTION_COUNT> mConventions;
     std::unique_ptr<IntelOperands> mOperands;
     std::unique_ptr<IntelInstructionDisassembler> mInstructionDisassembler;
     std::unique_ptr<IntelInstructionAnalyzer> mInstructionAnalyzer;
