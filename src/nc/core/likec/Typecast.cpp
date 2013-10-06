@@ -75,6 +75,50 @@ Expression *Typecast::rewrite() {
         }
     }
 
+    /*
+     * (int32_t*)((uintptr_t)expr + const) -> (int32_t)(expr + const / sizeof(int32_t))
+     */
+    if (auto pointerType = type_->as<PointerType>()) {
+        if (pointerType->pointeeType()->size() % CHAR_BIT == 0) {
+            ByteSize pointeeSizeInBytes = pointerType->pointeeType()->size() / CHAR_BIT;
+
+            if (auto binary = operand()->as<BinaryOperator>()) {
+                if (binary->operatorKind() == BinaryOperator::ADD) {
+                    auto rewrite = [&](Expression *binaryLeft, Expression *binaryRight) -> Expression * {
+                        if (auto typecast = binaryLeft->as<Typecast>()) {
+                            if (typecast->type()->isInteger() &&
+                                typecast->type()->size() == tree().pointerSize() &&
+                                typecast->operand()->getType()->isPointer())
+                            {
+                                if (auto constant = binaryRight->as<IntegerConstant>()) {
+                                    if (constant->type()->size() <= tree().pointerSize() &&
+                                        constant->value().value() % pointeeSizeInBytes == 0)
+                                    {
+                                        return new BinaryOperator(tree(),
+                                            BinaryOperator::ADD,
+                                            std::make_unique<Typecast>(tree(),
+                                                pointerType,
+                                                typecast->releaseOperand()),
+                                            std::make_unique<IntegerConstant>(tree(),
+                                                constant->value().value() / pointeeSizeInBytes,
+                                                constant->type()));
+                                    }
+                                }
+                            }
+                        }
+                        return NULL;
+                    };
+
+                    if (auto result = rewrite(binary->left(), binary->right())) {
+                        return result;
+                    } else if (auto result = rewrite(binary->right(), binary->left())) {
+                        return result;
+                    }
+                }
+            }
+        }
+    }
+
     /* This really must be the last rule. */
     if (type_ == operand()->getType()) {
         return releaseOperand().release();
