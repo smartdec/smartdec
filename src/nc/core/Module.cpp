@@ -24,10 +24,9 @@
 
 #include "Module.h"
 
-#include <nc/common/Warnings.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/arch/Architecture.h>
+#include <nc/core/arch/ArchitectureRepository.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/mangling/Demangler.h>
 #include <nc/core/mangling/CxxFiltDemangler.h>
@@ -45,31 +44,22 @@
 namespace nc { namespace core {
 
 Module::Module():
+    mArchitecture(NULL),
     mImage(new image::Image()),
     mDemangler(new mangling::Demangler)
 {}
 
 Module::~Module() {}
 
-void Module::setArchitecture(std::unique_ptr<arch::Architecture> architecture) {
+void Module::setArchitecture(const arch::Architecture *architecture) {
     assert(architecture != NULL);
-    assert(mArchitecture == NULL && "Can't set architecture twice.");
+    assert(mArchitecture == NULL && "Can't set the architecture twice.");
 
-    mArchitecture = std::move(architecture);
+    mArchitecture = architecture;
 }
 
 void Module::setArchitecture(const QString &name) {
-    // TODO: ideally, there should be an ArchitectureRepository.
-
-    if (name == QLatin1String("8086")) {
-        setArchitecture(std::make_unique<nc::arch::intel::IntelArchitecture>(nc::arch::intel::IntelArchitecture::REAL_MODE));
-    } else if (name == QLatin1String("i386")) {
-        setArchitecture(std::make_unique<nc::arch::intel::IntelArchitecture>(nc::arch::intel::IntelArchitecture::PROTECTED_MODE));
-    } else if (name == QLatin1String("x86-64")) {
-        setArchitecture(std::make_unique<nc::arch::intel::IntelArchitecture>(nc::arch::intel::IntelArchitecture::LONG_MODE));
-    } else {
-        ncWarning("Architecture not supported: %1", name);
-    }
+    setArchitecture(arch::ArchitectureRepository::instance()->getArchitecture(name));
 }
 
 void Module::setDemangler(std::unique_ptr<mangling::Demangler> demangler) {

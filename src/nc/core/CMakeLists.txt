@@ -10,6 +10,8 @@ set(SOURCES
     UniversalAnalyzer.h
     arch/Architecture.cpp
     arch/Architecture.h
+    arch/ArchitectureRepository.cpp
+    arch/ArchitectureRepository.h
     arch/Instruction.cpp
     arch/Instruction.h
     arch/Instructions.cpp

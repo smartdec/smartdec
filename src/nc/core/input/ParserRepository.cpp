@@ -29,7 +29,6 @@
 #include <QHash>
 
 #include <nc/common/Foreach.h>
-#include <nc/common/Warnings.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/input/elf/ElfParser.h>

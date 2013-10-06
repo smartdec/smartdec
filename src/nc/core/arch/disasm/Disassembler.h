@@ -52,7 +52,7 @@ namespace disasm {
  * Disassembler for a sequence of instructions.
  */
 class Disassembler {
-    Architecture *architecture_; ///< Architecture.
+    const Architecture *architecture_; ///< Architecture.
     Instructions *instructions_; ///< Instructions.
 
     public:
@@ -64,7 +64,7 @@ class Disassembler {
      * \param[out] instructions Pointer to the set of instructions where to add disassembled instructions.
      *                          Can be NULL, but then you must override addInstruction().
      */
-    Disassembler(Architecture *architecture, Instructions *instructions):
+    Disassembler(const Architecture *architecture, Instructions *instructions):
         architecture_(architecture),
         instructions_(instructions)
     {
@@ -74,7 +74,7 @@ class Disassembler {
     /**
      * \return Valid pointer to the architecture.
      */
-    Architecture *architecture() const { return architecture_; }
+    const Architecture *architecture() const { return architecture_; }
 
     /**
      * \return Pointer to the set of instructions. Can be NULL.

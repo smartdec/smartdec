@@ -51,11 +51,9 @@ public:
     ParserRepository();
 
     /**
-     * Registers a parser, if there is no parser with the same name yet.
+     * Registers a parser.
      *
      * \param[in] parser Valid pointer to the parser to register.
-     *
-     * \return True if the parser was registered, false otherwise.
      */
     void registerParser(std::unique_ptr<Parser> parser);
 

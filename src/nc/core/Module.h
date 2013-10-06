@@ -64,12 +64,7 @@ public:
     /**
      * \return Pointer to the architecture. Can be NULL.
      */
-    arch::Architecture *architecture() { return mArchitecture.get(); }
-
-    /**
-     * \return Pointer to the architecture. Can be NULL.
-     */
-    const arch::Architecture *architecture() const { return mArchitecture.get(); }
+    const arch::Architecture *architecture() const { return mArchitecture; }
 
     /**
      * Sets the architecture of this module.
@@ -77,7 +72,7 @@ public:
      *
      * \param architecture Valid pointer to the architecture.
      */
-    void setArchitecture(std::unique_ptr<arch::Architecture> architecture);
+    void setArchitecture(const arch::Architecture *architecture);
 
     /**
      * Sets the architecture of this module.
@@ -139,7 +134,7 @@ public:
 
 private:
     /** Architecture of the code being analyzed. */
-    std::unique_ptr<arch::Architecture> mArchitecture;
+    const arch::Architecture *mArchitecture;
 
     /** Image of the executable file. */
     std::unique_ptr<image::Image> mImage;
