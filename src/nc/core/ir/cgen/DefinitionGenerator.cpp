@@ -1057,12 +1057,15 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const Term *term, const MemoryLocation &termLocation) {
     assert(term != NULL);
     assert(termLocation);
+    assert(termLocation == dataflow().getMemoryLocation(term));
 
     if (context().module()->architecture()->isGlobalMemory(termLocation)) {
         return std::make_unique<likec::VariableIdentifier>(tree(),
             parent().makeGlobalVariableDeclaration(termLocation, types().getType(term)));
     } else {
         auto variable = variables().getVariable(term);
+        assert(variable != NULL);
+
         auto identifier = std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(variable));
 
         if (termLocation == variable->memoryLocation()) {
