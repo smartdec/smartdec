@@ -15,10 +15,10 @@ IntelOperandCache::IntelOperandCache(const core::arch::Architecture *architectur
 
 IntelOperandCache::~IntelOperandCache() {}
 
-FpuStackOperand *IntelOperandCache::getFpuStackOperand(int index) {
-    auto &result = fpuStackOperands_[index];
+FpuOperand *IntelOperandCache::getFpuOperand(int index) {
+    auto &result = fpuOperands_[index];
     if (!result) {
-        result.reset(new FpuStackOperand(index));
+        result.reset(new FpuOperand(index));
     }
     return result.get();
 }

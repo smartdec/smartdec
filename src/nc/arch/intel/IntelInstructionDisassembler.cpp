@@ -792,7 +792,7 @@ class IntelInstructionDisassemblerPrivate {
         switch (type) {
 
         #define REG(ud_name, nc_name) case UD_R_##ud_name: number = IntelRegisters::nc_name; break;
-        #define REG_ST(n) case UD_R_ST##n: return operandCache_.getFpuStackOperand(n);
+        #define REG_ST(n) case UD_R_ST##n: return operandCache_.getFpuOperand(n);
 
         REG(AL, AL)
         REG(CL, CL)

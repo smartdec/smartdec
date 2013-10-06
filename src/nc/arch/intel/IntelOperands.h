@@ -52,7 +52,7 @@ private:
 /**
  * x87 FPU stack access, like st(0).
  */
-class FpuStackOperand: public core::arch::CachedOperand {
+class FpuOperand: public core::arch::CachedOperand {
 protected:
     friend class IntelOperandCache; /* Calls constructor. */
 
@@ -63,7 +63,7 @@ protected:
      *
      * \param[in] index                Index of data register relative to FPU stack top.
      */
-    FpuStackOperand(int index);
+    FpuOperand(int index);
 
 public:
     /**
@@ -81,4 +81,4 @@ private:
 } // namespace arch
 } // namespace nc
 
-NC_REGISTER_OPERAND_CLASS(nc::arch::intel::FpuStackOperand, nc::arch::intel::IntelOperands::FPU_STACK)
+NC_REGISTER_OPERAND_CLASS(nc::arch::intel::FpuOperand, nc::arch::intel::IntelOperands::FPU_STACK)

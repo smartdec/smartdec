@@ -37,12 +37,12 @@ namespace nc {
 namespace arch {
 namespace intel {
 
-FpuStackOperand::FpuStackOperand(int index):
+FpuOperand::FpuOperand(int index):
     core::arch::CachedOperand(IntelOperands::FPU_STACK, IntelRegisters::fpu_r0()->memoryLocation().size<SmallBitSize>()),
     index_(index)
 {}
 
-void FpuStackOperand::print(QTextStream &out) const {
+void FpuOperand::print(QTextStream &out) const {
     out << "st(" << index_ << ")";
 }
 

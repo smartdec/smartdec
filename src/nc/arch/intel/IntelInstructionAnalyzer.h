@@ -48,7 +48,7 @@ public:
      * \return Valid pointer to the intermediate representation of the fpu stack register
      *         operand with the given index.
      */
-    std::unique_ptr<core::ir::Term> createFpuStackTerm(int index) const;
+    std::unique_ptr<core::ir::Term> createFpuTerm(int index) const;
 
 protected:
 

@@ -15,7 +15,7 @@ namespace nc {
 namespace arch {
 namespace intel {
 
-class FpuStackOperand;
+class FpuOperand;
 
 /**
  * Owner and factory of various kinds of operands.
@@ -39,11 +39,11 @@ public:
      *
      * \returns Valid pointer to the operand for the given FPU stack index.
      */
-    FpuStackOperand *getFpuStackOperand(int index);
+    FpuOperand *getFpuOperand(int index);
 
 private:
     /** Cached FPU stack operands. */
-    boost::unordered_map<int, std::unique_ptr<FpuStackOperand>> fpuStackOperands_;
+    boost::unordered_map<int, std::unique_ptr<FpuOperand>> fpuOperands_;
 };
 
 } // namespace intel

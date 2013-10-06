@@ -40,7 +40,7 @@ namespace core {
 namespace arch {
 namespace intel {
 
-class FpuStackOperand;
+class FpuOperand;
 class IntelInstructionAnalyzer;
 class IntelInstructionDisassembler;
 class IntelOperands;

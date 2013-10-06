@@ -1276,7 +1276,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
     }
 }
 
-std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::createFpuStackTerm(int index) const {
+std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::createFpuTerm(int index) const {
     const SmallBitSize addressSize = 16;
 
     return std::make_unique<core::ir::Dereference>(
@@ -1303,7 +1303,7 @@ std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::createFpuStackTerm(int
 std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::doCreateTerm(const core::arch::Operand *operand) const {
     switch (operand->kind()) {
     case IntelOperands::FPU_STACK: {
-        return createFpuStackTerm(operand->as<FpuStackOperand>()->index());
+        return createFpuTerm(operand->as<FpuOperand>()->index());
     }
     default: 
         return core::arch::irgen::InstructionAnalyzer::doCreateTerm(operand);
