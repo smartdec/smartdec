@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "IntelUniversalAnalyzer.h"
+#include "IntelMasterAnalyzer.h"
 
 #include <nc/common/Conversions.h>
 #include <nc/common/Foreach.h>
@@ -45,8 +45,8 @@ namespace nc {
 namespace arch {
 namespace intel {
 
-void IntelUniversalAnalyzer::createProgram(core::Context *context) const {
-    UniversalAnalyzer::createProgram(context);
+void IntelMasterAnalyzer::createProgram(core::Context *context) const {
+    MasterAnalyzer::createProgram(context);
 
     /*
      * Patch the IR to implement x86-64 implicit zero extend.
@@ -87,7 +87,7 @@ void IntelUniversalAnalyzer::createProgram(core::Context *context) const {
     }
 }
 
-void IntelUniversalAnalyzer::detectCallingConvention(core::Context *context, const core::ir::calls::FunctionDescriptor &descriptor) const {
+void IntelMasterAnalyzer::detectCallingConvention(core::Context *context, const core::ir::calls::FunctionDescriptor &descriptor) const {
     const IntelArchitecture *architecture = checked_cast<const IntelArchitecture *>(context->module()->architecture());
 
     if (architecture->bitness() == 32) {
@@ -120,7 +120,7 @@ void IntelUniversalAnalyzer::detectCallingConvention(core::Context *context, con
     }
 }
 
-void IntelUniversalAnalyzer::analyzeDataflow(core::Context *context, const core::ir::Function *function) const {
+void IntelMasterAnalyzer::analyzeDataflow(core::Context *context, const core::ir::Function *function) const {
     std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
 
     IntelDataflowAnalyzer(*dataflow, context->module()->architecture(), function, context->callsData())

@@ -36,7 +36,7 @@
 namespace nc {
 namespace core {
 
-class UniversalAnalyzer;
+class MasterAnalyzer;
 
 namespace ir {
     class MemoryLocation;
@@ -108,7 +108,7 @@ public:
     /**
      * \returns Valid pointer to the universal analyzer for this architecture.
      */
-    const UniversalAnalyzer *universalAnalyzer() const { return mUniversalAnalyzer; }
+    const MasterAnalyzer *masterAnalyzer() const { return mMasterAnalyzer; }
 
     /**
      * \returns Valid pointer to the mnemonic container for this architecture.
@@ -183,9 +183,9 @@ protected:
     void setInstructionAnalyzer(irgen::InstructionAnalyzer *instructionAnalyzer);
 
     /**
-     * \param universalAnalyzer Valid pointer to the universal analyzer for this architecture.
+     * \param masterAnalyzer Valid pointer to the universal analyzer for this architecture.
      */
-    void setUniversalAnalyzer(const UniversalAnalyzer *universalAnalyzer);
+    void setMasterAnalyzer(const MasterAnalyzer *masterAnalyzer);
 
     /**
      * \param mnemonics Valid pointer to the mnemonics container for this architecture.
@@ -231,8 +231,8 @@ private:
     /** Instruction analyzer for this architecture. */
     irgen::InstructionAnalyzer *mInstructionAnalyzer;
 
-    /** Universal analyzer for this architecture. */
-    const UniversalAnalyzer *mUniversalAnalyzer;
+    /** Master analyzer for this architecture. */
+    const MasterAnalyzer *mMasterAnalyzer;
 
     /** Instruction dictionary for this architecture. */
     Mnemonics *mMnemonics;

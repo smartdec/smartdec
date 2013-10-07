@@ -51,19 +51,19 @@ class Context;
  *
  * If an architecture requires to do some analysis differently,
  * you can derive from this class, reimplement certain virtual functions,
- * and register it by calling Architecture::setUniversalAnalyzer().
+ * and register it by calling Architecture::setMasterAnalyzer().
  * 
  * Methods of this class can be executed concurrently.
  * (Though, only on different context currently.)
  * Therefore, they all are const.
  */
-class UniversalAnalyzer {
+class MasterAnalyzer {
     public:
 
     /**
      * Virtual destructor.
      */
-    virtual ~UniversalAnalyzer();
+    virtual ~MasterAnalyzer();
 
     /**
      * Decompiles a context.

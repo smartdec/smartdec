@@ -31,7 +31,7 @@
 #include "CallingConventions.h"
 #include "IntelInstructionAnalyzer.h"
 #include "IntelInstructionDisassembler.h"
-#include "IntelUniversalAnalyzer.h"
+#include "IntelMasterAnalyzer.h"
 #include "IntelRegisters.h"
 #include "IntelOperands.h"
 #include "IntelMnemonics.h"
@@ -46,8 +46,8 @@ IntelArchitecture::IntelArchitecture(Mode mode):
     mInstructionAnalyzer.reset(new IntelInstructionAnalyzer(this));
     setInstructionAnalyzer(mInstructionAnalyzer.get());
 
-    static IntelUniversalAnalyzer universalAnalyzer;
-    setUniversalAnalyzer(&universalAnalyzer);
+    static IntelMasterAnalyzer masterAnalyzer;
+    setMasterAnalyzer(&masterAnalyzer);
 
     setRegisters(IntelRegisters::instance());
     setMnemonics(IntelMnemonics::instance());

@@ -25,13 +25,13 @@
 
 #include <nc/config.h>
 
-#include <nc/core/UniversalAnalyzer.h>
+#include <nc/core/MasterAnalyzer.h>
 
 namespace nc {
 namespace arch {
 namespace intel {
 
-class IntelUniversalAnalyzer: public core::UniversalAnalyzer {
+class IntelMasterAnalyzer: public core::MasterAnalyzer {
     public:
 
     virtual void createProgram(core::Context *context) const override;

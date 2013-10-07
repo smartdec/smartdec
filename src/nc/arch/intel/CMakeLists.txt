@@ -11,6 +11,8 @@ set(SOURCES
     IntelInstructionAnalyzer.h
     IntelInstructionDisassembler.cpp
     IntelInstructionDisassembler.h
+    IntelMasterAnalyzer.cpp
+    IntelMasterAnalyzer.h
     IntelMnemonics.cpp
     IntelMnemonics.h
     IntelOperandCache.cpp
@@ -19,8 +21,6 @@ set(SOURCES
     IntelOperands.h
     IntelRegisters.cpp
     IntelRegisters.h
-    IntelUniversalAnalyzer.cpp
-    IntelUniversalAnalyzer.h
     Prefixes.cpp
     Prefixes.h
 )

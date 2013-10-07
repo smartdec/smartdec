@@ -4,10 +4,10 @@ set(MOC_HEADERS
 
 set(SOURCES
     Context.cpp
+    MasterAnalyzer.cpp
+    MasterAnalyzer.h
     Module.cpp
     Module.h
-    UniversalAnalyzer.cpp
-    UniversalAnalyzer.h
     arch/Architecture.cpp
     arch/Architecture.h
     arch/ArchitectureRepository.cpp

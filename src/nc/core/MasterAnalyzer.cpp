@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "UniversalAnalyzer.h"
+#include "MasterAnalyzer.h"
 
 #include <QObject> /* For QObject::tr() */
 
@@ -65,14 +65,14 @@
 namespace nc {
 namespace core {
 
-UniversalAnalyzer::~UniversalAnalyzer() {}
+MasterAnalyzer::~MasterAnalyzer() {}
 
 namespace {
     /* MSVC 2010 fails to find the type, if one defines it inside the function. */
     struct CancellationException {};
 }
 
-void UniversalAnalyzer::decompile(Context *context) const {
+void MasterAnalyzer::decompile(Context *context) const {
     auto checkForCancellation = [context]() { if (context->cancellationToken()) { throw CancellationException(); } };
 
     try {
@@ -130,7 +130,7 @@ void UniversalAnalyzer::decompile(Context *context) const {
     }
 }
 
-void UniversalAnalyzer::createProgram(Context *context) const {
+void MasterAnalyzer::createProgram(Context *context) const {
     std::unique_ptr<ir::Program> program(new ir::Program());
 
     core::arch::irgen::IRGenerator generator(context->module().get(), context->instructions().get(), program.get());
@@ -139,7 +139,7 @@ void UniversalAnalyzer::createProgram(Context *context) const {
     context->setProgram(std::move(program));
 }
 
-void UniversalAnalyzer::createFunctions(Context *context) const {
+void MasterAnalyzer::createFunctions(Context *context) const {
     std::unique_ptr<ir::Functions> functions(new ir::Functions);
     ir::FunctionsGenerator generator;
     generator.makeFunctions(*context->program(), *functions);
@@ -151,7 +151,7 @@ void UniversalAnalyzer::createFunctions(Context *context) const {
     context->setFunctions(std::move(functions));
 }
 
-void UniversalAnalyzer::pickFunctionName(Context *context, ir::Function *function) const {
+void MasterAnalyzer::pickFunctionName(Context *context, ir::Function *function) const {
     /* If the function has an entry, and the entry has an address... */
     if (function->entry()&& function->entry()->address()) {
         QString name = context->module()->getName(*function->entry()->address());
@@ -180,21 +180,21 @@ void UniversalAnalyzer::pickFunctionName(Context *context, ir::Function *functio
     }
 }
 
-void UniversalAnalyzer::createCallsData(Context *context) const {
+void MasterAnalyzer::createCallsData(Context *context) const {
     std::unique_ptr<ir::calls::CallsData> callsData(new ir::calls::CallsData());
 
     class Detector: public ir::calls::CallingConventionDetector {
-        const UniversalAnalyzer *universalAnalyzer_;
+        const MasterAnalyzer *masterAnalyzer_;
         Context *context_;
 
         public:
 
-        Detector(const UniversalAnalyzer *universalAnalyzer, Context *context):
-            universalAnalyzer_(universalAnalyzer), context_(context)
+        Detector(const MasterAnalyzer *masterAnalyzer, Context *context):
+            masterAnalyzer_(masterAnalyzer), context_(context)
         {}
 
         virtual void detectCallingConvention(const ir::calls::FunctionDescriptor &descriptor) const override {
-            universalAnalyzer_->detectCallingConvention(context_, descriptor);
+            masterAnalyzer_->detectCallingConvention(context_, descriptor);
         }
     };
 
@@ -205,16 +205,16 @@ void UniversalAnalyzer::createCallsData(Context *context) const {
     context->setCallingConventionDetector(std::move(detector));
 }
 
-void UniversalAnalyzer::detectCallingConvention(Context * /*context*/, const ir::calls::FunctionDescriptor &/*descriptor*/) const {
+void MasterAnalyzer::detectCallingConvention(Context * /*context*/, const ir::calls::FunctionDescriptor &/*descriptor*/) const {
     /* Nothing to do. */
 }
 
-void UniversalAnalyzer::computeTermToFunctionMapping(Context *context) const {
+void MasterAnalyzer::computeTermToFunctionMapping(Context *context) const {
     context->setTermToFunction(std::unique_ptr<ir::misc::TermToFunction>(
         new ir::misc::TermToFunction(context->functions(), context->callsData())));
 }
 
-void UniversalAnalyzer::analyzeDataflow(Context *context, const ir::Function *function) const {
+void MasterAnalyzer::analyzeDataflow(Context *context, const ir::Function *function) const {
     std::unique_ptr<ir::dflow::Dataflow> dataflow(new ir::dflow::Dataflow());
 
     ir::dflow::DataflowAnalyzer(*dataflow, context->module()->architecture(), function, context->callsData())
@@ -223,7 +223,7 @@ void UniversalAnalyzer::analyzeDataflow(Context *context, const ir::Function *fu
     context->setDataflow(function, std::move(dataflow));
 }
 
-void UniversalAnalyzer::computeUsage(Context *context, const ir::Function *function) const {
+void MasterAnalyzer::computeUsage(Context *context, const ir::Function *function) const {
     std::unique_ptr<ir::usage::Usage> usage(new ir::usage::Usage());
 
     ir::usage::UsageAnalyzer(*usage, function,
@@ -234,7 +234,7 @@ void UniversalAnalyzer::computeUsage(Context *context, const ir::Function *funct
     context->setUsage(function, std::move(usage));
 }
 
-void UniversalAnalyzer::reconstructTypes(Context *context, const ir::Function *function) const {
+void MasterAnalyzer::reconstructTypes(Context *context, const ir::Function *function) const {
     std::unique_ptr<ir::types::Types> types(new ir::types::Types());
 
     ir::types::TypeAnalyzer analyzer(*types, *context->getDataflow(function), *context->getUsage(function), context->callsData());
@@ -243,7 +243,7 @@ void UniversalAnalyzer::reconstructTypes(Context *context, const ir::Function *f
     context->setTypes(function, std::move(types));
 }
 
-void UniversalAnalyzer::reconstructVariables(Context *context, const ir::Function *function) const {
+void MasterAnalyzer::reconstructVariables(Context *context, const ir::Function *function) const {
     std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
 
     ir::vars::VariableAnalyzer analyzer(*variables, *context->getDataflow(function), context->callsData());
@@ -252,7 +252,7 @@ void UniversalAnalyzer::reconstructVariables(Context *context, const ir::Functio
     context->setVariables(function, std::move(variables));
 }
 
-void UniversalAnalyzer::doStructuralAnalysis(Context *context, const ir::Function *function) const {
+void MasterAnalyzer::doStructuralAnalysis(Context *context, const ir::Function *function) const {
     std::unique_ptr<ir::cflow::Graph> graph(new ir::cflow::Graph());
 
     ir::cflow::GraphBuilder()(*graph, function);
@@ -261,7 +261,7 @@ void UniversalAnalyzer::doStructuralAnalysis(Context *context, const ir::Functio
     context->setRegionGraph(function, std::move(graph));
 }
 
-void UniversalAnalyzer::generateTree(Context *context) const {
+void MasterAnalyzer::generateTree(Context *context) const {
     std::unique_ptr<nc::core::likec::Tree> tree(new nc::core::likec::Tree());
 
     ir::cgen::CodeGenerator generator(*context, *tree);
@@ -271,7 +271,7 @@ void UniversalAnalyzer::generateTree(Context *context) const {
 }
 
 #ifdef NC_TREE_CHECKS
-void UniversalAnalyzer::checkTree(Context *context) const {
+void MasterAnalyzer::checkTree(Context *context) const {
     class TreeVisitor: public Visitor<likec::TreeNode> {
         boost::unordered_set<const ir::Statement *> statements_;
         boost::unordered_set<const ir::Term *> terms_;

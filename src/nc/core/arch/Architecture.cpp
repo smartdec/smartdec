@@ -39,7 +39,7 @@ Architecture::Architecture():
     mMaxInstructionSize(0),
     mInstructionDisassembler(NULL),
     mInstructionAnalyzer(NULL),
-    mUniversalAnalyzer(NULL),
+    mMasterAnalyzer(NULL),
     mMnemonics(NULL),
     mRegisters(NULL),
     mInstructionPointer(NULL)
@@ -96,11 +96,11 @@ void Architecture::setInstructionAnalyzer(irgen::InstructionAnalyzer *instructio
     mInstructionAnalyzer = instructionAnalyzer;
 }
 
-void Architecture::setUniversalAnalyzer(const UniversalAnalyzer *universalAnalyzer) {
-    assert(universalAnalyzer != NULL);
-    assert(mUniversalAnalyzer == NULL && "Universal analyzer is already set.");
+void Architecture::setMasterAnalyzer(const MasterAnalyzer *masterAnalyzer) {
+    assert(masterAnalyzer != NULL);
+    assert(mMasterAnalyzer == NULL && "Master analyzer is already set.");
 
-    mUniversalAnalyzer = universalAnalyzer;
+    mMasterAnalyzer = masterAnalyzer;
 }
 
 void Architecture::setMnemonics(Mnemonics *mnemonics) {

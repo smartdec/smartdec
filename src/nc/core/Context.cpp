@@ -33,7 +33,7 @@
 #include <nc/common/Exception.h>
 
 #include <nc/core/Module.h>
-#include <nc/core/UniversalAnalyzer.h>
+#include <nc/core/MasterAnalyzer.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/arch/disasm/Disassembler.h>
@@ -238,7 +238,7 @@ void Context::decompile() {
     if (instructions()->all().empty()) {
         disassemble();
     }
-    module()->architecture()->universalAnalyzer()->decompile(this);
+    module()->architecture()->masterAnalyzer()->decompile(this);
 }
 
 } // namespace core

@@ -44,7 +44,7 @@ class FpuOperand;
 class IntelInstructionAnalyzer;
 class IntelInstructionDisassembler;
 class IntelOperands;
-class IntelUniversalAnalyzer;
+class IntelMasterAnalyzer;
 class IntelRegisters;
 
 class IntelArchitecture: public core::arch::Architecture {
@@ -91,7 +91,7 @@ private:
     std::unique_ptr<IntelOperands> mOperands;
     std::unique_ptr<IntelInstructionDisassembler> mInstructionDisassembler;
     std::unique_ptr<IntelInstructionAnalyzer> mInstructionAnalyzer;
-    std::unique_ptr<IntelUniversalAnalyzer> mUniversalAnalyzer;
+    std::unique_ptr<IntelMasterAnalyzer> mMasterAnalyzer;
 
     /** Stack pointer register. */
     const core::arch::Register *mStackPointer;

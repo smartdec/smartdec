@@ -26,7 +26,7 @@
 
 #include <nc/core/Context.h>
 #include <nc/core/Module.h>
-#include <nc/core/UniversalAnalyzer.h>
+#include <nc/core/MasterAnalyzer.h>
 #include <nc/core/arch/Architecture.h>
 
 #include <cassert>
@@ -43,7 +43,7 @@ Decompilation::Decompilation(const std::shared_ptr<core::Context> &context):
 Decompilation::~Decompilation() {}
 
 void Decompilation::work() {
-    context_->module()->architecture()->universalAnalyzer()->decompile(context_.get());
+    context_->module()->architecture()->masterAnalyzer()->decompile(context_.get());
 }
 
 }} // namespace nc::gui
