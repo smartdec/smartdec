@@ -20,8 +20,9 @@ OperandCache::OperandCache(const Architecture *architecture) {
 
     foreach (auto reg, architecture->registers()->registers()) {
         assert(getRegisterOperand(reg) == NULL);
+        assert(reg->number() >= 0);
 
-        if (reg->number() >= registerOperands_.size()) {
+        if (static_cast<std::size_t>(reg->number()) >= registerOperands_.size()) {
             registerOperands_.resize(reg->number() + 1);
         }
 
