@@ -30,13 +30,14 @@
 
 #include <nc/core/Module.h>
 #include <nc/core/Context.h> 
+#include <nc/core/arch/Architecture.h>
+#include <nc/core/arch/ArchitectureRepository.h>
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
 #include <nc/core/input/Parser.h>
 #include <nc/core/input/ParserRepository.h>
-
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
@@ -45,9 +46,9 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/inlining/CallInliner.h>
 #include <nc/core/ir/cflow/Graph.h>
-
 #include <nc/core/likec/Tree.h>
 
+#include <QCoreApplication>
 #include <QFile>
 #include <QStringList>
 #include <QTextStream>
@@ -189,7 +190,6 @@ void help() {
     qout << endl;
     qout << "Options:" << endl;
     qout << "  --help, -h                  Produce this help message and quit." << endl;
-    qout << "  --list-parsers              List available parsers and quit." << endl;
     qout << "  --inline-function=ADDR      Inline a function with given address everywhere." << endl;
     qout << "  --inline-call=ADDR          Inline a call at given address." << endl;
     qout << "  --print-instructions[=FILE] Dump parsed instructions to the file." << endl;
@@ -200,24 +200,26 @@ void help() {
     qout << endl;
     qout << "Program loads a disassembly text or executable image from given file or files" << endl;
     qout << "and prints what it is said to (by default, it prints C++ code). When output" << endl;
-    qout << "file name is '-', stdout is used." << endl;
-}
+    qout << "file name is '-' or omitted, stdout is used." << endl;
+    qout << endl;
 
-void listParsers() {
-    qout << "Available parsers:" << endl;
-    foreach(auto parser, nc::core::input::ParserRepository::instance()->parsers()) {
-        qout << "  " << parser->name() << endl;
+    qout << "Available architectures:";
+    foreach (auto architecture, nc::core::arch::ArchitectureRepository::instance()->architectures()) {
+        qout << " " << architecture->name();
     }
+    qout << endl;
+
+    qout << "Available parsers:";
+    foreach(auto parser, nc::core::input::ParserRepository::instance()->parsers()) {
+        qout << " " << parser->name();
+    }
+    qout << endl;
 }
 
 int main(int argc, char *argv[]) {
+    QCoreApplication app(argc, argv);
+
     try {
-        QStringList args;
-
-        for (int i = 1; i < argc; ++i) {
-            args.append(QString(argv[i]));
-        }
-
         QString sectionsFile;
         QString instructionsFile;
         QString cfgFile;
@@ -231,13 +233,12 @@ int main(int argc, char *argv[]) {
 
         QStringList files;
 
-        for (int i = 0; i < args.size(); ++i) {
+        auto args = QCoreApplication::arguments();
+
+        for (int i = 1; i < args.size(); ++i) {
             QString arg = args[i];
             if (arg == "--help" || arg == "-h") {
                 help();
-                return 1;
-            } else if (arg == "--list-parsers") {
-                listParsers();
                 return 1;
 
             #define FILE_OPTION(option, variable)       \
