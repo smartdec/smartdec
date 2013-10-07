@@ -26,21 +26,11 @@
 
 #include <cstdint> /* For std::uintptr_t. */
 
-#include <QFile>
-#include <QTextStream>
-
 #include <nc/common/Foreach.h>
-#include <nc/common/Exception.h>
 
 #include <nc/core/Module.h>
-#include <nc/core/MasterAnalyzer.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instructions.h>
-#include <nc/core/arch/disasm/Disassembler.h>
-#include <nc/core/image/Image.h>
-#include <nc/core/image/Section.h>
-#include <nc/core/input/Parser.h>
-#include <nc/core/input/ParserRepository.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/calls/CallingConventionDetector.h>
@@ -169,76 +159,6 @@ void Context::setTree(std::unique_ptr<likec::Tree> tree) {
     assert(!tree_);
     tree_ = std::move(tree);
     Q_EMIT treeChanged();
-}
-
-void Context::parse(const QString &filename) {
-    // TODO: move to ParserRepository
-
-    QFile source(filename);
-
-    if (!source.open(QIODevice::ReadOnly)) {
-        throw nc::Exception(tr("Could not open file \"%1\" for reading.").arg(filename));
-    }
-
-    logToken() << tr("Choosing a parser for %1...").arg(filename);
-
-    const input::Parser *suitableParser = NULL;
-
-    foreach(const input::Parser *parser, input::ParserRepository::instance()->parsers()) {
-        logToken() << tr("Trying %1 parser...").arg(parser->name());
-        if (parser->canParse(&source)) {
-            suitableParser = parser;
-            break;
-        }
-    }
-
-    if (!suitableParser) {
-        throw nc::Exception(tr("File %1 has unknown format.").arg(filename));
-    }
-
-    logToken() << tr("Parsing using %1 parser...").arg(suitableParser->name());
-
-    suitableParser->parse(&source, module().get());
-
-    logToken() << tr("Parsing completed.");
-}
-
-void Context::disassemble() {
-    logToken() << tr("Disassembling code sections...");
-
-    foreach (const image::Section *section, module()->image()->sections()) {
-        if (section->isCode()) {
-            disassemble(section);
-        }
-    }
-}
-
-void Context::disassemble(const image::Section *section) {
-    assert(section != NULL);
-
-    logToken() << tr("Disassembling section %1...").arg(section->name());
-
-    disassemble(section, section->addr(), section->addr() + section->size());
-}
-
-void Context::disassemble(const image::ByteSource *source, ByteAddr begin, ByteAddr end) {
-    assert(source != NULL);
-
-    logToken() << tr("Disassembling addresses from 0x%2 to 0x%3...").arg(begin, 0, 16).arg(end, 0, 16);
-
-    auto newInstructions = std::make_shared<arch::Instructions>(*instructions());
-
-    arch::disasm::Disassembler disassembler(module()->architecture(), newInstructions.get());
-    disassembler.disassemble(source, begin, end, cancellationToken());
-
-    setInstructions(newInstructions);
-}
-
-void Context::decompile() {
-    if (instructions()->all().empty()) {
-        disassemble();
-    }
-    module()->architecture()->masterAnalyzer()->decompile(this);
 }
 
 } // namespace core

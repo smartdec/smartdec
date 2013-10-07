@@ -33,6 +33,7 @@ namespace ir {
 namespace calls {
 
 class CallingConvention;
+class FunctionDescriptor;
 
 /**
  * Detector of calling conventions.

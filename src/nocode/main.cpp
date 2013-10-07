@@ -30,6 +30,7 @@
 
 #include <nc/core/Module.h>
 #include <nc/core/Context.h> 
+#include <nc/core/Driver.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/ArchitectureRepository.h>
 #include <nc/core/arch/Instruction.h>
@@ -295,7 +296,7 @@ int main(int argc, char *argv[]) {
 
         foreach (const QString &filename, files) {
             try {
-                context.parse(filename);
+                nc::core::Driver::parse(context, filename);
             } catch (const nc::Exception &e) {
                 throw nc::Exception(filename + ":" + e.unicodeWhat());
             } catch (const std::exception &e) {
@@ -311,18 +312,19 @@ int main(int argc, char *argv[]) {
 
         openFileForWritingAndCall(sectionsFile,     [&](QTextStream &out) { printSections(context, out); });
 
-        if (!instructionsFile.isEmpty()) {
-            context.disassemble();
-        }
-        openFileForWritingAndCall(instructionsFile, [&](QTextStream &out) { context.instructions()->print(out); });
+        if (!instructionsFile.isEmpty() || !cfgFile.isEmpty() || !irFile.isEmpty() || !regionsFile.isEmpty() || !cxxFile.isEmpty()) {
+            nc::core::Driver::disassemble(context);
+            openFileForWritingAndCall(instructionsFile, [&](QTextStream &out) { context.instructions()->print(out); });
 
-        if (!cfgFile.isEmpty() || !irFile.isEmpty() || !regionsFile.isEmpty() || !cxxFile.isEmpty()) {
-            context.decompile();
+            if (!cfgFile.isEmpty() || !irFile.isEmpty() || !regionsFile.isEmpty() || !cxxFile.isEmpty()) {
+                nc::core::Driver::decompile(context);
+
+                openFileForWritingAndCall(cfgFile,          [&](QTextStream &out) { context.program()->print(out); });
+                openFileForWritingAndCall(irFile,           [&](QTextStream &out) { context.functions()->print(out); });
+                openFileForWritingAndCall(regionsFile,      [&](QTextStream &out) { printRegionGraphs(context, out); });
+                openFileForWritingAndCall(cxxFile,          [&](QTextStream &out) { context.tree()->print(out); });
+            }
         }
-        openFileForWritingAndCall(cfgFile,          [&](QTextStream &out) { context.program()->print(out); });
-        openFileForWritingAndCall(irFile,           [&](QTextStream &out) { context.functions()->print(out); });
-        openFileForWritingAndCall(regionsFile,      [&](QTextStream &out) { printRegionGraphs(context, out); });
-        openFileForWritingAndCall(cxxFile,          [&](QTextStream &out) { context.tree()->print(out); });
     } catch (const nc::Exception &e) {
         qerr << self << ": " << e.unicodeWhat() << endl;
         return 1;

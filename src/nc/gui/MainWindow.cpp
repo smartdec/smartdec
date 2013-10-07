@@ -42,10 +42,11 @@
 #include <nc/common/Exception.h>
 #include <nc/common/Foreach.h>
 #include <nc/common/GitSHA1.h>
-#include <nc/common/make_unique.h>
 #include <nc/common/SignalLogger.h>
-#include <nc/core/Module.h>
+#include <nc/common/make_unique.h>
 #include <nc/core/Context.h>
+#include <nc/core/Driver.h>
+#include <nc/core/Module.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
@@ -318,7 +319,7 @@ void MainWindow::open(const QStringList &filenames) {
 
     foreach (const QString &filename, filenames) {
         try {
-            context->parse(filename);
+            core::Driver::parse(*context, filename);
         } catch (const nc::Exception &e) {
             QMessageBox::critical(this, tr("Error"), e.unicodeWhat());
             return;

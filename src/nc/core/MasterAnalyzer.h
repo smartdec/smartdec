@@ -25,8 +25,6 @@
 
 #include <nc/config.h>
 
-#include <nc/common/Types.h>
-
 namespace nc {
 namespace core {
 
@@ -66,111 +64,103 @@ class MasterAnalyzer {
     virtual ~MasterAnalyzer();
 
     /**
-     * Decompiles a context.
-     * The context must have not been decompiled before.
-     *
-     * \param context Valid pointer to the context.
-     */
-    virtual void decompile(Context *context) const;
-
-    /**
      * Builds an intermediate representation of a program from a set of instructions.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      */
-    virtual void createProgram(Context *context) const;
+    virtual void createProgram(Context &context) const;
 
     /**
      * Isolates functions in the program.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      */
-    virtual void createFunctions(Context *context) const;
+    virtual void createFunctions(Context &context) const;
 
     /**
      * Picks and sets the name for a function.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      * \param function Valid pointer to the function.
      */
-    virtual void pickFunctionName(Context *context, ir::Function *function) const;
+    virtual void pickFunctionName(Context &context, ir::Function *function) const;
 
     /**
      * Creates the calls data will the calling convention detector using detectCallingConvention method of this class.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      */
-    virtual void createCallsData(Context *context) const;
+    virtual void createCallsData(Context &context) const;
 
     /**
      * Detects and sets the calling convention of a function.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      * \param descriptor Descriptor of the function.
      */
-    virtual void detectCallingConvention(Context *context, const ir::calls::FunctionDescriptor &descriptor) const;
+    virtual void detectCallingConvention(Context &context, const ir::calls::FunctionDescriptor &descriptor) const;
 
     /**
      * Constructs term to function mapping.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      */
-    virtual void computeTermToFunctionMapping(Context *context) const;
+    virtual void computeTermToFunctionMapping(Context &context) const;
 
     /**
      * Analyzes the dataflow of a function.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      * \param function Valid pointer to the function.
      */
-    virtual void analyzeDataflow(Context *context, const ir::Function *function) const;
+    virtual void analyzeDataflow(Context &context, const ir::Function *function) const;
 
     /**
      * Analyzes the usage of function's terms.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      * \param function Valid pointer to the function.
      */
-    virtual void computeUsage(Context *context, const ir::Function *function) const;
+    virtual void computeUsage(Context &context, const ir::Function *function) const;
 
     /**
      * Computes types of function's terms.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      * \param function Valid pointer to the function.
      */
-    virtual void reconstructTypes(Context *context, const ir::Function *function) const;
+    virtual void reconstructTypes(Context &context, const ir::Function *function) const;
 
     /**
      * Reconstructs variables of the function.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      * \param function Valid pointer to the function.
      */
-    virtual void reconstructVariables(Context *context, const ir::Function *function) const;
+    virtual void reconstructVariables(Context &context, const ir::Function *function) const;
 
     /**
      * Does structural analysis of the function.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      * \param function Valid pointer to the function.
      */
-    virtual void doStructuralAnalysis(Context *context, const ir::Function *function) const;
+    virtual void doStructuralAnalysis(Context &context, const ir::Function *function) const;
 
     /**
      * Generates LikeC tree for the context.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      */
-    virtual void generateTree(Context *context) const;
+    virtual void generateTree(Context &context) const;
 
 #ifdef NC_TREE_CHECKS
     /**
      * Checks generated LikeC tree and makes the process crash if something is wrong.
      *
-     * \param context Valid pointer to the context.
+     * \param context Context.
      */
-    virtual void checkTree(Context *context) const;
+    virtual void checkTree(Context &context) const;
 #endif
 };
 

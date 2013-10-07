@@ -4,6 +4,8 @@ set(MOC_HEADERS
 
 set(SOURCES
     Context.cpp
+    Driver.cpp
+    Driver.h
     MasterAnalyzer.cpp
     MasterAnalyzer.h
     Module.cpp

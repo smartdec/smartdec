@@ -45,20 +45,20 @@ namespace nc {
 namespace arch {
 namespace intel {
 
-void IntelMasterAnalyzer::createProgram(core::Context *context) const {
+void IntelMasterAnalyzer::createProgram(core::Context &context) const {
     MasterAnalyzer::createProgram(context);
 
     /*
      * Patch the IR to implement x86-64 implicit zero extend.
      */
-    if (context->module()->architecture()->bitness() == 64) {
+    if (context.module()->architecture()->bitness() == 64) {
         auto minDomain = IntelRegisters::rax()->memoryLocation().domain();
         auto maxDomain = IntelRegisters::r15()->memoryLocation().domain();
 
-        auto program = const_cast<core::ir::Program *>(context->program());
+        auto program = const_cast<core::ir::Program *>(context.program());
 
         foreach (auto *basicBlock, program->basicBlocks()) {
-            if (context->cancellationToken()) {
+            if (context.cancellationToken()) {
                 break;
             }
 
@@ -87,46 +87,46 @@ void IntelMasterAnalyzer::createProgram(core::Context *context) const {
     }
 }
 
-void IntelMasterAnalyzer::detectCallingConvention(core::Context *context, const core::ir::calls::FunctionDescriptor &descriptor) const {
-    const IntelArchitecture *architecture = checked_cast<const IntelArchitecture *>(context->module()->architecture());
+void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::calls::FunctionDescriptor &descriptor) const {
+    const IntelArchitecture *architecture = checked_cast<const IntelArchitecture *>(context.module()->architecture());
 
     if (architecture->bitness() == 32) {
         if (auto addr = descriptor.entryAddress()) {
-            const QString &symbol = context->module()->getName(*addr);
+            const QString &symbol = context.module()->getName(*addr);
             int index = symbol.lastIndexOf(QChar('@'));
             if (index != -1) {
                 ByteSize argumentsSize;
                 if (stringToInt(symbol.mid(index + 1), &argumentsSize)) {
-                    context->callsData()->setCallingConvention(
+                    context.callsData()->setCallingConvention(
                         descriptor,
                         architecture->getCallingConvention(QLatin1String("stdcall32")));
-                    checked_cast<core::ir::calls::GenericDescriptorAnalyzer *>(context->callsData()->getDescriptorAnalyzer(descriptor))->setArgumentsSize(argumentsSize);
+                    checked_cast<core::ir::calls::GenericDescriptorAnalyzer *>(context.callsData()->getDescriptorAnalyzer(descriptor))->setArgumentsSize(argumentsSize);
                     return;
                 }
             }
         }
     }
 
-    switch (context->module()->architecture()->bitness()) {
+    switch (context.module()->architecture()->bitness()) {
         case 16:
-            context->callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("cdecl16")));
+            context.callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("cdecl16")));
             break;
         case 32:
-            context->callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("cdecl32")));
+            context.callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("cdecl32")));
             break;
         case 64:
-            context->callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("amd64")));
+            context.callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("amd64")));
             break;
     }
 }
 
-void IntelMasterAnalyzer::analyzeDataflow(core::Context *context, const core::ir::Function *function) const {
+void IntelMasterAnalyzer::analyzeDataflow(core::Context &context, const core::ir::Function *function) const {
     std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
 
-    IntelDataflowAnalyzer(*dataflow, context->module()->architecture(), function, context->callsData())
-        .analyze(context->cancellationToken());
+    IntelDataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.callsData())
+        .analyze(context.cancellationToken());
 
-    context->setDataflow(function, std::move(dataflow));
+    context.setDataflow(function, std::move(dataflow));
 }
 
 } // namespace intel

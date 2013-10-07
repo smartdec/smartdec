@@ -25,9 +25,7 @@
 #include "Decompilation.h"
 
 #include <nc/core/Context.h>
-#include <nc/core/Module.h>
-#include <nc/core/MasterAnalyzer.h>
-#include <nc/core/arch/Architecture.h>
+#include <nc/core/Driver.h>
 
 #include <cassert>
 
@@ -43,7 +41,7 @@ Decompilation::Decompilation(const std::shared_ptr<core::Context> &context):
 Decompilation::~Decompilation() {}
 
 void Decompilation::work() {
-    context_->module()->architecture()->masterAnalyzer()->decompile(context_.get());
+    core::Driver::decompile(*context_);
 }
 
 }} // namespace nc::gui

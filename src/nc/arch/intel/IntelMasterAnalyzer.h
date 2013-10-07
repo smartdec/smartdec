@@ -34,11 +34,11 @@ namespace intel {
 class IntelMasterAnalyzer: public core::MasterAnalyzer {
     public:
 
-    virtual void createProgram(core::Context *context) const override;
+    virtual void createProgram(core::Context &context) const override;
 
-    virtual void detectCallingConvention(core::Context *context, const core::ir::calls::FunctionDescriptor &functionDescriptor) const override;
+    virtual void detectCallingConvention(core::Context &context, const core::ir::calls::FunctionDescriptor &functionDescriptor) const override;
 
-    virtual void analyzeDataflow(core::Context *context, const core::ir::Function *function) const override;
+    virtual void analyzeDataflow(core::Context &context, const core::ir::Function *function) const override;
 };
 
 } // namespace intel

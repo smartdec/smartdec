@@ -89,9 +89,7 @@ namespace likec {
 class Module;
 
 /**
- * Decompilation context.
- *
- * This class and manages all the information known about the decompiled program.
+ * This class stores all the information that is required and produced during decompilation.
  */
 class Context: public QObject {
     Q_OBJECT
@@ -317,44 +315,6 @@ public:
      * \return Log token.
      */
     const LogToken &logToken() const { return logToken_; }
-
-    public Q_SLOTS:
-
-    // TODO: remove all functions in this section.
-
-    /**
-     * Parse file.
-     *
-     * \param filename Name of the file to parse.
-     */
-    void parse(const QString &filename);
-
-    /**
-     * Disassembles all code sections.
-     */
-    void disassemble();
-
-    /**
-     * Disassembles an image section.
-     *
-     * \param section Valid pointer to the image section.
-     */
-    void disassemble(const image::Section *section);
-
-    /*
-     * Disassembles all instructions in the given range of addresses.
-     *
-     * \param source Valid pointer to a byte source.
-     * \param begin First address in the range.
-     * \param end First address past the range.
-     */
-    void disassemble(const image::ByteSource *source, ByteAddr begin, ByteAddr end);
-
-    /**
-     * Decompile everything.
-     * The context must be clean, i.e. not decompiled before.
-     */
-    void decompile();
 
     Q_SIGNALS:
 

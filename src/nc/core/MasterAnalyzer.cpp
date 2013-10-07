@@ -67,94 +67,31 @@ namespace core {
 
 MasterAnalyzer::~MasterAnalyzer() {}
 
-namespace {
-    /* MSVC 2010 fails to find the type, if one defines it inside the function. */
-    struct CancellationException {};
-}
-
-void MasterAnalyzer::decompile(Context *context) const {
-    auto checkForCancellation = [context]() { if (context->cancellationToken()) { throw CancellationException(); } };
-
-    try {
-        context->logToken() << QObject::tr("Creating the program IR...");
-        createProgram(context);
-        checkForCancellation();
-
-        context->logToken() << QObject::tr("Creating functions...");
-        createFunctions(context);
-        checkForCancellation();
-
-        context->logToken() << QObject::tr("Creating the calls data...");
-        createCallsData(context);
-        checkForCancellation();
-
-        context->logToken() << QObject::tr("Computing term to function mapping...");
-        computeTermToFunctionMapping(context);
-        checkForCancellation();
-
-        foreach (const ir::Function *function, context->functions()->functions()) {
-            context->logToken() << QObject::tr("Running dataflow analysis on %1...").arg(function->name());
-            analyzeDataflow(context, function);
-            checkForCancellation();
-        }
-
-        foreach (const ir::Function *function, context->functions()->functions()) {
-            context->logToken() << QObject::tr("Running structural analysis on %1...").arg(function->name());
-            doStructuralAnalysis(context, function);
-            checkForCancellation();
-
-            context->logToken() << QObject::tr("Running liveness analysis on %1...").arg(function->name());
-            computeUsage(context, function);
-            checkForCancellation();
-
-            context->logToken() << QObject::tr("Running type reconstruction on %1...").arg(function->name());
-            reconstructTypes(context, function);
-            checkForCancellation();
-
-            context->logToken() << QObject::tr("Running reconstruction of variables on %1...").arg(function->name());
-            reconstructVariables(context, function);
-            checkForCancellation();
-        }
-
-        context->logToken() << QObject::tr("Generating AST...");
-        generateTree(context);
-
-#ifdef NC_TREE_CHECKS
-        context->logToken() << QObject::tr("Checking AST...");
-        checkTree(context);
-#endif
-
-        context->logToken() << QObject::tr("Decompilation completed.");
-    } catch (const CancellationException &) {
-        context->logToken() << QObject::tr("Decompilation canceled.");
-    }
-}
-
-void MasterAnalyzer::createProgram(Context *context) const {
+void MasterAnalyzer::createProgram(Context &context) const {
     std::unique_ptr<ir::Program> program(new ir::Program());
 
-    core::arch::irgen::IRGenerator generator(context->module().get(), context->instructions().get(), program.get());
-    generator.generate(context->cancellationToken());
+    core::arch::irgen::IRGenerator generator(context.module().get(), context.instructions().get(), program.get());
+    generator.generate(context.cancellationToken());
 
-    context->setProgram(std::move(program));
+    context.setProgram(std::move(program));
 }
 
-void MasterAnalyzer::createFunctions(Context *context) const {
+void MasterAnalyzer::createFunctions(Context &context) const {
     std::unique_ptr<ir::Functions> functions(new ir::Functions);
     ir::FunctionsGenerator generator;
-    generator.makeFunctions(*context->program(), *functions);
+    generator.makeFunctions(*context.program(), *functions);
 
     foreach (ir::Function *function, functions->functions()) {
         pickFunctionName(context, function);
     }
 
-    context->setFunctions(std::move(functions));
+    context.setFunctions(std::move(functions));
 }
 
-void MasterAnalyzer::pickFunctionName(Context *context, ir::Function *function) const {
+void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) const {
     /* If the function has an entry, and the entry has an address... */
     if (function->entry()&& function->entry()->address()) {
-        QString name = context->module()->getName(*function->entry()->address());
+        QString name = context.module()->getName(*function->entry()->address());
 
         if (!name.isEmpty()) {
             /* Take the name of the corresponding symbol, if possible. */
@@ -165,7 +102,7 @@ void MasterAnalyzer::pickFunctionName(Context *context, ir::Function *function) 
                 function->comment().append(name);
             }
 
-            QString demangledName = context->module()->demangler()->demangle(name);
+            QString demangledName = context.module()->demangler()->demangle(name);
             if (demangledName.contains('(')) {
                 /* What we demangled has really something to do with a function. */
                 function->comment().append(demangledName);
@@ -180,16 +117,16 @@ void MasterAnalyzer::pickFunctionName(Context *context, ir::Function *function) 
     }
 }
 
-void MasterAnalyzer::createCallsData(Context *context) const {
+void MasterAnalyzer::createCallsData(Context &context) const {
     std::unique_ptr<ir::calls::CallsData> callsData(new ir::calls::CallsData());
 
     class Detector: public ir::calls::CallingConventionDetector {
         const MasterAnalyzer *masterAnalyzer_;
-        Context *context_;
+        Context &context_;
 
         public:
 
-        Detector(const MasterAnalyzer *masterAnalyzer, Context *context):
+        Detector(const MasterAnalyzer *masterAnalyzer, Context &context):
             masterAnalyzer_(masterAnalyzer), context_(context)
         {}
 
@@ -201,77 +138,77 @@ void MasterAnalyzer::createCallsData(Context *context) const {
     std::unique_ptr<ir::calls::CallingConventionDetector> detector(new Detector(this, context));
     callsData->setCallingConventionDetector(detector.get());
 
-    context->setCallsData(std::move(callsData));
-    context->setCallingConventionDetector(std::move(detector));
+    context.setCallsData(std::move(callsData));
+    context.setCallingConventionDetector(std::move(detector));
 }
 
-void MasterAnalyzer::detectCallingConvention(Context * /*context*/, const ir::calls::FunctionDescriptor &/*descriptor*/) const {
+void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::calls::FunctionDescriptor &/*descriptor*/) const {
     /* Nothing to do. */
 }
 
-void MasterAnalyzer::computeTermToFunctionMapping(Context *context) const {
-    context->setTermToFunction(std::unique_ptr<ir::misc::TermToFunction>(
-        new ir::misc::TermToFunction(context->functions(), context->callsData())));
+void MasterAnalyzer::computeTermToFunctionMapping(Context &context) const {
+    context.setTermToFunction(std::unique_ptr<ir::misc::TermToFunction>(
+        new ir::misc::TermToFunction(context.functions(), context.callsData())));
 }
 
-void MasterAnalyzer::analyzeDataflow(Context *context, const ir::Function *function) const {
+void MasterAnalyzer::analyzeDataflow(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::dflow::Dataflow> dataflow(new ir::dflow::Dataflow());
 
-    ir::dflow::DataflowAnalyzer(*dataflow, context->module()->architecture(), function, context->callsData())
-        .analyze(context->cancellationToken());
+    ir::dflow::DataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.callsData())
+        .analyze(context.cancellationToken());
 
-    context->setDataflow(function, std::move(dataflow));
+    context.setDataflow(function, std::move(dataflow));
 }
 
-void MasterAnalyzer::computeUsage(Context *context, const ir::Function *function) const {
+void MasterAnalyzer::computeUsage(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::usage::Usage> usage(new ir::usage::Usage());
 
     ir::usage::UsageAnalyzer(*usage, function,
-        context->getDataflow(function), context->module()->architecture(),
-        context->getRegionGraph(function), context->callsData())
+        context.getDataflow(function), context.module()->architecture(),
+        context.getRegionGraph(function), context.callsData())
     .analyze();
 
-    context->setUsage(function, std::move(usage));
+    context.setUsage(function, std::move(usage));
 }
 
-void MasterAnalyzer::reconstructTypes(Context *context, const ir::Function *function) const {
+void MasterAnalyzer::reconstructTypes(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::types::Types> types(new ir::types::Types());
 
-    ir::types::TypeAnalyzer analyzer(*types, *context->getDataflow(function), *context->getUsage(function), context->callsData());
-    analyzer.analyze(function, context->cancellationToken());
+    ir::types::TypeAnalyzer analyzer(*types, *context.getDataflow(function), *context.getUsage(function), context.callsData());
+    analyzer.analyze(function, context.cancellationToken());
 
-    context->setTypes(function, std::move(types));
+    context.setTypes(function, std::move(types));
 }
 
-void MasterAnalyzer::reconstructVariables(Context *context, const ir::Function *function) const {
+void MasterAnalyzer::reconstructVariables(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
 
-    ir::vars::VariableAnalyzer analyzer(*variables, *context->getDataflow(function), context->callsData());
+    ir::vars::VariableAnalyzer analyzer(*variables, *context.getDataflow(function), context.callsData());
     analyzer.analyze(function);
 
-    context->setVariables(function, std::move(variables));
+    context.setVariables(function, std::move(variables));
 }
 
-void MasterAnalyzer::doStructuralAnalysis(Context *context, const ir::Function *function) const {
+void MasterAnalyzer::doStructuralAnalysis(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::cflow::Graph> graph(new ir::cflow::Graph());
 
     ir::cflow::GraphBuilder()(*graph, function);
-    ir::cflow::StructureAnalyzer(*graph, *context->getDataflow(function)).analyze();
+    ir::cflow::StructureAnalyzer(*graph, *context.getDataflow(function)).analyze();
 
-    context->setRegionGraph(function, std::move(graph));
+    context.setRegionGraph(function, std::move(graph));
 }
 
-void MasterAnalyzer::generateTree(Context *context) const {
+void MasterAnalyzer::generateTree(Context &context) const {
     std::unique_ptr<nc::core::likec::Tree> tree(new nc::core::likec::Tree());
 
-    ir::cgen::CodeGenerator generator(*context, *tree);
-    generator.makeCompilationUnit(context->cancellationToken());
+    ir::cgen::CodeGenerator generator(context, *tree);
+    generator.makeCompilationUnit(context.cancellationToken());
 
-    context->setTree(std::move(tree));
+    context.setTree(std::move(tree));
 }
 
 #ifdef NC_TREE_CHECKS
-void MasterAnalyzer::checkTree(Context *context) const {
+void MasterAnalyzer::checkTree(Context &context) const {
     class TreeVisitor: public Visitor<likec::TreeNode> {
         boost::unordered_set<const ir::Statement *> statements_;
         boost::unordered_set<const ir::Term *> terms_;
@@ -306,13 +243,13 @@ void MasterAnalyzer::checkTree(Context *context) const {
         }
     };
 
-    ir::misc::CensusVisitor visitor(context->callsData());
-    foreach (const ir::Function *function, context->functions()->functions()) {
+    ir::misc::CensusVisitor visitor(context.callsData());
+    foreach (const ir::Function *function, context.functions()->functions()) {
         visitor(function);
     }
 
     TreeVisitor checker(visitor);
-    checker(context->tree()->root());
+    checker(context.tree()->root());
 }
 #endif
 

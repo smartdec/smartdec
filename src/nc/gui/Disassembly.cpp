@@ -25,10 +25,8 @@
 #include "Disassembly.h"
 
 #include <nc/core/Context.h>
+#include <nc/core/Driver.h>
 #include <nc/core/Module.h>
-#include <nc/core/arch/Architecture.h>
-#include <nc/core/arch/Instructions.h>
-#include <nc/core/arch/disasm/Disassembler.h>
 
 #include <cassert>
 
@@ -45,12 +43,7 @@ Disassembly::Disassembly(const std::shared_ptr<core::Context> &context, const co
 Disassembly::~Disassembly() {}
 
 void Disassembly::work() {
-    auto newInstructions = std::make_shared<core::arch::Instructions>(*context_->instructions());
-
-    core::arch::disasm::Disassembler disassembler(context_->module()->architecture(), newInstructions.get());
-    disassembler.disassemble(source_, begin_, end_, context_->cancellationToken());
-
-    context_->setInstructions(newInstructions);
+    core::Driver::disassemble(*context_, source_, begin_, end_);
 
     if (context_->cancellationToken().cancellationRequested()) {
         context_->logToken() << tr("Disassembly canceled.");
