@@ -45,7 +45,6 @@
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/inlining/CallInliner.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/likec/Tree.h>
 
@@ -73,82 +72,6 @@ void openFileForWritingAndCall(const QString &filename, T functor) {
         }
         QTextStream out(&file);
         functor(out);
-    }
-}
-
-void inlineFunctions(nc::core::Context &context, std::vector<nc::ByteAddr> functionAddresses) {
-    nc::core::ir::inlining::CallInliner inliner;
-
-    foreach (nc::ByteAddr addr, functionAddresses) {
-        auto &functions = context.functions()->getFunctionsAtAddress(addr);
-        if (functions.empty()) {
-            throw nc::Exception(QString("there is no function having address 0x%1 to inline").arg(addr, 0, 16));
-        }
-        const nc::core::ir::Function *inlinedFunction = functions.front();
-
-        foreach (nc::core::ir::Function *function, context.functions()->functions()) {
-            std::vector<const nc::core::ir::Call *> calls;
-
-            foreach (nc::core::ir::BasicBlock *basicBlock, function->basicBlocks()) {
-                foreach (nc::core::ir::Statement *statement, basicBlock->statements()) {
-                    if (const nc::core::ir::Call *call = statement->asCall()) {
-                        if (const nc::core::ir::Constant *constant = call->target()->asConstant()) {
-                            if (constant->value().value() == nc::ConstantValue(addr)) {
-                                calls.push_back(call);
-                            }
-                        }
-                    }
-                }
-            }
-
-            foreach (const nc::core::ir::Call *call, calls) {
-                inliner.perform(function, call, inlinedFunction);
-            }
-        }
-    }
-}
-
-void inlineCalls(nc::core::Context &context, std::vector<nc::ByteAddr> callAddresses) {
-    if (callAddresses.empty()) {
-        return;
-    }
-
-    nc::core::ir::inlining::CallInliner inliner;
-
-    std::sort(callAddresses.begin(), callAddresses.end());
-
-    foreach (nc::core::ir::Function *function, context.functions()->functions()) {
-        std::vector<std::pair<const nc::core::ir::Call *, const nc::core::ir::Function *>> inlines;
-
-        foreach (nc::core::ir::BasicBlock *basicBlock, function->basicBlocks()) {
-            foreach (nc::core::ir::Statement *statement, basicBlock->statements()) {
-                if (statement->instruction() &&
-                    std::binary_search(callAddresses.begin(), callAddresses.end(), statement->instruction()->addr()))
-                {
-                    if (const nc::core::ir::Call *call = statement->asCall()) {
-                        const nc::core::ir::Function *inlinedFunction = NULL;
-
-                        if (const nc::core::ir::Constant *constant = call->target()->asConstant()) {
-                            auto &functions = context.functions()->getFunctionsAtAddress(constant->value().value());
-                            if (!functions.empty()) {
-                                inlinedFunction = functions.front();
-                            }
-                        }
-
-                        if (!inlinedFunction) {
-                            throw nc::Exception(QString("can't detect the function being called at 0x%1").
-                                arg(statement->instruction()->addr(), 0, 16));
-                        }
-
-                        inlines.push_back(std::make_pair(call, inlinedFunction));
-                    }
-                }
-            }
-        }
-
-        foreach (const auto &pair, inlines) {
-            inliner.perform(function, pair.first, pair.second);
-        }
     }
 }
 
@@ -191,8 +114,6 @@ void help() {
     qout << endl;
     qout << "Options:" << endl;
     qout << "  --help, -h                  Produce this help message and quit." << endl;
-    qout << "  --inline-function=ADDR      Inline a function with given address everywhere." << endl;
-    qout << "  --inline-call=ADDR          Inline a call at given address." << endl;
     qout << "  --print-instructions[=FILE] Dump parsed instructions to the file." << endl;
     qout << "  --print-cfg[=FILE]          Dump control flow graph in DOT language to the file." << endl;
     qout << "  --print-ir[=FILE]           Dump intermediate representation in DOT language to the file." << endl;
@@ -259,20 +180,6 @@ int main(int argc, char *argv[]) {
 
             #undef FILE_OPTION
 
-            #define ADDR_OPTION(option, variable)                                   \
-            } else if (arg.startsWith(option "=")) {                                \
-                QString s = arg.section('=', 1);                                    \
-                nc::ByteAddr address;                                               \
-                if (!nc::stringToInt<nc::ByteAddr>(s, &address)) {                  \
-                    throw nc::Exception(QString("bad address value: %1").arg(s));   \
-                }                                                                   \
-                variable.push_back(address);                                        \
-
-            ADDR_OPTION("--inline-function", functionAddresses)
-            ADDR_OPTION("--inline-call",     callAddresses)
-
-            #undef ADDR_OPTION
-
             } else if (arg == "--") {
                 while (++i < args.size()) {
                     files.append(args[i]);
@@ -304,13 +211,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // FIXME
-        #if 0
-        inlineFunctions(context, functionAddresses);
-        inlineCalls(context, callAddresses);
-        #endif
-
-        openFileForWritingAndCall(sectionsFile,     [&](QTextStream &out) { printSections(context, out); });
+        openFileForWritingAndCall(sectionsFile, [&](QTextStream &out) { printSections(context, out); });
 
         if (!instructionsFile.isEmpty() || !cfgFile.isEmpty() || !irFile.isEmpty() || !regionsFile.isEmpty() || !cxxFile.isEmpty()) {
             nc::core::Driver::disassemble(context);
@@ -319,10 +220,10 @@ int main(int argc, char *argv[]) {
             if (!cfgFile.isEmpty() || !irFile.isEmpty() || !regionsFile.isEmpty() || !cxxFile.isEmpty()) {
                 nc::core::Driver::decompile(context);
 
-                openFileForWritingAndCall(cfgFile,          [&](QTextStream &out) { context.program()->print(out); });
-                openFileForWritingAndCall(irFile,           [&](QTextStream &out) { context.functions()->print(out); });
-                openFileForWritingAndCall(regionsFile,      [&](QTextStream &out) { printRegionGraphs(context, out); });
-                openFileForWritingAndCall(cxxFile,          [&](QTextStream &out) { context.tree()->print(out); });
+                openFileForWritingAndCall(cfgFile,     [&](QTextStream &out) { context.program()->print(out); });
+                openFileForWritingAndCall(irFile,      [&](QTextStream &out) { context.functions()->print(out); });
+                openFileForWritingAndCall(regionsFile, [&](QTextStream &out) { printRegionGraphs(context, out); });
+                openFileForWritingAndCall(cxxFile,     [&](QTextStream &out) { context.tree()->print(out); });
             }
         }
     } catch (const nc::Exception &e) {
