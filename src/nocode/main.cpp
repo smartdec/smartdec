@@ -27,6 +27,7 @@
 #include <nc/common/Conversions.h>
 #include <nc/common/Exception.h>
 #include <nc/common/Foreach.h>
+#include <nc/common/StreamLogger.h>
 
 #include <nc/core/Module.h>
 #include <nc/core/Context.h> 
@@ -114,6 +115,7 @@ void help() {
     qout << endl;
     qout << "Options:" << endl;
     qout << "  --help, -h                  Produce this help message and quit." << endl;
+    qout << "  --verbose, -v               Print progress information to stderr." << endl;
     qout << "  --print-instructions[=FILE] Dump parsed instructions to the file." << endl;
     qout << "  --print-cfg[=FILE]          Dump control flow graph in DOT language to the file." << endl;
     qout << "  --print-ir[=FILE]           Dump intermediate representation in DOT language to the file." << endl;
@@ -148,7 +150,9 @@ int main(int argc, char *argv[]) {
         QString irFile;
         QString regionsFile;
         QString cxxFile;
+
         bool autoDefault = true;
+        bool verbose = false;
 
         std::vector<nc::ByteAddr> functionAddresses;
         std::vector<nc::ByteAddr> callAddresses;
@@ -162,6 +166,8 @@ int main(int argc, char *argv[]) {
             if (arg == "--help" || arg == "-h") {
                 help();
                 return 1;
+            } else if (arg == "--verbose" || arg == "-v") {
+                verbose = true;
 
             #define FILE_OPTION(option, variable)       \
             } else if (arg == option) {                 \
@@ -200,6 +206,10 @@ int main(int argc, char *argv[]) {
         }
 
         nc::core::Context context;
+
+        if (verbose) {
+            context.setLogToken(nc::LogToken(std::make_shared<nc::StreamLogger>(qerr)));
+        }
 
         foreach (const QString &filename, files) {
             try {

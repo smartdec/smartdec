@@ -24,6 +24,7 @@ set(SOURCES
     Range.h
     RangeClass.h
     SizedValue.h
+    StreamLogger.h
     Types.h
     Unreachable.h
     Unused.h

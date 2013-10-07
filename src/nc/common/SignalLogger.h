@@ -40,7 +40,7 @@ class SignalLogger: public QObject, public nc::Logger {
 
     public:
 
-    void log(const QString &text) override {
+    virtual void log(const QString &text) override {
         Q_EMIT message(text);
     }
 
