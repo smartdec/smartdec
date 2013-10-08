@@ -81,27 +81,27 @@ set(SOURCES
     ir/Term.h
     ir/Terms.cpp
     ir/Terms.h
-    ir/calls/CallAnalyzer.h
-    ir/calls/CallingConvention.h
-    ir/calls/CallingConventionDetector.h
-    ir/calls/CallsData.cpp
-    ir/calls/CallsData.h
-    ir/calls/DescriptorAnalyzer.h
-    ir/calls/FunctionAnalyzer.cpp
-    ir/calls/FunctionAnalyzer.h
-    ir/calls/FunctionDescriptor.h
-    ir/calls/FunctionSignature.h
-    ir/calls/GenericCallAnalyzer.cpp
-    ir/calls/GenericCallAnalyzer.h
-    ir/calls/GenericCallingConvention.cpp
-    ir/calls/GenericCallingConvention.h
-    ir/calls/GenericDescriptorAnalyzer.cpp
-    ir/calls/GenericDescriptorAnalyzer.h
-    ir/calls/GenericFunctionAnalyzer.cpp
-    ir/calls/GenericFunctionAnalyzer.h
-    ir/calls/GenericReturnAnalyzer.cpp
-    ir/calls/GenericReturnAnalyzer.h
-    ir/calls/ReturnAnalyzer.h
+    ir/cconv/CallAnalyzer.h
+    ir/cconv/CallingConvention.h
+    ir/cconv/CallingConventionDetector.h
+    ir/cconv/CallsData.cpp
+    ir/cconv/CallsData.h
+    ir/cconv/DescriptorAnalyzer.h
+    ir/cconv/FunctionAnalyzer.cpp
+    ir/cconv/FunctionAnalyzer.h
+    ir/cconv/FunctionDescriptor.h
+    ir/cconv/FunctionSignature.h
+    ir/cconv/GenericCallAnalyzer.cpp
+    ir/cconv/GenericCallAnalyzer.h
+    ir/cconv/GenericCallingConvention.cpp
+    ir/cconv/GenericCallingConvention.h
+    ir/cconv/GenericDescriptorAnalyzer.cpp
+    ir/cconv/GenericDescriptorAnalyzer.h
+    ir/cconv/GenericFunctionAnalyzer.cpp
+    ir/cconv/GenericFunctionAnalyzer.h
+    ir/cconv/GenericReturnAnalyzer.cpp
+    ir/cconv/GenericReturnAnalyzer.h
+    ir/cconv/ReturnAnalyzer.h
     ir/cflow/BasicNode.cpp
     ir/cflow/BasicNode.h
     ir/cflow/Dfs.cpp

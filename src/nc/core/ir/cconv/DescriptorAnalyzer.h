@@ -35,7 +35,7 @@ class Call;
 class Function;
 class Return;
 
-namespace calls {
+namespace cconv {
 
 class CallAnalyzer;
 class FunctionAnalyzer;
@@ -81,7 +81,7 @@ class DescriptorAnalyzer {
     virtual FunctionSignature getFunctionSignature() const = 0;
 };
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

@@ -33,8 +33,8 @@
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/calls/GenericDescriptorAnalyzer.h>
+#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/GenericDescriptorAnalyzer.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 
 #include "IntelArchitecture.h"
@@ -87,7 +87,7 @@ void IntelMasterAnalyzer::createProgram(core::Context &context) const {
     }
 }
 
-void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::calls::FunctionDescriptor &descriptor) const {
+void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::cconv::FunctionDescriptor &descriptor) const {
     const IntelArchitecture *architecture = checked_cast<const IntelArchitecture *>(context.module()->architecture());
 
     if (architecture->bitness() == 32) {
@@ -100,7 +100,7 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
                     context.callsData()->setCallingConvention(
                         descriptor,
                         architecture->getCallingConvention(QLatin1String("stdcall32")));
-                    checked_cast<core::ir::calls::GenericDescriptorAnalyzer *>(context.callsData()->getDescriptorAnalyzer(descriptor))->setArgumentsSize(argumentsSize);
+                    checked_cast<core::ir::cconv::GenericDescriptorAnalyzer *>(context.callsData()->getDescriptorAnalyzer(descriptor))->setArgumentsSize(argumentsSize);
                     return;
                 }
             }

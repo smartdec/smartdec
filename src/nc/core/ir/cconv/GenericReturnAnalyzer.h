@@ -25,55 +25,30 @@
 
 #include <nc/config.h>
 
-#include <memory> /* unique_ptr */
+#include <memory> /* std::unique_ptr */
 #include <vector>
 
 #include <boost/unordered_map.hpp>
 
-#include <nc/core/ir/MemoryLocation.h>
-
-#include "CallAnalyzer.h"
+#include "ReturnAnalyzer.h"
 
 namespace nc {
 namespace core {
 namespace ir {
-
-class Constant;
-class Statement;
-class Term;
-
-namespace calls {
+namespace cconv {
 
 class GenericCallingConvention;
 class GenericDescriptorAnalyzer;
 
 /**
- * GenericCallAnalyzer is a CallAnalyzer for a typical calling convention using registers and stack to pass arguments.
+ * GenericReturnAnalyzer is a ReturnAnalyzer for a typical calling convention using registers and stack to pass arguments.
  */
-class GenericCallAnalyzer: public CallAnalyzer {
+class GenericReturnAnalyzer: public ReturnAnalyzer {
     /** Address analyzer. */
     const GenericDescriptorAnalyzer *addressAnalyzer_;
 
-    /** Mapping of argument memory locations to corresponding terms. */
-    boost::unordered_map<MemoryLocation, std::unique_ptr<Term>> arguments_;
-
     /** Mapping of terms where return values may be kept to their clones. */
     boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValues_;
-
-    /** Term for tracking stack pointer. */
-    std::unique_ptr<Term> stackPointer_;
-
-    /** Detected value of stack pointer. */
-    BitOffset stackTop_;
-
-    /** Integer number added to the stack pointer inside called function. */
-    Constant *stackAmendmentConstant_;
-
-    /** Statement to change stack pointer by the amendment constant. */
-    std::unique_ptr<Statement> stackAmendmentStatement_;
-
-    /** Computed set of memory locations where arguments are stored. */
-    std::vector<MemoryLocation> argumentLocations_;
 
     /** Computed set of terms where results are stored. */
     std::vector<const Term *> returnValueLocations_;
@@ -82,15 +57,15 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] call Valid pointer to a call statement.
+     * \param[in] ret Valid pointer to a return statement to be analyzed.
      * \param[in] addressAnalyzer Parent DescriptorAnalyzer.
      */
-    GenericCallAnalyzer(const Call *call, const GenericDescriptorAnalyzer *addressAnalyzer);
+    GenericReturnAnalyzer(const Return *ret, const GenericDescriptorAnalyzer *addressAnalyzer);
 
     /**
      * Destructor.
      */
-    virtual ~GenericCallAnalyzer();
+    virtual ~GenericReturnAnalyzer();
 
     /**
      * \return Valid pointer to the address analyzer.
@@ -103,23 +78,17 @@ public:
     const GenericCallingConvention *convention() const;
 
     /**
-     * \return Estimated list of locations where arguments are stored.
-     */
-    const std::vector<MemoryLocation> &argumentLocations() const { return argumentLocations_; }
-
-    /**
      * \return Estimated list of terms describing locations where arguments are stored.
      */
     const std::vector<const Term *> &returnValueLocations() const { return returnValueLocations_; }
 
-    virtual void executeCall(dflow::ExecutionContext &context) override;
-    virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) override;
+    virtual void executeReturn(dflow::ExecutionContext &context) override;
     virtual const Term *getReturnValueTerm(const Term *term) override;
     virtual void visitChildStatements(Visitor<const Statement> &visitor) const override;
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
 };
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

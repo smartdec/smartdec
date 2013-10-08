@@ -26,6 +26,7 @@
 #include <nc/config.h>
 
 #include <cassert>
+#include <vector>
 
 #include <nc/common/Types.h>
 #include <nc/common/Visitor.h>
@@ -34,64 +35,65 @@ namespace nc {
 namespace core {
 namespace ir {
 
+class Function;
+class MemoryLocation;
+class Statement;
+class Term;
+
 namespace dflow {
     class ExecutionContext;
 }
 
-class Call;
-class Statement;
-class Term;
-
-namespace calls {
+namespace cconv {
 
 /**
- * CallAnalyzer extracts the information about location of arguments and return values from a call site.
+ * FunctionAnalyzer extracts the information about location of function's arguments from function's implementation.
  */
-class CallAnalyzer {
-    const Call *call_; ///< Call statement for which the analyzer has been created.
+class FunctionAnalyzer {
+    const Function *function_; ///< Function this callee convention object is related to.
 
-public:
+    public:
+
     /**
      * Class constructor.
      *
-     * \param call Valid pointer to a call statement to be analyzed.
+     * \param function Valid pointer to the function to be analyzed.
      */
-    CallAnalyzer(const Call *call):
-        call_(call)
-    { assert(call != NULL); }
+    FunctionAnalyzer(const Function *function):
+        function_(function)
+    { assert(function != NULL); }
 
     /**
      * Virtual destructor.
      */
-    virtual ~CallAnalyzer() {}
+    virtual ~FunctionAnalyzer() {}
 
     /**
-     * \return Call statement for which the analyzer has been created. 
+     * \return Function this callee convention object is related to.
      */
-    const Call *call() const { return call_; }
+    const Function *function() const { return function_; }
 
     /**
-     * A method being called when specified call statement is executed.
+     * \return Statements that are executed behind the scence on function entry. Can be NULL.
+     *
+     * These statements will be actually used for generation of function->entry() basic block's code.
+     */
+    virtual const std::vector<const Statement *> &entryStatements() const;
+
+    /**
+     * This method is called just before function's entry node gets executed.
      * 
      * \param context Execution context.
      */
-    virtual void executeCall(dflow::ExecutionContext &context) = 0;
+    virtual void executeEnter(dflow::ExecutionContext &context) = 0;
 
     /**
-     * \param memoryLocation Memory location.
+     * Returns a valid pointer to the term representing the argument at given memory location.
+     * The term is created when necessary and owned by this FunctionAnalyzer.
      *
-     * \return A valid pointer to the term representing the argument at given memory location.
-     * The term is created when necessary and owned by this CallAnalyzer.
+     * \param memoryLocation Memory location.
      */
     virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) = 0;
-
-    /**
-     * \param term Valid pointer to a term.
-     *
-     * \return A valid pointer to the term representing the argument designated by given term.
-     * The former term is created when necessary and owned by this CallAnalyzer.
-     */
-    virtual const Term *getReturnValueTerm(const Term *term) = 0;
 
     /**
      * Calls visitor for child statements.
@@ -108,6 +110,9 @@ public:
     virtual void visitChildTerms(Visitor<const Term> &visitor) const = 0;
 };
 
-}}}} // namespace nc::core::ir::calls
+} // namespace cconv
+} // namespace ir
+} // namespace core
+} // namespace nc
 
 /* vim:set et ts=4 sw=4: */

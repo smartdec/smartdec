@@ -27,7 +27,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+namespace cconv {
 
 const std::vector<const Statement *> &FunctionAnalyzer::entryStatements() const {
     static const std::vector<const Statement *> empty;
@@ -35,7 +35,7 @@ const std::vector<const Statement *> &FunctionAnalyzer::entryStatements() const 
     return empty;
 }
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

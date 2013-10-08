@@ -36,7 +36,7 @@ namespace arch {
 namespace ir {
     class Function;
 
-    namespace calls {
+    namespace cconv {
         class FunctionDescriptor;
     }
 }
@@ -98,7 +98,7 @@ class MasterAnalyzer {
      * \param context Context.
      * \param descriptor Descriptor of the function.
      */
-    virtual void detectCallingConvention(Context &context, const ir::calls::FunctionDescriptor &descriptor) const;
+    virtual void detectCallingConvention(Context &context, const ir::cconv::FunctionDescriptor &descriptor) const;
 
     /**
      * Constructs term to function mapping.

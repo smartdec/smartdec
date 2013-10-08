@@ -42,7 +42,7 @@ class Call;
 class Function;
 class Return;
 
-namespace calls {
+namespace cconv {
 
 class CallAnalyzer;
 class CallingConvention;
@@ -209,7 +209,7 @@ class CallsData {
     std::vector<const Return *> getReturns(const Function *function) const;
 };
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

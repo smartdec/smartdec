@@ -42,7 +42,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+namespace cconv {
 
 std::unique_ptr<CallAnalyzer> GenericDescriptorAnalyzer::createCallAnalyzer(const Call *call) {
     std::unique_ptr<GenericCallAnalyzer> result(new GenericCallAnalyzer(call, this));
@@ -184,7 +184,7 @@ FunctionSignature GenericDescriptorAnalyzer::getFunctionSignature() const {
     return signature;
 }
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

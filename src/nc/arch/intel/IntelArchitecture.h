@@ -31,7 +31,7 @@ namespace nc {
 
 namespace core {
     namespace ir {
-        namespace calls {
+        namespace cconv {
             class CallingConvention;
         }
     }

@@ -32,7 +32,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+namespace cconv {
 
 /**
  * An immutable class with value semantics used to identify functions even when their addresses are not known.
@@ -110,7 +110,7 @@ class FunctionDescriptor {
     friend struct std::hash<FunctionDescriptor>;
 };
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc
@@ -123,7 +123,7 @@ namespace std {
  * This makes it possible to use function descriptors as keys in hash maps.
  */
 template<>
-struct hash<nc::core::ir::calls::FunctionDescriptor>: public unary_function<nc::core::ir::calls::FunctionDescriptor, size_t> {
+struct hash<nc::core::ir::cconv::FunctionDescriptor>: public unary_function<nc::core::ir::cconv::FunctionDescriptor, size_t> {
 public:
     result_type operator()(const argument_type &descriptor) const {
         return hash_value(static_cast<int>(descriptor.kind_)) ^ hash_value(descriptor.address_);
@@ -138,7 +138,7 @@ protected:
 
 } // namespace std
 
-namespace nc { namespace core { namespace ir { namespace calls {
+namespace nc { namespace core { namespace ir { namespace cconv {
 
 /**
  * Qt hash function for memory locations.
@@ -154,6 +154,6 @@ inline std::size_t hash_value(const FunctionDescriptor &value) {
     return std::hash<FunctionDescriptor>()(value);
 }
 
-}}}} // namespace nc::core::ir::calls
+}}}} // namespace nc::core::ir::cconv
 
 /* vim:set et sts=4 sw=4: */

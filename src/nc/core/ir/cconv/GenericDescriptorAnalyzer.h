@@ -37,7 +37,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+namespace cconv {
 
 class GenericCallAnalyzer;
 class GenericCallingConvention;
@@ -92,7 +92,7 @@ class GenericDescriptorAnalyzer: public DescriptorAnalyzer {
     virtual FunctionSignature getFunctionSignature() const override;
 };
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

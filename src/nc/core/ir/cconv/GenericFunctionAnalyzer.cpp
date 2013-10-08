@@ -44,7 +44,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+namespace cconv {
 
 GenericFunctionAnalyzer::GenericFunctionAnalyzer(const Function *function, const GenericDescriptorAnalyzer *addressAnalyzer):
     FunctionAnalyzer(function), addressAnalyzer_(addressAnalyzer)
@@ -155,7 +155,7 @@ void GenericFunctionAnalyzer::visitChildTerms(Visitor<const Term> &visitor) cons
     }
 }
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

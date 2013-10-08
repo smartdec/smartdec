@@ -32,9 +32,9 @@
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/calls/FunctionSignature.h>
-#include <nc/core/ir/calls/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/FunctionSignature.h>
+#include <nc/core/ir/cconv/ReturnAnalyzer.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
@@ -70,11 +70,11 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
 
     /* Join types of terms used for return values. */
     if (callsData()) {
-        if (const calls::FunctionSignature *signature = callsData()->getFunctionSignature(function)) {
+        if (const cconv::FunctionSignature *signature = callsData()->getFunctionSignature(function)) {
             if (signature->returnValue()) {
                 const Term *firstReturnTerm = NULL;
                 foreach (const Return *ret, callsData()->getReturns(function)) {
-                    if (calls::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function, ret)) {
+                    if (cconv::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function, ret)) {
                         const Term *returnTerm = returnAnalyzer->getReturnValueTerm(signature->returnValue());
                         if (firstReturnTerm == NULL) {
                             firstReturnTerm = returnTerm;

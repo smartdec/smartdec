@@ -39,10 +39,10 @@
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calls/CallAnalyzer.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/calls/FunctionAnalyzer.h>
-#include <nc/core/ir/calls/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/CallAnalyzer.h>
+#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/FunctionAnalyzer.h>
+#include <nc/core/ir/cconv/ReturnAnalyzer.h>
 
 #include "Dataflow.h"
 #include "ExecutionContext.h"

@@ -25,36 +25,49 @@
 
 #include <nc/config.h>
 
-#include <nc/common/Types.h>
+#include <QString>
+
+#include <memory> /* std::unique_ptr */
 
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+namespace cconv {
 
-class CallingConvention;
-class FunctionDescriptor;
+class DescriptorAnalyzer;
 
 /**
- * Detector of calling conventions.
+ * An interface for a factory of address analyzers.
  */
-class CallingConventionDetector {
+class CallingConvention {
+    QString name_; ///< Name of the calling convention.
+
     public:
+
+    /**
+     * Constructor.
+     *
+     * \paran name Name of the calling convention.
+     */
+    CallingConvention(QString name): name_(std::move(name)) {}
 
     /**
      * Virtual destructor.
      */
-    virtual ~CallingConventionDetector() {}
+    virtual ~CallingConvention() {}
 
     /**
-     * This function detects the calling convention of a function with given descriptor and sets it in the CallsData via the setCallingConvention() method.
-     *
-     * \param[in] descriptor Descriptor of a function.
+     * \return Name of the calling convention.
      */
-    virtual void detectCallingConvention(const FunctionDescriptor &descriptor) const = 0;
+    const QString &name() const { return name_; }
+
+    /**
+     * \return Pointer to a new instance of DescriptorAnalyzer. Can be NULL.
+     */
+    virtual std::unique_ptr<DescriptorAnalyzer> createDescriptorAnalyzer() const = 0;
 };
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

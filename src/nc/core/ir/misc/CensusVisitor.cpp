@@ -31,10 +31,10 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Term.h>
 
-#include <nc/core/ir/calls/CallAnalyzer.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/calls/FunctionAnalyzer.h>
-#include <nc/core/ir/calls/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/CallAnalyzer.h>
+#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/FunctionAnalyzer.h>
+#include <nc/core/ir/cconv/ReturnAnalyzer.h>
 
 namespace nc {
 namespace core {
@@ -50,7 +50,7 @@ void CensusVisitor::operator()(const Function *function) {
     }
 
     if (callsData()) {
-        if (calls::FunctionAnalyzer *functionAnalyzer = callsData()->getFunctionAnalyzer(function)) {
+        if (cconv::FunctionAnalyzer *functionAnalyzer = callsData()->getFunctionAnalyzer(function)) {
             functionAnalyzer->visitChildStatements(*this);
             functionAnalyzer->visitChildTerms(*this);
         }
@@ -72,13 +72,13 @@ void CensusVisitor::operator()(const Statement *statement) {
     if (callsData()) {
         switch (statement->kind()) {
             case Statement::CALL:
-                if (calls::CallAnalyzer *callAnalyzer = callsData()->getCallAnalyzer(statement->asCall())) {
+                if (cconv::CallAnalyzer *callAnalyzer = callsData()->getCallAnalyzer(statement->asCall())) {
                     callAnalyzer->visitChildStatements(*this);
                     callAnalyzer->visitChildTerms(*this);
                 }
                 break;
             case Statement::RETURN: {
-                if (calls::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(currentFunction_, statement->asReturn())) {
+                if (cconv::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(currentFunction_, statement->asReturn())) {
                     returnAnalyzer->visitChildStatements(*this);
                     returnAnalyzer->visitChildTerms(*this);
                 }

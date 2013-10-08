@@ -41,7 +41,7 @@ class Jump;
 class Statement;
 class Term;
 
-namespace calls {
+namespace cconv {
     class CallsData;
 }
 
@@ -66,7 +66,7 @@ class UsageAnalyzer {
     const dflow::Dataflow *dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Architecture.
     const cflow::Graph *regionGraph_; ///< Reduced control-flow graph.
-    calls::CallsData *callsData_; ///< Calls data.
+    cconv::CallsData *callsData_; ///< Calls data.
     std::vector<const Jump *> uselessJumps_; ///< Useless jumps.
 
 public:
@@ -83,7 +83,7 @@ public:
      */
     UsageAnalyzer(Usage &usage, const Function *function,
         const dflow::Dataflow *dataflow, const arch::Architecture *architecture, 
-        const cflow::Graph *regionGraph, calls::CallsData *callsData);
+        const cflow::Graph *regionGraph, cconv::CallsData *callsData);
 
     /**
      * Virtual destructor.
@@ -123,7 +123,7 @@ public:
     /**
      * \return Pointer to the call graph. Can be NULL.
      */
-    calls::CallsData *callsData() const { return callsData_; }
+    cconv::CallsData *callsData() const { return callsData_; }
 
     /**
      * Computes the set of used terms.

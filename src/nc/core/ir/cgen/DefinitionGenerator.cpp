@@ -45,11 +45,11 @@
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calls/CallAnalyzer.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/calls/FunctionAnalyzer.h>
-#include <nc/core/ir/calls/FunctionSignature.h>
-#include <nc/core/ir/calls/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/CallAnalyzer.h>
+#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/FunctionAnalyzer.h>
+#include <nc/core/ir/cconv/FunctionSignature.h>
+#include <nc/core/ir/cconv/ReturnAnalyzer.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Dfs.h>
 #include <nc/core/ir/cflow/Graph.h>
@@ -119,8 +119,8 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
 
     setDefinition(functionDefinition.get());
 
-    if (const calls::FunctionSignature *signature = context().callsData()->getFunctionSignature(function())) {
-        if (calls::FunctionAnalyzer *functionAnalyzer = context().callsData()->getFunctionAnalyzer(function())) {
+    if (const cconv::FunctionSignature *signature = context().callsData()->getFunctionSignature(function())) {
+        if (cconv::FunctionAnalyzer *functionAnalyzer = context().callsData()->getFunctionAnalyzer(function())) {
             foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
                 makeArgumentDeclaration(functionAnalyzer->getArgumentTerm(memoryLocation));
             }
@@ -129,7 +129,7 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
 
     parent().setFunctionDeclaration(function(), functionDefinition.get());
 
-    if (calls::FunctionAnalyzer *functionAnalyzer = context().callsData()->getFunctionAnalyzer(function())) {
+    if (cconv::FunctionAnalyzer *functionAnalyzer = context().callsData()->getFunctionAnalyzer(function())) {
         foreach (const ir::Statement *statement, functionAnalyzer->entryStatements()) {
             if (auto likecStatement = makeStatement(statement, NULL, NULL, NULL)) {
                 definition()->block()->addStatement(std::move(likecStatement));
@@ -704,8 +704,8 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             auto callOperator = std::make_unique<likec::CallOperator>(tree(), std::move(target));
 
-            if (const calls::FunctionSignature *signature = context().callsData()->getFunctionSignature(call)) {
-                if (calls::CallAnalyzer *callAnalyzer = context().callsData()->getCallAnalyzer(call)) {
+            if (const cconv::FunctionSignature *signature = context().callsData()->getFunctionSignature(call)) {
+                if (cconv::CallAnalyzer *callAnalyzer = context().callsData()->getCallAnalyzer(call)) {
                     foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
                         callOperator->addArgument(makeExpression(callAnalyzer->getArgumentTerm(memoryLocation)));
                     }
@@ -727,8 +727,8 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
             return std::make_unique<likec::ExpressionStatement>(tree(), std::move(callOperator));
         }
         case Statement::RETURN: {
-            if (const calls::FunctionSignature *signature = context().callsData()->getFunctionSignature(function())) {
-                if (calls::ReturnAnalyzer *returnAnalyzer = context().callsData()->getReturnAnalyzer(function(), statement->asReturn())) {
+            if (const cconv::FunctionSignature *signature = context().callsData()->getFunctionSignature(function())) {
+                if (cconv::ReturnAnalyzer *returnAnalyzer = context().callsData()->getReturnAnalyzer(function(), statement->asReturn())) {
                     if (signature->returnValue()) {
                         return std::make_unique<likec::Return>(
                             tree(),

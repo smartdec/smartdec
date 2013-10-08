@@ -26,7 +26,6 @@
 #include <nc/config.h>
 
 #include <cassert>
-#include <vector>
 
 #include <nc/common/Types.h>
 #include <nc/common/Visitor.h>
@@ -35,65 +34,57 @@ namespace nc {
 namespace core {
 namespace ir {
 
-class Function;
-class MemoryLocation;
-class Statement;
-class Term;
-
 namespace dflow {
     class ExecutionContext;
 }
 
-namespace calls {
+class Return;
+class Statement;
+class Term;
+
+namespace cconv {
 
 /**
- * FunctionAnalyzer extracts the information about location of function's arguments from function's implementation.
+ * ReturnAnalyzer extracts information about location of function's return value from a return site.
  */
-class FunctionAnalyzer {
-    const Function *function_; ///< Function this callee convention object is related to.
+class ReturnAnalyzer {
+    const Return *return_; ///< Return statement.
 
     public:
 
     /**
      * Class constructor.
      *
-     * \param function Valid pointer to the function to be analyzed.
+     * \param ret Valid pointer to a return statement to be analyzed.
      */
-    FunctionAnalyzer(const Function *function):
-        function_(function)
-    { assert(function != NULL); }
+    ReturnAnalyzer(const Return *ret):
+        return_(ret)
+    { assert(ret != NULL); }
 
     /**
      * Virtual destructor.
      */
-    virtual ~FunctionAnalyzer() {}
+    virtual ~ReturnAnalyzer() {}
 
     /**
-     * \return Function this callee convention object is related to.
+     * \return Return statement for which the analyzer has been created.
      */
-    const Function *function() const { return function_; }
+    const Return *ret() const { return return_; }
 
     /**
-     * \return Statements that are executed behind the scence on function entry. Can be NULL.
-     *
-     * These statements will be actually used for generation of function->entry() basic block's code.
-     */
-    virtual const std::vector<const Statement *> &entryStatements() const;
-
-    /**
-     * This method is called just before function's entry node gets executed.
+     * A method being called when specified return statement is executed.
      * 
      * \param context Execution context.
      */
-    virtual void executeEnter(dflow::ExecutionContext &context) = 0;
+    virtual void executeReturn(dflow::ExecutionContext &context) = 0;
 
     /**
-     * Returns a valid pointer to the term representing the argument at given memory location.
-     * The term is created when necessary and owned by this FunctionAnalyzer.
+     * Returns a valid pointer to the term representing the argument designated by given term.
+     * The term is created when necessary and owned by this ReturnAnalyzer.
      *
-     * \param memoryLocation Memory location.
+     * \param term Valid pointer to a term.
      */
-    virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) = 0;
+    virtual const Term *getReturnValueTerm(const Term *term) = 0;
 
     /**
      * Calls visitor for child statements.
@@ -110,7 +101,7 @@ class FunctionAnalyzer {
     virtual void visitChildTerms(Visitor<const Term> &visitor) const = 0;
 };
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

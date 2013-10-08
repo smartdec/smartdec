@@ -35,10 +35,10 @@
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calls/CallAnalyzer.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/calls/FunctionSignature.h>
-#include <nc/core/ir/calls/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/CallAnalyzer.h>
+#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/FunctionSignature.h>
+#include <nc/core/ir/cconv/ReturnAnalyzer.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/Switch.h>
@@ -55,7 +55,7 @@ namespace usage {
 
 UsageAnalyzer::UsageAnalyzer(Usage &usage, const Function *function,
     const dflow::Dataflow *dataflow, const arch::Architecture *architecture,
-    const cflow::Graph *regionGraph, calls::CallsData *callsData
+    const cflow::Graph *regionGraph, cconv::CallsData *callsData
 ):
     usage_(usage), function_(function), dataflow_(dataflow),
     architecture_(architecture), regionGraph_(regionGraph), callsData_(callsData)
@@ -96,10 +96,10 @@ void UsageAnalyzer::analyze() {
     }
 
     if (callsData()) {
-        if (const calls::FunctionSignature *signature = callsData()->getFunctionSignature(function())) {
+        if (const cconv::FunctionSignature *signature = callsData()->getFunctionSignature(function())) {
             if (signature->returnValue()) {
                 foreach (const Return *ret, callsData()->getReturns(function())) {
-                    if (calls::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function(), ret)) {
+                    if (cconv::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function(), ret)) {
                         makeUsed(returnAnalyzer->getReturnValueTerm(signature->returnValue()));
                     }
                 }
@@ -140,8 +140,8 @@ void UsageAnalyzer::computeUsage(const Statement *statement) {
             makeUsed(call->target());
 
             if (callsData()) {
-                if (const calls::FunctionSignature *signature = callsData()->getFunctionSignature(call)) {
-                    if (calls::CallAnalyzer *callAnalyzer = callsData()->getCallAnalyzer(call)) {
+                if (const cconv::FunctionSignature *signature = callsData()->getFunctionSignature(call)) {
+                    if (cconv::CallAnalyzer *callAnalyzer = callsData()->getCallAnalyzer(call)) {
                         foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
                             makeUsed(callAnalyzer->getArgumentTerm(memoryLocation));
                         }

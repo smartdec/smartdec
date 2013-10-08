@@ -25,58 +25,72 @@
 
 #include <nc/config.h>
 
-#include <memory> /* std::unique_ptr */
+#include <memory> /* unique_ptr */
+#include <vector>
 
 #include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 
 #include <nc/core/ir/MemoryLocation.h>
 
-#include "FunctionAnalyzer.h"
+#include "CallAnalyzer.h"
 
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+
+class Constant;
+class Statement;
+class Term;
+
+namespace cconv {
 
 class GenericCallingConvention;
 class GenericDescriptorAnalyzer;
 
 /**
- * GenericFunctionAnalyzer is a FunctionAnalyzer for a typical calling convention using registers and stack to pass arguments.
+ * GenericCallAnalyzer is a CallAnalyzer for a typical calling convention using registers and stack to pass arguments.
  */
-class GenericFunctionAnalyzer: public FunctionAnalyzer {
+class GenericCallAnalyzer: public CallAnalyzer {
     /** Address analyzer. */
     const GenericDescriptorAnalyzer *addressAnalyzer_;
-
-    /** Precomputed set of locations where arguments can be stored. */
-    boost::unordered_set<MemoryLocation> possibleArgumentLocations_;
-
-    /** Term for initializing stack pointer. */
-    std::unique_ptr<Term> stackPointer_;
-
-    /** Statements executed when a function is entered. */
-    std::vector<const Statement *> entryStatements_;
 
     /** Mapping of argument memory locations to corresponding terms. */
     boost::unordered_map<MemoryLocation, std::unique_ptr<Term>> arguments_;
 
+    /** Mapping of terms where return values may be kept to their clones. */
+    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValues_;
+
+    /** Term for tracking stack pointer. */
+    std::unique_ptr<Term> stackPointer_;
+
+    /** Detected value of stack pointer. */
+    BitOffset stackTop_;
+
+    /** Integer number added to the stack pointer inside called function. */
+    Constant *stackAmendmentConstant_;
+
+    /** Statement to change stack pointer by the amendment constant. */
+    std::unique_ptr<Statement> stackAmendmentStatement_;
+
     /** Computed set of memory locations where arguments are stored. */
     std::vector<MemoryLocation> argumentLocations_;
+
+    /** Computed set of terms where results are stored. */
+    std::vector<const Term *> returnValueLocations_;
 
 public:
     /**
      * Class constructor.
      *
-     * \param[in] function Valid pointer to the function to be analyzed.
+     * \param[in] call Valid pointer to a call statement.
      * \param[in] addressAnalyzer Parent DescriptorAnalyzer.
      */
-    GenericFunctionAnalyzer(const Function *function, const GenericDescriptorAnalyzer *addressAnalyzer);
+    GenericCallAnalyzer(const Call *call, const GenericDescriptorAnalyzer *addressAnalyzer);
 
     /**
      * Destructor.
      */
-    virtual ~GenericFunctionAnalyzer();
+    virtual ~GenericCallAnalyzer();
 
     /**
      * \return Valid pointer to the address analyzer.
@@ -93,14 +107,19 @@ public:
      */
     const std::vector<MemoryLocation> &argumentLocations() const { return argumentLocations_; }
 
-    virtual const std::vector<const Statement *> &entryStatements() const override { return entryStatements_; }
-    virtual void executeEnter(dflow::ExecutionContext &context) override;
+    /**
+     * \return Estimated list of terms describing locations where arguments are stored.
+     */
+    const std::vector<const Term *> &returnValueLocations() const { return returnValueLocations_; }
+
+    virtual void executeCall(dflow::ExecutionContext &context) override;
     virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) override;
+    virtual const Term *getReturnValueTerm(const Term *term) override;
     virtual void visitChildStatements(Visitor<const Statement> &visitor) const override;
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
 };
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

@@ -32,10 +32,10 @@
 #include <nc/core/arch/Registers.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/calls/FunctionAnalyzer.h>
-#include <nc/core/ir/calls/FunctionSignature.h>
-#include <nc/core/ir/calls/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/FunctionAnalyzer.h>
+#include <nc/core/ir/cconv/FunctionSignature.h>
+#include <nc/core/ir/cconv/ReturnAnalyzer.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/likec/FunctionDeclaration.h>
@@ -65,8 +65,8 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 
     setDeclaration(functionDeclaration.get());
 
-    if (const calls::FunctionSignature *signature = parent().context().callsData()->getFunctionSignature(function())) {
-        if (calls::FunctionAnalyzer *functionAnalyzer = parent().context().callsData()->getFunctionAnalyzer(function())) {
+    if (const cconv::FunctionSignature *signature = parent().context().callsData()->getFunctionSignature(function())) {
+        if (cconv::FunctionAnalyzer *functionAnalyzer = parent().context().callsData()->getFunctionAnalyzer(function())) {
             foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
                 makeArgumentDeclaration(functionAnalyzer->getArgumentTerm(memoryLocation));
             }
@@ -77,10 +77,10 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 }
 
 const likec::Type *DeclarationGenerator::makeReturnType() {
-    if (const calls::FunctionSignature *signature = parent().context().callsData()->getFunctionSignature(function())) {
+    if (const cconv::FunctionSignature *signature = parent().context().callsData()->getFunctionSignature(function())) {
         if (signature->returnValue()) {
             foreach (const Return *ret, parent().context().callsData()->getReturns(function())) {
-                if (calls::ReturnAnalyzer *returnAnalyzer = parent().context().callsData()->getReturnAnalyzer(function(), ret)) {
+                if (cconv::ReturnAnalyzer *returnAnalyzer = parent().context().callsData()->getReturnAnalyzer(function(), ret)) {
                     return parent().makeType(types().getType(returnAnalyzer->getReturnValueTerm(signature->returnValue())));
                 }
             }
@@ -90,7 +90,7 @@ const likec::Type *DeclarationGenerator::makeReturnType() {
 }
 
 bool DeclarationGenerator::variadic() const {
-    if (const calls::FunctionSignature *signature = parent().context().callsData()->getFunctionSignature(function())) {
+    if (const cconv::FunctionSignature *signature = parent().context().callsData()->getFunctionSignature(function())) {
         return signature->variadic();
     } else {
         return false;

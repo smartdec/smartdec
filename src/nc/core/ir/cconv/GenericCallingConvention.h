@@ -48,7 +48,7 @@ namespace ir {
 class Statement;
 class Term;
 
-namespace calls {
+namespace cconv {
 
 /**
  * A set of locations where an argument can be stored.
@@ -253,7 +253,7 @@ protected:
     void addEnterStatement(std::unique_ptr<Statement> statement);
 };
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

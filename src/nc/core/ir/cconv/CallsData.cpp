@@ -45,7 +45,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+namespace cconv {
 
 CallsData::CallsData(): callingConventionDetector_(NULL) {}
 
@@ -204,7 +204,7 @@ std::vector<const Return *> CallsData::getReturns(const Function *function) cons
     return result;
 }
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

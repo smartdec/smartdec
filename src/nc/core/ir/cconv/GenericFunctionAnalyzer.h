@@ -26,46 +26,57 @@
 #include <nc/config.h>
 
 #include <memory> /* std::unique_ptr */
-#include <vector>
 
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
-#include "ReturnAnalyzer.h"
+#include <nc/core/ir/MemoryLocation.h>
+
+#include "FunctionAnalyzer.h"
 
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+namespace cconv {
 
 class GenericCallingConvention;
 class GenericDescriptorAnalyzer;
 
 /**
- * GenericReturnAnalyzer is a ReturnAnalyzer for a typical calling convention using registers and stack to pass arguments.
+ * GenericFunctionAnalyzer is a FunctionAnalyzer for a typical calling convention using registers and stack to pass arguments.
  */
-class GenericReturnAnalyzer: public ReturnAnalyzer {
+class GenericFunctionAnalyzer: public FunctionAnalyzer {
     /** Address analyzer. */
     const GenericDescriptorAnalyzer *addressAnalyzer_;
 
-    /** Mapping of terms where return values may be kept to their clones. */
-    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValues_;
+    /** Precomputed set of locations where arguments can be stored. */
+    boost::unordered_set<MemoryLocation> possibleArgumentLocations_;
 
-    /** Computed set of terms where results are stored. */
-    std::vector<const Term *> returnValueLocations_;
+    /** Term for initializing stack pointer. */
+    std::unique_ptr<Term> stackPointer_;
+
+    /** Statements executed when a function is entered. */
+    std::vector<const Statement *> entryStatements_;
+
+    /** Mapping of argument memory locations to corresponding terms. */
+    boost::unordered_map<MemoryLocation, std::unique_ptr<Term>> arguments_;
+
+    /** Computed set of memory locations where arguments are stored. */
+    std::vector<MemoryLocation> argumentLocations_;
 
 public:
     /**
      * Class constructor.
      *
-     * \param[in] ret Valid pointer to a return statement to be analyzed.
+     * \param[in] function Valid pointer to the function to be analyzed.
      * \param[in] addressAnalyzer Parent DescriptorAnalyzer.
      */
-    GenericReturnAnalyzer(const Return *ret, const GenericDescriptorAnalyzer *addressAnalyzer);
+    GenericFunctionAnalyzer(const Function *function, const GenericDescriptorAnalyzer *addressAnalyzer);
 
     /**
      * Destructor.
      */
-    virtual ~GenericReturnAnalyzer();
+    virtual ~GenericFunctionAnalyzer();
 
     /**
      * \return Valid pointer to the address analyzer.
@@ -78,17 +89,18 @@ public:
     const GenericCallingConvention *convention() const;
 
     /**
-     * \return Estimated list of terms describing locations where arguments are stored.
+     * \return Estimated list of locations where arguments are stored.
      */
-    const std::vector<const Term *> &returnValueLocations() const { return returnValueLocations_; }
+    const std::vector<MemoryLocation> &argumentLocations() const { return argumentLocations_; }
 
-    virtual void executeReturn(dflow::ExecutionContext &context) override;
-    virtual const Term *getReturnValueTerm(const Term *term) override;
+    virtual const std::vector<const Statement *> &entryStatements() const override { return entryStatements_; }
+    virtual void executeEnter(dflow::ExecutionContext &context) override;
+    virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) override;
     virtual void visitChildStatements(Visitor<const Statement> &visitor) const override;
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
 };
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

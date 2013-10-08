@@ -40,7 +40,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+namespace cconv {
 
 GenericReturnAnalyzer::GenericReturnAnalyzer(const Return *ret, const GenericDescriptorAnalyzer *addressAnalyzer):
 	ReturnAnalyzer(ret), addressAnalyzer_(addressAnalyzer)
@@ -102,7 +102,7 @@ void GenericReturnAnalyzer::visitChildTerms(Visitor<const Term> &visitor) const 
     }
 }
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

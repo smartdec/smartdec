@@ -25,7 +25,7 @@
 
 #include <nc/config.h>
 
-#include <nc/core/ir/calls/GenericCallingConvention.h>
+#include <nc/core/ir/cconv/GenericCallingConvention.h>
 
 namespace nc {
 namespace arch {
@@ -36,7 +36,7 @@ class IntelArchitecture;
 /**
  * AMD64 calling convention.
  */
-class AMD64CallingConvention: public core::ir::calls::GenericCallingConvention {
+class AMD64CallingConvention: public core::ir::cconv::GenericCallingConvention {
 public:
     /**
      * Class constructor.
@@ -47,7 +47,7 @@ public:
 /**
  * Microsoft x64 calling convention.
  */
-class Microsoft64CallingConvention: public core::ir::calls::GenericCallingConvention {
+class Microsoft64CallingConvention: public core::ir::cconv::GenericCallingConvention {
 public:
     /**
      * Class constructor.
@@ -58,7 +58,7 @@ public:
 /**
  * 32-bit cdecl calling convention.
  */
-class Cdecl32CallingConvention: public core::ir::calls::GenericCallingConvention {
+class Cdecl32CallingConvention: public core::ir::cconv::GenericCallingConvention {
 public:
     /**
      * Class constructor.
@@ -69,7 +69,7 @@ public:
 /**
  * 16-bit cdecl calling convention.
  */
-class Cdecl16CallingConvention: public core::ir::calls::GenericCallingConvention {
+class Cdecl16CallingConvention: public core::ir::cconv::GenericCallingConvention {
 public:
     /**
      * Class constructor.
@@ -80,7 +80,7 @@ public:
 /**
  * 32-bit stdcall calling convention.
  */
-class Stdcall32CallingConvention: public core::ir::calls::GenericCallingConvention {
+class Stdcall32CallingConvention: public core::ir::cconv::GenericCallingConvention {
 public:
     /**
      * Class constructor.

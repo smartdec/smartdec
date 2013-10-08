@@ -41,7 +41,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace calls {
+namespace cconv {
 
 namespace {
 
@@ -267,7 +267,7 @@ void GenericCallAnalyzer::visitChildTerms(Visitor<const Term> &visitor) const {
     }
 }
 
-} // namespace calls
+} // namespace cconv
 } // namespace ir
 } // namespace core
 } // namespace nc

@@ -41,7 +41,7 @@ class Statement;
 class Term;
 class UnaryOperator;
 
-namespace calls {
+namespace cconv {
     class CallsData;
 }
 
@@ -64,7 +64,7 @@ class TypeAnalyzer {
     Types &types_; ///< Information about terms' types.
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const usage::Usage &usage_; ///< Set of terms producing actual high-level code.
-    calls::CallsData *callsData_; ///< Calls data.
+    cconv::CallsData *callsData_; ///< Calls data.
 
     public:
 
@@ -76,7 +76,7 @@ class TypeAnalyzer {
      * \param usage Set of terms producing actual high-level code.
      * \param callsData Pointer to the calls data. Can be NULL.
      */
-    TypeAnalyzer(Types &types, const dflow::Dataflow &dataflow, const usage::Usage &usage, calls::CallsData *callsData):
+    TypeAnalyzer(Types &types, const dflow::Dataflow &dataflow, const usage::Usage &usage, cconv::CallsData *callsData):
         types_(types), dataflow_(dataflow), usage_(usage), callsData_(callsData)
     {}
 
@@ -108,7 +108,7 @@ class TypeAnalyzer {
     /**
      * \return Pointer to the calls data. Can be NULL.
      */
-    calls::CallsData *callsData() const { return callsData_; }
+    cconv::CallsData *callsData() const { return callsData_; }
 
     /**
      * Computes type traits for all the terms in given function.

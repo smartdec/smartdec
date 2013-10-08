@@ -38,8 +38,8 @@
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/FunctionsGenerator.h>
 #include <nc/core/ir/Program.h>
-#include <nc/core/ir/calls/CallingConventionDetector.h>
-#include <nc/core/ir/calls/CallsData.h>
+#include <nc/core/ir/cconv/CallingConventionDetector.h>
+#include <nc/core/ir/cconv/CallsData.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/GraphBuilder.h>
 #include <nc/core/ir/cflow/StructureAnalyzer.h>
@@ -118,9 +118,9 @@ void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) 
 }
 
 void MasterAnalyzer::createCallsData(Context &context) const {
-    std::unique_ptr<ir::calls::CallsData> callsData(new ir::calls::CallsData());
+    std::unique_ptr<ir::cconv::CallsData> callsData(new ir::cconv::CallsData());
 
-    class Detector: public ir::calls::CallingConventionDetector {
+    class Detector: public ir::cconv::CallingConventionDetector {
         const MasterAnalyzer *masterAnalyzer_;
         Context &context_;
 
@@ -130,19 +130,19 @@ void MasterAnalyzer::createCallsData(Context &context) const {
             masterAnalyzer_(masterAnalyzer), context_(context)
         {}
 
-        virtual void detectCallingConvention(const ir::calls::FunctionDescriptor &descriptor) const override {
+        virtual void detectCallingConvention(const ir::cconv::FunctionDescriptor &descriptor) const override {
             masterAnalyzer_->detectCallingConvention(context_, descriptor);
         }
     };
 
-    std::unique_ptr<ir::calls::CallingConventionDetector> detector(new Detector(this, context));
+    std::unique_ptr<ir::cconv::CallingConventionDetector> detector(new Detector(this, context));
     callsData->setCallingConventionDetector(detector.get());
 
     context.setCallsData(std::move(callsData));
     context.setCallingConventionDetector(std::move(detector));
 }
 
-void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::calls::FunctionDescriptor &/*descriptor*/) const {
+void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::cconv::FunctionDescriptor &/*descriptor*/) const {
     /* Nothing to do. */
 }
 

@@ -38,7 +38,7 @@ class Function;
 class Statement;
 class Term;
 
-namespace calls {
+namespace cconv {
     class CallsData;
 }
 
@@ -51,7 +51,7 @@ class CensusVisitor:
     public Visitor<const BasicBlock>, public Visitor<const Function>,
     public Visitor<const Statement>, public Visitor<const Term>
 {
-    calls::CallsData *callsData_; ///< Calls data.
+    cconv::CallsData *callsData_; ///< Calls data.
 
     std::vector<const Statement *> statements_; ///< Statements visited.
     std::vector<const Term *> terms_; ///< Terms visited.
@@ -65,12 +65,12 @@ class CensusVisitor:
      *
      * \param callsData Pointer to the calls data. Can be NULL.
      */
-    CensusVisitor(calls::CallsData *callsData): callsData_(callsData), currentFunction_(NULL) {}
+    CensusVisitor(cconv::CallsData *callsData): callsData_(callsData), currentFunction_(NULL) {}
 
     /**
      * \return Pointer to the calls data being used. Can be NULL.
      */
-    calls::CallsData *callsData() const { return callsData_; }
+    cconv::CallsData *callsData() const { return callsData_; }
 
     /**
      * \return Statements visited.

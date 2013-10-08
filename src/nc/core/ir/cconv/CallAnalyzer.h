@@ -38,51 +38,58 @@ namespace dflow {
     class ExecutionContext;
 }
 
-class Return;
+class Call;
 class Statement;
 class Term;
 
-namespace calls {
+namespace cconv {
 
 /**
- * ReturnAnalyzer extracts information about location of function's return value from a return site.
+ * CallAnalyzer extracts the information about location of arguments and return values from a call site.
  */
-class ReturnAnalyzer {
-    const Return *return_; ///< Return statement.
+class CallAnalyzer {
+    const Call *call_; ///< Call statement for which the analyzer has been created.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param ret Valid pointer to a return statement to be analyzed.
+     * \param call Valid pointer to a call statement to be analyzed.
      */
-    ReturnAnalyzer(const Return *ret):
-        return_(ret)
-    { assert(ret != NULL); }
+    CallAnalyzer(const Call *call):
+        call_(call)
+    { assert(call != NULL); }
 
     /**
      * Virtual destructor.
      */
-    virtual ~ReturnAnalyzer() {}
+    virtual ~CallAnalyzer() {}
 
     /**
-     * \return Return statement for which the analyzer has been created.
+     * \return Call statement for which the analyzer has been created. 
      */
-    const Return *ret() const { return return_; }
+    const Call *call() const { return call_; }
 
     /**
-     * A method being called when specified return statement is executed.
+     * A method being called when specified call statement is executed.
      * 
      * \param context Execution context.
      */
-    virtual void executeReturn(dflow::ExecutionContext &context) = 0;
+    virtual void executeCall(dflow::ExecutionContext &context) = 0;
 
     /**
-     * Returns a valid pointer to the term representing the argument designated by given term.
-     * The term is created when necessary and owned by this ReturnAnalyzer.
+     * \param memoryLocation Memory location.
      *
+     * \return A valid pointer to the term representing the argument at given memory location.
+     * The term is created when necessary and owned by this CallAnalyzer.
+     */
+    virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) = 0;
+
+    /**
      * \param term Valid pointer to a term.
+     *
+     * \return A valid pointer to the term representing the argument designated by given term.
+     * The former term is created when necessary and owned by this CallAnalyzer.
      */
     virtual const Term *getReturnValueTerm(const Term *term) = 0;
 
@@ -101,9 +108,6 @@ class ReturnAnalyzer {
     virtual void visitChildTerms(Visitor<const Term> &visitor) const = 0;
 };
 
-} // namespace calls
-} // namespace ir
-} // namespace core
-} // namespace nc
+}}}} // namespace nc::core::ir::cconv
 
 /* vim:set et ts=4 sw=4: */
