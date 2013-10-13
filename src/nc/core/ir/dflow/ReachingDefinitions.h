@@ -184,7 +184,7 @@ public:
                     [&](const Term *term) -> bool { return pred(chunk.location(), term); }),
                 chunk.definitions().end());
         }
-        std::remove_if(chunks_.begin(), chunks_.end(), [](decltype(chunks_)::value_type &v) { return v.definitions().empty(); });
+        std::remove_if(chunks_.begin(), chunks_.end(), [](const Chunk &chunk) -> bool { return chunk.definitions().empty(); });
     }
 
     void print(QTextStream &out) const;
