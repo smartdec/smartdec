@@ -122,9 +122,9 @@ void help() {
     qout << "  --print-regions[=FILE]      Dump results of structural analysis in DOT language to the file." << endl;
     qout << "  --print-cxx[=FILE]          Print reconstructed program into given file." << endl;
     qout << endl;
-    qout << "Program loads a disassembly text or executable image from given file or files" << endl;
-    qout << "and prints what it is said to (by default, it prints C++ code). When output" << endl;
-    qout << "file name is '-' or omitted, stdout is used." << endl;
+    qout << "The program parses given files, decompiles them, and prints the requested" << endl;
+    qout << "information (by default, C++ code) to the specified files. When a file" << endl;
+    qout << "name is '-' or omitted, stdout is used." << endl;
     qout << endl;
 
     qout << "Available architectures:";
