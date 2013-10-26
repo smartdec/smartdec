@@ -33,6 +33,7 @@
 #include <boost/optional.hpp>
 
 #include <nc/common/ByteOrder.h>
+#include <nc/common/CheckedCast.h>
 
 #include "ByteSource.h"
 
@@ -91,6 +92,7 @@ class Reader: public ByteSource {
      */
     template<class T>
     boost::optional<T> readInt(ByteAddr addr, ByteSize size, ByteOrder byteOrder) const {
+        assert(size >= 0);
         assert(byteOrder != ByteOrder::Unknown);
 
         std::unique_ptr<char[]> buf(new char[std::max<ByteSize>(size, sizeof(T))]);
@@ -99,7 +101,7 @@ class Reader: public ByteSource {
             return boost::none;
         }
 
-        if (size < sizeof(T)) {
+        if (size < checked_cast<ByteSize>(sizeof(T))) {
             memset(buf.get() + size, 0, sizeof(T) - size);
         }
 

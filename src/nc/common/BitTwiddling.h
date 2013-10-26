@@ -28,18 +28,19 @@
 #include <cassert>
 #include <climits>
 
+#include <nc/common/CheckedCast.h>
+
 namespace nc {
 
 /**
- * \tparam T Integer type.
  * \param[in] nbits Number of bits.
  *
  * \return Value of type T with bits [0..nbits-1] set.
  * In case T is narrower than nbits, returned value has all bits set.
  */
-template<class T>
-T bitMask(unsigned nbits) {
-    if (nbits < sizeof(T) * CHAR_BIT) {
+template<class T, class U>
+T bitMask(U nbits) {
+    if (nbits < checked_cast<U>(sizeof(T) * CHAR_BIT)) {
         return (T(1) << nbits) - 1;
     } else {
         return T(-1);
@@ -47,15 +48,14 @@ T bitMask(unsigned nbits) {
 }
 
 /**
- * \tparam T Integer type.
  * \param[in] value Integer value.
  * \param[in] nbits Number of bits.
  *
  * \return Value shifted to the left by the given number of bits.
  */
-template<class T>
-T shiftLeft(T value, unsigned nbits) {
-    if (nbits < sizeof(T) * CHAR_BIT) {
+template<class T, class U>
+T shiftLeft(T value, U nbits) {
+    if (nbits < checked_cast<U>(sizeof(T) * CHAR_BIT)) {
         return value << nbits;
     } else {
         return 0;
@@ -63,15 +63,14 @@ T shiftLeft(T value, unsigned nbits) {
 }
 
 /**
- * \tparam T Integer type.
  * \param[in] value Integer value.
  * \param[in] nbits Number of bits.
  *
  * \return Value shifted to the right by the given number of bits.
  */
-template<class T>
-T shiftRight(T value, unsigned nbits) {
-    if (nbits < sizeof(T) * CHAR_BIT) {
+template<class T, class U>
+T shiftRight(T value, U nbits) {
+    if (nbits < checked_cast<U>(sizeof(T) * CHAR_BIT)) {
         return value >> nbits;
     } else {
         return 0;
@@ -79,7 +78,6 @@ T shiftRight(T value, unsigned nbits) {
 }
 
 /**
- * \tparam T Integer type.
  * \param[in] value Integer value.
  * \param[in] nbits Number of bits.
  *
@@ -87,8 +85,8 @@ T shiftRight(T value, unsigned nbits) {
  * If the number of bits is positive, the shift is to the left.
  * If the number of bits is negative, the shift is to the right.
  */
-template<class T>
-T bitShift(T value, int nbits) {
+template<class T, class I>
+T bitShift(T value, I nbits) {
     if (nbits > 0) {
         return shiftLeft(value, nbits);
     } else if (nbits < 0) {
