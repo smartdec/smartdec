@@ -37,14 +37,14 @@
 namespace nc { namespace core { namespace input {
 
 ParserRepository *ParserRepository::instance() {
-    static auto repository = []() -> ParserRepository {
-        ParserRepository result;
+    static auto repository = []() -> ParserRepository * {
+        static ParserRepository result;
         result.registerParser(std::make_unique<nc::input::elf::ElfParser>());
         result.registerParser(std::make_unique<nc::input::pe::PeParser>());
-        return result;
+        return &result;
     }();
 
-    return &repository;
+    return repository;
 }
 
 void ParserRepository::registerParser(std::unique_ptr<Parser> parser) {
