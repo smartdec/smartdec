@@ -24,7 +24,7 @@
 
 #include "VariableAnalyzer.h"
 
-#include <algorithm>
+#include <numeric> /* std::accumulate */
 
 #include <nc/common/DisjointSet.h>
 #include <nc/common/Foreach.h>

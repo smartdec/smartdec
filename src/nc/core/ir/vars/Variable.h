@@ -26,6 +26,7 @@
 #include <nc/config.h>
 
 #include <cassert>
+#include <vector>
 
 #include <nc/core/ir/MemoryLocation.h>
 
