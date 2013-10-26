@@ -118,12 +118,12 @@ class Dataflow {
     /**
      * \return Mapping from a term to its reaching definitions.
      */
-    decltype(term2definitions_) &term2definitions() { return term2definitions_; }
+    boost::unordered_map<const Term *, ReachingDefinitions> &term2definitions() { return term2definitions_; }
 
     /**
      * \return Mapping from a term to its reaching definitions.
      */
-    const decltype(term2definitions_) &term2definitions() const { return term2definitions_; }
+    const boost::unordered_map<const Term *, ReachingDefinitions> &term2definitions() const { return term2definitions_; }
 
     /**
      * \param[in] term Valid pointer to a read term.
@@ -150,12 +150,12 @@ class Dataflow {
     /**
      * \return Mapping from a term to its uses.
      */
-    decltype(term2uses_) &term2uses() { return term2uses_; }
+    boost::unordered_map<const Term *, std::vector<const Term *>> &term2uses() { return term2uses_; }
 
     /**
      * \return Mapping from a term to its uses.
      */
-    const decltype(term2uses_) &term2uses() const { return term2uses_; }
+    const boost::unordered_map<const Term *, std::vector<const Term *>> &term2uses() const { return term2uses_; }
 
     /**
      * \param[in] term Valid pointer to a read term.
