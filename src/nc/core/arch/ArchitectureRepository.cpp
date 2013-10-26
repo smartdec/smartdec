@@ -15,17 +15,17 @@
 namespace nc { namespace core { namespace arch {
 
 ArchitectureRepository *ArchitectureRepository::instance() {
-    static auto repository = []() -> ArchitectureRepository {
+    static auto repository = []() -> ArchitectureRepository * {
         using nc::arch::intel::IntelArchitecture;
 
-        ArchitectureRepository result;
+        static ArchitectureRepository result;
         result.registerArchitecture(std::make_unique<IntelArchitecture>(IntelArchitecture::REAL_MODE));
         result.registerArchitecture(std::make_unique<IntelArchitecture>(IntelArchitecture::PROTECTED_MODE));
         result.registerArchitecture(std::make_unique<IntelArchitecture>(IntelArchitecture::LONG_MODE));
-        return result;
+        return &result;
     }();
 
-    return &repository;
+    return repository;
 }
 
 void ArchitectureRepository::registerArchitecture(std::unique_ptr<Architecture> architecture) {
