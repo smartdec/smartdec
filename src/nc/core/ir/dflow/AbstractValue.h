@@ -49,15 +49,15 @@ public:
 
 private:
     /**
-     * Helper class to construct values without truncation.
+     * Helper enum to construct values without truncation.
      */
-    class Exact {};
+    enum Exact {};
 
 public:
     /**
-     * Instance of the helper class to construct values without truncation.
+     * Helper member to construct values without truncation.
      */
-    static const Exact exact;
+    static const Exact exact = static_cast<Exact>(0);
 
     /**
      * Constructor.
