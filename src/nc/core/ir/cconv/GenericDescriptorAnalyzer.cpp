@@ -83,6 +83,8 @@ bool isUsualFunction(const Function *function) {
 FunctionSignature GenericDescriptorAnalyzer::getFunctionSignature() const {
     FunctionSignature signature;
 
+    // FIXME
+#if 0
     struct Counts {
         std::size_t defs;
         std::size_t uses;
@@ -180,7 +182,7 @@ FunctionSignature GenericDescriptorAnalyzer::getFunctionSignature() const {
             signature.setReturnValue(term);
         }
     }
-
+#endif
     return signature;
 }
 
