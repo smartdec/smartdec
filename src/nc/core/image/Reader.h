@@ -27,7 +27,7 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstdlib>
+#include <cstring> /* memset */
 #include <memory>
 
 #include <boost/optional.hpp>
@@ -93,22 +93,22 @@ class Reader: public ByteSource {
     boost::optional<T> readInt(ByteAddr addr, ByteSize size, ByteOrder byteOrder) const {
         assert(byteOrder != ByteOrder::Unknown);
 
-        char buf[std::max<ByteSize>(size, sizeof(T))];
+        std::unique_ptr<char[]> buf(new char[std::max<ByteSize>(size, sizeof(T))]);
 
-        if (readBytes(addr, buf, size) != size) {
+        if (readBytes(addr, buf.get(), size) != size) {
             return boost::none;
         }
 
         if (size < sizeof(T)) {
-            memset(buf + size, 0, sizeof(T) - size);
+            memset(buf.get() + size, 0, sizeof(T) - size);
         }
 
-        ByteOrder::convert(buf, size, byteOrder, ByteOrder::Current);
+        ByteOrder::convert(buf.get(), size, byteOrder, ByteOrder::Current);
 
         if (ByteOrder::Current == ByteOrder::LittleEndian) {
-            return *reinterpret_cast<T *>(buf);
+            return *reinterpret_cast<T *>(buf.get());
         } else {
-            return *reinterpret_cast<T *>(buf + size - sizeof(T));
+            return *reinterpret_cast<T *>(buf.get() + size - sizeof(T));
         }
     }
 
