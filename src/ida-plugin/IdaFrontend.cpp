@@ -37,6 +37,7 @@
 #include "IdaWorkaroundEnd.h"
 
 #include <nc/common/CheckedCast.h>
+#include <nc/common/make_unique.h>
 #include <nc/core/Module.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
@@ -116,7 +117,7 @@ void IdaFrontend::createSections(core::Module *module) {
             segName[0] = '.';
         }
 
-        core::image::Section *section = module->image()->createSection(
+        auto section = std::make_unique<core::image::Section>(
             segName,
             checked_cast<ByteAddr>(idaSegment->startEA),
             checked_cast<ByteSize>(idaSegment->size())
@@ -128,6 +129,8 @@ void IdaFrontend::createSections(core::Module *module) {
         section->setCode(idaSegment->type == SEG_CODE);
         section->setData(idaSegment->type == SEG_DATA);
         section->setBss(idaSegment->type == SEG_BSS);
+
+        module->image()->addSection(std::move(section));
     }
 }
 
