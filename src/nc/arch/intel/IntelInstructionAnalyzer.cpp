@@ -592,10 +592,10 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
         }
         case CPUID: {
             _[
-                regizter(IntelRegisters::eax())= intrinsic(),
-                regizter(IntelRegisters::ebx())= intrinsic(),
-                regizter(IntelRegisters::ecx())= intrinsic(),
-                regizter(IntelRegisters::edx())= intrinsic()
+                regizter(IntelRegisters::eax()) = intrinsic(),
+                regizter(IntelRegisters::ebx()) = intrinsic(),
+                regizter(IntelRegisters::ecx()) = intrinsic(),
+                regizter(IntelRegisters::edx()) = intrinsic()
             ];
             break;
         }

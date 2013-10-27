@@ -40,9 +40,7 @@ namespace nc {
 namespace arch {
 namespace intel {
 
-IntelArchitecture::IntelArchitecture(Mode mode):
-    mOperands(new IntelOperands(this))
-{
+IntelArchitecture::IntelArchitecture(Mode mode) {
     mInstructionAnalyzer.reset(new IntelInstructionAnalyzer(this));
     setInstructionAnalyzer(mInstructionAnalyzer.get());
 

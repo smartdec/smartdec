@@ -31,21 +31,14 @@ namespace nc {
 namespace arch {
 namespace intel {
 
-class IntelArchitecture;
-
 /**
- * Container class for intel operands.
+ * Intel operand kinds.
  */
 class IntelOperands {
 public:
-    IntelOperands(IntelArchitecture *architecture): architecture_(architecture) {}
-
     enum {
         FPU_STACK = core::arch::Operand::USER
     };
-
-private:
-    IntelArchitecture *architecture_;
 };
 
 
@@ -61,7 +54,7 @@ protected:
      *
      * It is not supposed to be called from outside IntelArchitecture.
      *
-     * \param[in] index                Index of data register relative to FPU stack top.
+     * \param[in] index Index of data register relative to FPU stack top.
      */
     FpuOperand(int index);
 

@@ -28,15 +28,6 @@
 #include <nc/core/arch/Architecture.h>
 
 namespace nc {
-
-namespace core {
-    namespace ir {
-        namespace cconv {
-            class CallingConvention;
-        }
-    }
-}
-
 namespace arch {
 namespace intel {
 
@@ -70,10 +61,6 @@ public:
      */
     virtual ~IntelArchitecture();
 
-    const IntelOperands *operands() const {
-        return mOperands.get();
-    }
-
     /**
      * \return Valid pointer to the stack pointer register.
      */
@@ -88,7 +75,6 @@ protected:
     friend class IntelRegisters;
 
 private:
-    std::unique_ptr<IntelOperands> mOperands;
     std::unique_ptr<IntelInstructionDisassembler> mInstructionDisassembler;
     std::unique_ptr<IntelInstructionAnalyzer> mInstructionAnalyzer;
     std::unique_ptr<IntelMasterAnalyzer> mMasterAnalyzer;

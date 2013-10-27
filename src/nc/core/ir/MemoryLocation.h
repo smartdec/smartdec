@@ -163,7 +163,7 @@ namespace std {
  * This makes it possible to use memory locations as keys in hash maps.
  */
 template<>
-class hash<nc::core::ir::MemoryLocation>: public unary_function<nc::core::ir::MemoryLocation, size_t> {
+struct hash<nc::core::ir::MemoryLocation>: public unary_function<nc::core::ir::MemoryLocation, size_t> {
 public:
     result_type operator()(const argument_type &location) const {
         return hash_value(location.domain()) ^ hash_value(location.addr()) ^ hash_value(location.size());

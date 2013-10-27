@@ -36,7 +36,7 @@ namespace nc {
      * \tparam Base                    Base class of the hierarchy that this class belongs to.
      */
     template<class T, class Base>
-    class class_kind;
+    struct class_kind;
 }
 
 /**
