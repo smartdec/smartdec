@@ -68,7 +68,7 @@ GenericCallAnalyzer::GenericCallAnalyzer(const Call *call, const GenericDescript
                 BinaryOperator::ADD, 
                 std::make_unique<MemoryLocationAccess>(convention()->stackPointer()), 
                 std::move(stackAmendmentConstant),
-                convention()->stackPointer().size())));
+                convention()->stackPointer().size<SmallBitSize>())));
 
     foreach (const Term *returnValue, convention()->returnValues()) {
         getReturnValueTerm(returnValue);

@@ -165,7 +165,7 @@ protected:
      * \param[in] regizter             Register.
      */
     RegisterOperand(const Register *regizter): 
-        CachedOperand(REGISTER, regizter->memoryLocation().size<SmallBitSize>()),
+        CachedOperand(REGISTER, regizter->size()),
         register_(regizter)
     {}
 };

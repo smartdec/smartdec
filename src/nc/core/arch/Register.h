@@ -77,7 +77,7 @@ public:
     /**
      * \return Register size in bits.
      */
-    BitSize size() const { return memoryLocation().size(); }
+    SmallBitSize size() const { return memoryLocation().size<SmallBitSize>(); }
 
 private:
     int number_; ///< Register number.
