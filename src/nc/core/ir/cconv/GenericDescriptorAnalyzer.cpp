@@ -62,24 +62,6 @@ std::unique_ptr<ReturnAnalyzer> GenericDescriptorAnalyzer::createReturnAnalyzer(
     return std::move(result);
 }
 
-namespace {
-
-/**
- * \param[in] function Valid pointer to a function.
- *
- * \return True if the function looks like a usual function, i.e. not a thunk or similar.
- */
-bool isUsualFunction(const Function *function) {
-    foreach (const BasicBlock *basicBlock, function->basicBlocks()) {
-        if (basicBlock->getReturn()) {
-            return true;
-        }
-    }
-    return false;
-}
-
-} // anonymous namespace
-
 FunctionSignature GenericDescriptorAnalyzer::getFunctionSignature() const {
     FunctionSignature signature;
 
@@ -107,7 +89,7 @@ FunctionSignature GenericDescriptorAnalyzer::getFunctionSignature() const {
     }
 
     foreach (GenericFunctionAnalyzer *functionAnalyzer, functionAnalyzers_) {
-        if (isUsualFunction(functionAnalyzer->function())) {
+        if (!functionAnalyzer->function()->getReturns().empty()) {
             ++functionsCount;
         }
         foreach (const MemoryLocation &memoryLocation, functionAnalyzer->argumentLocations()) {

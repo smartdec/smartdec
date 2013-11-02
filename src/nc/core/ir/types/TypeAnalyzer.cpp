@@ -73,7 +73,7 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
         if (const cconv::FunctionSignature *signature = callsData()->getFunctionSignature(function)) {
             if (signature->returnValue()) {
                 const Term *firstReturnTerm = NULL;
-                foreach (const Return *ret, callsData()->getReturns(function)) {
+                foreach (const Return *ret, function->getReturns()) {
                     if (cconv::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function, ret)) {
                         const Term *returnTerm = returnAnalyzer->getReturnValueTerm(signature->returnValue());
                         if (firstReturnTerm == NULL) {

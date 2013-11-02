@@ -200,13 +200,6 @@ class CallsData {
      * \param call Valid pointer to the call.
      */
     const FunctionSignature *getFunctionSignature(const Call *call);
-
-    /**
-     * \param function Valid pointer to a function.
-     *
-     * \return List of all Return statements in the function.
-     */
-    std::vector<const Return *> getReturns(const Function *function) const;
 };
 
 } // namespace cconv

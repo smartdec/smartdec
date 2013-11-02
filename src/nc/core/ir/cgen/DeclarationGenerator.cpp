@@ -79,7 +79,7 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 const likec::Type *DeclarationGenerator::makeReturnType() {
     if (const cconv::FunctionSignature *signature = parent().context().callsData()->getFunctionSignature(function())) {
         if (signature->returnValue()) {
-            foreach (const Return *ret, parent().context().callsData()->getReturns(function())) {
+            foreach (const Return *ret, function()->getReturns()) {
                 if (cconv::ReturnAnalyzer *returnAnalyzer = parent().context().callsData()->getReturnAnalyzer(function(), ret)) {
                     return parent().makeType(types().getType(returnAnalyzer->getReturnValueTerm(signature->returnValue())));
                 }

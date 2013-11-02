@@ -98,7 +98,7 @@ void UsageAnalyzer::analyze() {
     if (callsData()) {
         if (const cconv::FunctionSignature *signature = callsData()->getFunctionSignature(function())) {
             if (signature->returnValue()) {
-                foreach (const Return *ret, callsData()->getReturns(function())) {
+                foreach (const Return *ret, function()->getReturns()) {
                     if (cconv::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function(), ret)) {
                         makeUsed(returnAnalyzer->getReturnValueTerm(signature->returnValue()));
                     }

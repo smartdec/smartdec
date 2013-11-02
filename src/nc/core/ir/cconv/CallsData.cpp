@@ -186,24 +186,6 @@ const FunctionSignature *CallsData::getFunctionSignature(const Call *call) {
     return getFunctionSignature(getDescriptor(call));
 }
 
-std::vector<const Return *> CallsData::getReturns(const Function *function) const {
-    // TODO: not to recompute this every time. Move this function somewhere else, e.g. to ir::Functions?
-
-    assert(function);
-
-    std::vector<const Return *> result;
-
-    foreach (const BasicBlock *basicBlock, function->basicBlocks()) {
-        foreach (const Statement *statement, basicBlock->statements()) {
-            if (const Return *ret = statement->as<Return>()) {
-                result.push_back(ret);
-            }
-        }
-    }
-
-    return result;
-}
-
 } // namespace cconv
 } // namespace ir
 } // namespace core
