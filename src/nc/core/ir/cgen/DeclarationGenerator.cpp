@@ -34,7 +34,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallsData.h>
 #include <nc/core/ir/cconv/FunctionAnalyzer.h>
-#include <nc/core/ir/cconv/FunctionSignature.h>
+#include <nc/core/ir/cconv/Signature.h>
 #include <nc/core/ir/cconv/ReturnAnalyzer.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/likec/Tree.h>
@@ -65,7 +65,7 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 
     setDeclaration(functionDeclaration.get());
 
-    if (const cconv::FunctionSignature *signature = parent().context().callsData()->getFunctionSignature(function())) {
+    if (const cconv::Signature *signature = parent().context().callsData()->getSignature(function())) {
         if (cconv::FunctionAnalyzer *functionAnalyzer = parent().context().callsData()->getFunctionAnalyzer(function())) {
             foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
                 makeArgumentDeclaration(functionAnalyzer->getArgumentTerm(memoryLocation));
@@ -77,7 +77,7 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 }
 
 const likec::Type *DeclarationGenerator::makeReturnType() {
-    if (const cconv::FunctionSignature *signature = parent().context().callsData()->getFunctionSignature(function())) {
+    if (const cconv::Signature *signature = parent().context().callsData()->getSignature(function())) {
         if (signature->returnValue()) {
             foreach (const Return *ret, function()->getReturns()) {
                 if (cconv::ReturnAnalyzer *returnAnalyzer = parent().context().callsData()->getReturnAnalyzer(function(), ret)) {
@@ -90,7 +90,7 @@ const likec::Type *DeclarationGenerator::makeReturnType() {
 }
 
 bool DeclarationGenerator::variadic() const {
-    if (const cconv::FunctionSignature *signature = parent().context().callsData()->getFunctionSignature(function())) {
+    if (const cconv::Signature *signature = parent().context().callsData()->getSignature(function())) {
         return signature->variadic();
     } else {
         return false;

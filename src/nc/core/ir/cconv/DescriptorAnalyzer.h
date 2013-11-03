@@ -40,7 +40,7 @@ namespace cconv {
 class CallAnalyzer;
 class FunctionAnalyzer;
 class ReturnAnalyzer;
-class FunctionSignature;
+class Signature;
 
 /**
  * This class is responsible for aggregating information about the function's argument
@@ -78,7 +78,7 @@ class DescriptorAnalyzer {
     /**
      * \return Signature of the function at the analyzed address.
      */
-    virtual FunctionSignature getFunctionSignature() const = 0;
+    virtual Signature getSignature() const = 0;
 };
 
 } // namespace cconv

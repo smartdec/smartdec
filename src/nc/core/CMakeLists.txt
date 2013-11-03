@@ -90,7 +90,7 @@ set(SOURCES
     ir/cconv/FunctionAnalyzer.cpp
     ir/cconv/FunctionAnalyzer.h
     ir/cconv/FunctionDescriptor.h
-    ir/cconv/FunctionSignature.h
+    ir/cconv/Signature.h
     ir/cconv/GenericCallAnalyzer.cpp
     ir/cconv/GenericCallAnalyzer.h
     ir/cconv/GenericCallingConvention.cpp

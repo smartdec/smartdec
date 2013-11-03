@@ -38,14 +38,14 @@ namespace cconv {
 /**
  * Signature of a function: a list of its arguments, and a return value.
  */
-class FunctionSignature {
+class Signature {
     std::vector<MemoryLocation> arguments_; ///< Function's arguments.
     bool variadic_; ///< True if a function is variadic.
     const Term *returnValue_; ///< Term containing the return value.
 
     public:
 
-    FunctionSignature(): variadic_(false), returnValue_(NULL) {}
+    Signature(): variadic_(false), returnValue_(NULL) {}
 
     /**
      * \return List of function's arguments.

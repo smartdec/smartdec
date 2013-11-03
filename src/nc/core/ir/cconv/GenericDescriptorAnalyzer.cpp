@@ -33,7 +33,7 @@
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statement.h>
 
-#include "FunctionSignature.h"
+#include "Signature.h"
 #include "GenericCallingConvention.h"
 #include "GenericCallAnalyzer.h"
 #include "GenericFunctionAnalyzer.h"
@@ -62,8 +62,8 @@ std::unique_ptr<ReturnAnalyzer> GenericDescriptorAnalyzer::createReturnAnalyzer(
     return std::move(result);
 }
 
-FunctionSignature GenericDescriptorAnalyzer::getFunctionSignature() const {
-    FunctionSignature signature;
+Signature GenericDescriptorAnalyzer::getSignature() const {
+    Signature signature;
 
     // FIXME
 #if 0

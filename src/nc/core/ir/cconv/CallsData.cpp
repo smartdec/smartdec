@@ -39,7 +39,7 @@
 #include "CallingConvention.h"
 #include "CallingConventionDetector.h"
 #include "FunctionAnalyzer.h"
-#include "FunctionSignature.h"
+#include "Signature.h"
 #include "ReturnAnalyzer.h"
 
 namespace nc {
@@ -166,24 +166,24 @@ ReturnAnalyzer *CallsData::getReturnAnalyzer(const Function *function, const Ret
     return nc::find(return2analyzer_, key).get();
 }
 
-const FunctionSignature *CallsData::getFunctionSignature(const FunctionDescriptor &descriptor) {
+const Signature *CallsData::getSignature(const FunctionDescriptor &descriptor) {
     if (!descriptor) {
         return NULL;
     }
     if (!nc::contains(descriptor2signature_, descriptor)) {
         if (DescriptorAnalyzer *analyzer = getDescriptorAnalyzer(descriptor)) {
-            descriptor2signature_[descriptor].reset(new FunctionSignature(analyzer->getFunctionSignature()));
+            descriptor2signature_[descriptor].reset(new Signature(analyzer->getSignature()));
         }
     }
     return nc::find(descriptor2signature_, descriptor).get();
 }
 
-const FunctionSignature *CallsData::getFunctionSignature(const Function *function) {
-    return getFunctionSignature(getDescriptor(function));
+const Signature *CallsData::getSignature(const Function *function) {
+    return getSignature(getDescriptor(function));
 }
 
-const FunctionSignature *CallsData::getFunctionSignature(const Call *call) {
-    return getFunctionSignature(getDescriptor(call));
+const Signature *CallsData::getSignature(const Call *call) {
+    return getSignature(getDescriptor(call));
 }
 
 } // namespace cconv

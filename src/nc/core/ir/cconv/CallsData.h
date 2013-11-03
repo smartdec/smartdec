@@ -49,7 +49,7 @@ class CallingConvention;
 class CallingConventionDetector;
 class DescriptorAnalyzer;
 class FunctionAnalyzer;
-class FunctionSignature;
+class Signature;
 class ReturnAnalyzer;
 
 /**
@@ -78,7 +78,7 @@ class CallsData {
     boost::unordered_map<std::pair<FunctionDescriptor, const Return *>, std::unique_ptr<ReturnAnalyzer>> return2analyzer_;
 
     /** Mapping from a function's descriptor to its signature. */
-    boost::unordered_map<FunctionDescriptor, std::unique_ptr<FunctionSignature>> descriptor2signature_;
+    boost::unordered_map<FunctionDescriptor, std::unique_ptr<Signature>> descriptor2signature_;
 
     public:
 
@@ -185,21 +185,21 @@ class CallsData {
      *
      * \param descriptor Descriptor of a function.
      */
-    const FunctionSignature *getFunctionSignature(const FunctionDescriptor &descriptor);
+    const Signature *getSignature(const FunctionDescriptor &descriptor);
 
     /**
      * \return Pointer to the signature of the function. Can be NULL.
      *
      * \param function Valid pointer to the function.
      */
-    const FunctionSignature *getFunctionSignature(const Function *function);
+    const Signature *getSignature(const Function *function);
 
     /**
      * \return Pointer to the signature of the function being called. Can be NULL.
      *
      * \param call Valid pointer to the call.
      */
-    const FunctionSignature *getFunctionSignature(const Call *call);
+    const Signature *getSignature(const Call *call);
 };
 
 } // namespace cconv

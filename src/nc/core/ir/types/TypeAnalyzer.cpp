@@ -33,7 +33,7 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallsData.h>
-#include <nc/core/ir/cconv/FunctionSignature.h>
+#include <nc/core/ir/cconv/Signature.h>
 #include <nc/core/ir/cconv/ReturnAnalyzer.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/Value.h>
@@ -70,7 +70,7 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
 
     /* Join types of terms used for return values. */
     if (callsData()) {
-        if (const cconv::FunctionSignature *signature = callsData()->getFunctionSignature(function)) {
+        if (const cconv::Signature *signature = callsData()->getSignature(function)) {
             if (signature->returnValue()) {
                 const Term *firstReturnTerm = NULL;
                 foreach (const Return *ret, function->getReturns()) {

@@ -37,7 +37,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallAnalyzer.h>
 #include <nc/core/ir/cconv/CallsData.h>
-#include <nc/core/ir/cconv/FunctionSignature.h>
+#include <nc/core/ir/cconv/Signature.h>
 #include <nc/core/ir/cconv/ReturnAnalyzer.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Graph.h>
@@ -96,7 +96,7 @@ void UsageAnalyzer::analyze() {
     }
 
     if (callsData()) {
-        if (const cconv::FunctionSignature *signature = callsData()->getFunctionSignature(function())) {
+        if (const cconv::Signature *signature = callsData()->getSignature(function())) {
             if (signature->returnValue()) {
                 foreach (const Return *ret, function()->getReturns()) {
                     if (cconv::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function(), ret)) {
@@ -140,7 +140,7 @@ void UsageAnalyzer::computeUsage(const Statement *statement) {
             makeUsed(call->target());
 
             if (callsData()) {
-                if (const cconv::FunctionSignature *signature = callsData()->getFunctionSignature(call)) {
+                if (const cconv::Signature *signature = callsData()->getSignature(call)) {
                     if (cconv::CallAnalyzer *callAnalyzer = callsData()->getCallAnalyzer(call)) {
                         foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
                             makeUsed(callAnalyzer->getArgumentTerm(memoryLocation));
