@@ -22,7 +22,7 @@ namespace cconv {
 void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
     auto computeSignature = [&](const CalleeId &calleeId) {
         if (calleeId) {
-            if (!signatures_.isSet(calleeId)) {
+            if (signatures_.getSignature(calleeId) == NULL) {
                 if (auto analyzer = callsData_.getDescriptorAnalyzer(calleeId)) {
                     signatures_.setSignature(calleeId, analyzer->getSignature());
                 }

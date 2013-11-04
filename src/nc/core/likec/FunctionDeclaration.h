@@ -82,8 +82,10 @@ public:
 
     /**
      * Adds argument to the function.
+     *
+     * \param argument Valid pointer to the argument declaration.
      */
-    void addArgument(ArgumentDeclaration *argument);
+    void addArgument(std::unique_ptr<ArgumentDeclaration> argument);
 
     virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
 

@@ -51,7 +51,16 @@ DeclarationGenerator::DeclarationGenerator(CodeGenerator &parent, const Function
     function_(function),
     types_(parent.context().getTypes(function)),
     declaration_(NULL)
-{}
+{
+    assert(function_ != NULL);
+    assert(types_ != NULL);
+
+    if (auto calleeId = parent.context().callsData()->getCalleeId(function)) {
+        signature_ = parent.context().signatures()->getSignature(calleeId);
+    } else {
+        signature_ = NULL;
+    }
+}
 
 void DeclarationGenerator::setDeclaration(likec::FunctionDeclaration *declaration) {
     assert(!declaration_); 
@@ -66,10 +75,9 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 
     setDeclaration(functionDeclaration.get());
 
-    if (auto calleeId = parent().context().callsData()->getCalleeId(function())) {
-        if (cconv::FunctionAnalyzer *functionAnalyzer = parent().context().callsData()->getFunctionAnalyzer(function())) {
-            const auto &signature = parent().context().signatures()->getSignature(calleeId);
-            foreach (const MemoryLocation &memoryLocation, signature.arguments()) {
+    if (signature()) {
+        if (auto functionAnalyzer = parent().context().callsData()->getFunctionAnalyzer(function())) {
+            foreach (const MemoryLocation &memoryLocation, signature()->arguments()) {
                 makeArgumentDeclaration(functionAnalyzer->getArgumentTerm(memoryLocation));
             }
         }
@@ -79,12 +87,11 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 }
 
 const likec::Type *DeclarationGenerator::makeReturnType() {
-    if (auto calleeId = parent().context().callsData()->getCalleeId(function())) {
-        const auto &signature = parent().context().signatures()->getSignature(calleeId);
-        if (signature.returnValue()) {
+    if (signature()) {
+        if (signature()->returnValue()) {
             foreach (const Return *ret, function()->getReturns()) {
-                if (cconv::ReturnAnalyzer *returnAnalyzer = parent().context().callsData()->getReturnAnalyzer(function(), ret)) {
-                    return parent().makeType(types().getType(returnAnalyzer->getReturnValueTerm(signature.returnValue())));
+                if (auto returnAnalyzer = parent().context().callsData()->getReturnAnalyzer(function(), ret)) {
+                    return parent().makeType(types().getType(returnAnalyzer->getReturnValueTerm(signature()->returnValue())));
                 }
             }
         }
@@ -93,11 +100,10 @@ const likec::Type *DeclarationGenerator::makeReturnType() {
 }
 
 bool DeclarationGenerator::variadic() const {
-    if (auto calleeId = parent().context().callsData()->getCalleeId(function())) {
-        return parent().context().signatures()->getSignature(calleeId).variadic();
-    } else {
-        return false;
+    if (signature()) {
+        return signature()->variadic();
     }
+    return false;
 }
 
 likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const Term *term) {
@@ -115,12 +121,12 @@ likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const 
         name = QString("arg%1").arg(declaration()->arguments().size() + 1);
     }
 
-    likec::ArgumentDeclaration *argumentDeclaration = new likec::ArgumentDeclaration(
-        tree(), name, parent().makeType(types().getType(term)));
+    auto argumentDeclaration = std::make_unique<likec::ArgumentDeclaration>(tree(), name, parent().makeType(types().getType(term)));
+    auto result = argumentDeclaration.get();
 
-    declaration()->addArgument(argumentDeclaration);
+    declaration()->addArgument(std::move(argumentDeclaration));
 
-    return argumentDeclaration;
+    return result;
 }
 
 } // namespace cgen

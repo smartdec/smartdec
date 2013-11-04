@@ -43,6 +43,10 @@ namespace ir {
 class Function;
 class Term;
 
+namespace cconv {
+    class Signature;
+}
+
 namespace types {
     class Types;
 }
@@ -54,17 +58,18 @@ namespace cgen {
  */
 class DeclarationGenerator: boost::noncopyable {
     CodeGenerator &parent_; ///< Parent code generator.
-    const Function *function_; ///< Function under consideration.
+    const Function *function_; ///< Function, for which declaration is generated.
     const types::Types *types_; ///< Reconstructed types.
+    const cconv::Signature *signature_; ///< Signature of the function.
     likec::FunctionDeclaration *declaration_; ///< Function's declaration.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
      * \param parent Parent code generator.
-     * \param function Valid pointer to the function being declared.
+     * \param function Valid pointer to the function,
+     *                 for which declaration is generated.
      */
     DeclarationGenerator(CodeGenerator &parent, const Function *function);
 
@@ -94,6 +99,12 @@ class DeclarationGenerator: boost::noncopyable {
     const types::Types &types() const { return *types_; }
 
     /**
+     * \return Pointer to the signature of the function, for which
+     *         declaration is generated. Can be NULL.
+     */
+    const cconv::Signature *signature() const { return signature_; }
+
+    /**
      * \return Function's declaration.
      */
     likec::FunctionDeclaration *declaration() const { return declaration_; }
@@ -112,6 +123,7 @@ class DeclarationGenerator: boost::noncopyable {
      */
     std::unique_ptr<likec::FunctionDeclaration> createDeclaration();
 
+protected:
     /**
      * \return Type of function's return value.
      */

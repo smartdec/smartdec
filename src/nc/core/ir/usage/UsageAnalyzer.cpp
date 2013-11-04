@@ -82,12 +82,12 @@ void UsageAnalyzer::analyze() {
     }
 
     if (auto calleeId = callsData().getCalleeId(function())) {
-        const auto &signature = signatures().getSignature(calleeId);
-
-        if (signature.returnValue()) {
-            foreach (const Return *ret, function()->getReturns()) {
-                if (auto returnAnalyzer = callsData().getReturnAnalyzer(function(), ret)) {
-                    makeUsed(returnAnalyzer->getReturnValueTerm(signature.returnValue()));
+        if (auto signature = signatures().getSignature(calleeId)) {
+            if (signature->returnValue()) {
+                foreach (const Return *ret, function()->getReturns()) {
+                    if (auto returnAnalyzer = callsData().getReturnAnalyzer(function(), ret)) {
+                        makeUsed(returnAnalyzer->getReturnValueTerm(signature->returnValue()));
+                    }
                 }
             }
         }
@@ -126,11 +126,11 @@ void UsageAnalyzer::computeUsage(const Statement *statement) {
             makeUsed(call->target());
 
             if (auto calleeId = callsData().getCalleeId(call)) {
-                const auto &signature = signatures().getSignature(calleeId);
-
-                if (auto callAnalyzer = callsData().getCallAnalyzer(call)) {
-                    foreach (const MemoryLocation &memoryLocation, signature.arguments()) {
-                        makeUsed(callAnalyzer->getArgumentTerm(memoryLocation));
+                if (auto signature = signatures().getSignature(calleeId)) {
+                    if (auto callAnalyzer = callsData().getCallAnalyzer(call)) {
+                        foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
+                            makeUsed(callAnalyzer->getArgumentTerm(memoryLocation));
+                        }
                     }
                 }
             }

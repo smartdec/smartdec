@@ -99,7 +99,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
                 }
             }
 
-            /* Simulate all the statements in the basic block. */
+            /* Execute all the statements in the basic block. */
             foreach (const Statement *statement, basicBlock->statements()) {
                 execute(statement, context);
             }

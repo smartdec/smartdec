@@ -5,6 +5,8 @@
 
 #include <nc/config.h>
 
+#include <memory>
+
 #include <boost/unordered_map.hpp>
 
 #include <nc/common/Range.h>
@@ -19,18 +21,18 @@ namespace cconv {
 
 class Signatures {
     /** Mapping from a callee id to a signature. */
-    boost::unordered_map<CalleeId, Signature> id2signature_;
+    boost::unordered_map<CalleeId, std::unique_ptr<Signature>> id2signature_;
 
 public:
     /**
      * \param calleeId Valid callee id.
      *
-     * \return Signature for this callee id.
-     *         If none was set, a default-constructed signature is returned.
+     * \return Pointer to the signature assigned for this callee id.
+     *         Returns NULL if no signature was assigned.
      */
-    const Signature &getSignature(const CalleeId &calleeId) const {
+    const Signature *getSignature(const CalleeId &calleeId) const {
         assert(calleeId);
-        return nc::find(id2signature_, calleeId);
+        return nc::find(id2signature_, calleeId).get();
     }
 
     /**
@@ -41,17 +43,7 @@ public:
      */
     void setSignature(const CalleeId &calleeId, Signature signature) {
         assert(calleeId);
-        id2signature_[calleeId] = std::move(signature);
-    }
-
-    /**
-     * \param calleeId Valid callee id.
-     *
-     * \return True if a signature for this callee id was set, false otherwise.
-     */
-    bool isSet(const CalleeId &calleeId) const {
-        assert(calleeId);
-        return nc::contains(id2signature_, calleeId);
+        id2signature_[calleeId].reset(new Signature(std::move(signature)));
     }
 };
 

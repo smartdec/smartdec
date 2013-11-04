@@ -70,19 +70,19 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
 
     /* Join types of terms used for return values. */
     if (auto calleeId = callsData().getCalleeId(function)) {
-        const auto &signature = signatures().getSignature(calleeId);
+        if (auto signature = signatures().getSignature(calleeId)) {
+            if (signature->returnValue()) {
+                const Term *firstReturnTerm = NULL;
 
-        if (signature.returnValue()) {
-            const Term *firstReturnTerm = NULL;
+                foreach (const Return *ret, function->getReturns()) {
+                    if (cconv::ReturnAnalyzer *returnAnalyzer = callsData().getReturnAnalyzer(function, ret)) {
+                        const Term *returnTerm = returnAnalyzer->getReturnValueTerm(signature->returnValue());
 
-            foreach (const Return *ret, function->getReturns()) {
-                if (cconv::ReturnAnalyzer *returnAnalyzer = callsData().getReturnAnalyzer(function, ret)) {
-                    const Term *returnTerm = returnAnalyzer->getReturnValueTerm(signature.returnValue());
-
-                    if (firstReturnTerm == NULL) {
-                        firstReturnTerm = returnTerm;
-                    } else {
-                        types().getType(firstReturnTerm)->unionSet(types().getType(returnTerm));
+                        if (firstReturnTerm == NULL) {
+                            firstReturnTerm = returnTerm;
+                        } else {
+                            types().getType(firstReturnTerm)->unionSet(types().getType(returnTerm));
+                        }
                     }
                 }
             }

@@ -43,9 +43,9 @@ FunctionDeclaration::FunctionDeclaration(Tree &tree, int declarationKind, const 
     type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic))
 {}
 
-void FunctionDeclaration::addArgument(ArgumentDeclaration *argument) {
-    arguments_.push_back(std::unique_ptr<ArgumentDeclaration>(argument));
+void FunctionDeclaration::addArgument(std::unique_ptr<ArgumentDeclaration> argument) {
     type_->addArgumentType(argument->type());
+    arguments_.push_back(std::move(argument));
 }
 
 void FunctionDeclaration::visitChildNodes(Visitor<TreeNode> &visitor) {
