@@ -32,9 +32,7 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
 
     foreach (auto function, functions_.functions()) {
         computeSignature(callsData_.getCalleeId(function));
-        if (canceled) {
-            return;
-        }
+        canceled.poll();
     }
 
     misc::CensusVisitor visitor(&callsData_);
@@ -44,9 +42,7 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
         if (auto call = statement->asCall()) {
             computeSignature(callsData_.getCalleeId(call));
         }
-        if (canceled) {
-            return;
-        }
+        canceled.poll();
     }
 }
 

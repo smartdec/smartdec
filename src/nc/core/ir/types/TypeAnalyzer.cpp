@@ -119,7 +119,9 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
                 changed = true;
             }
         }
-    } while (changed && !canceled);
+
+        canceled.poll();
+    } while (changed);
 }
 
 void TypeAnalyzer::analyze(const Term *term) {

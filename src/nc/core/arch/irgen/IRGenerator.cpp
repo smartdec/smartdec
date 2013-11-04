@@ -55,31 +55,25 @@ namespace irgen {
 void IRGenerator::generate(const CancellationToken &canceled) {
     /* Generate statements. */
     foreach (const auto &instr, instructions()->all()) {
-        if (canceled) {
-            return;
-        }
         try {
             module()->architecture()->instructionAnalyzer()->createStatements(instr.get(), program());
         } catch (const InvalidInstructionException &e) {
             /* Note: this is an AntiIdiom: http://c2.com/cgi/wiki?LoggingDiscussion */
             ncWarning(e.unicodeWhat());
         }
+        canceled.poll();
     }
 
     /* Compute jump targets. */
     for (std::size_t i = 0; i < program()->basicBlocks().size(); ++i) {
-        if (canceled) {
-            return;
-        }
         computeJumpTargets(program()->basicBlocks()[i]);
+        canceled.poll();
     }
 
     /* Add jumps to direct successors where necessary. */
     for (std::size_t i = 0; i < program()->basicBlocks().size(); ++i) {
-        if (canceled) {
-            return;
-        }
         addJumpToDirectSuccessor(program()->basicBlocks()[i]);
+        canceled.poll();
     }
 }
 

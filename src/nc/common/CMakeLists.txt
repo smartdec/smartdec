@@ -5,6 +5,7 @@ set(MOC_HEADERS
 set(SOURCES
     BitTwiddling.h
     ByteOrder.h
+    CancellationToken.cpp
     CancellationToken.h
     CheckedCast.h
     Conversions.cpp
@@ -32,12 +33,6 @@ set(SOURCES
     Warnings.h
     make_unique.h
 )
-
-if(NOT ${NC_USE_THREADS})
-    list(APPEND SOURCES
-        CancellationToken.cpp
-    )
-endif()
 
 qt4_wrap_cpp(SOURCES ${MOC_HEADERS})
 

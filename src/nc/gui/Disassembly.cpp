@@ -43,12 +43,10 @@ Disassembly::Disassembly(const std::shared_ptr<core::Context> &context, const co
 Disassembly::~Disassembly() {}
 
 void Disassembly::work() {
-    core::Driver::disassemble(*context_, source_, begin_, end_);
-
-    if (context_->cancellationToken().cancellationRequested()) {
-        context_->logToken() << tr("Disassembly canceled.");
-    } else {
-        context_->logToken() << tr("Disassembly completed.");
+    try {
+        core::Driver::disassemble(*context_, source_, begin_, end_);
+    } catch (const CancellationException &) {
+        /* Nothing to do. */
     }
 }
 

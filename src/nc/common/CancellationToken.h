@@ -27,7 +27,20 @@
 
 #include <memory> /* std::shared_ptr */
 
+#include "Exception.h"
+
 namespace nc {
+
+/**
+ * Exception thrown when cancellation was requested.
+ */
+class CancellationException: public nc::Exception {
+public:
+    /**
+     * Default constructor.
+     */
+    CancellationException();
+};
 
 /**
  * Class for propagating cancellation notifications.
@@ -46,12 +59,12 @@ class CancellationToken {
     {}
 
     /**
-     * Notifies the token and all its copies about the cancellation.
+     * Sets the cancellation flag for the token and all its copies.
      */
     void cancel() { *cancellationRequested_ = true; }
 
     /**
-     * \return True if the cancellation is requested and false otherwise.
+     * \return True if the cancellation flag is set and false otherwise.
      */
     bool cancellationRequested() const
 #ifdef NC_USE_THREADS
@@ -61,9 +74,13 @@ class CancellationToken {
 #endif
 
     /**
-     * \return Non-zero pointer of cancellation is requested, NULL otherwise.
+     * Throws CancellationException if cancellation flag is set.
      */
-    operator const void *() const { return cancellationRequested() ? this : NULL; }
+    void poll() const {
+        if (cancellationRequested()) {
+            throw CancellationException();
+        }
+    }
 };
 
 } // namespace nc

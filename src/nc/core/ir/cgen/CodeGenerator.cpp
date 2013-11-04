@@ -57,10 +57,8 @@ void CodeGenerator::makeCompilationUnit(const CancellationToken &canceled) {
     tree().root()->setComment(functions->comment().text());
 
     foreach (const Function *function, functions->functions()) {
-        if (canceled) {
-            break;
-        }
         makeFunctionDefinition(function);
+        canceled.poll();
     }
 
     tree().rewriteRoot();

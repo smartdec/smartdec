@@ -52,7 +52,7 @@ void Disassembler::disassemble(const image::ByteSource *source, ByteAddr begin, 
     ByteOffset bufferOffset = 0;
     ByteSize bufferSize = 0;
 
-    while (begin < end && !canceled) {
+    while (begin < end) {
         if (bufferOffset + maxInstructionSize > bufferSize && end - begin > bufferSize - bufferOffset) {
             bufferOffset = 0;
             bufferSize = source->readBytes(begin, buffer.get(), std::min(end - begin, bufferCapacity));
@@ -75,6 +75,8 @@ void Disassembler::disassemble(const image::ByteSource *source, ByteAddr begin, 
 
         begin += instructionSize;
         bufferOffset += instructionSize;
+
+        canceled.poll();
     }
 }
 

@@ -58,9 +58,7 @@ void IntelMasterAnalyzer::createProgram(core::Context &context) const {
         auto program = const_cast<core::ir::Program *>(context.program());
 
         foreach (auto *basicBlock, program->basicBlocks()) {
-            if (context.cancellationToken()) {
-                break;
-            }
+            context.cancellationToken().poll();
 
             std::vector<std::pair<const core::ir::Statement *, std::unique_ptr<core::ir::Statement>>> patchList;
 

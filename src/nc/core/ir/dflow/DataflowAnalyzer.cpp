@@ -150,7 +150,9 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
                 niterations, function()->name());
             break;
         }
-    } while (changed && !canceled);
+
+        canceled.poll();
+    } while (changed);
 }
 
 void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &context) {

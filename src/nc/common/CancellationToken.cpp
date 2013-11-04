@@ -28,6 +28,10 @@
 
 namespace nc {
 
+CancellationException::CancellationException():
+    Exception(QObject::tr("Cancellation requested"))
+{}
+
 #ifndef NC_USE_THREADS
 bool CancellationToken::cancellationRequested() const {
     if (qApp) {

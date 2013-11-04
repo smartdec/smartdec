@@ -41,7 +41,11 @@ Decompilation::Decompilation(const std::shared_ptr<core::Context> &context):
 Decompilation::~Decompilation() {}
 
 void Decompilation::work() {
-    core::Driver::decompile(*context_);
+    try {
+        core::Driver::decompile(*context_);
+    } catch (const CancellationException &) {
+        /* Nothing to do. */
+    }
 }
 
 }} // namespace nc::gui

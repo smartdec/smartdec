@@ -79,71 +79,71 @@ void Driver::disassemble(Context &context, const image::ByteSource *source, Byte
 
     context.logToken() << tr("Disassembling addresses from 0x%2 to 0x%3...").arg(begin, 0, 16).arg(end, 0, 16);
 
-    auto newInstructions = std::make_shared<arch::Instructions>(*context.instructions());
+    try {
+        auto newInstructions = std::make_shared<arch::Instructions>(*context.instructions());
 
-    arch::disasm::Disassembler disassembler(context.module()->architecture(), newInstructions.get());
-    disassembler.disassemble(source, begin, end, context.cancellationToken());
+        arch::disasm::Disassembler disassembler(context.module()->architecture(), newInstructions.get());
+        disassembler.disassemble(source, begin, end, context.cancellationToken());
 
-    context.setInstructions(newInstructions);
-}
+        context.setInstructions(newInstructions);
 
-namespace {
-    /* MSVC 2010 fails to find the type in lambda if one defines it inside a function. */
-    struct CancellationException {};
+        context.logToken() << tr("Disassembly completed.");
+    } catch (const CancellationException &e) {
+        context.logToken() << tr("Disassembly canceled.");
+    }
 }
 
 void Driver::decompile(Context &context) {
-    auto checkForCancellation = [&context]() { if (context.cancellationToken()) { throw CancellationException(); } };
-
     try {
         auto masterAnalyzer = context.module()->architecture()->masterAnalyzer();
 
         context.logToken() << tr("Creating the program IR...");
         masterAnalyzer->createProgram(context);
-        checkForCancellation();
+        context.cancellationToken().poll();
 
         context.logToken() << tr("Creating functions...");
         masterAnalyzer->createFunctions(context);
-        checkForCancellation();
+        context.cancellationToken().poll();
 
         context.logToken() << tr("Creating the calls data...");
         masterAnalyzer->createCallsData(context);
-        checkForCancellation();
+        context.cancellationToken().poll();
 
         context.logToken() << tr("Computing term to function mapping...");
         masterAnalyzer->computeTermToFunctionMapping(context);
-        checkForCancellation();
+        context.cancellationToken().poll();
 
         foreach (const ir::Function *function, context.functions()->functions()) {
             context.logToken() << tr("Running dataflow analysis on %1...").arg(function->name());
             masterAnalyzer->analyzeDataflow(context, function);
-            checkForCancellation();
+            context.cancellationToken().poll();
         }
 
-        context.logToken() << tr("Computing signatures of functions...");
+        context.logToken() << tr("Reconstructing signatures of functions...");
         masterAnalyzer->reconstructSignatures(context);
-        checkForCancellation();
+        context.cancellationToken().poll();
 
         foreach (const ir::Function *function, context.functions()->functions()) {
             context.logToken() << tr("Running structural analysis on %1...").arg(function->name());
             masterAnalyzer->doStructuralAnalysis(context, function);
-            checkForCancellation();
+            context.cancellationToken().poll();
 
             context.logToken() << tr("Running liveness analysis on %1...").arg(function->name());
             masterAnalyzer->computeUsage(context, function);
-            checkForCancellation();
+            context.cancellationToken().poll();
 
             context.logToken() << tr("Running type reconstruction on %1...").arg(function->name());
             masterAnalyzer->reconstructTypes(context, function);
-            checkForCancellation();
+            context.cancellationToken().poll();
 
             context.logToken() << tr("Running reconstruction of variables on %1...").arg(function->name());
             masterAnalyzer->reconstructVariables(context, function);
-            checkForCancellation();
+            context.cancellationToken().poll();
         }
 
         context.logToken() << tr("Generating AST...");
         masterAnalyzer->generateTree(context);
+        context.cancellationToken().poll();
 
 #ifdef NC_TREE_CHECKS
         context.logToken() << tr("Checking AST...");
@@ -153,6 +153,7 @@ void Driver::decompile(Context &context) {
         context.logToken() << tr("Decompilation completed.");
     } catch (const CancellationException &) {
         context.logToken() << tr("Decompilation canceled.");
+        throw;
     }
 }
 
