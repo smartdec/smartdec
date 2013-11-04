@@ -36,7 +36,7 @@ class IntelMasterAnalyzer: public core::MasterAnalyzer {
 
     virtual void createProgram(core::Context &context) const override;
 
-    virtual void detectCallingConvention(core::Context &context, const core::ir::cconv::FunctionDescriptor &functionDescriptor) const override;
+    virtual void detectCallingConvention(core::Context &context, const core::ir::cconv::CalleeId &id) const override;
 
     virtual void analyzeDataflow(core::Context &context, const core::ir::Function *function) const override;
 };

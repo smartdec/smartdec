@@ -82,6 +82,7 @@ set(SOURCES
     ir/Terms.cpp
     ir/Terms.h
     ir/cconv/CallAnalyzer.h
+    ir/cconv/CalleeId.h
     ir/cconv/CallingConvention.h
     ir/cconv/CallingConventionDetector.h
     ir/cconv/CallsData.cpp
@@ -89,8 +90,6 @@ set(SOURCES
     ir/cconv/DescriptorAnalyzer.h
     ir/cconv/FunctionAnalyzer.cpp
     ir/cconv/FunctionAnalyzer.h
-    ir/cconv/FunctionDescriptor.h
-    ir/cconv/Signature.h
     ir/cconv/GenericCallAnalyzer.cpp
     ir/cconv/GenericCallAnalyzer.h
     ir/cconv/GenericCallingConvention.cpp
@@ -102,6 +101,9 @@ set(SOURCES
     ir/cconv/GenericReturnAnalyzer.cpp
     ir/cconv/GenericReturnAnalyzer.h
     ir/cconv/ReturnAnalyzer.h
+    ir/cconv/Signature.h
+    ir/cconv/SignatureAnalyzer.cpp
+    ir/cconv/SignatureAnalyzer.h
     ir/cflow/BasicNode.cpp
     ir/cflow/BasicNode.h
     ir/cflow/Dfs.cpp

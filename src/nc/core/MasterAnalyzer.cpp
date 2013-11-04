@@ -29,6 +29,7 @@
 #include <cstdint> /* uintptr_t */
 
 #include <nc/common/Foreach.h>
+#include <nc/common/make_unique.h>
 
 #include <nc/core/Context.h>
 #include <nc/core/Module.h>
@@ -40,6 +41,8 @@
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/cconv/CallingConventionDetector.h>
 #include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/SignatureAnalyzer.h>
+#include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/GraphBuilder.h>
 #include <nc/core/ir/cflow/StructureAnalyzer.h>
@@ -130,8 +133,8 @@ void MasterAnalyzer::createCallsData(Context &context) const {
             masterAnalyzer_(masterAnalyzer), context_(context)
         {}
 
-        virtual void detectCallingConvention(const ir::cconv::FunctionDescriptor &descriptor) const override {
-            masterAnalyzer_->detectCallingConvention(context_, descriptor);
+        virtual void detectCallingConvention(const ir::cconv::CalleeId &calleeId) const override {
+            masterAnalyzer_->detectCallingConvention(context_, calleeId);
         }
     };
 
@@ -142,7 +145,7 @@ void MasterAnalyzer::createCallsData(Context &context) const {
     context.setCallingConventionDetector(std::move(detector));
 }
 
-void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::cconv::FunctionDescriptor &/*descriptor*/) const {
+void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::cconv::CalleeId &/*descriptor*/) const {
     /* Nothing to do. */
 }
 
@@ -160,12 +163,21 @@ void MasterAnalyzer::analyzeDataflow(Context &context, const ir::Function *funct
     context.setDataflow(function, std::move(dataflow));
 }
 
+void MasterAnalyzer::reconstructSignatures(Context &context) const {
+    auto signatures = std::make_unique<ir::cconv::Signatures>();
+
+    ir::cconv::SignatureAnalyzer(*signatures, *context.functions(), *context.callsData())
+        .analyze(context.cancellationToken());
+
+    context.setSignatures(std::move(signatures));
+}
+
 void MasterAnalyzer::computeUsage(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::usage::Usage> usage(new ir::usage::Usage());
 
     ir::usage::UsageAnalyzer(*usage, function,
-        context.getDataflow(function), context.module()->architecture(),
-        context.getRegionGraph(function), context.callsData())
+        *context.getDataflow(function), context.module()->architecture(),
+        *context.getRegionGraph(function), *context.callsData(), *context.signatures())
     .analyze();
 
     context.setUsage(function, std::move(usage));
@@ -174,8 +186,10 @@ void MasterAnalyzer::computeUsage(Context &context, const ir::Function *function
 void MasterAnalyzer::reconstructTypes(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::types::Types> types(new ir::types::Types());
 
-    ir::types::TypeAnalyzer analyzer(*types, *context.getDataflow(function), *context.getUsage(function), context.callsData());
-    analyzer.analyze(function, context.cancellationToken());
+    ir::types::TypeAnalyzer(
+        *types, *context.getDataflow(function), *context.getUsage(function),
+        *context.callsData(), *context.signatures())
+    .analyze(function, context.cancellationToken());
 
     context.setTypes(function, std::move(types));
 }

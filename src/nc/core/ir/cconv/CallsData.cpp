@@ -51,25 +51,25 @@ CallsData::CallsData(): callingConventionDetector_(NULL) {}
 
 CallsData::~CallsData() {}
 
-FunctionDescriptor CallsData::getDescriptor(const Function *function) const {
+CalleeId CallsData::getCalleeId(const Function *function) const {
     assert(function != NULL);
 
     if (function->entry() && function->entry()->address()) {
-        return FunctionDescriptor(FunctionDescriptor::ENTRY_ADDRESS, *function->entry()->address());
+        return CalleeId(CalleeId::ENTRY_ADDRESS, *function->entry()->address());
     } else {
-        return FunctionDescriptor();
+        return CalleeId();
     }
 }
 
-FunctionDescriptor CallsData::getDescriptor(const Call *call) const {
+CalleeId CallsData::getCalleeId(const Call *call) const {
     assert(call != NULL);
 
     if (auto addr = getCalledAddress(call)) {
-        return FunctionDescriptor(FunctionDescriptor::ENTRY_ADDRESS, *addr);
+        return CalleeId(CalleeId::ENTRY_ADDRESS, *addr);
     } else if (call->instruction()) {
-        return FunctionDescriptor(FunctionDescriptor::CALL_ADDRESS, call->instruction()->addr());
+        return CalleeId(CalleeId::CALL_ADDRESS, call->instruction()->addr());
     } else {
-        return FunctionDescriptor();
+        return CalleeId();
     }
 }
 
@@ -85,47 +85,47 @@ void CallsData::setCalledAddress(const Call *call, ByteAddr addr) {
     call2address_[call] = addr;
 }
 
-void CallsData::setCallingConvention(const FunctionDescriptor &descriptor, const CallingConvention *convention) {
-    assert(nc::find(descriptor2convention_, descriptor) == NULL && "Calling convention cannot be reset.");
+void CallsData::setCallingConvention(const CalleeId &calleeId, const CallingConvention *convention) {
+    assert(nc::find(id2convention_, calleeId) == NULL && "Calling convention cannot be reset.");
 
-    descriptor2convention_[descriptor] = convention;
+    id2convention_[calleeId] = convention;
 }
 
-const CallingConvention *CallsData::getCallingConvention(const FunctionDescriptor &descriptor) {
-    if (!descriptor) {
+const CallingConvention *CallsData::getCallingConvention(const CalleeId &calleeId) {
+    if (!calleeId) {
         return NULL;
     }
-    if (!nc::contains(descriptor2convention_, descriptor)) {
+    if (!nc::contains(id2convention_, calleeId)) {
         if (callingConventionDetector()) {
-            callingConventionDetector()->detectCallingConvention(descriptor);
+            callingConventionDetector()->detectCallingConvention(calleeId);
         }
     }
-    return nc::find(descriptor2convention_, descriptor);
+    return nc::find(id2convention_, calleeId);
 }
 
-DescriptorAnalyzer *CallsData::getDescriptorAnalyzer(const FunctionDescriptor &descriptor) {
-    if (!descriptor) {
+DescriptorAnalyzer *CallsData::getDescriptorAnalyzer(const CalleeId &calleeId) {
+    if (!calleeId) {
         return NULL;
     }
-    if (!nc::contains(descriptor2analyzer_, descriptor)) {
-        if (const CallingConvention *callingConvention = getCallingConvention(descriptor)) {
-            descriptor2analyzer_[descriptor] = callingConvention->createDescriptorAnalyzer();
+    if (!nc::contains(id2analyzer_, calleeId)) {
+        if (const CallingConvention *callingConvention = getCallingConvention(calleeId)) {
+            id2analyzer_[calleeId] = callingConvention->createDescriptorAnalyzer();
         }
     }
-    return nc::find(descriptor2analyzer_, descriptor).get();
+    return nc::find(id2analyzer_, calleeId).get();
 }
 
 FunctionAnalyzer *CallsData::getFunctionAnalyzer(const Function *function) {
     assert(function != NULL);
 
-    FunctionDescriptor descriptor = getDescriptor(function);
-    if (!descriptor) {
+    auto calleeId = getCalleeId(function);
+    if (!calleeId) {
         return NULL;
     }
 
-    auto key = std::make_pair(descriptor, function);
+    auto key = std::make_pair(calleeId, function);
     if (!nc::contains(function2analyzer_, key)) {
-        if (DescriptorAnalyzer *descriptorAnalyzer = getDescriptorAnalyzer(descriptor)) {
+        if (DescriptorAnalyzer *descriptorAnalyzer = getDescriptorAnalyzer(calleeId)) {
             function2analyzer_[key] = descriptorAnalyzer->createFunctionAnalyzer(function);
         }
     }
@@ -135,14 +135,14 @@ FunctionAnalyzer *CallsData::getFunctionAnalyzer(const Function *function) {
 CallAnalyzer *CallsData::getCallAnalyzer(const Call *call) {
     assert(call != NULL);
 
-    FunctionDescriptor descriptor = getDescriptor(call);
-    if (!descriptor) {
+    auto calleeId = getCalleeId(call);
+    if (!calleeId) {
         return NULL;
     }
 
-    auto key = std::make_pair(descriptor, call);
+    auto key = std::make_pair(calleeId, call);
     if (!nc::contains(call2analyzer_, key)) {
-        if (DescriptorAnalyzer *descriptorAnalyzer = getDescriptorAnalyzer(descriptor)) {
+        if (DescriptorAnalyzer *descriptorAnalyzer = getDescriptorAnalyzer(calleeId)) {
             call2analyzer_[key] = descriptorAnalyzer->createCallAnalyzer(call);
         }
     }
@@ -152,38 +152,18 @@ CallAnalyzer *CallsData::getCallAnalyzer(const Call *call) {
 ReturnAnalyzer *CallsData::getReturnAnalyzer(const Function *function, const Return *ret) {
     assert(ret != NULL);
 
-    FunctionDescriptor descriptor = getDescriptor(function);
-    if (!descriptor) {
+    auto calleeId = getCalleeId(function);
+    if (!calleeId) {
         return NULL;
     }
 
-    auto key = std::make_pair(descriptor, ret);
+    auto key = std::make_pair(calleeId, ret);
     if (!nc::contains(return2analyzer_, key)) {
-        if (DescriptorAnalyzer *addressAnalyzer = getDescriptorAnalyzer(descriptor)) {
+        if (DescriptorAnalyzer *addressAnalyzer = getDescriptorAnalyzer(calleeId)) {
             return2analyzer_[key] = addressAnalyzer->createReturnAnalyzer(ret);
         }
     }
     return nc::find(return2analyzer_, key).get();
-}
-
-const Signature *CallsData::getSignature(const FunctionDescriptor &descriptor) {
-    if (!descriptor) {
-        return NULL;
-    }
-    if (!nc::contains(descriptor2signature_, descriptor)) {
-        if (DescriptorAnalyzer *analyzer = getDescriptorAnalyzer(descriptor)) {
-            descriptor2signature_[descriptor].reset(new Signature(analyzer->getSignature()));
-        }
-    }
-    return nc::find(descriptor2signature_, descriptor).get();
-}
-
-const Signature *CallsData::getSignature(const Function *function) {
-    return getSignature(getDescriptor(function));
-}
-
-const Signature *CallsData::getSignature(const Call *call) {
-    return getSignature(getDescriptor(call));
 }
 
 } // namespace cconv

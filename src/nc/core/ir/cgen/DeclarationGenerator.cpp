@@ -36,6 +36,7 @@
 #include <nc/core/ir/cconv/FunctionAnalyzer.h>
 #include <nc/core/ir/cconv/Signature.h>
 #include <nc/core/ir/cconv/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/likec/FunctionDeclaration.h>
@@ -65,9 +66,10 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 
     setDeclaration(functionDeclaration.get());
 
-    if (const cconv::Signature *signature = parent().context().callsData()->getSignature(function())) {
+    if (auto calleeId = parent().context().callsData()->getCalleeId(function())) {
         if (cconv::FunctionAnalyzer *functionAnalyzer = parent().context().callsData()->getFunctionAnalyzer(function())) {
-            foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
+            const auto &signature = parent().context().signatures()->getSignature(calleeId);
+            foreach (const MemoryLocation &memoryLocation, signature.arguments()) {
                 makeArgumentDeclaration(functionAnalyzer->getArgumentTerm(memoryLocation));
             }
         }
@@ -77,11 +79,12 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 }
 
 const likec::Type *DeclarationGenerator::makeReturnType() {
-    if (const cconv::Signature *signature = parent().context().callsData()->getSignature(function())) {
-        if (signature->returnValue()) {
+    if (auto calleeId = parent().context().callsData()->getCalleeId(function())) {
+        const auto &signature = parent().context().signatures()->getSignature(calleeId);
+        if (signature.returnValue()) {
             foreach (const Return *ret, function()->getReturns()) {
                 if (cconv::ReturnAnalyzer *returnAnalyzer = parent().context().callsData()->getReturnAnalyzer(function(), ret)) {
-                    return parent().makeType(types().getType(returnAnalyzer->getReturnValueTerm(signature->returnValue())));
+                    return parent().makeType(types().getType(returnAnalyzer->getReturnValueTerm(signature.returnValue())));
                 }
             }
         }
@@ -90,8 +93,8 @@ const likec::Type *DeclarationGenerator::makeReturnType() {
 }
 
 bool DeclarationGenerator::variadic() const {
-    if (const cconv::Signature *signature = parent().context().callsData()->getSignature(function())) {
-        return signature->variadic();
+    if (auto calleeId = parent().context().callsData()->getCalleeId(function())) {
+        return parent().context().signatures()->getSignature(calleeId).variadic();
     } else {
         return false;
     }

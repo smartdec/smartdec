@@ -37,7 +37,7 @@ namespace ir {
     class Function;
 
     namespace cconv {
-        class FunctionDescriptor;
+        class CalleeId;
     }
 }
 
@@ -98,7 +98,7 @@ class MasterAnalyzer {
      * \param context Context.
      * \param descriptor Descriptor of the function.
      */
-    virtual void detectCallingConvention(Context &context, const ir::cconv::FunctionDescriptor &descriptor) const;
+    virtual void detectCallingConvention(Context &context, const ir::cconv::CalleeId &descriptor) const;
 
     /**
      * Constructs term to function mapping.
@@ -114,6 +114,13 @@ class MasterAnalyzer {
      * \param function Valid pointer to the function.
      */
     virtual void analyzeDataflow(Context &context, const ir::Function *function) const;
+
+    /**
+     * Reconstructs signatures of functions.
+     *
+     * \param context Context.
+     */
+    virtual void reconstructSignatures(Context &context) const;
 
     /**
      * Analyzes the usage of function's terms.

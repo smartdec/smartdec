@@ -43,6 +43,7 @@ class UnaryOperator;
 
 namespace cconv {
     class CallsData;
+    class Signatures;
 }
 
 namespace dflow {
@@ -64,7 +65,8 @@ class TypeAnalyzer {
     Types &types_; ///< Information about terms' types.
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const usage::Usage &usage_; ///< Set of terms producing actual high-level code.
-    cconv::CallsData *callsData_; ///< Calls data.
+    cconv::CallsData &callsData_; ///< Calls data.
+    const cconv::Signatures &signatures_; ///< Signatures of functions.
 
     public:
 
@@ -74,10 +76,13 @@ class TypeAnalyzer {
      * \param types Information about terms' types.
      * \param dataflow Dataflow information.
      * \param usage Set of terms producing actual high-level code.
-     * \param callsData Pointer to the calls data. Can be NULL.
+     * \param callsData Calls data.
+     * \param signatures Signatures of functions.
      */
-    TypeAnalyzer(Types &types, const dflow::Dataflow &dataflow, const usage::Usage &usage, cconv::CallsData *callsData):
-        types_(types), dataflow_(dataflow), usage_(usage), callsData_(callsData)
+    TypeAnalyzer(Types &types, const dflow::Dataflow &dataflow, const usage::Usage &usage,
+        cconv::CallsData &callsData, const cconv::Signatures &signatures
+    ):
+        types_(types), dataflow_(dataflow), usage_(usage), callsData_(callsData), signatures_(signatures)
     {}
 
     /**
@@ -106,9 +111,14 @@ class TypeAnalyzer {
     const usage::Usage& usage() const { return usage_; }
 
     /**
-     * \return Pointer to the calls data. Can be NULL.
+     * \return Calls data.
      */
-    cconv::CallsData *callsData() const { return callsData_; }
+    cconv::CallsData &callsData() const { return callsData_; }
+
+    /**
+     * \return Signatures of functions.
+     */
+    const cconv::Signatures &signatures() const { return signatures_; }
 
     /**
      * Computes type traits for all the terms in given function.

@@ -28,6 +28,7 @@
 
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
+#include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Term.h>
 
@@ -41,7 +42,17 @@ namespace core {
 namespace ir {
 namespace misc {
 
+void CensusVisitor::operator()(const Functions *functions) {
+    assert(functions != NULL);
+
+    foreach (auto function, functions->functions()) {
+        (*this)(function);
+    }
+}
+
 void CensusVisitor::operator()(const Function *function) {
+    assert(function != NULL);
+
     assert(currentFunction_ == NULL);
     currentFunction_ = function;
 
@@ -60,12 +71,16 @@ void CensusVisitor::operator()(const Function *function) {
 }
 
 void CensusVisitor::operator()(const BasicBlock *basicBlock) {
+    assert(basicBlock != NULL);
+
     foreach (const Statement *statement, basicBlock->statements()) {
         (*this)(statement);
     }
 }
 
 void CensusVisitor::operator()(const Statement *statement) {
+    assert(statement != NULL);
+
     statements_.push_back(statement);
     statement->visitChildTerms(*this);
 
@@ -89,6 +104,8 @@ void CensusVisitor::operator()(const Statement *statement) {
 }
 
 void CensusVisitor::operator()(const Term *term) {
+    assert(term != NULL);
+
     terms_.push_back(term);
     term->visitChildTerms(*this);
 }

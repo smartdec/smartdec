@@ -87,20 +87,20 @@ void IntelMasterAnalyzer::createProgram(core::Context &context) const {
     }
 }
 
-void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::cconv::FunctionDescriptor &descriptor) const {
+void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::cconv::CalleeId &calleeId) const {
     const IntelArchitecture *architecture = checked_cast<const IntelArchitecture *>(context.module()->architecture());
 
     if (architecture->bitness() == 32) {
-        if (auto addr = descriptor.entryAddress()) {
+        if (auto addr = calleeId.entryAddress()) {
             const QString &symbol = context.module()->getName(*addr);
             int index = symbol.lastIndexOf(QChar('@'));
             if (index != -1) {
                 ByteSize argumentsSize;
                 if (stringToInt(symbol.mid(index + 1), &argumentsSize)) {
                     context.callsData()->setCallingConvention(
-                        descriptor,
+                        calleeId,
                         architecture->getCallingConvention(QLatin1String("stdcall32")));
-                    checked_cast<core::ir::cconv::GenericDescriptorAnalyzer *>(context.callsData()->getDescriptorAnalyzer(descriptor))->setArgumentsSize(argumentsSize);
+                    checked_cast<core::ir::cconv::GenericDescriptorAnalyzer *>(context.callsData()->getDescriptorAnalyzer(calleeId))->setArgumentsSize(argumentsSize);
                     return;
                 }
             }
@@ -109,13 +109,13 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
 
     switch (context.module()->architecture()->bitness()) {
         case 16:
-            context.callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("cdecl16")));
+            context.callsData()->setCallingConvention(calleeId, architecture->getCallingConvention(QLatin1String("cdecl16")));
             break;
         case 32:
-            context.callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("cdecl32")));
+            context.callsData()->setCallingConvention(calleeId, architecture->getCallingConvention(QLatin1String("cdecl32")));
             break;
         case 64:
-            context.callsData()->setCallingConvention(descriptor, architecture->getCallingConvention(QLatin1String("amd64")));
+            context.callsData()->setCallingConvention(calleeId, architecture->getCallingConvention(QLatin1String("amd64")));
             break;
     }
 }

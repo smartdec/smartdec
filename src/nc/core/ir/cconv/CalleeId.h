@@ -35,46 +35,47 @@ namespace ir {
 namespace cconv {
 
 /**
- * An immutable class with value semantics used to identify functions even when their addresses are not known.
+ * An immutable class with value semantics used to identify functions
+ * being called, even when their addresses are not known.
  */
-class FunctionDescriptor {
+class CalleeId {
     public:
 
     /**
-     * Kind of the descriptor.
+     * Kind of the id.
      */
     enum Kind {
-        INVALID,       ///< Invalid descriptor not identifying anything.
-        ENTRY_ADDRESS, ///< Identifier by function's entry address.
-        CALL_ADDRESS   ///< Identifier by the call instruction address.
+        INVALID,       ///< Invalid, identifies nothing.
+        ENTRY_ADDRESS, ///< Identifies a function by its entry address.
+        CALL_ADDRESS   ///< Identifies a function by the address of a call to it.
     };
 
     private:
 
-    Kind kind_; ///< Kind of the descriptor.
-    ByteAddr address_; ///< Address.
+    Kind kind_; ///< Kind of this id.
+    ByteAddr address_; ///< Address of callee's entry or call instruction.
 
     public:
 
     /**
-     * Constructor of an invalid descriptor.
+     * Constructs an invalid id.
      */
-    FunctionDescriptor(): kind_(INVALID), address_() {}
+    CalleeId(): kind_(INVALID), address_() {}
 
     /**
-     * Constructor.
+     * Constructs a valid id.
      *
-     * \param kind Kind of the descriptor.
+     * \param kind Kind of the id.
      * \param address Function's entry or call instruction address (depends on the kind).
      */
-    FunctionDescriptor(Kind kind, ByteAddr address):
+    CalleeId(Kind kind, ByteAddr address):
         kind_(kind), address_(address)
     {
         assert(kind == ENTRY_ADDRESS || kind == CALL_ADDRESS);
     }
 
     /**
-     * \return Kind of the descriptor.
+     * \return Kind of this id.
      */
     Kind kind() const { return kind_; }
 
@@ -91,23 +92,23 @@ class FunctionDescriptor {
     /**
      * \return True if this is equal to that, false otherwise.
      */
-    bool operator==(const FunctionDescriptor &that) const {
+    bool operator==(const CalleeId &that) const {
         return kind_ == that.kind_ && address_ == that.address_;
     }
 
     /**
      * \return True if this is not equal to that, false otherwise.
      */
-    bool operator!=(const FunctionDescriptor &that) const {
+    bool operator!=(const CalleeId &that) const {
         return !(*this == that);
     }
 
     /**
-     * \return NULL if the descriptor is invalid, non-null pointer otherwise.
+     * \return NULL if this id is invalid, non-null pointer otherwise.
      */
     operator const void *() const { return kind_ == INVALID ? NULL : this; }
 
-    friend struct std::hash<FunctionDescriptor>;
+    friend struct std::hash<CalleeId>;
 };
 
 } // namespace cconv
@@ -118,15 +119,15 @@ class FunctionDescriptor {
 namespace std {
 
 /**
- * Specialization of std::hash for function descriptors.
- * 
- * This makes it possible to use function descriptors as keys in hash maps.
+ * Specialization of std::hash for callee ids.
+ *
+ * This makes it possible to use callee ids as keys in hash maps.
  */
 template<>
-struct hash<nc::core::ir::cconv::FunctionDescriptor>: public unary_function<nc::core::ir::cconv::FunctionDescriptor, size_t> {
+struct hash<nc::core::ir::cconv::CalleeId>: public unary_function<nc::core::ir::cconv::CalleeId, size_t> {
 public:
-    result_type operator()(const argument_type &descriptor) const {
-        return hash_value(static_cast<int>(descriptor.kind_)) ^ hash_value(descriptor.address_);
+    result_type operator()(const argument_type &value) const {
+        return hash_value(static_cast<int>(value.kind_)) ^ hash_value(value.address_);
     }
 
 protected:
@@ -143,15 +144,15 @@ namespace nc { namespace core { namespace ir { namespace cconv {
 /**
  * Qt hash function for memory locations.
  */
-inline unsigned int qHash(const FunctionDescriptor &value) {
-    return static_cast<unsigned int>(std::hash<FunctionDescriptor>()(value));
+inline unsigned int qHash(const CalleeId &value) {
+    return static_cast<unsigned int>(std::hash<CalleeId>()(value));
 }
 
 /**
- * Boost hash function for function descriptors.
+ * Boost hash function for callee ids.
  */
-inline std::size_t hash_value(const FunctionDescriptor &value) {
-    return std::hash<FunctionDescriptor>()(value);
+inline std::size_t hash_value(const CalleeId &value) {
+    return std::hash<CalleeId>()(value);
 }
 
 }}}} // namespace nc::core::ir::cconv

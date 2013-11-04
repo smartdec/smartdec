@@ -33,7 +33,7 @@ namespace ir {
 namespace cconv {
 
 class CallingConvention;
-class FunctionDescriptor;
+class CalleeId;
 
 /**
  * Detector of calling conventions.
@@ -47,11 +47,13 @@ class CallingConventionDetector {
     virtual ~CallingConventionDetector() {}
 
     /**
-     * This function detects the calling convention of a function with given descriptor and sets it in the CallsData via the setCallingConvention() method.
+     * This function show detect the calling convention of a function with
+     * given id and set it in the CallsData via the setCallingConvention()
+     * method.
      *
-     * \param[in] descriptor Descriptor of a function.
+     * \param[in] id Callee id.
      */
-    virtual void detectCallingConvention(const FunctionDescriptor &descriptor) const = 0;
+    virtual void detectCallingConvention(const CalleeId &id) const = 0;
 };
 
 } // namespace cconv

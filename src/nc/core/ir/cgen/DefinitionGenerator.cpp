@@ -48,7 +48,7 @@
 #include <nc/core/ir/cconv/CallAnalyzer.h>
 #include <nc/core/ir/cconv/CallsData.h>
 #include <nc/core/ir/cconv/FunctionAnalyzer.h>
-#include <nc/core/ir/cconv/Signature.h>
+#include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cconv/ReturnAnalyzer.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Dfs.h>
@@ -119,9 +119,11 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
 
     setDefinition(functionDefinition.get());
 
-    if (const cconv::Signature *signature = context().callsData()->getSignature(function())) {
+    if (auto calleeId = parent().context().callsData()->getCalleeId(function())) {
         if (cconv::FunctionAnalyzer *functionAnalyzer = context().callsData()->getFunctionAnalyzer(function())) {
-            foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
+            const auto &signature = parent().context().signatures()->getSignature(calleeId);
+
+            foreach (const MemoryLocation &memoryLocation, signature.arguments()) {
                 makeArgumentDeclaration(functionAnalyzer->getArgumentTerm(memoryLocation));
             }
         }
@@ -704,14 +706,16 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             auto callOperator = std::make_unique<likec::CallOperator>(tree(), std::move(target));
 
-            if (const cconv::Signature *signature = context().callsData()->getSignature(call)) {
-                if (cconv::CallAnalyzer *callAnalyzer = context().callsData()->getCallAnalyzer(call)) {
-                    foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
+            if (auto calleeId = parent().context().callsData()->getCalleeId(call)) {
+                if (auto callAnalyzer = context().callsData()->getCallAnalyzer(call)) {
+                    const auto &signature = parent().context().signatures()->getSignature(calleeId);
+
+                    foreach (const MemoryLocation &memoryLocation, signature.arguments()) {
                         callOperator->addArgument(makeExpression(callAnalyzer->getArgumentTerm(memoryLocation)));
                     }
 
-                    if (signature->returnValue()) {
-                        const Term *returnValueTerm = callAnalyzer->getReturnValueTerm(signature->returnValue());
+                    if (signature.returnValue()) {
+                        const Term *returnValueTerm = callAnalyzer->getReturnValueTerm(signature.returnValue());
 
                         return std::make_unique<likec::ExpressionStatement>(tree(),
                             std::make_unique<likec::BinaryOperator>(tree(),
@@ -727,12 +731,14 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
             return std::make_unique<likec::ExpressionStatement>(tree(), std::move(callOperator));
         }
         case Statement::RETURN: {
-            if (const cconv::Signature *signature = context().callsData()->getSignature(function())) {
-                if (cconv::ReturnAnalyzer *returnAnalyzer = context().callsData()->getReturnAnalyzer(function(), statement->asReturn())) {
-                    if (signature->returnValue()) {
+            if (auto calleeId = parent().context().callsData()->getCalleeId(function())) {
+                if (auto returnAnalyzer = context().callsData()->getReturnAnalyzer(function(), statement->asReturn())) {
+                    const auto &signature = parent().context().signatures()->getSignature(calleeId);
+
+                    if (signature.returnValue()) {
                         return std::make_unique<likec::Return>(
                             tree(),
-                            makeExpression(returnAnalyzer->getReturnValueTerm(signature->returnValue())));
+                            makeExpression(returnAnalyzer->getReturnValueTerm(signature.returnValue())));
                     }
                 }
             }

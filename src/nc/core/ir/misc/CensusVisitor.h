@@ -35,6 +35,7 @@ namespace ir {
 
 class BasicBlock;
 class Function;
+class Functions;
 class Statement;
 class Term;
 
@@ -48,8 +49,9 @@ namespace misc {
  * An ultimate visitor of all statements and terms.
  */
 class CensusVisitor:
-    public Visitor<const BasicBlock>, public Visitor<const Function>,
-    public Visitor<const Statement>, public Visitor<const Term>
+    public Visitor<const Functions>, public Visitor<const Function>,
+    public Visitor<const BasicBlock>, public Visitor<const Statement>,
+    public Visitor<const Term>
 {
     cconv::CallsData *callsData_; ///< Calls data.
 
@@ -87,6 +89,7 @@ class CensusVisitor:
      */
     void clear();
 
+    virtual void operator()(const Functions *function);
     virtual void operator()(const Function *function);
     virtual void operator()(const BasicBlock *basicBlock);
     virtual void operator()(const Statement *statement);

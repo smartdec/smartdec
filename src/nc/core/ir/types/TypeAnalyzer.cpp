@@ -33,7 +33,7 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallsData.h>
-#include <nc/core/ir/cconv/Signature.h>
+#include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cconv/ReturnAnalyzer.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/Value.h>
@@ -49,7 +49,7 @@ namespace ir {
 namespace types {
 
 void TypeAnalyzer::analyze(const Function *function, const CancellationToken &canceled) {
-    ir::misc::CensusVisitor census(callsData());
+    ir::misc::CensusVisitor census(&callsData());
     census(function);
 
     /* Join term types with types of definitions. */
@@ -69,18 +69,20 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
     } 
 
     /* Join types of terms used for return values. */
-    if (callsData()) {
-        if (const cconv::Signature *signature = callsData()->getSignature(function)) {
-            if (signature->returnValue()) {
-                const Term *firstReturnTerm = NULL;
-                foreach (const Return *ret, function->getReturns()) {
-                    if (cconv::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function, ret)) {
-                        const Term *returnTerm = returnAnalyzer->getReturnValueTerm(signature->returnValue());
-                        if (firstReturnTerm == NULL) {
-                            firstReturnTerm = returnTerm;
-                        } else {
-                            types().getType(firstReturnTerm)->unionSet(types().getType(returnTerm));
-                        }
+    if (auto calleeId = callsData().getCalleeId(function)) {
+        const auto &signature = signatures().getSignature(calleeId);
+
+        if (signature.returnValue()) {
+            const Term *firstReturnTerm = NULL;
+
+            foreach (const Return *ret, function->getReturns()) {
+                if (cconv::ReturnAnalyzer *returnAnalyzer = callsData().getReturnAnalyzer(function, ret)) {
+                    const Term *returnTerm = returnAnalyzer->getReturnValueTerm(signature.returnValue());
+
+                    if (firstReturnTerm == NULL) {
+                        firstReturnTerm = returnTerm;
+                    } else {
+                        types().getType(firstReturnTerm)->unionSet(types().getType(returnTerm));
                     }
                 }
             }

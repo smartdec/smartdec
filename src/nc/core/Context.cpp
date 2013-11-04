@@ -35,6 +35,7 @@
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/cconv/CallingConventionDetector.h>
 #include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/misc/TermToFunction.h>
@@ -86,6 +87,12 @@ void Context::setCallingConventionDetector(std::unique_ptr<ir::cconv::CallingCon
     assert(detector);
     assert(!callingConventionDetector_);
     callingConventionDetector_ = std::move(detector);
+}
+
+void Context::setSignatures(std::unique_ptr<ir::cconv::Signatures> signatures) {
+    assert(signatures);
+    assert(!signatures_);
+    signatures_ = std::move(signatures);
 }
 
 void Context::setTermToFunction(std::unique_ptr<ir::misc::TermToFunction> termToFunction) {

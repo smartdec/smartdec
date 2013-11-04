@@ -32,7 +32,7 @@
 
 #include <nc/common/Types.h>
 
-#include "FunctionDescriptor.h"
+#include "CalleeId.h"
 
 namespace nc {
 namespace core {
@@ -62,23 +62,23 @@ class CallsData {
     /** Mapping from a call to its destination address. */
     boost::unordered_map<const Call *, ByteAddr> call2address_;
 
-    /** Mapping from a function's descriptor to the associated calling convention. */
-    boost::unordered_map<FunctionDescriptor, const CallingConvention *> descriptor2convention_;
+    /** Mapping from a callee id to the associated calling convention. */
+    boost::unordered_map<CalleeId, const CallingConvention *> id2convention_;
 
-    /** Mapping from a function's descriptor to the associated address analyzer. */
-    boost::unordered_map<FunctionDescriptor, std::unique_ptr<DescriptorAnalyzer>> descriptor2analyzer_;
+    /** Mapping from a callee id to the associated address analyzer. */
+    boost::unordered_map<CalleeId, std::unique_ptr<DescriptorAnalyzer>> id2analyzer_;
 
     /** Mapping from a function to its analyzer. */
-    boost::unordered_map<std::pair<FunctionDescriptor, const Function *>, std::unique_ptr<FunctionAnalyzer>> function2analyzer_;
+    boost::unordered_map<std::pair<CalleeId, const Function *>, std::unique_ptr<FunctionAnalyzer>> function2analyzer_;
 
     /** Mapping from a call to its analyzer. */
-    boost::unordered_map<std::pair<FunctionDescriptor, const Call *>, std::unique_ptr<CallAnalyzer>> call2analyzer_;
+    boost::unordered_map<std::pair<CalleeId, const Call *>, std::unique_ptr<CallAnalyzer>> call2analyzer_;
 
     /** Mapping from a return to its analyzer. */
-    boost::unordered_map<std::pair<FunctionDescriptor, const Return *>, std::unique_ptr<ReturnAnalyzer>> return2analyzer_;
+    boost::unordered_map<std::pair<CalleeId, const Return *>, std::unique_ptr<ReturnAnalyzer>> return2analyzer_;
 
-    /** Mapping from a function's descriptor to its signature. */
-    boost::unordered_map<FunctionDescriptor, std::unique_ptr<Signature>> descriptor2signature_;
+    /** Mapping from a callee id to its signature. */
+    boost::unordered_map<CalleeId, std::unique_ptr<Signature>> id2signature_;
 
     public:
 
@@ -107,16 +107,16 @@ class CallsData {
     /**
      * \param function Valid pointer to a function.
      *
-     * \return Function's descriptor.
+     * \return Id of the function.
      */
-    FunctionDescriptor getDescriptor(const Function *function) const;
+    CalleeId getCalleeId(const Function *function) const;
 
     /**
      * \param call Valid pointer to a call.
      *
-     * \return Descriptor of the called function.
+     * \return Id of the function called.
      */
-    FunctionDescriptor getDescriptor(const Call *call) const;
+    CalleeId getCalleeId(const Call *call) const;
 
     /**
      * \param call Valid pointer to a Call instance.
@@ -134,26 +134,26 @@ class CallsData {
     void setCalledAddress(const Call *call, ByteAddr addr);
 
     /**
-     * Sets function's calling convention.
+     * Assigns a calling convention to a callee id.
      *
-     * \param descriptor Function's descriptor.
+     * \param calleeId Callee id.
      * \param convention Pointer to a calling convention of the function. Can be NULL.
      */
-    void setCallingConvention(const FunctionDescriptor &descriptor, const CallingConvention *convention);
+    void setCallingConvention(const CalleeId &calleeId, const CallingConvention *convention);
 
     /**
-     * \param descriptor Function's descriptor.
+     * \param calleeId Callee id.
      *
      * \return Pointer to the calling convention used for calls to given address. Can be NULL.
      */
-    const CallingConvention *getCallingConvention(const FunctionDescriptor &descriptor);
+    const CallingConvention *getCallingConvention(const CalleeId &calleeId);
 
     /**
-     * \param descriptor Function's descriptor.
+     * \param calleeId Callee id.
      *
-     * \return Pointer to the associated address analyzer. Can be NULL.
+     * \return Pointer to the associated descriptor analyzer. Can be NULL.
      */
-    DescriptorAnalyzer *getDescriptorAnalyzer(const FunctionDescriptor &descriptor);
+    DescriptorAnalyzer *getDescriptorAnalyzer(const CalleeId &calleeId);
 
     /**
      * \param function Valid pointer to a function.
@@ -179,27 +179,6 @@ class CallsData {
      * Can be NULL. Such instance is created when necessary and if possible.
      */
     ReturnAnalyzer *getReturnAnalyzer(const Function *function, const Return *ret);
-
-    /**
-     * \return Pointer to the signature of the function with given address. Can be NULL.
-     *
-     * \param descriptor Descriptor of a function.
-     */
-    const Signature *getSignature(const FunctionDescriptor &descriptor);
-
-    /**
-     * \return Pointer to the signature of the function. Can be NULL.
-     *
-     * \param function Valid pointer to the function.
-     */
-    const Signature *getSignature(const Function *function);
-
-    /**
-     * \return Pointer to the signature of the function being called. Can be NULL.
-     *
-     * \param call Valid pointer to the call.
-     */
-    const Signature *getSignature(const Call *call);
 };
 
 } // namespace cconv

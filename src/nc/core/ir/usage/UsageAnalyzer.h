@@ -43,6 +43,7 @@ class Term;
 
 namespace cconv {
     class CallsData;
+    class Signatures;
 }
 
 namespace cflow {
@@ -63,10 +64,11 @@ class Usage;
 class UsageAnalyzer {
     Usage &usage_; ///< Usage information.
     const Function *function_; ///< Function to be analyzed.
-    const dflow::Dataflow *dataflow_; ///< Dataflow information.
+    const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Architecture.
-    const cflow::Graph *regionGraph_; ///< Reduced control-flow graph.
-    cconv::CallsData *callsData_; ///< Calls data.
+    const cflow::Graph &regionGraph_; ///< Reduced control-flow graph.
+    cconv::CallsData &callsData_; ///< Calls data.
+    const cconv::Signatures &signatures_; ///< Signatures of functions.
     std::vector<const Jump *> uselessJumps_; ///< Useless jumps.
 
 public:
@@ -76,14 +78,20 @@ public:
      * \param[out] usage Usage information.
      * \param[in] function Valid pointer to a function to be analyzed.
      * \param[in] dataflow Dataflow information.
-     * \param[in] regionGraph Reduced control-flow graph.
      * \param[in] architecture Valid pointer to the architecture.
      * \param[in] regionGraph Reduced control-flow graph.
-     * \param[in] callsData Valid pointer to the calls data.
+     * \param[in] callsData Calls data.
+     * \param[in] signatures Signatures of functions.
      */
     UsageAnalyzer(Usage &usage, const Function *function,
-        const dflow::Dataflow *dataflow, const arch::Architecture *architecture, 
-        const cflow::Graph *regionGraph, cconv::CallsData *callsData);
+        const dflow::Dataflow &dataflow, const arch::Architecture *architecture, 
+        const cflow::Graph &regionGraph, cconv::CallsData &callsData,
+        const cconv::Signatures &signatures
+    ):
+        usage_(usage), function_(function), dataflow_(dataflow),
+        architecture_(architecture), regionGraph_(regionGraph),
+        callsData_(callsData), signatures_(signatures)
+    {}
 
     /**
      * Virtual destructor.
@@ -108,7 +116,7 @@ public:
     /**
      * \return Valid pointer to the dataflow information.
      */
-    const dflow::Dataflow *dataflow() const { return dataflow_; }
+    const dflow::Dataflow &dataflow() const { return dataflow_; }
 
     /**
      * \return Valid pointer to the architecture.
@@ -116,14 +124,19 @@ public:
     const arch::Architecture *architecture() const { return architecture_; }
 
     /**
-     * \return Pointer to the reduced control-flow graph. Can be NULL.
+     * \return Pointer to the reduced control-flow graph.
      */
-    const cflow::Graph *regionGraph() const { return regionGraph_; }
+    const cflow::Graph &regionGraph() const { return regionGraph_; }
 
     /**
-     * \return Pointer to the call graph. Can be NULL.
+     * \return Calls data.
      */
-    cconv::CallsData *callsData() const { return callsData_; }
+    cconv::CallsData &callsData() const { return callsData_; }
+
+    /**
+     * \return Signatures of functions.
+     */
+    const cconv::Signatures &signatures() const { return signatures_; }
 
     /**
      * Computes the set of used terms.

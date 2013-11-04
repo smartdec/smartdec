@@ -120,6 +120,10 @@ void Driver::decompile(Context &context) {
             checkForCancellation();
         }
 
+        context.logToken() << tr("Computing signatures of functions...");
+        masterAnalyzer->reconstructSignatures(context);
+        checkForCancellation();
+
         foreach (const ir::Function *function, context.functions()->functions()) {
             context.logToken() << tr("Running structural analysis on %1...").arg(function->name());
             masterAnalyzer->doStructuralAnalysis(context, function);

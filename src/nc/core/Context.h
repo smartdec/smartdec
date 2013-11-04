@@ -61,6 +61,7 @@ namespace ir {
     namespace cconv {
         class CallsData;
         class CallingConventionDetector;
+        class Signatures;
     }
     namespace cflow {
         class Graph;
@@ -100,6 +101,7 @@ class Context: public QObject {
     std::unique_ptr<ir::Functions> functions_; ///< Functions.
     std::unique_ptr<ir::misc::TermToFunction> termToFunction_; ///< Term to function mapping.
     std::unique_ptr<ir::cconv::CallsData> callsData_; ///< Calls data.
+    std::unique_ptr<ir::cconv::Signatures> signatures_; ///< Signatures.
     std::unique_ptr<ir::cconv::CallingConventionDetector> callingConventionDetector_; ///< Detector of calling conventions.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::dflow::Dataflow> > dataflows_; ///< Dataflow information.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::usage::Usage> > usages_; ///< Term usage information.
@@ -179,7 +181,7 @@ public:
     /**
      * \return Valid pointer to the information on calling conventions of functions.
      */
-    ir::cconv::CallsData *callsData() { return callsData_.get(); }
+    ir::cconv::CallsData *callsData() const { return callsData_.get(); }
 
     /**
      * Sets the calling convention detector.
@@ -192,6 +194,18 @@ public:
      * \return Valid pointer to the calling convention detector.
      */
     ir::cconv::CallingConventionDetector *callingConventionDetector() { return callingConventionDetector_.get(); }
+
+    /**
+     * Sets the reconstructed signatures.
+     *
+     * \param signatures Valid pointer to the signatures.
+     */
+    void setSignatures(std::unique_ptr<ir::cconv::Signatures> signatures);
+
+    /**
+     * \return Pointer to the signatures of functions. Can be NULL, if not set.
+     */
+    const ir::cconv::Signatures *signatures() const { return signatures_.get(); }
 
     /**
      * Sets the term to function mapping.

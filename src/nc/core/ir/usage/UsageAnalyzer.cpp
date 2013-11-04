@@ -37,7 +37,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallAnalyzer.h>
 #include <nc/core/ir/cconv/CallsData.h>
-#include <nc/core/ir/cconv/Signature.h>
+#include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cconv/ReturnAnalyzer.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Graph.h>
@@ -53,36 +53,22 @@ namespace core {
 namespace ir {
 namespace usage {
 
-UsageAnalyzer::UsageAnalyzer(Usage &usage, const Function *function,
-    const dflow::Dataflow *dataflow, const arch::Architecture *architecture,
-    const cflow::Graph *regionGraph, cconv::CallsData *callsData
-):
-    usage_(usage), function_(function), dataflow_(dataflow),
-    architecture_(architecture), regionGraph_(regionGraph), callsData_(callsData)
-{
-    assert(function != NULL);
-    assert(dataflow != NULL);
-    assert(architecture != NULL);
-}
-
 void UsageAnalyzer::analyze() {
     uselessJumps_.clear();
 
-    if (regionGraph()) {
-        foreach (auto node, regionGraph()->nodes()) {
-            if (auto region = node->as<cflow::Region>()) {
-                if (auto witch = region->as<cflow::Switch>()) {
-                    if (witch->boundsCheckNode()) {
-                        uselessJumps_.push_back(witch->boundsCheckNode()->basicBlock()->getJump());
-                    }
+    foreach (auto node, regionGraph().nodes()) {
+        if (auto region = node->as<cflow::Region>()) {
+            if (auto witch = region->as<cflow::Switch>()) {
+                if (witch->boundsCheckNode()) {
+                    uselessJumps_.push_back(witch->boundsCheckNode()->basicBlock()->getJump());
                 }
             }
         }
-
-        std::sort(uselessJumps_.begin(), uselessJumps_.end());
     }
 
-    misc::CensusVisitor census(callsData());
+    std::sort(uselessJumps_.begin(), uselessJumps_.end());
+
+    misc::CensusVisitor census(&callsData());
     census(function());
 
     foreach (const Term *term, census.terms()) {
@@ -95,13 +81,13 @@ void UsageAnalyzer::analyze() {
         computeUsage(term);
     }
 
-    if (callsData()) {
-        if (const cconv::Signature *signature = callsData()->getSignature(function())) {
-            if (signature->returnValue()) {
-                foreach (const Return *ret, function()->getReturns()) {
-                    if (cconv::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function(), ret)) {
-                        makeUsed(returnAnalyzer->getReturnValueTerm(signature->returnValue()));
-                    }
+    if (auto calleeId = callsData().getCalleeId(function())) {
+        const auto &signature = signatures().getSignature(calleeId);
+
+        if (signature.returnValue()) {
+            foreach (const Return *ret, function()->getReturns()) {
+                if (auto returnAnalyzer = callsData().getReturnAnalyzer(function(), ret)) {
+                    makeUsed(returnAnalyzer->getReturnValueTerm(signature.returnValue()));
                 }
             }
         }
@@ -139,12 +125,12 @@ void UsageAnalyzer::computeUsage(const Statement *statement) {
 
             makeUsed(call->target());
 
-            if (callsData()) {
-                if (const cconv::Signature *signature = callsData()->getSignature(call)) {
-                    if (cconv::CallAnalyzer *callAnalyzer = callsData()->getCallAnalyzer(call)) {
-                        foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
-                            makeUsed(callAnalyzer->getArgumentTerm(memoryLocation));
-                        }
+            if (auto calleeId = callsData().getCalleeId(call)) {
+                const auto &signature = signatures().getSignature(calleeId);
+
+                if (auto callAnalyzer = callsData().getCallAnalyzer(call)) {
+                    foreach (const MemoryLocation &memoryLocation, signature.arguments()) {
+                        makeUsed(callAnalyzer->getArgumentTerm(memoryLocation));
                     }
                 }
             }
@@ -179,7 +165,7 @@ void UsageAnalyzer::computeUsage(const Term *term) {
         case Term::DEREFERENCE: {
             if (term->isWrite()) {
                 const Dereference *dereference = term->asDereference();
-                const MemoryLocation &memoryLocation = dataflow()->getMemoryLocation(dereference);
+                const MemoryLocation &memoryLocation = dataflow().getMemoryLocation(dereference);
                 if (!memoryLocation || architecture()->isGlobalMemory(memoryLocation)) {
                     makeUsed(dereference);
                 }
@@ -202,7 +188,7 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
     assert(term != NULL);
 
 #ifdef NC_PREFER_CONSTANTS_TO_EXPRESSIONS
-    if (term->isRead() && dataflow()->getValue(term)->abstractValue().isConcrete()) {
+    if (term->isRead() && dataflow().getValue(term)->abstractValue().isConcrete()) {
         return;
     }
 #endif
@@ -216,7 +202,7 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
             break;
         case Term::MEMORY_LOCATION_ACCESS: {
             if (term->isRead()) {
-                foreach (auto &chunk, dataflow()->getDefinitions(term).chunks()) {
+                foreach (auto &chunk, dataflow().getDefinitions(term).chunks()) {
                     foreach (const Term *definition, chunk.definitions()) {
                         makeUsed(definition);
                     }
@@ -230,7 +216,7 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
         }
         case Term::DEREFERENCE: {
             if (term->isRead()) {
-                foreach (auto &chunk, dataflow()->getDefinitions(term).chunks()) {
+                foreach (auto &chunk, dataflow().getDefinitions(term).chunks()) {
                     foreach (const Term *definition, chunk.definitions()) {
                         makeUsed(definition);
                     }
@@ -242,7 +228,7 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
             }
 
             const Dereference *dereference = term->asDereference();
-            const dflow::Value *addressValue = dataflow()->getValue(dereference->address());
+            const dflow::Value *addressValue = dataflow().getValue(dereference->address());
             if (!addressValue->isStackOffset() && !addressValue->abstractValue().isConcrete()) {
                 makeUsed(dereference->address());
             }
@@ -261,7 +247,7 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
         }
         case Term::CHOICE: {
             const Choice *choice = term->asChoice();
-            if (!dataflow()->getDefinitions(choice->preferredTerm()).empty()) {
+            if (!dataflow().getDefinitions(choice->preferredTerm()).empty()) {
                 makeUsed(choice->preferredTerm());
             } else {
                 makeUsed(choice->defaultTerm());
