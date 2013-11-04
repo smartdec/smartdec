@@ -42,7 +42,6 @@ class DataflowAnalyzer;
 class ExecutionContext {
     DataflowAnalyzer &analyzer_; ///< DataflowAnalyzer performing the execution.
     ReachingDefinitions definitions_; ///< Reaching definitions.
-    bool fixpointReached_; ///< Whether stationary point in reaching definitions is reached.
 
     public:
 
@@ -50,23 +49,15 @@ class ExecutionContext {
      * Class constructor.
      *
      * \param analyzer                  DataflowAnalyzer performing the execution.
-     * \param fixpointReached           Flag which is true if reaching definitions didn't change
-     *                                  during last iteration of function's execution.
      */
-    ExecutionContext(DataflowAnalyzer &analyzer, bool fixpointReached = false):
-        analyzer_(analyzer),
-        fixpointReached_(fixpointReached)
+    ExecutionContext(DataflowAnalyzer &analyzer):
+        analyzer_(analyzer)
     {}
 
     /**
      * \return DataflowAnalyzer performing the execution.
      */
     DataflowAnalyzer &analyzer() const { return analyzer_; }
-
-    /**
-     * \return Whether stationary point in reaching definitions is reached.
-     */
-    bool fixpointReached() const { return fixpointReached_; }
 
     /**
      * \return Reaching definitions.

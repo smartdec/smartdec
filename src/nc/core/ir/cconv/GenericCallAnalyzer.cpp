@@ -173,6 +173,7 @@ void GenericCallAnalyzer::executeCall(dflow::ExecutionContext &context) {
         context.analyzer().execute(argument.second.get(), context);
     }
 
+    // FIXME: unnecessary?
 #if 0
     /* Kill all estimated arguments. */
     foreach (const MemoryLocation &memoryLocation, argumentLocations_) {
@@ -192,7 +193,6 @@ void GenericCallAnalyzer::executeCall(dflow::ExecutionContext &context) {
         context.analyzer().execute(pair.second.get(), context);
     }
 
-    // FIXME: unnecessary?
 #if 0
     /* If return values can overlap, they kill each other and the following hack is necessary. */
     foreach (const auto &pair, returnValues_) {
@@ -204,6 +204,8 @@ void GenericCallAnalyzer::executeCall(dflow::ExecutionContext &context) {
     }
 #endif
 
+    // FIXME
+#if 0
     /* Remember possible return values being used. */
     returnValueLocations_.clear();
     foreach (const auto &pair, returnValues_) {
@@ -214,7 +216,7 @@ void GenericCallAnalyzer::executeCall(dflow::ExecutionContext &context) {
             }
         }
     }
-
+#endif
     /* Compute the stack pointer amendment. */
     ByteOffset amendment = convention()->firstArgumentOffset() / 8;
     if (convention()->calleeCleanup() && addressAnalyzer()->argumentsSize()) {

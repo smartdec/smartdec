@@ -219,12 +219,15 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
             }
         }
 
+    // TODO: fix or remove.
+#if 0
         if (term->isWrite()) {
             InspectorItem *usesItem = item->addChild(tr("uses"));
             foreach (const core::ir::Term *use, dataflow->getUses(term)) {
                 usesItem->addChild("", use);
             }
         }
+#endif
     } else {
         item->addChild("function = NULL");
     }

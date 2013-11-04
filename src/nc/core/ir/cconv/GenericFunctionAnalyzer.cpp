@@ -79,7 +79,10 @@ void GenericFunctionAnalyzer::executeEnter(dflow::ExecutionContext &context) {
     /*
      * Detect all stack arguments used.
      */
+    // FIXME
+#if 0
     if (context.fixpointReached()) {
+#endif
         misc::CensusVisitor census(NULL);
         census(context.analyzer().function());
 
@@ -109,7 +112,9 @@ void GenericFunctionAnalyzer::executeEnter(dflow::ExecutionContext &context) {
         argumentLocations_.clear();
         std::transform(arguments_.begin(), arguments_.end(), std::back_inserter(argumentLocations_),
             [](std::pair<const MemoryLocation, std::unique_ptr<Term>> &x) { return x.first; });
+#if 0
     }
+#endif
 
     /**
      * Set stack pointer offset to zero and execute him.

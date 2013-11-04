@@ -109,10 +109,6 @@ void Driver::decompile(Context &context) {
         masterAnalyzer->createCallsData(context);
         context.cancellationToken().poll();
 
-        context.logToken() << tr("Computing term to function mapping...");
-        masterAnalyzer->computeTermToFunctionMapping(context);
-        context.cancellationToken().poll();
-
         foreach (const ir::Function *function, context.functions()->functions()) {
             context.logToken() << tr("Running dataflow analysis on %1...").arg(function->name());
             masterAnalyzer->analyzeDataflow(context, function);
@@ -140,6 +136,10 @@ void Driver::decompile(Context &context) {
             masterAnalyzer->reconstructVariables(context, function);
             context.cancellationToken().poll();
         }
+
+        context.logToken() << tr("Computing term to function mapping...");
+        masterAnalyzer->computeTermToFunctionMapping(context);
+        context.cancellationToken().poll();
 
         context.logToken() << tr("Generating AST...");
         masterAnalyzer->generateTree(context);

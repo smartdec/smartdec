@@ -70,22 +70,19 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
     boost::unordered_map<const BasicBlock *, ReachingDefinitions> outDefinitions;
 
     /*
-     * Running abstract interpretation until at fixpoint twice in a row.
+     * Running abstract interpretation until reaching a fixpoint several times in a row.
      */
     int niterations = 0;
-    bool changed;
-    bool fixpointReached = false;
+    int nfixpoints = 0;
 
-    do {
-        changed = false;
-
+    while (nfixpoints++ < 3) {
         /*
          * Run abstract interpretation on all basic blocks.
          */
         foreach (const BasicBlock *basicBlock, function()->basicBlocks()) {
-            ExecutionContext context(*this, fixpointReached);
+            ExecutionContext context(*this);
 
-            /* Merge the reaching definitions from predecessors. */
+            /* Merge reaching definitions from predecessors. */
             foreach (const BasicBlock *predecessor, cfg.getPredecessors(basicBlock)) {
                 context.definitions().merge(outDefinitions[predecessor]);
             }
@@ -111,35 +108,15 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
             ReachingDefinitions &definitions(outDefinitions[basicBlock]);
             if (definitions != context.definitions()) {
                 definitions = std::move(context.definitions());
-                changed = true;
+                nfixpoints = 0;
             }
         }
 
         /*
-         * Compute uses.
+         * Some terms might have changed their addresses. Filter again.
          */
-        foreach (auto &termAndUses, dataflow().term2uses()) {
-            termAndUses.second.clear();
-        }
-
         foreach (auto &termAndDefinitions, dataflow().term2definitions()) {
             termAndDefinitions.second.filterOut(notCovered);
-
-            foreach (const auto &chunk, termAndDefinitions.second.chunks()) {
-                foreach (const Term *definition, chunk.definitions()) {
-                    dataflow().getUses(definition).push_back(termAndDefinitions.first);
-                }
-            }
-        }
-
-        /*
-         * Have we reached a fixpoint?
-         */
-        if (changed) {
-            fixpointReached = false;
-        } else if (!fixpointReached) {
-            fixpointReached = true;
-            changed = true;
         }
 
         /*
@@ -152,7 +129,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
         }
 
         canceled.poll();
-    } while (changed);
+    }
 }
 
 void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &context) {

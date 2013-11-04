@@ -40,9 +40,6 @@
 namespace nc {
 namespace core {
 namespace ir {
-
-class Term;
-
 namespace dflow {
 
 class Value;
@@ -54,17 +51,13 @@ class Dataflow {
     /** Mapping from a term to a description of its value. */
     boost::unordered_map<const Term *, std::unique_ptr<Value>> term2value_;
 
-    /** Mapping from a term to its location in memory. */
+    /** Mapping from a term to its memory location. */
     boost::unordered_map<const Term *, MemoryLocation> term2location_;
 
-    /** Mapping from a term to the reaching definitions of the parts of its memory location. */
+    /** Mapping from a term to the reaching definitions. */
     boost::unordered_map<const Term *, ReachingDefinitions> term2definitions_;
 
-    /** Mapping from a term to the list of terms reading its value. */
-    boost::unordered_map<const Term *, std::vector<const Term *>> term2uses_;
-
-    public:
-
+public:
     /**
      * Constructor.
      */
@@ -145,40 +138,6 @@ class Dataflow {
         assert(term != NULL);
         assert(term->isRead());
         return nc::find(term2definitions_, term);
-    }
-
-    /**
-     * \return Mapping from a term to its uses.
-     */
-    boost::unordered_map<const Term *, std::vector<const Term *>> &term2uses() { return term2uses_; }
-
-    /**
-     * \return Mapping from a term to its uses.
-     */
-    const boost::unordered_map<const Term *, std::vector<const Term *>> &term2uses() const { return term2uses_; }
-
-    /**
-     * \param[in] term Valid pointer to a read term.
-     *
-     * \return List of term's uses. If it has not been set before,
-     *         an empty vector is returned.
-     */
-    std::vector<const Term *> &getUses(const Term *term) {
-        assert(term != NULL);
-        assert(term->isWrite());
-        return term2uses_[term];
-    }
-
-    /**
-     * \param[in] term Valid pointer to a read term.
-     *
-     * \return List of term's uses. If it has not been set before,
-     *         an empty vector is returned.
-     */
-    const std::vector<const Term *> &getUses(const Term *term) const {
-        assert(term != NULL);
-        assert(term->isWrite());
-        return nc::find(term2uses_, term);
     }
 };
 

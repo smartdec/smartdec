@@ -69,12 +69,14 @@ void VariableAnalyzer::analyze(const Function *function) {
     foreach (auto &pair, term2set) {
         auto term = pair.first;
 
-        if (term->isWrite()) {
+        if (term->isRead()) {
             auto termSet = pair.second.get();
 
-            foreach (const Term *use, dataflow().getUses(term)) {
-                assert(dataflow().getMemoryLocation(term).overlaps(dataflow().getMemoryLocation(use)));
-                termSet->unionSet(term2set[use].get());
+            foreach (const auto &chunk, dataflow().getDefinitions(term).chunks()) {
+                foreach (const Term *def, chunk.definitions()) {
+                    assert(dataflow().getMemoryLocation(term).overlaps(dataflow().getMemoryLocation(def)));
+                    termSet->unionSet(term2set[def].get());
+                }
             }
         }
     }
