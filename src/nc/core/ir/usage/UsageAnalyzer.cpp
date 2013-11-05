@@ -164,10 +164,9 @@ void UsageAnalyzer::computeUsage(const Term *term) {
         }
         case Term::DEREFERENCE: {
             if (term->isWrite()) {
-                const Dereference *dereference = term->asDereference();
-                const MemoryLocation &memoryLocation = dataflow().getMemoryLocation(dereference);
+                const MemoryLocation &memoryLocation = dataflow().getMemoryLocation(term);
                 if (!memoryLocation || architecture()->isGlobalMemory(memoryLocation)) {
-                    makeUsed(dereference);
+                    makeUsed(term);
                 }
             }
             break;
@@ -227,10 +226,8 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
                 }
             }
 
-            const Dereference *dereference = term->asDereference();
-            const dflow::Value *addressValue = dataflow().getValue(dereference->address());
-            if (!addressValue->isStackOffset() && !addressValue->abstractValue().isConcrete()) {
-                makeUsed(dereference->address());
+            if (!dataflow().getMemoryLocation(term)) {
+                makeUsed(term->asDereference()->address());
             }
             break;
         }

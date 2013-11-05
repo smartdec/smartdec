@@ -313,7 +313,7 @@ void DataflowAnalyzer::setMemoryLocation(const Term *term, const MemoryLocation 
     }
 
     /*
-     * If the term has a memory location and not a global variable,
+     * If the term has a memory location and is not a global variable,
      * remember or update reaching definitions accordingly.
      */
     if (newMemoryLocation && !architecture()->isGlobalMemory(newMemoryLocation)) {
