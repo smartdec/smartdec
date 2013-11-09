@@ -89,7 +89,7 @@ class GenericDescriptorAnalyzer: public DescriptorAnalyzer {
     virtual std::unique_ptr<CallAnalyzer> createCallAnalyzer(const Call *call) override;
     virtual std::unique_ptr<FunctionAnalyzer> createFunctionAnalyzer(const Function *function) override;
     virtual std::unique_ptr<ReturnAnalyzer> createReturnAnalyzer(const Return *function) override;
-    virtual Signature getSignature() const override;
+    virtual std::unique_ptr<Signature> getSignature() const override;
 };
 
 } // namespace cconv

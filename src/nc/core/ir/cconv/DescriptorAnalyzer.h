@@ -55,30 +55,31 @@ class DescriptorAnalyzer {
     virtual ~DescriptorAnalyzer() {}
 
     /**
-     * \param call                      Valid pointer to a call statement.
+     * \param call Valid pointer to a call statement.
      *
      * \return Pointer to a new instance of CallAnalyzer for handling given call statement. Can be NULL.
      */
     virtual std::unique_ptr<CallAnalyzer> createCallAnalyzer(const Call *call) = 0;
 
     /**
-     * \param function                  Valid pointer to a function.
+     * \param function Valid pointer to a function.
      *
      * \return Pointer to a new instance of FunctionAnalyzer for handling given function. Can be NULL.
      */
     virtual std::unique_ptr<FunctionAnalyzer> createFunctionAnalyzer(const Function *function) = 0;
 
     /**
-     * \param ret                       Valid pointer to a return statement.
+     * \param ret Valid pointer to a return statement.
      *
      * \return Pointer to a new instance of ReturnAnalyzer for handling given function. Can be NULL.
      */
     virtual std::unique_ptr<ReturnAnalyzer> createReturnAnalyzer(const Return *ret) = 0;
 
     /**
-     * \return Signature of the function at the analyzed address.
+     * \return Pointer to the signature of the function at the analyzed address.
+     *         Can be NULL.
      */
-    virtual Signature getSignature() const = 0;
+    virtual std::unique_ptr<Signature> getSignature() const = 0;
 };
 
 } // namespace cconv

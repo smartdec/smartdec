@@ -39,11 +39,11 @@ public:
      * Sets signature for a given callee id.
      *
      * \param calleeId Valid callee id.
-     * \param signature Signature.
+     * \param signature Pointer to the signature. Can be NULL.
      */
-    void setSignature(const CalleeId &calleeId, Signature signature) {
+    void setSignature(const CalleeId &calleeId, std::unique_ptr<Signature> signature) {
         assert(calleeId);
-        id2signature_[calleeId].reset(new Signature(std::move(signature)));
+        id2signature_[calleeId] = std::move(signature);
     }
 };
 

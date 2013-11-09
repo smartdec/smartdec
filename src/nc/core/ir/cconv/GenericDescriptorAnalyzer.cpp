@@ -28,16 +28,17 @@
 
 #include <nc/common/Foreach.h>
 #include <nc/common/Range.h> /* nc::find */
+#include <nc/common/make_unique.h>
 
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statement.h>
 
-#include "Signature.h"
 #include "GenericCallingConvention.h"
 #include "GenericCallAnalyzer.h"
 #include "GenericFunctionAnalyzer.h"
 #include "GenericReturnAnalyzer.h"
+#include "Signature.h"
 
 namespace nc {
 namespace core {
@@ -62,8 +63,8 @@ std::unique_ptr<ReturnAnalyzer> GenericDescriptorAnalyzer::createReturnAnalyzer(
     return std::move(result);
 }
 
-Signature GenericDescriptorAnalyzer::getSignature() const {
-    Signature signature;
+std::unique_ptr<Signature> GenericDescriptorAnalyzer::getSignature() const {
+    auto signature = std::make_unique<Signature>();
 
     // FIXME
 #if 0
