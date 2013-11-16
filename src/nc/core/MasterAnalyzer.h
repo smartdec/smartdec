@@ -90,7 +90,7 @@ class MasterAnalyzer {
      *
      * \param context Context.
      */
-    virtual void createCallsData(Context &context) const;
+    virtual void createHooks(Context &context) const;
 
     /**
      * Detects and sets the calling convention of a function.

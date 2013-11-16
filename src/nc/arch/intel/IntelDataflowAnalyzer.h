@@ -36,9 +36,9 @@ class IntelDataflowAnalyzer: public core::ir::dflow::DataflowAnalyzer {
         core::ir::dflow::Dataflow &dataflow,
         const core::arch::Architecture *architecture,
         const core::ir::Function *function,
-        core::ir::cconv::CallsData *callsData
+        core::ir::cconv::Hooks *hooks
     ):
-        core::ir::dflow::DataflowAnalyzer(dataflow, architecture, function, callsData)
+        core::ir::dflow::DataflowAnalyzer(dataflow, architecture, function, hooks)
     {}
 
     virtual void execute(const core::ir::Term *term, core::ir::dflow::ExecutionContext &context) override;

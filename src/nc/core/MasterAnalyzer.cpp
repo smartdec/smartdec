@@ -40,7 +40,7 @@
 #include <nc/core/ir/FunctionsGenerator.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/cconv/CallingConventionDetector.h>
-#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/SignatureAnalyzer.h>
 #include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cflow/Graph.h>
@@ -120,8 +120,8 @@ void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) 
     }
 }
 
-void MasterAnalyzer::createCallsData(Context &context) const {
-    std::unique_ptr<ir::cconv::CallsData> callsData(new ir::cconv::CallsData());
+void MasterAnalyzer::createHooks(Context &context) const {
+    std::unique_ptr<ir::cconv::Hooks> hooks(new ir::cconv::Hooks());
 
     class Detector: public ir::cconv::CallingConventionDetector {
         const MasterAnalyzer *masterAnalyzer_;
@@ -139,9 +139,9 @@ void MasterAnalyzer::createCallsData(Context &context) const {
     };
 
     std::unique_ptr<ir::cconv::CallingConventionDetector> detector(new Detector(this, context));
-    callsData->setCallingConventionDetector(detector.get());
+    hooks->setCallingConventionDetector(detector.get());
 
-    context.setCallsData(std::move(callsData));
+    context.setHooks(std::move(hooks));
     context.setCallingConventionDetector(std::move(detector));
 }
 
@@ -151,13 +151,13 @@ void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::cc
 
 void MasterAnalyzer::computeTermToFunctionMapping(Context &context) const {
     context.setTermToFunction(std::unique_ptr<ir::misc::TermToFunction>(
-        new ir::misc::TermToFunction(context.functions(), context.callsData())));
+        new ir::misc::TermToFunction(context.functions(), context.hooks())));
 }
 
 void MasterAnalyzer::analyzeDataflow(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::dflow::Dataflow> dataflow(new ir::dflow::Dataflow());
 
-    ir::dflow::DataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.callsData())
+    ir::dflow::DataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.hooks())
         .analyze(context.cancellationToken());
 
     context.setDataflow(function, std::move(dataflow));
@@ -166,7 +166,7 @@ void MasterAnalyzer::analyzeDataflow(Context &context, const ir::Function *funct
 void MasterAnalyzer::reconstructSignatures(Context &context) const {
     auto signatures = std::make_unique<ir::cconv::Signatures>();
 
-    ir::cconv::SignatureAnalyzer(*signatures, *context.functions(), *context.callsData())
+    ir::cconv::SignatureAnalyzer(*signatures, *context.functions(), *context.hooks())
         .analyze(context.cancellationToken());
 
     context.setSignatures(std::move(signatures));
@@ -177,7 +177,7 @@ void MasterAnalyzer::computeUsage(Context &context, const ir::Function *function
 
     ir::usage::UsageAnalyzer(*usage, function,
         *context.getDataflow(function), context.module()->architecture(),
-        *context.getRegionGraph(function), *context.callsData(), *context.signatures())
+        *context.getRegionGraph(function), *context.hooks(), *context.signatures())
     .analyze();
 
     context.setUsage(function, std::move(usage));
@@ -188,7 +188,7 @@ void MasterAnalyzer::reconstructTypes(Context &context, const ir::Function *func
 
     ir::types::TypeAnalyzer(
         *types, *context.getDataflow(function), *context.getUsage(function),
-        *context.callsData(), *context.signatures())
+        *context.hooks(), *context.signatures())
     .analyze(function, context.cancellationToken());
 
     context.setTypes(function, std::move(types));
@@ -197,7 +197,7 @@ void MasterAnalyzer::reconstructTypes(Context &context, const ir::Function *func
 void MasterAnalyzer::reconstructVariables(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
 
-    ir::vars::VariableAnalyzer analyzer(*variables, *context.getDataflow(function), context.callsData());
+    ir::vars::VariableAnalyzer analyzer(*variables, *context.getDataflow(function), context.hooks());
     analyzer.analyze(function);
 
     context.setVariables(function, std::move(variables));
@@ -257,7 +257,7 @@ void MasterAnalyzer::checkTree(Context &context) const {
         }
     };
 
-    ir::misc::CensusVisitor visitor(context.callsData());
+    ir::misc::CensusVisitor visitor(context.hooks());
     foreach (const ir::Function *function, context.functions()->functions()) {
         visitor(function);
     }

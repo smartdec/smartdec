@@ -32,7 +32,7 @@
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cconv/ReturnHook.h>
 #include <nc/core/ir/dflow/Dataflow.h>
@@ -49,7 +49,7 @@ namespace ir {
 namespace types {
 
 void TypeAnalyzer::analyze(const Function *function, const CancellationToken &canceled) {
-    ir::misc::CensusVisitor census(&callsData());
+    ir::misc::CensusVisitor census(&hooks());
     census(function);
 
     /* Join term types with types of definitions. */
@@ -69,13 +69,13 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
     } 
 
     /* Join types of terms used for return values. */
-    if (auto calleeId = callsData().getCalleeId(function)) {
+    if (auto calleeId = hooks().getCalleeId(function)) {
         if (auto signature = signatures().getSignature(calleeId)) {
             if (signature->returnValue()) {
                 const Term *firstReturnTerm = NULL;
 
                 foreach (const Return *ret, function->getReturns()) {
-                    if (cconv::ReturnHook *returnHook = callsData().getReturnHook(function, ret)) {
+                    if (cconv::ReturnHook *returnHook = hooks().getReturnHook(function, ret)) {
                         const Term *returnTerm = returnHook->getReturnValueTerm(signature->returnValue());
 
                         if (firstReturnTerm == NULL) {

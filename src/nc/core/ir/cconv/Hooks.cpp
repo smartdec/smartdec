@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "CallsData.h"
+#include "Hooks.h"
 
 #include <cassert>
 
@@ -47,11 +47,11 @@ namespace core {
 namespace ir {
 namespace cconv {
 
-CallsData::CallsData(): callingConventionDetector_(NULL) {}
+Hooks::Hooks(): callingConventionDetector_(NULL) {}
 
-CallsData::~CallsData() {}
+Hooks::~Hooks() {}
 
-CalleeId CallsData::getCalleeId(const Function *function) const {
+CalleeId Hooks::getCalleeId(const Function *function) const {
     assert(function != NULL);
 
     if (function->entry() && function->entry()->address()) {
@@ -61,7 +61,7 @@ CalleeId CallsData::getCalleeId(const Function *function) const {
     }
 }
 
-CalleeId CallsData::getCalleeId(const Call *call) const {
+CalleeId Hooks::getCalleeId(const Call *call) const {
     assert(call != NULL);
 
     if (auto addr = getCalledAddress(call)) {
@@ -73,25 +73,25 @@ CalleeId CallsData::getCalleeId(const Call *call) const {
     }
 }
 
-boost::optional<ByteAddr> CallsData::getCalledAddress(const Call *call) const {
+boost::optional<ByteAddr> Hooks::getCalledAddress(const Call *call) const {
     assert(call != NULL);
 
     return nc::find_optional(call2address_, call);
 }
 
-void CallsData::setCalledAddress(const Call *call, ByteAddr addr) {
+void Hooks::setCalledAddress(const Call *call, ByteAddr addr) {
     assert(call != NULL);
 
     call2address_[call] = addr;
 }
 
-void CallsData::setCallingConvention(const CalleeId &calleeId, const CallingConvention *convention) {
+void Hooks::setCallingConvention(const CalleeId &calleeId, const CallingConvention *convention) {
     assert(nc::find(id2convention_, calleeId) == NULL && "Calling convention cannot be reset.");
 
     id2convention_[calleeId] = convention;
 }
 
-const CallingConvention *CallsData::getCallingConvention(const CalleeId &calleeId) {
+const CallingConvention *Hooks::getCallingConvention(const CalleeId &calleeId) {
     if (!calleeId) {
         return NULL;
     }
@@ -103,7 +103,7 @@ const CallingConvention *CallsData::getCallingConvention(const CalleeId &calleeI
     return nc::find(id2convention_, calleeId);
 }
 
-DescriptorAnalyzer *CallsData::getDescriptorAnalyzer(const CalleeId &calleeId) {
+DescriptorAnalyzer *Hooks::getDescriptorAnalyzer(const CalleeId &calleeId) {
     if (!calleeId) {
         return NULL;
     }
@@ -115,7 +115,7 @@ DescriptorAnalyzer *CallsData::getDescriptorAnalyzer(const CalleeId &calleeId) {
     return nc::find(id2analyzer_, calleeId).get();
 }
 
-EnterHook *CallsData::getEnterHook(const Function *function) {
+EnterHook *Hooks::getEnterHook(const Function *function) {
     assert(function != NULL);
 
     auto calleeId = getCalleeId(function);
@@ -132,7 +132,7 @@ EnterHook *CallsData::getEnterHook(const Function *function) {
     return nc::find(function2analyzer_, key).get();
 }
 
-CallHook *CallsData::getCallHook(const Call *call) {
+CallHook *Hooks::getCallHook(const Call *call) {
     assert(call != NULL);
 
     auto calleeId = getCalleeId(call);
@@ -149,7 +149,7 @@ CallHook *CallsData::getCallHook(const Call *call) {
     return nc::find(call2analyzer_, key).get();
 }
 
-ReturnHook *CallsData::getReturnHook(const Function *function, const Return *ret) {
+ReturnHook *Hooks::getReturnHook(const Function *function, const Return *ret) {
     assert(ret != NULL);
 
     auto calleeId = getCalleeId(function);

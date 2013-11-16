@@ -48,7 +48,7 @@ class UnaryOperator;
 class BinaryOperator;
 
 namespace cconv {
-    class CallsData;
+    class Hooks;
 }
 
 namespace dflow {
@@ -65,7 +65,7 @@ class DataflowAnalyzer {
     Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Valid pointer to architecture description.
     const Function *function_; ///< Analyzed function.
-    cconv::CallsData *callsData_; ///< Calls data.
+    cconv::Hooks *hooks_; ///< Calls data.
 
     public:
 
@@ -75,14 +75,14 @@ class DataflowAnalyzer {
      * \param dataflow An object where to store results of analyses.
      * \param architecture Valid pointer to architecture description.
      * \param function Pointer to the analyzed function. Can be NULL.
-     * \param callsData Pointer to the calls data. Can be NULL.
+     * \param hooks Pointer to the calls data. Can be NULL.
      */
     DataflowAnalyzer(Dataflow &dataflow,
         const arch::Architecture *architecture,
         const Function *function = NULL,
-        cconv::CallsData *callsData = NULL
+        cconv::Hooks *hooks = NULL
     ):
-        dataflow_(dataflow), architecture_(architecture), function_(function), callsData_(callsData)
+        dataflow_(dataflow), architecture_(architecture), function_(function), hooks_(hooks)
     {
         assert(architecture != NULL);
     }
@@ -114,7 +114,7 @@ class DataflowAnalyzer {
     /**
      * \return Pointer to the calls data. Can be NULL.
      */
-    cconv::CallsData *callsData() const { return callsData_; }
+    cconv::Hooks *hooks() const { return hooks_; }
 
     /**
      * Performs joint reaching definitions and constant propagation/folding

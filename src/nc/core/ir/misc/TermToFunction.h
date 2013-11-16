@@ -38,7 +38,7 @@ class Functions;
 class Term;
 
 namespace cconv {
-    class CallsData;
+    class Hooks;
 }
 
 namespace misc {
@@ -56,9 +56,9 @@ class TermToFunction {
      * Constructor.
      *
      * \param functions Valid pointer to the functions.
-     * \param callsData Pointer to the calls data. Can be NULL.
+     * \param hooks Pointer to the calls data. Can be NULL.
      */
-    TermToFunction(const Functions *functions, cconv::CallsData *callsData);
+    TermToFunction(const Functions *functions, cconv::Hooks *hooks);
 
     /**
      * \param term Valid pointer to a term.

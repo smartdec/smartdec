@@ -36,7 +36,7 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallHook.h>
-#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cconv/ReturnHook.h>
 #include <nc/core/ir/cflow/BasicNode.h>
@@ -68,7 +68,7 @@ void UsageAnalyzer::analyze() {
 
     std::sort(uselessJumps_.begin(), uselessJumps_.end());
 
-    misc::CensusVisitor census(&callsData());
+    misc::CensusVisitor census(&hooks());
     census(function());
 
     foreach (const Term *term, census.terms()) {
@@ -81,11 +81,11 @@ void UsageAnalyzer::analyze() {
         computeUsage(term);
     }
 
-    if (auto calleeId = callsData().getCalleeId(function())) {
+    if (auto calleeId = hooks().getCalleeId(function())) {
         if (auto signature = signatures().getSignature(calleeId)) {
             if (signature->returnValue()) {
                 foreach (const Return *ret, function()->getReturns()) {
-                    if (auto returnHook = callsData().getReturnHook(function(), ret)) {
+                    if (auto returnHook = hooks().getReturnHook(function(), ret)) {
                         makeUsed(returnHook->getReturnValueTerm(signature->returnValue()));
                     }
                 }
@@ -125,9 +125,9 @@ void UsageAnalyzer::computeUsage(const Statement *statement) {
 
             makeUsed(call->target());
 
-            if (auto calleeId = callsData().getCalleeId(call)) {
+            if (auto calleeId = hooks().getCalleeId(call)) {
                 if (auto signature = signatures().getSignature(calleeId)) {
-                    if (auto callHook = callsData().getCallHook(call)) {
+                    if (auto callHook = hooks().getCallHook(call)) {
                         foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
                             makeUsed(callHook->getArgumentTerm(memoryLocation));
                         }

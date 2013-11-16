@@ -37,11 +37,11 @@ namespace core {
 namespace ir {
 namespace misc {
 
-TermToFunction::TermToFunction(const Functions *functions, cconv::CallsData *callsData) {
+TermToFunction::TermToFunction(const Functions *functions, cconv::Hooks *hooks) {
     assert(functions != NULL);
 
     foreach (const ir::Function *function, functions->functions()) {
-        ir::misc::CensusVisitor visitor(callsData);
+        ir::misc::CensusVisitor visitor(hooks);
         visitor(function);
 
         foreach (const ir::Term *term, visitor.terms()) {

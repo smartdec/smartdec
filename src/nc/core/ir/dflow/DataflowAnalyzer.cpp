@@ -40,7 +40,7 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallHook.h>
-#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/EnterHook.h>
 #include <nc/core/ir/cconv/ReturnHook.h>
 
@@ -92,8 +92,8 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
 
             /* If this is a function entry, run the calling convention-specific code. */
             if (basicBlock == function()->entry()) {
-                if (callsData()) {
-                    if (auto enterHook = callsData()->getEnterHook(function())) {
+                if (hooks()) {
+                    if (auto enterHook = hooks()->getEnterHook(function())) {
                         enterHook->execute(context);
                     }
                 }
@@ -171,20 +171,20 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
             auto call = statement->asCall();
             execute(call->target(), context);
 
-            if (callsData()) {
+            if (hooks()) {
                 const Value *targetValue = dataflow().getValue(call->target());
                 if (targetValue->abstractValue().isConcrete()) {
-                    callsData()->setCalledAddress(call, targetValue->abstractValue().asConcrete().value());
+                    hooks()->setCalledAddress(call, targetValue->abstractValue().asConcrete().value());
                 }
-                if (auto callHook = callsData()->getCallHook(call)) {
+                if (auto callHook = hooks()->getCallHook(call)) {
                     callHook->executeCall(context);
                 }
             }
             break;
         }
         case Statement::RETURN: {
-            if (function() && callsData()) {
-                if (auto returnHook = callsData()->getReturnHook(function(), statement->asReturn())) {
+            if (function() && hooks()) {
+                if (auto returnHook = hooks()->getReturnHook(function(), statement->asReturn())) {
                     returnHook->executeReturn(context);
                 }
             }

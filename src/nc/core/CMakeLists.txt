@@ -85,8 +85,8 @@ set(SOURCES
     ir/cconv/CalleeId.h
     ir/cconv/CallingConvention.h
     ir/cconv/CallingConventionDetector.h
-    ir/cconv/CallsData.cpp
-    ir/cconv/CallsData.h
+    ir/cconv/Hooks.cpp
+    ir/cconv/Hooks.h
     ir/cconv/DescriptorAnalyzer.h
     ir/cconv/EnterHook.cpp
     ir/cconv/EnterHook.h

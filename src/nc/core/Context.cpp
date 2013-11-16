@@ -34,7 +34,7 @@
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/cconv/CallingConventionDetector.h>
-#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/dflow/Dataflow.h>
@@ -77,10 +77,10 @@ void Context::setFunctions(std::unique_ptr<ir::Functions> functions) {
     functions_ = std::move(functions);
 }
 
-void Context::setCallsData(std::unique_ptr<ir::cconv::CallsData> callsData) {
-    assert(callsData);
-    assert(!callsData_);
-    callsData_ = std::move(callsData);
+void Context::setHooks(std::unique_ptr<ir::cconv::Hooks> hooks) {
+    assert(hooks);
+    assert(!hooks_);
+    hooks_ = std::move(hooks);
 }
 
 void Context::setCallingConventionDetector(std::unique_ptr<ir::cconv::CallingConventionDetector> detector) {

@@ -33,7 +33,7 @@
 #include <nc/core/ir/Term.h>
 
 #include <nc/core/ir/cconv/CallHook.h>
-#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/EnterHook.h>
 #include <nc/core/ir/cconv/ReturnHook.h>
 
@@ -60,8 +60,8 @@ void CensusVisitor::operator()(const Function *function) {
         (*this)(basicBlock);
     }
 
-    if (callsData()) {
-        if (cconv::EnterHook *enterHook = callsData()->getEnterHook(function)) {
+    if (hooks()) {
+        if (cconv::EnterHook *enterHook = hooks()->getEnterHook(function)) {
             enterHook->visitChildStatements(*this);
             enterHook->visitChildTerms(*this);
         }
@@ -84,16 +84,16 @@ void CensusVisitor::operator()(const Statement *statement) {
     statements_.push_back(statement);
     statement->visitChildTerms(*this);
 
-    if (callsData()) {
+    if (hooks()) {
         switch (statement->kind()) {
             case Statement::CALL:
-                if (cconv::CallHook *callHook = callsData()->getCallHook(statement->asCall())) {
+                if (cconv::CallHook *callHook = hooks()->getCallHook(statement->asCall())) {
                     callHook->visitChildStatements(*this);
                     callHook->visitChildTerms(*this);
                 }
                 break;
             case Statement::RETURN: {
-                if (cconv::ReturnHook *returnHook = callsData()->getReturnHook(currentFunction_, statement->asReturn())) {
+                if (cconv::ReturnHook *returnHook = hooks()->getReturnHook(currentFunction_, statement->asReturn())) {
                     returnHook->visitChildStatements(*this);
                     returnHook->visitChildTerms(*this);
                 }

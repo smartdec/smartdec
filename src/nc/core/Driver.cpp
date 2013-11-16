@@ -106,7 +106,7 @@ void Driver::decompile(Context &context) {
         context.cancellationToken().poll();
 
         context.logToken() << tr("Creating the calls data...");
-        masterAnalyzer->createCallsData(context);
+        masterAnalyzer->createHooks(context);
         context.cancellationToken().poll();
 
         foreach (const ir::Function *function, context.functions()->functions()) {

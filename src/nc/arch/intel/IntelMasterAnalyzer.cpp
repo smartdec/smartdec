@@ -33,7 +33,7 @@
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/GenericDescriptorAnalyzer.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 
@@ -95,10 +95,10 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
             if (index != -1) {
                 ByteSize argumentsSize;
                 if (stringToInt(symbol.mid(index + 1), &argumentsSize)) {
-                    context.callsData()->setCallingConvention(
+                    context.hooks()->setCallingConvention(
                         calleeId,
                         architecture->getCallingConvention(QLatin1String("stdcall32")));
-                    checked_cast<core::ir::cconv::GenericDescriptorAnalyzer *>(context.callsData()->getDescriptorAnalyzer(calleeId))->setArgumentsSize(argumentsSize);
+                    checked_cast<core::ir::cconv::GenericDescriptorAnalyzer *>(context.hooks()->getDescriptorAnalyzer(calleeId))->setArgumentsSize(argumentsSize);
                     return;
                 }
             }
@@ -107,13 +107,13 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
 
     switch (context.module()->architecture()->bitness()) {
         case 16:
-            context.callsData()->setCallingConvention(calleeId, architecture->getCallingConvention(QLatin1String("cdecl16")));
+            context.hooks()->setCallingConvention(calleeId, architecture->getCallingConvention(QLatin1String("cdecl16")));
             break;
         case 32:
-            context.callsData()->setCallingConvention(calleeId, architecture->getCallingConvention(QLatin1String("cdecl32")));
+            context.hooks()->setCallingConvention(calleeId, architecture->getCallingConvention(QLatin1String("cdecl32")));
             break;
         case 64:
-            context.callsData()->setCallingConvention(calleeId, architecture->getCallingConvention(QLatin1String("amd64")));
+            context.hooks()->setCallingConvention(calleeId, architecture->getCallingConvention(QLatin1String("amd64")));
             break;
     }
 }
@@ -121,7 +121,7 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
 void IntelMasterAnalyzer::analyzeDataflow(core::Context &context, const core::ir::Function *function) const {
     std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
 
-    IntelDataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.callsData())
+    IntelDataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.hooks())
         .analyze(context.cancellationToken());
 
     context.setDataflow(function, std::move(dataflow));

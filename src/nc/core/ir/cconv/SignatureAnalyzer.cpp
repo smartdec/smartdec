@@ -10,7 +10,7 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
 
-#include "CallsData.h"
+#include "Hooks.h"
 #include "DescriptorAnalyzer.h"
 #include "Signatures.h"
 
@@ -23,7 +23,7 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
     auto computeSignature = [&](const CalleeId &calleeId) {
         if (calleeId) {
             if (signatures_.getSignature(calleeId) == NULL) {
-                if (auto analyzer = callsData_.getDescriptorAnalyzer(calleeId)) {
+                if (auto analyzer = hooks_.getDescriptorAnalyzer(calleeId)) {
                     signatures_.setSignature(calleeId, analyzer->getSignature());
                 }
             }
@@ -31,16 +31,16 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
     };
 
     foreach (auto function, functions_.functions()) {
-        computeSignature(callsData_.getCalleeId(function));
+        computeSignature(hooks_.getCalleeId(function));
         canceled.poll();
     }
 
-    misc::CensusVisitor visitor(&callsData_);
+    misc::CensusVisitor visitor(&hooks_);
     visitor(&functions_);
 
     foreach (auto statement, visitor.statements()) {
         if (auto call = statement->asCall()) {
-            computeSignature(callsData_.getCalleeId(call));
+            computeSignature(hooks_.getCalleeId(call));
         }
         canceled.poll();
     }

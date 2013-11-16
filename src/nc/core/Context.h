@@ -59,7 +59,7 @@ namespace ir {
     class Program;
 
     namespace cconv {
-        class CallsData;
+        class Hooks;
         class CallingConventionDetector;
         class Signatures;
     }
@@ -100,7 +100,7 @@ class Context: public QObject {
     std::unique_ptr<ir::Program> program_; ///< Program.
     std::unique_ptr<ir::Functions> functions_; ///< Functions.
     std::unique_ptr<ir::misc::TermToFunction> termToFunction_; ///< Term to function mapping.
-    std::unique_ptr<ir::cconv::CallsData> callsData_; ///< Calls data.
+    std::unique_ptr<ir::cconv::Hooks> hooks_; ///< Calls data.
     std::unique_ptr<ir::cconv::Signatures> signatures_; ///< Signatures.
     std::unique_ptr<ir::cconv::CallingConventionDetector> callingConventionDetector_; ///< Detector of calling conventions.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::dflow::Dataflow> > dataflows_; ///< Dataflow information.
@@ -174,14 +174,14 @@ public:
     /**
      * Sets the calls data.
      *
-     * \param callsData Valid pointer to a calls data.
+     * \param hooks Valid pointer to a calls data.
      */
-    void setCallsData(std::unique_ptr<ir::cconv::CallsData> callsData);
+    void setHooks(std::unique_ptr<ir::cconv::Hooks> hooks);
 
     /**
      * \return Valid pointer to the information on calling conventions of functions.
      */
-    ir::cconv::CallsData *callsData() const { return callsData_.get(); }
+    ir::cconv::Hooks *hooks() const { return hooks_.get(); }
 
     /**
      * Sets the calling convention detector.

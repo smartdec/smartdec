@@ -40,7 +40,7 @@ class Statement;
 class Term;
 
 namespace cconv {
-    class CallsData;
+    class Hooks;
 }
 
 namespace misc {
@@ -53,7 +53,7 @@ class CensusVisitor:
     public Visitor<const BasicBlock>, public Visitor<const Statement>,
     public Visitor<const Term>
 {
-    cconv::CallsData *callsData_; ///< Calls data.
+    cconv::Hooks *hooks_; ///< Calls data.
 
     std::vector<const Statement *> statements_; ///< Statements visited.
     std::vector<const Term *> terms_; ///< Terms visited.
@@ -65,14 +65,14 @@ class CensusVisitor:
     /**
      * Constructor.
      *
-     * \param callsData Pointer to the calls data. Can be NULL.
+     * \param hooks Pointer to the calls data. Can be NULL.
      */
-    CensusVisitor(cconv::CallsData *callsData): callsData_(callsData), currentFunction_(NULL) {}
+    CensusVisitor(cconv::Hooks *hooks): hooks_(hooks), currentFunction_(NULL) {}
 
     /**
      * \return Pointer to the calls data being used. Can be NULL.
      */
-    cconv::CallsData *callsData() const { return callsData_; }
+    cconv::Hooks *hooks() const { return hooks_; }
 
     /**
      * \return Statements visited.

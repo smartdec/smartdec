@@ -32,7 +32,7 @@ namespace ir {
 class Function;
 
 namespace cconv {
-    class CallsData;
+    class Hooks;
 }
 
 namespace dflow {
@@ -49,7 +49,7 @@ class Variables;
 class VariableAnalyzer {
     Variables &variables_; ///< Mapping of terms to variables.
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
-    cconv::CallsData *callsData_; ///< Calls data.
+    cconv::Hooks *hooks_; ///< Calls data.
 
     public:
 
@@ -58,10 +58,10 @@ class VariableAnalyzer {
      *
      * \param variables Information about variables.
      * \param dataflow Dataflow information.
-     * \param callsData Valid pointer to the calls data.
+     * \param hooks Valid pointer to the calls data.
      */
-    VariableAnalyzer(Variables &variables, const dflow::Dataflow &dataflow, cconv::CallsData *callsData):
-        variables_(variables), dataflow_(dataflow), callsData_(callsData)
+    VariableAnalyzer(Variables &variables, const dflow::Dataflow &dataflow, cconv::Hooks *hooks):
+        variables_(variables), dataflow_(dataflow), hooks_(hooks)
     {}
 
     /**
@@ -87,7 +87,7 @@ class VariableAnalyzer {
     /**
      * \return Pointer to the calls data. Can be NULL.
      */
-    cconv::CallsData *callsData() const { return callsData_; }
+    cconv::Hooks *hooks() const { return hooks_; }
 
     /**
      * Computes mapping of terms to variables for the given function.

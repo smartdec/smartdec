@@ -48,7 +48,7 @@ class CallingConventionDetector {
 
     /**
      * This function show detect the calling convention of a function with
-     * given id and set it in the CallsData via the setCallingConvention()
+     * given id and set it in the Hooks via the setCallingConvention()
      * method.
      *
      * \param[in] id Callee id.

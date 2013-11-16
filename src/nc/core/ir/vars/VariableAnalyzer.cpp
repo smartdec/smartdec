@@ -49,7 +49,7 @@ class TermSet: public DisjointSet<TermSet> {};
 } // anonymous namespace
 
 void VariableAnalyzer::analyze(const Function *function) {
-    ir::misc::CensusVisitor census(callsData());
+    ir::misc::CensusVisitor census(hooks());
     census(function);
 
     boost::unordered_map<const Term *, std::unique_ptr<TermSet>> term2set;

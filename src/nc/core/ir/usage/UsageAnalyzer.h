@@ -42,7 +42,7 @@ class Statement;
 class Term;
 
 namespace cconv {
-    class CallsData;
+    class Hooks;
     class Signatures;
 }
 
@@ -67,7 +67,7 @@ class UsageAnalyzer {
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Architecture.
     const cflow::Graph &regionGraph_; ///< Reduced control-flow graph.
-    cconv::CallsData &callsData_; ///< Calls data.
+    cconv::Hooks &hooks_; ///< Calls data.
     const cconv::Signatures &signatures_; ///< Signatures of functions.
     std::vector<const Jump *> uselessJumps_; ///< Useless jumps.
 
@@ -80,17 +80,17 @@ public:
      * \param[in] dataflow Dataflow information.
      * \param[in] architecture Valid pointer to the architecture.
      * \param[in] regionGraph Reduced control-flow graph.
-     * \param[in] callsData Calls data.
+     * \param[in] hooks Calls data.
      * \param[in] signatures Signatures of functions.
      */
     UsageAnalyzer(Usage &usage, const Function *function,
         const dflow::Dataflow &dataflow, const arch::Architecture *architecture, 
-        const cflow::Graph &regionGraph, cconv::CallsData &callsData,
+        const cflow::Graph &regionGraph, cconv::Hooks &hooks,
         const cconv::Signatures &signatures
     ):
         usage_(usage), function_(function), dataflow_(dataflow),
         architecture_(architecture), regionGraph_(regionGraph),
-        callsData_(callsData), signatures_(signatures)
+        hooks_(hooks), signatures_(signatures)
     {}
 
     /**
@@ -131,7 +131,7 @@ public:
     /**
      * \return Calls data.
      */
-    cconv::CallsData &callsData() const { return callsData_; }
+    cconv::Hooks &hooks() const { return hooks_; }
 
     /**
      * \return Signatures of functions.

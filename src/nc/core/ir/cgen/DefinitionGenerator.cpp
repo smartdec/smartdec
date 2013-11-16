@@ -46,7 +46,7 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallHook.h>
-#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/EnterHook.h>
 #include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cconv/ReturnHook.h>
@@ -120,7 +120,7 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     setDefinition(functionDefinition.get());
 
     if (signature()) {
-        if (auto enterHook = context().callsData()->getEnterHook(function())) {
+        if (auto enterHook = context().hooks()->getEnterHook(function())) {
             foreach (const MemoryLocation &memoryLocation, signature()->arguments()) {
                 makeArgumentDeclaration(enterHook->getArgumentTerm(memoryLocation));
             }
@@ -129,7 +129,7 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
 
     parent().setFunctionDeclaration(function(), functionDefinition.get());
 
-    if (cconv::EnterHook *enterHook = context().callsData()->getEnterHook(function())) {
+    if (cconv::EnterHook *enterHook = context().hooks()->getEnterHook(function())) {
         foreach (const ir::Statement *statement, enterHook->entryStatements()) {
             if (auto likecStatement = makeStatement(statement, NULL, NULL, NULL)) {
                 definition()->block()->addStatement(std::move(likecStatement));
@@ -704,9 +704,9 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             auto callOperator = std::make_unique<likec::CallOperator>(tree(), std::move(target));
 
-            if (auto calleeId = parent().context().callsData()->getCalleeId(call)) {
+            if (auto calleeId = parent().context().hooks()->getCalleeId(call)) {
                 if (auto signature = parent().context().signatures()->getSignature(calleeId)) {
-                    if (auto callHook = context().callsData()->getCallHook(call)) {
+                    if (auto callHook = context().hooks()->getCallHook(call)) {
                         foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
                             callOperator->addArgument(makeExpression(callHook->getArgumentTerm(memoryLocation)));
                         }
@@ -731,7 +731,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
         case Statement::RETURN: {
             if (signature()) {
                 if (signature()->returnValue()) {
-                    if (auto returnHook = context().callsData()->getReturnHook(function(), statement->asReturn())) {
+                    if (auto returnHook = context().hooks()->getReturnHook(function(), statement->asReturn())) {
                         return std::make_unique<likec::Return>(
                             tree(),
                             makeExpression(returnHook->getReturnValueTerm(signature()->returnValue())));

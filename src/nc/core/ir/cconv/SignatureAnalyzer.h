@@ -16,7 +16,7 @@ class Functions;
 
 namespace cconv {
 
-class CallsData;
+class Hooks;
 class Signatures;
 
 /**
@@ -25,7 +25,7 @@ class Signatures;
 class SignatureAnalyzer {
     Signatures &signatures_;
     const Functions &functions_;
-    CallsData &callsData_;
+    Hooks &hooks_;
 
 public:
     /**
@@ -33,12 +33,12 @@ public:
      *
      * \param signatures An object where to store reconstructed signatures.
      * \param functions Functions.
-     * \param callsData Calls data.
+     * \param hooks Calls data.
      */
-    SignatureAnalyzer(Signatures &signatures, const Functions &functions, CallsData &callsData):
+    SignatureAnalyzer(Signatures &signatures, const Functions &functions, Hooks &hooks):
         signatures_(signatures),
         functions_(functions),
-        callsData_(callsData)
+        hooks_(hooks)
     {}
 
     /**

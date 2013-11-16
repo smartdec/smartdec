@@ -32,7 +32,7 @@
 #include <nc/core/arch/Registers.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cconv/CallsData.h>
+#include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/EnterHook.h>
 #include <nc/core/ir/cconv/Signature.h>
 #include <nc/core/ir/cconv/ReturnHook.h>
@@ -55,7 +55,7 @@ DeclarationGenerator::DeclarationGenerator(CodeGenerator &parent, const Function
     assert(function_ != NULL);
     assert(types_ != NULL);
 
-    if (auto calleeId = parent.context().callsData()->getCalleeId(function)) {
+    if (auto calleeId = parent.context().hooks()->getCalleeId(function)) {
         signature_ = parent.context().signatures()->getSignature(calleeId);
     } else {
         signature_ = NULL;
@@ -76,7 +76,7 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
     setDeclaration(functionDeclaration.get());
 
     if (signature()) {
-        if (auto enterHook = parent().context().callsData()->getEnterHook(function())) {
+        if (auto enterHook = parent().context().hooks()->getEnterHook(function())) {
             foreach (const MemoryLocation &memoryLocation, signature()->arguments()) {
                 makeArgumentDeclaration(enterHook->getArgumentTerm(memoryLocation));
             }
@@ -90,7 +90,7 @@ const likec::Type *DeclarationGenerator::makeReturnType() {
     if (signature()) {
         if (signature()->returnValue()) {
             foreach (const Return *ret, function()->getReturns()) {
-                if (auto returnHook = parent().context().callsData()->getReturnHook(function(), ret)) {
+                if (auto returnHook = parent().context().hooks()->getReturnHook(function(), ret)) {
                     return parent().makeType(types().getType(returnHook->getReturnValueTerm(signature()->returnValue())));
                 }
             }

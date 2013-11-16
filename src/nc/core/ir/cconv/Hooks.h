@@ -55,7 +55,7 @@ class ReturnHook;
 /**
  * Information about how functions call each other.
  */
-class CallsData {
+class Hooks {
     /** Detector of calling conventions. */
     const CallingConventionDetector *callingConventionDetector_;
 
@@ -82,12 +82,12 @@ class CallsData {
     /**
      * Constructor.
      */
-    CallsData();
+    Hooks();
 
     /**
      * Destructor.
      */
-    ~CallsData();
+    ~Hooks();
 
     /**
      * \return Pointer to the calling convention detector. Can be NULL.
