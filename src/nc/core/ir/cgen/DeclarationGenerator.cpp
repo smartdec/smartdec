@@ -35,7 +35,7 @@
 #include <nc/core/ir/cconv/CallsData.h>
 #include <nc/core/ir/cconv/EnterHook.h>
 #include <nc/core/ir/cconv/Signature.h>
-#include <nc/core/ir/cconv/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/ReturnHook.h>
 #include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/likec/Tree.h>
@@ -90,8 +90,8 @@ const likec::Type *DeclarationGenerator::makeReturnType() {
     if (signature()) {
         if (signature()->returnValue()) {
             foreach (const Return *ret, function()->getReturns()) {
-                if (auto returnAnalyzer = parent().context().callsData()->getReturnAnalyzer(function(), ret)) {
-                    return parent().makeType(types().getType(returnAnalyzer->getReturnValueTerm(signature()->returnValue())));
+                if (auto returnHook = parent().context().callsData()->getReturnHook(function(), ret)) {
+                    return parent().makeType(types().getType(returnHook->getReturnValueTerm(signature()->returnValue())));
                 }
             }
         }

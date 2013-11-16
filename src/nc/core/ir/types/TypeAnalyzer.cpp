@@ -34,7 +34,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallsData.h>
 #include <nc/core/ir/cconv/Signatures.h>
-#include <nc/core/ir/cconv/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/ReturnHook.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
@@ -75,8 +75,8 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
                 const Term *firstReturnTerm = NULL;
 
                 foreach (const Return *ret, function->getReturns()) {
-                    if (cconv::ReturnAnalyzer *returnAnalyzer = callsData().getReturnAnalyzer(function, ret)) {
-                        const Term *returnTerm = returnAnalyzer->getReturnValueTerm(signature->returnValue());
+                    if (cconv::ReturnHook *returnHook = callsData().getReturnHook(function, ret)) {
+                        const Term *returnTerm = returnHook->getReturnValueTerm(signature->returnValue());
 
                         if (firstReturnTerm == NULL) {
                             firstReturnTerm = returnTerm;

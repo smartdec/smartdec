@@ -45,9 +45,9 @@ class Term;
 namespace cconv {
 
 /**
- * CallAnalyzer extracts the information about location of arguments and return values from a call site.
+ * CallHook extracts the information about location of arguments and return values from a call site.
  */
-class CallAnalyzer {
+class CallHook {
     const Call *call_; ///< Call statement for which the analyzer has been created.
 
 public:
@@ -56,14 +56,14 @@ public:
      *
      * \param call Valid pointer to a call statement to be analyzed.
      */
-    CallAnalyzer(const Call *call):
+    CallHook(const Call *call):
         call_(call)
     { assert(call != NULL); }
 
     /**
      * Virtual destructor.
      */
-    virtual ~CallAnalyzer() {}
+    virtual ~CallHook() {}
 
     /**
      * \return Call statement for which the analyzer has been created. 
@@ -81,7 +81,7 @@ public:
      * \param memoryLocation Memory location.
      *
      * \return A valid pointer to the term representing the argument at given memory location.
-     * The term is created when necessary and owned by this CallAnalyzer.
+     * The term is created when necessary and owned by this CallHook.
      */
     virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) = 0;
 
@@ -89,7 +89,7 @@ public:
      * \param term Valid pointer to a term.
      *
      * \return A valid pointer to the term representing the argument designated by given term.
-     * The former term is created when necessary and owned by this CallAnalyzer.
+     * The former term is created when necessary and owned by this CallHook.
      */
     virtual const Term *getReturnValueTerm(const Term *term) = 0;
 

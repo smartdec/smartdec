@@ -35,9 +35,9 @@
 #include <nc/core/ir/Statement.h>
 
 #include "GenericCallingConvention.h"
-#include "GenericCallAnalyzer.h"
+#include "GenericCallHook.h"
 #include "GenericEnterHook.h"
-#include "GenericReturnAnalyzer.h"
+#include "GenericReturnHook.h"
 #include "Signature.h"
 
 namespace nc {
@@ -45,9 +45,9 @@ namespace core {
 namespace ir {
 namespace cconv {
 
-std::unique_ptr<CallAnalyzer> GenericDescriptorAnalyzer::createCallAnalyzer(const Call *call) {
-    std::unique_ptr<GenericCallAnalyzer> result(new GenericCallAnalyzer(call, this));
-    callAnalyzers_.push_back(result.get());
+std::unique_ptr<CallHook> GenericDescriptorAnalyzer::createCallHook(const Call *call) {
+    std::unique_ptr<GenericCallHook> result(new GenericCallHook(call, this));
+    callHooks_.push_back(result.get());
     return std::move(result);
 }
 
@@ -57,9 +57,9 @@ std::unique_ptr<EnterHook> GenericDescriptorAnalyzer::createEnterHook(const Func
     return std::move(result);
 }
 
-std::unique_ptr<ReturnAnalyzer> GenericDescriptorAnalyzer::createReturnAnalyzer(const Return *ret) {
-    std::unique_ptr<GenericReturnAnalyzer> result(new GenericReturnAnalyzer(ret, this));
-    returnAnalyzers_.push_back(result.get());
+std::unique_ptr<ReturnHook> GenericDescriptorAnalyzer::createReturnHook(const Return *ret) {
+    std::unique_ptr<GenericReturnHook> result(new GenericReturnHook(ret, this));
+    returnHooks_.push_back(result.get());
     return std::move(result);
 }
 
@@ -80,11 +80,11 @@ std::unique_ptr<Signature> GenericDescriptorAnalyzer::getSignature() const {
      */
     boost::unordered_map<MemoryLocation, Counts> argVotes;
 
-    std::size_t callsCount = callAnalyzers_.size();
+    std::size_t callsCount = callHooks_.size();
     std::size_t functionsCount = 0;
 
-    foreach (GenericCallAnalyzer *callAnalyzer, callAnalyzers_) {
-        foreach (const MemoryLocation &memoryLocation, callAnalyzer->argumentLocations()) {
+    foreach (GenericCallHook *callHook, callHooks_) {
+        foreach (const MemoryLocation &memoryLocation, callHook->argumentLocations()) {
             ++argVotes[memoryLocation].defs;
         }
     }
@@ -150,13 +150,13 @@ std::unique_ptr<Signature> GenericDescriptorAnalyzer::getSignature() const {
      */
     boost::unordered_map<const Term *, int> retVotes;
 
-    foreach (GenericCallAnalyzer *callAnalyzer, callAnalyzers_) {
-        foreach (const Term *term, callAnalyzer->returnValueLocations()) {
+    foreach (GenericCallHook *callHook, callHooks_) {
+        foreach (const Term *term, callHook->returnValueLocations()) {
             ++retVotes[term];
         }
     }
-    foreach (GenericReturnAnalyzer *returnAnalyzer, returnAnalyzers_) {
-        foreach (const Term *term, returnAnalyzer->returnValueLocations()) {
+    foreach (GenericReturnHook *returnHook, returnHooks_) {
+        foreach (const Term *term, returnHook->returnValueLocations()) {
             ++retVotes[term];
         }
     }

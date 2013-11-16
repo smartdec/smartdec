@@ -35,10 +35,10 @@
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cconv/CallAnalyzer.h>
+#include <nc/core/ir/cconv/CallHook.h>
 #include <nc/core/ir/cconv/CallsData.h>
 #include <nc/core/ir/cconv/Signatures.h>
-#include <nc/core/ir/cconv/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/ReturnHook.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/Switch.h>
@@ -85,8 +85,8 @@ void UsageAnalyzer::analyze() {
         if (auto signature = signatures().getSignature(calleeId)) {
             if (signature->returnValue()) {
                 foreach (const Return *ret, function()->getReturns()) {
-                    if (auto returnAnalyzer = callsData().getReturnAnalyzer(function(), ret)) {
-                        makeUsed(returnAnalyzer->getReturnValueTerm(signature->returnValue()));
+                    if (auto returnHook = callsData().getReturnHook(function(), ret)) {
+                        makeUsed(returnHook->getReturnValueTerm(signature->returnValue()));
                     }
                 }
             }
@@ -127,9 +127,9 @@ void UsageAnalyzer::computeUsage(const Statement *statement) {
 
             if (auto calleeId = callsData().getCalleeId(call)) {
                 if (auto signature = signatures().getSignature(calleeId)) {
-                    if (auto callAnalyzer = callsData().getCallAnalyzer(call)) {
+                    if (auto callHook = callsData().getCallHook(call)) {
                         foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
-                            makeUsed(callAnalyzer->getArgumentTerm(memoryLocation));
+                            makeUsed(callHook->getArgumentTerm(memoryLocation));
                         }
                     }
                 }

@@ -37,9 +37,9 @@ class Return;
 
 namespace cconv {
 
-class CallAnalyzer;
+class CallHook;
 class EnterHook;
-class ReturnAnalyzer;
+class ReturnHook;
 class Signature;
 
 /**
@@ -57,9 +57,9 @@ class DescriptorAnalyzer {
     /**
      * \param call Valid pointer to a call statement.
      *
-     * \return Pointer to a new instance of CallAnalyzer for handling given call statement. Can be NULL.
+     * \return Pointer to a new instance of CallHook for handling given call statement. Can be NULL.
      */
-    virtual std::unique_ptr<CallAnalyzer> createCallAnalyzer(const Call *call) = 0;
+    virtual std::unique_ptr<CallHook> createCallHook(const Call *call) = 0;
 
     /**
      * \param function Valid pointer to a function.
@@ -71,9 +71,9 @@ class DescriptorAnalyzer {
     /**
      * \param ret Valid pointer to a return statement.
      *
-     * \return Pointer to a new instance of ReturnAnalyzer for handling given function. Can be NULL.
+     * \return Pointer to a new instance of ReturnHook for handling given function. Can be NULL.
      */
-    virtual std::unique_ptr<ReturnAnalyzer> createReturnAnalyzer(const Return *ret) = 0;
+    virtual std::unique_ptr<ReturnHook> createReturnHook(const Return *ret) = 0;
 
     /**
      * \return Pointer to the signature of the function at the analyzed address.

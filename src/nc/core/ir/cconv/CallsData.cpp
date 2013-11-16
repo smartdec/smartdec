@@ -35,12 +35,12 @@
 #include <nc/core/ir/Statements.h>
 
 #include "DescriptorAnalyzer.h"
-#include "CallAnalyzer.h"
+#include "CallHook.h"
 #include "CallingConvention.h"
 #include "CallingConventionDetector.h"
 #include "EnterHook.h"
 #include "Signature.h"
-#include "ReturnAnalyzer.h"
+#include "ReturnHook.h"
 
 namespace nc {
 namespace core {
@@ -132,7 +132,7 @@ EnterHook *CallsData::getEnterHook(const Function *function) {
     return nc::find(function2analyzer_, key).get();
 }
 
-CallAnalyzer *CallsData::getCallAnalyzer(const Call *call) {
+CallHook *CallsData::getCallHook(const Call *call) {
     assert(call != NULL);
 
     auto calleeId = getCalleeId(call);
@@ -143,13 +143,13 @@ CallAnalyzer *CallsData::getCallAnalyzer(const Call *call) {
     auto key = std::make_pair(calleeId, call);
     if (!nc::contains(call2analyzer_, key)) {
         if (DescriptorAnalyzer *descriptorAnalyzer = getDescriptorAnalyzer(calleeId)) {
-            call2analyzer_[key] = descriptorAnalyzer->createCallAnalyzer(call);
+            call2analyzer_[key] = descriptorAnalyzer->createCallHook(call);
         }
     }
     return nc::find(call2analyzer_, key).get();
 }
 
-ReturnAnalyzer *CallsData::getReturnAnalyzer(const Function *function, const Return *ret) {
+ReturnHook *CallsData::getReturnHook(const Function *function, const Return *ret) {
     assert(ret != NULL);
 
     auto calleeId = getCalleeId(function);
@@ -160,7 +160,7 @@ ReturnAnalyzer *CallsData::getReturnAnalyzer(const Function *function, const Ret
     auto key = std::make_pair(calleeId, ret);
     if (!nc::contains(return2analyzer_, key)) {
         if (DescriptorAnalyzer *addressAnalyzer = getDescriptorAnalyzer(calleeId)) {
-            return2analyzer_[key] = addressAnalyzer->createReturnAnalyzer(ret);
+            return2analyzer_[key] = addressAnalyzer->createReturnHook(ret);
         }
     }
     return nc::find(return2analyzer_, key).get();

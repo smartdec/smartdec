@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "GenericCallAnalyzer.h"
+#include "GenericCallHook.h"
 
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
@@ -55,8 +55,8 @@ class CompareAddress {
 
 } // anonymous namespace
 
-GenericCallAnalyzer::GenericCallAnalyzer(const Call *call, const GenericDescriptorAnalyzer *addressAnalyzer):
-    CallAnalyzer(call), addressAnalyzer_(addressAnalyzer), stackTop_(0)
+GenericCallHook::GenericCallHook(const Call *call, const GenericDescriptorAnalyzer *addressAnalyzer):
+    CallHook(call), addressAnalyzer_(addressAnalyzer), stackTop_(0)
 {
     auto stackAmendmentConstant = std::make_unique<Constant>(SizedValue(convention()->stackPointer().size(), 0));
     stackAmendmentConstant_ = stackAmendmentConstant.get();
@@ -75,13 +75,13 @@ GenericCallAnalyzer::GenericCallAnalyzer(const Call *call, const GenericDescript
     }
 }
 
-GenericCallAnalyzer::~GenericCallAnalyzer() {}
+GenericCallHook::~GenericCallHook() {}
 
-inline const GenericCallingConvention *GenericCallAnalyzer::convention() const {
+inline const GenericCallingConvention *GenericCallHook::convention() const {
     return addressAnalyzer()->convention();
 }
 
-void GenericCallAnalyzer::executeCall(dflow::ExecutionContext &context) {
+void GenericCallHook::executeCall(dflow::ExecutionContext &context) {
     argumentLocations_.clear();
 
     /*
@@ -158,7 +158,7 @@ void GenericCallAnalyzer::executeCall(dflow::ExecutionContext &context) {
             for (; i != iend && i->addr() <= nextArgumentOffset; ++i) {
                 /*
                  * We use shifted() in order to make so that the same arguments have
-                 * matching locations when found by CallAnalyzer and by EnterHook.
+                 * matching locations when found by CallHook and by EnterHook.
                  */
                 MemoryLocation argumentLocation = i->shifted(-stackTop_);
                 getArgumentTerm(argumentLocation);
@@ -228,7 +228,7 @@ void GenericCallAnalyzer::executeCall(dflow::ExecutionContext &context) {
     context.analyzer().execute(stackAmendmentStatement_.get(), context);
 }
 
-const Term *GenericCallAnalyzer::getArgumentTerm(const MemoryLocation &memoryLocation) {
+const Term *GenericCallHook::getArgumentTerm(const MemoryLocation &memoryLocation) {
     auto &result = arguments_[memoryLocation];
     if (!result) {
         result.reset(new MemoryLocationAccess(
@@ -241,7 +241,7 @@ const Term *GenericCallAnalyzer::getArgumentTerm(const MemoryLocation &memoryLoc
     return result.get();
 }
 
-const Term *GenericCallAnalyzer::getReturnValueTerm(const Term *term) {
+const Term *GenericCallHook::getReturnValueTerm(const Term *term) {
     assert(term != NULL);
 
     auto &result = returnValues_[term];
@@ -253,11 +253,11 @@ const Term *GenericCallAnalyzer::getReturnValueTerm(const Term *term) {
     return result.get();
 }
 
-void GenericCallAnalyzer::visitChildStatements(Visitor<const Statement> &visitor) const {
+void GenericCallHook::visitChildStatements(Visitor<const Statement> &visitor) const {
     visitor(stackAmendmentStatement_.get());
 }
 
-void GenericCallAnalyzer::visitChildTerms(Visitor<const Term> &visitor) const {
+void GenericCallHook::visitChildTerms(Visitor<const Term> &visitor) const {
     foreach (const auto &pair, arguments_) {
         visitor(pair.second.get());
     }

@@ -44,13 +44,13 @@ class Return;
 
 namespace cconv {
 
-class CallAnalyzer;
+class CallHook;
 class CallingConvention;
 class CallingConventionDetector;
 class DescriptorAnalyzer;
 class EnterHook;
 class Signature;
-class ReturnAnalyzer;
+class ReturnHook;
 
 /**
  * Information about how functions call each other.
@@ -72,10 +72,10 @@ class CallsData {
     boost::unordered_map<std::pair<CalleeId, const Function *>, std::unique_ptr<EnterHook>> function2analyzer_;
 
     /** Mapping from a call to its analyzer. */
-    boost::unordered_map<std::pair<CalleeId, const Call *>, std::unique_ptr<CallAnalyzer>> call2analyzer_;
+    boost::unordered_map<std::pair<CalleeId, const Call *>, std::unique_ptr<CallHook>> call2analyzer_;
 
     /** Mapping from a return to its analyzer. */
-    boost::unordered_map<std::pair<CalleeId, const Return *>, std::unique_ptr<ReturnAnalyzer>> return2analyzer_;
+    boost::unordered_map<std::pair<CalleeId, const Return *>, std::unique_ptr<ReturnHook>> return2analyzer_;
 
     public:
 
@@ -163,19 +163,19 @@ class CallsData {
     /**
      * \param call Valid pointer to a call statement.
      *
-     * \return Pointer to a CallAnalyzer instance for this call statement.
+     * \return Pointer to a CallHook instance for this call statement.
      * Can be NULL. Such instance is created when necessary and if possible.
      */
-    CallAnalyzer *getCallAnalyzer(const Call *call);
+    CallHook *getCallHook(const Call *call);
 
     /**
      * \param function Valid pointer to a function.
      * \param ret Valid pointer to a return statement.
      *
-     * \return Pointer to a ReturnAnalyzer instance for this return statement.
+     * \return Pointer to a ReturnHook instance for this return statement.
      * Can be NULL. Such instance is created when necessary and if possible.
      */
-    ReturnAnalyzer *getReturnAnalyzer(const Function *function, const Return *ret);
+    ReturnHook *getReturnHook(const Function *function, const Return *ret);
 };
 
 } // namespace cconv

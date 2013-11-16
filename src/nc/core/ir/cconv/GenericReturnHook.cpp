@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "GenericReturnAnalyzer.h"
+#include "GenericReturnHook.h"
 
 #include <algorithm> /* std::transform() */
 
@@ -42,21 +42,21 @@ namespace core {
 namespace ir {
 namespace cconv {
 
-GenericReturnAnalyzer::GenericReturnAnalyzer(const Return *ret, const GenericDescriptorAnalyzer *addressAnalyzer):
-	ReturnAnalyzer(ret), addressAnalyzer_(addressAnalyzer)
+GenericReturnHook::GenericReturnHook(const Return *ret, const GenericDescriptorAnalyzer *addressAnalyzer):
+	ReturnHook(ret), addressAnalyzer_(addressAnalyzer)
 {
     foreach (const Term *sample, convention()->returnValues()) {
         getReturnValueTerm(sample);
     }
 }
 
-GenericReturnAnalyzer::~GenericReturnAnalyzer() {}
+GenericReturnHook::~GenericReturnHook() {}
 
-inline const GenericCallingConvention *GenericReturnAnalyzer::convention() const {
+inline const GenericCallingConvention *GenericReturnHook::convention() const {
     return addressAnalyzer()->convention();
 }
 
-void GenericReturnAnalyzer::executeReturn(dflow::ExecutionContext &context) {
+void GenericReturnHook::executeReturn(dflow::ExecutionContext &context) {
     foreach (const auto &pair, returnValues_) {
         context.analyzer().execute(pair.second.get(), context);
     }
@@ -82,7 +82,7 @@ void GenericReturnAnalyzer::executeReturn(dflow::ExecutionContext &context) {
 #endif
 }
 
-const Term *GenericReturnAnalyzer::getReturnValueTerm(const Term *term) {
+const Term *GenericReturnHook::getReturnValueTerm(const Term *term) {
     auto &result = returnValues_[term];
     if (!result) {
         result = term->clone();
@@ -92,11 +92,11 @@ const Term *GenericReturnAnalyzer::getReturnValueTerm(const Term *term) {
     return result.get();
 }
 
-void GenericReturnAnalyzer::visitChildStatements(Visitor<const Statement> & /*visitor*/) const {
+void GenericReturnHook::visitChildStatements(Visitor<const Statement> & /*visitor*/) const {
     /* Nothing to do. */
 }
 
-void GenericReturnAnalyzer::visitChildTerms(Visitor<const Term> &visitor) const {
+void GenericReturnHook::visitChildTerms(Visitor<const Term> &visitor) const {
     foreach (const auto &returnValue, returnValues_) {
         visitor(returnValue.second.get());
     }

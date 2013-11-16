@@ -45,11 +45,11 @@
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cconv/CallAnalyzer.h>
+#include <nc/core/ir/cconv/CallHook.h>
 #include <nc/core/ir/cconv/CallsData.h>
 #include <nc/core/ir/cconv/EnterHook.h>
 #include <nc/core/ir/cconv/Signatures.h>
-#include <nc/core/ir/cconv/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/ReturnHook.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Dfs.h>
 #include <nc/core/ir/cflow/Graph.h>
@@ -706,13 +706,13 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             if (auto calleeId = parent().context().callsData()->getCalleeId(call)) {
                 if (auto signature = parent().context().signatures()->getSignature(calleeId)) {
-                    if (auto callAnalyzer = context().callsData()->getCallAnalyzer(call)) {
+                    if (auto callHook = context().callsData()->getCallHook(call)) {
                         foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
-                            callOperator->addArgument(makeExpression(callAnalyzer->getArgumentTerm(memoryLocation)));
+                            callOperator->addArgument(makeExpression(callHook->getArgumentTerm(memoryLocation)));
                         }
 
                         if (signature->returnValue()) {
-                            const Term *returnValueTerm = callAnalyzer->getReturnValueTerm(signature->returnValue());
+                            const Term *returnValueTerm = callHook->getReturnValueTerm(signature->returnValue());
 
                             return std::make_unique<likec::ExpressionStatement>(tree(),
                                 std::make_unique<likec::BinaryOperator>(tree(),
@@ -731,10 +731,10 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
         case Statement::RETURN: {
             if (signature()) {
                 if (signature()->returnValue()) {
-                    if (auto returnAnalyzer = context().callsData()->getReturnAnalyzer(function(), statement->asReturn())) {
+                    if (auto returnHook = context().callsData()->getReturnHook(function(), statement->asReturn())) {
                         return std::make_unique<likec::Return>(
                             tree(),
-                            makeExpression(returnAnalyzer->getReturnValueTerm(signature()->returnValue())));
+                            makeExpression(returnHook->getReturnValueTerm(signature()->returnValue())));
                     }
                 }
             }

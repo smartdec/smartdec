@@ -45,9 +45,9 @@ class Term;
 namespace cconv {
 
 /**
- * ReturnAnalyzer extracts information about location of function's return value from a return site.
+ * ReturnHook extracts information about location of function's return value from a return site.
  */
-class ReturnAnalyzer {
+class ReturnHook {
     const Return *return_; ///< Return statement.
 
     public:
@@ -57,14 +57,14 @@ class ReturnAnalyzer {
      *
      * \param ret Valid pointer to a return statement to be analyzed.
      */
-    ReturnAnalyzer(const Return *ret):
+    ReturnHook(const Return *ret):
         return_(ret)
     { assert(ret != NULL); }
 
     /**
      * Virtual destructor.
      */
-    virtual ~ReturnAnalyzer() {}
+    virtual ~ReturnHook() {}
 
     /**
      * \return Return statement for which the analyzer has been created.
@@ -80,7 +80,7 @@ class ReturnAnalyzer {
 
     /**
      * Returns a valid pointer to the term representing the argument designated by given term.
-     * The term is created when necessary and owned by this ReturnAnalyzer.
+     * The term is created when necessary and owned by this ReturnHook.
      *
      * \param term Valid pointer to a term.
      */

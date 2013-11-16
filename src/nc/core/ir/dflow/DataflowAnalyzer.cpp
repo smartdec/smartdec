@@ -39,10 +39,10 @@
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cconv/CallAnalyzer.h>
+#include <nc/core/ir/cconv/CallHook.h>
 #include <nc/core/ir/cconv/CallsData.h>
 #include <nc/core/ir/cconv/EnterHook.h>
-#include <nc/core/ir/cconv/ReturnAnalyzer.h>
+#include <nc/core/ir/cconv/ReturnHook.h>
 
 #include "Dataflow.h"
 #include "ExecutionContext.h"
@@ -176,16 +176,16 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
                 if (targetValue->abstractValue().isConcrete()) {
                     callsData()->setCalledAddress(call, targetValue->abstractValue().asConcrete().value());
                 }
-                if (auto callAnalyzer = callsData()->getCallAnalyzer(call)) {
-                    callAnalyzer->executeCall(context);
+                if (auto callHook = callsData()->getCallHook(call)) {
+                    callHook->executeCall(context);
                 }
             }
             break;
         }
         case Statement::RETURN: {
             if (function() && callsData()) {
-                if (auto returnAnalyzer = callsData()->getReturnAnalyzer(function(), statement->asReturn())) {
-                    returnAnalyzer->executeReturn(context);
+                if (auto returnHook = callsData()->getReturnHook(function(), statement->asReturn())) {
+                    returnHook->executeReturn(context);
                 }
             }
             break;
