@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "GenericFunctionAnalyzer.h"
+#include "GenericEnterHook.h"
 
 #include <algorithm> /* std::transform() */
 
@@ -46,8 +46,8 @@ namespace core {
 namespace ir {
 namespace cconv {
 
-GenericFunctionAnalyzer::GenericFunctionAnalyzer(const Function *function, const GenericDescriptorAnalyzer *addressAnalyzer):
-    FunctionAnalyzer(function), addressAnalyzer_(addressAnalyzer)
+GenericEnterHook::GenericEnterHook(const Function *function, const GenericDescriptorAnalyzer *addressAnalyzer):
+    EnterHook(function), addressAnalyzer_(addressAnalyzer)
 {
     stackPointer_.reset(new MemoryLocationAccess(convention()->stackPointer()));
     stackPointer_->setAccessType(Term::WRITE);
@@ -65,17 +65,17 @@ GenericFunctionAnalyzer::GenericFunctionAnalyzer(const Function *function, const
     }
 }
 
-GenericFunctionAnalyzer::~GenericFunctionAnalyzer() {
+GenericEnterHook::~GenericEnterHook() {
     foreach (const Statement *statement, entryStatements_) {
         delete statement;
     }
 }
 
-inline const GenericCallingConvention *GenericFunctionAnalyzer::convention() const {
+inline const GenericCallingConvention *GenericEnterHook::convention() const {
     return addressAnalyzer()->convention();
 }
 
-void GenericFunctionAnalyzer::executeEnter(dflow::ExecutionContext &context) {
+void GenericEnterHook::execute(dflow::ExecutionContext &context) {
     /*
      * Detect all stack arguments used.
      */
@@ -137,7 +137,7 @@ void GenericFunctionAnalyzer::executeEnter(dflow::ExecutionContext &context) {
     }
 }
 
-const Term *GenericFunctionAnalyzer::getArgumentTerm(const MemoryLocation &memoryLocation) {
+const Term *GenericEnterHook::getArgumentTerm(const MemoryLocation &memoryLocation) {
     auto &result = arguments_[memoryLocation];
     if (!result) {
         result.reset(new MemoryLocationAccess(memoryLocation));
@@ -146,13 +146,13 @@ const Term *GenericFunctionAnalyzer::getArgumentTerm(const MemoryLocation &memor
     return result.get();
 }
 
-void GenericFunctionAnalyzer::visitChildStatements(Visitor<const Statement> &visitor) const {
+void GenericEnterHook::visitChildStatements(Visitor<const Statement> &visitor) const {
     foreach (const auto &statement, entryStatements_) {
         visitor(statement);
     }
 }
 
-void GenericFunctionAnalyzer::visitChildTerms(Visitor<const Term> &visitor) const {
+void GenericEnterHook::visitChildTerms(Visitor<const Term> &visitor) const {
     visitor(stackPointer_.get());
 
     foreach (const auto &argument, arguments_) {

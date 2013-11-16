@@ -22,14 +22,14 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "FunctionAnalyzer.h"
+#include "EnterHook.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace cconv {
 
-const std::vector<const Statement *> &FunctionAnalyzer::entryStatements() const {
+const std::vector<const Statement *> &EnterHook::entryStatements() const {
     static const std::vector<const Statement *> empty;
 
     return empty;

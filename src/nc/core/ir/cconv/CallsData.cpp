@@ -38,7 +38,7 @@
 #include "CallAnalyzer.h"
 #include "CallingConvention.h"
 #include "CallingConventionDetector.h"
-#include "FunctionAnalyzer.h"
+#include "EnterHook.h"
 #include "Signature.h"
 #include "ReturnAnalyzer.h"
 
@@ -115,7 +115,7 @@ DescriptorAnalyzer *CallsData::getDescriptorAnalyzer(const CalleeId &calleeId) {
     return nc::find(id2analyzer_, calleeId).get();
 }
 
-FunctionAnalyzer *CallsData::getFunctionAnalyzer(const Function *function) {
+EnterHook *CallsData::getEnterHook(const Function *function) {
     assert(function != NULL);
 
     auto calleeId = getCalleeId(function);
@@ -126,7 +126,7 @@ FunctionAnalyzer *CallsData::getFunctionAnalyzer(const Function *function) {
     auto key = std::make_pair(calleeId, function);
     if (!nc::contains(function2analyzer_, key)) {
         if (DescriptorAnalyzer *descriptorAnalyzer = getDescriptorAnalyzer(calleeId)) {
-            function2analyzer_[key] = descriptorAnalyzer->createFunctionAnalyzer(function);
+            function2analyzer_[key] = descriptorAnalyzer->createEnterHook(function);
         }
     }
     return nc::find(function2analyzer_, key).get();

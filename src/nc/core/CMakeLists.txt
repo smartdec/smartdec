@@ -88,16 +88,16 @@ set(SOURCES
     ir/cconv/CallsData.cpp
     ir/cconv/CallsData.h
     ir/cconv/DescriptorAnalyzer.h
-    ir/cconv/FunctionAnalyzer.cpp
-    ir/cconv/FunctionAnalyzer.h
+    ir/cconv/EnterHook.cpp
+    ir/cconv/EnterHook.h
     ir/cconv/GenericCallAnalyzer.cpp
     ir/cconv/GenericCallAnalyzer.h
     ir/cconv/GenericCallingConvention.cpp
     ir/cconv/GenericCallingConvention.h
     ir/cconv/GenericDescriptorAnalyzer.cpp
     ir/cconv/GenericDescriptorAnalyzer.h
-    ir/cconv/GenericFunctionAnalyzer.cpp
-    ir/cconv/GenericFunctionAnalyzer.h
+    ir/cconv/GenericEnterHook.cpp
+    ir/cconv/GenericEnterHook.h
     ir/cconv/GenericReturnAnalyzer.cpp
     ir/cconv/GenericReturnAnalyzer.h
     ir/cconv/ReturnAnalyzer.h

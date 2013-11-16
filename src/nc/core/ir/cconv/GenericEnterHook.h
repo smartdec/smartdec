@@ -32,7 +32,7 @@
 
 #include <nc/core/ir/MemoryLocation.h>
 
-#include "FunctionAnalyzer.h"
+#include "EnterHook.h"
 
 namespace nc {
 namespace core {
@@ -43,9 +43,9 @@ class GenericCallingConvention;
 class GenericDescriptorAnalyzer;
 
 /**
- * GenericFunctionAnalyzer is a FunctionAnalyzer for a typical calling convention using registers and stack to pass arguments.
+ * GenericEnterHook is a EnterHook for a typical calling convention using registers and stack to pass arguments.
  */
-class GenericFunctionAnalyzer: public FunctionAnalyzer {
+class GenericEnterHook: public EnterHook {
     /** Address analyzer. */
     const GenericDescriptorAnalyzer *addressAnalyzer_;
 
@@ -71,12 +71,12 @@ public:
      * \param[in] function Valid pointer to the function to be analyzed.
      * \param[in] addressAnalyzer Parent DescriptorAnalyzer.
      */
-    GenericFunctionAnalyzer(const Function *function, const GenericDescriptorAnalyzer *addressAnalyzer);
+    GenericEnterHook(const Function *function, const GenericDescriptorAnalyzer *addressAnalyzer);
 
     /**
      * Destructor.
      */
-    virtual ~GenericFunctionAnalyzer();
+    virtual ~GenericEnterHook();
 
     /**
      * \return Valid pointer to the address analyzer.
@@ -94,7 +94,7 @@ public:
     const std::vector<MemoryLocation> &argumentLocations() const { return argumentLocations_; }
 
     virtual const std::vector<const Statement *> &entryStatements() const override { return entryStatements_; }
-    virtual void executeEnter(dflow::ExecutionContext &context) override;
+    virtual void execute(dflow::ExecutionContext &context) override;
     virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) override;
     virtual void visitChildStatements(Visitor<const Statement> &visitor) const override;
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;

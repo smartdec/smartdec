@@ -47,9 +47,9 @@ namespace dflow {
 namespace cconv {
 
 /**
- * FunctionAnalyzer extracts the information about location of function's arguments from function's implementation.
+ * EnterHook extracts the information about location of function's arguments from function's implementation.
  */
-class FunctionAnalyzer {
+class EnterHook {
     const Function *function_; ///< Function this callee convention object is related to.
 
     public:
@@ -59,14 +59,16 @@ class FunctionAnalyzer {
      *
      * \param function Valid pointer to the function to be analyzed.
      */
-    FunctionAnalyzer(const Function *function):
+    EnterHook(const Function *function):
         function_(function)
-    { assert(function != NULL); }
+    {
+        assert(function != NULL);
+    }
 
     /**
      * Virtual destructor.
      */
-    virtual ~FunctionAnalyzer() {}
+    virtual ~EnterHook() {}
 
     /**
      * \return Function this callee convention object is related to.
@@ -85,11 +87,11 @@ class FunctionAnalyzer {
      * 
      * \param context Execution context.
      */
-    virtual void executeEnter(dflow::ExecutionContext &context) = 0;
+    virtual void execute(dflow::ExecutionContext &context) = 0;
 
     /**
      * Returns a valid pointer to the term representing the argument at given memory location.
-     * The term is created when necessary and owned by this FunctionAnalyzer.
+     * The term is created when necessary and owned by this EnterHook.
      *
      * \param memoryLocation Memory location.
      */

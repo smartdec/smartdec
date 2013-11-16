@@ -34,7 +34,7 @@
 
 #include <nc/core/ir/cconv/CallAnalyzer.h>
 #include <nc/core/ir/cconv/CallsData.h>
-#include <nc/core/ir/cconv/FunctionAnalyzer.h>
+#include <nc/core/ir/cconv/EnterHook.h>
 #include <nc/core/ir/cconv/ReturnAnalyzer.h>
 
 namespace nc {
@@ -61,9 +61,9 @@ void CensusVisitor::operator()(const Function *function) {
     }
 
     if (callsData()) {
-        if (cconv::FunctionAnalyzer *functionAnalyzer = callsData()->getFunctionAnalyzer(function)) {
-            functionAnalyzer->visitChildStatements(*this);
-            functionAnalyzer->visitChildTerms(*this);
+        if (cconv::EnterHook *enterHook = callsData()->getEnterHook(function)) {
+            enterHook->visitChildStatements(*this);
+            enterHook->visitChildTerms(*this);
         }
     }
 

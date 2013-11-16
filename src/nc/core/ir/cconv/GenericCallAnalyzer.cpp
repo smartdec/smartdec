@@ -158,7 +158,7 @@ void GenericCallAnalyzer::executeCall(dflow::ExecutionContext &context) {
             for (; i != iend && i->addr() <= nextArgumentOffset; ++i) {
                 /*
                  * We use shifted() in order to make so that the same arguments have
-                 * matching locations when found by CallAnalyzer and by FunctionAnalyzer.
+                 * matching locations when found by CallAnalyzer and by EnterHook.
                  */
                 MemoryLocation argumentLocation = i->shifted(-stackTop_);
                 getArgumentTerm(argumentLocation);

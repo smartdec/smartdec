@@ -48,7 +48,7 @@ class CallAnalyzer;
 class CallingConvention;
 class CallingConventionDetector;
 class DescriptorAnalyzer;
-class FunctionAnalyzer;
+class EnterHook;
 class Signature;
 class ReturnAnalyzer;
 
@@ -69,16 +69,13 @@ class CallsData {
     boost::unordered_map<CalleeId, std::unique_ptr<DescriptorAnalyzer>> id2analyzer_;
 
     /** Mapping from a function to its analyzer. */
-    boost::unordered_map<std::pair<CalleeId, const Function *>, std::unique_ptr<FunctionAnalyzer>> function2analyzer_;
+    boost::unordered_map<std::pair<CalleeId, const Function *>, std::unique_ptr<EnterHook>> function2analyzer_;
 
     /** Mapping from a call to its analyzer. */
     boost::unordered_map<std::pair<CalleeId, const Call *>, std::unique_ptr<CallAnalyzer>> call2analyzer_;
 
     /** Mapping from a return to its analyzer. */
     boost::unordered_map<std::pair<CalleeId, const Return *>, std::unique_ptr<ReturnAnalyzer>> return2analyzer_;
-
-    /** Mapping from a callee id to its signature. */
-    boost::unordered_map<CalleeId, std::unique_ptr<Signature>> id2signature_;
 
     public:
 
@@ -158,10 +155,10 @@ class CallsData {
     /**
      * \param function Valid pointer to a function.
      *
-     * \return Pointer to a FunctionAnalyzer instance for this function.
+     * \return Pointer to a EnterHook instance for this function.
      * Can be NULL. Such instance is created when necessary and if possible.
      */
-    FunctionAnalyzer *getFunctionAnalyzer(const Function *function);
+    EnterHook *getEnterHook(const Function *function);
 
     /**
      * \param call Valid pointer to a call statement.

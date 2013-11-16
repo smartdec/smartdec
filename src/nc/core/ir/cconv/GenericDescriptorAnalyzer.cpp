@@ -36,7 +36,7 @@
 
 #include "GenericCallingConvention.h"
 #include "GenericCallAnalyzer.h"
-#include "GenericFunctionAnalyzer.h"
+#include "GenericEnterHook.h"
 #include "GenericReturnAnalyzer.h"
 #include "Signature.h"
 
@@ -51,9 +51,9 @@ std::unique_ptr<CallAnalyzer> GenericDescriptorAnalyzer::createCallAnalyzer(cons
     return std::move(result);
 }
 
-std::unique_ptr<FunctionAnalyzer> GenericDescriptorAnalyzer::createFunctionAnalyzer(const Function *function) {
-    std::unique_ptr<GenericFunctionAnalyzer> result(new GenericFunctionAnalyzer(function, this));
-    functionAnalyzers_.push_back(result.get());
+std::unique_ptr<EnterHook> GenericDescriptorAnalyzer::createEnterHook(const Function *function) {
+    std::unique_ptr<GenericEnterHook> result(new GenericEnterHook(function, this));
+    enterHooks_.push_back(result.get());
     return std::move(result);
 }
 
@@ -89,11 +89,11 @@ std::unique_ptr<Signature> GenericDescriptorAnalyzer::getSignature() const {
         }
     }
 
-    foreach (GenericFunctionAnalyzer *functionAnalyzer, functionAnalyzers_) {
-        if (!functionAnalyzer->function()->getReturns().empty()) {
+    foreach (GenericEnterHook *enterHook, enterHooks_) {
+        if (!enterHook->function()->getReturns().empty()) {
             ++functionsCount;
         }
-        foreach (const MemoryLocation &memoryLocation, functionAnalyzer->argumentLocations()) {
+        foreach (const MemoryLocation &memoryLocation, enterHook->argumentLocations()) {
             ++argVotes[memoryLocation].uses;
         }
     }

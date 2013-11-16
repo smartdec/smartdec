@@ -41,7 +41,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallAnalyzer.h>
 #include <nc/core/ir/cconv/CallsData.h>
-#include <nc/core/ir/cconv/FunctionAnalyzer.h>
+#include <nc/core/ir/cconv/EnterHook.h>
 #include <nc/core/ir/cconv/ReturnAnalyzer.h>
 
 #include "Dataflow.h"
@@ -93,8 +93,8 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
             /* If this is a function entry, run the calling convention-specific code. */
             if (basicBlock == function()->entry()) {
                 if (callsData()) {
-                    if (auto functionAnalyzer = callsData()->getFunctionAnalyzer(function())) {
-                        functionAnalyzer->executeEnter(context);
+                    if (auto enterHook = callsData()->getEnterHook(function())) {
+                        enterHook->execute(context);
                     }
                 }
             }

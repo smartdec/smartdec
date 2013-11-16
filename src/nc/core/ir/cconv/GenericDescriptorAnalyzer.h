@@ -41,7 +41,7 @@ namespace cconv {
 
 class GenericCallAnalyzer;
 class GenericCallingConvention;
-class GenericFunctionAnalyzer;
+class GenericEnterHook;
 class GenericReturnAnalyzer;
 
 /**
@@ -51,7 +51,7 @@ class GenericDescriptorAnalyzer: public DescriptorAnalyzer {
     const GenericCallingConvention *convention_; ///< Calling convention.
 
     std::vector<GenericCallAnalyzer *> callAnalyzers_; ///< All created call analyzers.
-    std::vector<GenericFunctionAnalyzer *> functionAnalyzers_; ///< All created function analyzers.
+    std::vector<GenericEnterHook *> enterHooks_; ///< All created function analyzers.
     std::vector<GenericReturnAnalyzer *> returnAnalyzers_; ///< All created return analyzers.
 
     boost::optional<ByteSize> argumentsSize_; ///< Size of arguments on the stack in bytes.
@@ -87,7 +87,7 @@ class GenericDescriptorAnalyzer: public DescriptorAnalyzer {
     void setArgumentsSize(boost::optional<ByteSize> size) { argumentsSize_ = size; }
 
     virtual std::unique_ptr<CallAnalyzer> createCallAnalyzer(const Call *call) override;
-    virtual std::unique_ptr<FunctionAnalyzer> createFunctionAnalyzer(const Function *function) override;
+    virtual std::unique_ptr<EnterHook> createEnterHook(const Function *function) override;
     virtual std::unique_ptr<ReturnAnalyzer> createReturnAnalyzer(const Return *function) override;
     virtual std::unique_ptr<Signature> getSignature() const override;
 };
