@@ -105,11 +105,11 @@ void Driver::decompile(Context &context) {
         masterAnalyzer->createFunctions(context);
         context.cancellationToken().poll();
 
-        context.logToken() << tr("Creating the calls data...");
-        masterAnalyzer->createHooks(context);
+        context.logToken() << tr("Initializing calling conventions hooks...");
+        masterAnalyzer->initializeHooks(context);
         context.cancellationToken().poll();
 
-        foreach (const ir::Function *function, context.functions()->functions()) {
+        foreach (auto function, context.functions()->functions()) {
             context.logToken() << tr("Running dataflow analysis on %1...").arg(function->name());
             masterAnalyzer->analyzeDataflow(context, function);
             context.cancellationToken().poll();
@@ -119,7 +119,13 @@ void Driver::decompile(Context &context) {
         masterAnalyzer->reconstructSignatures(context);
         context.cancellationToken().poll();
 
-        foreach (const ir::Function *function, context.functions()->functions()) {
+        foreach (auto function, context.functions()->functions()) {
+            context.logToken() << tr("Running dataflow analysis on %1...").arg(function->name());
+            masterAnalyzer->analyzeDataflow(context, function);
+            context.cancellationToken().poll();
+        }
+
+        foreach (auto function, context.functions()->functions()) {
             context.logToken() << tr("Running structural analysis on %1...").arg(function->name());
             masterAnalyzer->doStructuralAnalysis(context, function);
             context.cancellationToken().poll();
@@ -137,10 +143,6 @@ void Driver::decompile(Context &context) {
             context.cancellationToken().poll();
         }
 
-        context.logToken() << tr("Computing term to function mapping...");
-        masterAnalyzer->computeTermToFunctionMapping(context);
-        context.cancellationToken().poll();
-
         context.logToken() << tr("Generating AST...");
         masterAnalyzer->generateTree(context);
         context.cancellationToken().poll();
@@ -149,6 +151,10 @@ void Driver::decompile(Context &context) {
         context.logToken() << tr("Checking AST...");
         masterAnalyzer->checkTree(context);
 #endif
+
+        context.logToken() << tr("Computing term to function mapping...");
+        masterAnalyzer->computeTermToFunctionMapping(context);
+        context.cancellationToken().poll();
 
         context.logToken() << tr("Decompilation completed.");
     } catch (const CancellationException &) {

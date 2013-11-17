@@ -59,8 +59,8 @@ namespace ir {
     class Program;
 
     namespace cconv {
+        class Conventions;
         class Hooks;
-        class CallingConventionDetector;
         class Signatures;
     }
     namespace cflow {
@@ -99,16 +99,16 @@ class Context: public QObject {
     std::shared_ptr<const arch::Instructions> instructions_; ///< Instructions being decompiled.
     std::unique_ptr<ir::Program> program_; ///< Program.
     std::unique_ptr<ir::Functions> functions_; ///< Functions.
-    std::unique_ptr<ir::misc::TermToFunction> termToFunction_; ///< Term to function mapping.
-    std::unique_ptr<ir::cconv::Hooks> hooks_; ///< Calls data.
+    std::unique_ptr<ir::cconv::Conventions> conventions_; ///< Assigned calling conventions.
+    std::unique_ptr<ir::cconv::Hooks> hooks_; ///< Hooks of calling conventions.
     std::unique_ptr<ir::cconv::Signatures> signatures_; ///< Signatures.
-    std::unique_ptr<ir::cconv::CallingConventionDetector> callingConventionDetector_; ///< Detector of calling conventions.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::dflow::Dataflow> > dataflows_; ///< Dataflow information.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::usage::Usage> > usages_; ///< Term usage information.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::types::Types> > types_; ///< Information about types.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::vars::Variables> > variables_; ///< Reconstructed variables.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::cflow::Graph> > regionGraphs_; ///< Region graphs.
     std::unique_ptr<likec::Tree> tree_; ///< Representation of LikeC program.
+    std::unique_ptr<ir::misc::TermToFunction> termToFunction_; ///< Term to function mapping.
     LogToken logToken_; ///< Log token.
     CancellationToken cancellationToken_; ///< Cancellation token.
 
@@ -172,9 +172,21 @@ public:
     ir::Functions *functions() const { return functions_.get(); }
 
     /**
-     * Sets the calls data.
+     * Sets the assigned calling conventions.
      *
-     * \param hooks Valid pointer to a calls data.
+     * \param hooks Valid pointer to the assigned calling conventions.
+     */
+    void setConventions(std::unique_ptr<ir::cconv::Conventions> conventions);
+
+    /**
+     * \return Valid pointer to the information on calling conventions of functions.
+     */
+    ir::cconv::Conventions *conventions() const { return conventions_.get(); }
+
+    /**
+     * Sets the calling conventions hooks.
+     *
+     * \param hooks Valid pointer to the hooks information.
      */
     void setHooks(std::unique_ptr<ir::cconv::Hooks> hooks);
 
@@ -182,18 +194,6 @@ public:
      * \return Valid pointer to the information on calling conventions of functions.
      */
     ir::cconv::Hooks *hooks() const { return hooks_.get(); }
-
-    /**
-     * Sets the calling convention detector.
-     *
-     * \param detector Valid pointer to the detector.
-     */
-    void setCallingConventionDetector(std::unique_ptr<ir::cconv::CallingConventionDetector> detector);
-
-    /**
-     * \return Valid pointer to the calling convention detector.
-     */
-    ir::cconv::CallingConventionDetector *callingConventionDetector() { return callingConventionDetector_.get(); }
 
     /**
      * Sets the reconstructed signatures.

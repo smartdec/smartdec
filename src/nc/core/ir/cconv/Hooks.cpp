@@ -34,10 +34,10 @@
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statements.h>
 
+#include "Conventions.h"
 #include "DescriptorAnalyzer.h"
 #include "CallHook.h"
 #include "CallingConvention.h"
-#include "CallingConventionDetector.h"
 #include "EnterHook.h"
 #include "Signature.h"
 #include "ReturnHook.h"
@@ -47,7 +47,9 @@ namespace core {
 namespace ir {
 namespace cconv {
 
-Hooks::Hooks(): callingConventionDetector_(NULL) {}
+Hooks::Hooks(const Conventions &conventions):
+    conventions_(conventions)
+{}
 
 Hooks::~Hooks() {}
 
@@ -85,22 +87,16 @@ void Hooks::setCalledAddress(const Call *call, ByteAddr addr) {
     call2address_[call] = addr;
 }
 
-void Hooks::setCallingConvention(const CalleeId &calleeId, const CallingConvention *convention) {
-    assert(nc::find(id2convention_, calleeId) == NULL && "Calling convention cannot be reset.");
-
-    id2convention_[calleeId] = convention;
-}
-
 const CallingConvention *Hooks::getCallingConvention(const CalleeId &calleeId) {
     if (!calleeId) {
         return NULL;
     }
-    if (!nc::contains(id2convention_, calleeId)) {
-        if (callingConventionDetector()) {
-            callingConventionDetector()->detectCallingConvention(calleeId);
-        }
+    if (auto result = conventions_.getCallingConvention(calleeId)) {
+        return result;
+    } else {
+        conventionDetector_(calleeId);
+        return conventions_.getCallingConvention(calleeId);
     }
-    return nc::find(id2convention_, calleeId);
 }
 
 DescriptorAnalyzer *Hooks::getDescriptorAnalyzer(const CalleeId &calleeId) {

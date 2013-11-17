@@ -47,17 +47,24 @@ namespace cconv {
 class CallHook;
 class CallingConvention;
 class CallingConventionDetector;
+class Conventions;
 class DescriptorAnalyzer;
 class EnterHook;
-class Signature;
 class ReturnHook;
+class Signature;
 
 /**
- * Information about how functions call each other.
+ * Calling conventions hooks.
  */
 class Hooks {
-    /** Detector of calling conventions. */
-    const CallingConventionDetector *callingConventionDetector_;
+    /** Assigned calling conventions. */
+    const Conventions &conventions_;
+
+    /** Type for the calling convention detector callback. */
+    typedef std::function<void(const CalleeId &)> ConventionDetector;
+
+    /** Calling convention detector. */
+    ConventionDetector conventionDetector_;
 
     /** Mapping from a call to its destination address. */
     boost::unordered_map<const Call *, ByteAddr> call2address_;
@@ -81,8 +88,10 @@ class Hooks {
 
     /**
      * Constructor.
+     *
+     * \param conventions Assigned calling conventions.
      */
-    Hooks();
+    Hooks(const Conventions &conventions);
 
     /**
      * Destructor.
@@ -90,16 +99,16 @@ class Hooks {
     ~Hooks();
 
     /**
-     * \return Pointer to the calling convention detector. Can be NULL.
-     */
-    const CallingConventionDetector *callingConventionDetector() const { return callingConventionDetector_; }
-
-    /**
-     * Sets a calling convention detector.
+     * Sets the function being called when a calling convention for a particular
+     * callee is requested, but currently unknown. It is assumed that this function
+     * will detect this convention and modify Conventions object passed to the
+     * constructor of this Hooks object.
      *
-     * \param detector Pointer to the new calling convention detector. Can be NULL.
+     * \param detector Calling convention detector.
      */
-    void setCallingConventionDetector(const CallingConventionDetector *detector) { callingConventionDetector_ = detector; }
+    void setConventionDetector(ConventionDetector detector) {
+        conventionDetector_ = std::move(detector);
+    }
 
     /**
      * \param function Valid pointer to a function.
@@ -131,14 +140,6 @@ class Hooks {
     void setCalledAddress(const Call *call, ByteAddr addr);
 
     /**
-     * Assigns a calling convention to a callee id.
-     *
-     * \param calleeId Callee id.
-     * \param convention Pointer to a calling convention of the function. Can be NULL.
-     */
-    void setCallingConvention(const CalleeId &calleeId, const CallingConvention *convention);
-
-    /**
      * \param calleeId Callee id.
      *
      * \return Pointer to the calling convention used for calls to given address. Can be NULL.
@@ -146,6 +147,10 @@ class Hooks {
     const CallingConvention *getCallingConvention(const CalleeId &calleeId);
 
     /**
+     * Returns the calling convention for the given callee id taken from
+     * the Conventions object passed to the constructor of *this object.
+     * If it is NULL, calls the detector callback and tries again.
+     *
      * \param calleeId Callee id.
      *
      * \return Pointer to the associated descriptor analyzer. Can be NULL.

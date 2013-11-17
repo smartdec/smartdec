@@ -39,7 +39,7 @@
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/FunctionsGenerator.h>
 #include <nc/core/ir/Program.h>
-#include <nc/core/ir/cconv/CallingConventionDetector.h>
+#include <nc/core/ir/cconv/Conventions.h>
 #include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/SignatureAnalyzer.h>
 #include <nc/core/ir/cconv/Signatures.h>
@@ -120,29 +120,16 @@ void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) 
     }
 }
 
-void MasterAnalyzer::createHooks(Context &context) const {
-    std::unique_ptr<ir::cconv::Hooks> hooks(new ir::cconv::Hooks());
+void MasterAnalyzer::initializeHooks(Context &context) const {
+    auto conventions = std::make_unique<ir::cconv::Conventions>();
+    auto hooks       = std::make_unique<ir::cconv::Hooks>(*conventions);
 
-    class Detector: public ir::cconv::CallingConventionDetector {
-        const MasterAnalyzer *masterAnalyzer_;
-        Context &context_;
+    hooks->setConventionDetector([this, &context](const ir::cconv::CalleeId &calleeId) {
+        this->detectCallingConvention(context, calleeId);
+    });
 
-        public:
-
-        Detector(const MasterAnalyzer *masterAnalyzer, Context &context):
-            masterAnalyzer_(masterAnalyzer), context_(context)
-        {}
-
-        virtual void detectCallingConvention(const ir::cconv::CalleeId &calleeId) const override {
-            masterAnalyzer_->detectCallingConvention(context_, calleeId);
-        }
-    };
-
-    std::unique_ptr<ir::cconv::CallingConventionDetector> detector(new Detector(this, context));
-    hooks->setCallingConventionDetector(detector.get());
-
+    context.setConventions(std::move(conventions));
     context.setHooks(std::move(hooks));
-    context.setCallingConventionDetector(std::move(detector));
 }
 
 void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::cconv::CalleeId &/*descriptor*/) const {

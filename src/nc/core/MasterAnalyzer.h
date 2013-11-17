@@ -86,11 +86,12 @@ class MasterAnalyzer {
     virtual void pickFunctionName(Context &context, ir::Function *function) const;
 
     /**
-     * Creates the calls data will the calling convention detector using detectCallingConvention method of this class.
+     * Initializes calling convention hooks using detectCallingConvention
+     * method of this class for the detection of calling conventions.
      *
      * \param context Context.
      */
-    virtual void createHooks(Context &context) const;
+    virtual void initializeHooks(Context &context) const;
 
     /**
      * Detects and sets the calling convention of a function.

@@ -33,7 +33,7 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Program.h>
-#include <nc/core/ir/cconv/CallingConventionDetector.h>
+#include <nc/core/ir/cconv/Conventions.h>
 #include <nc/core/ir/cconv/Hooks.h>
 #include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cflow/Graph.h>
@@ -77,16 +77,14 @@ void Context::setFunctions(std::unique_ptr<ir::Functions> functions) {
     functions_ = std::move(functions);
 }
 
+void Context::setConventions(std::unique_ptr<ir::cconv::Conventions> conventions) {
+    conventions_ = std::move(conventions);
+}
+
 void Context::setHooks(std::unique_ptr<ir::cconv::Hooks> hooks) {
     assert(hooks);
     assert(!hooks_);
     hooks_ = std::move(hooks);
-}
-
-void Context::setCallingConventionDetector(std::unique_ptr<ir::cconv::CallingConventionDetector> detector) {
-    assert(detector);
-    assert(!callingConventionDetector_);
-    callingConventionDetector_ = std::move(detector);
 }
 
 void Context::setSignatures(std::unique_ptr<ir::cconv::Signatures> signatures) {
@@ -95,18 +93,10 @@ void Context::setSignatures(std::unique_ptr<ir::cconv::Signatures> signatures) {
     signatures_ = std::move(signatures);
 }
 
-void Context::setTermToFunction(std::unique_ptr<ir::misc::TermToFunction> termToFunction) {
-    assert(termToFunction);
-    assert(!termToFunction_);
-    termToFunction_ = std::move(termToFunction);
-}
-
 void Context::setDataflow(const ir::Function *function, std::unique_ptr<ir::dflow::Dataflow> dataflow) {
     assert(function);
     assert(dataflow);
-    auto &entry = dataflows_[function];
-    assert(!entry);
-    entry = std::move(dataflow);
+    dataflows_[function] = std::move(dataflow);
 }
 
 const ir::dflow::Dataflow *Context::getDataflow(const ir::Function *function) const {
@@ -166,6 +156,12 @@ void Context::setTree(std::unique_ptr<likec::Tree> tree) {
     assert(!tree_);
     tree_ = std::move(tree);
     Q_EMIT treeChanged();
+}
+
+void Context::setTermToFunction(std::unique_ptr<ir::misc::TermToFunction> termToFunction) {
+    assert(termToFunction);
+    assert(!termToFunction_);
+    termToFunction_ = std::move(termToFunction);
 }
 
 } // namespace core
