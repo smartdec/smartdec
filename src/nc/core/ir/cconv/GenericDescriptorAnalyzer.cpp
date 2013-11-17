@@ -36,7 +36,6 @@
 
 #include "CallingConvention.h"
 #include "GenericCallHook.h"
-#include "GenericEnterHook.h"
 #include "GenericReturnHook.h"
 #include "Signature.h"
 
@@ -48,12 +47,6 @@ namespace cconv {
 std::unique_ptr<CallHook> GenericDescriptorAnalyzer::createCallHook(const Call *call) {
     std::unique_ptr<GenericCallHook> result(new GenericCallHook(call, this));
     callHooks_.push_back(result.get());
-    return std::move(result);
-}
-
-std::unique_ptr<EnterHook> GenericDescriptorAnalyzer::createEnterHook(const Function *function) {
-    std::unique_ptr<GenericEnterHook> result(new GenericEnterHook(function, this));
-    enterHooks_.push_back(result.get());
     return std::move(result);
 }
 
@@ -89,11 +82,11 @@ std::unique_ptr<Signature> GenericDescriptorAnalyzer::getSignature() const {
         }
     }
 
-    foreach (GenericEnterHook *enterHook, enterHooks_) {
-        if (!enterHook->function()->getReturns().empty()) {
+    foreach (GenericEntryHook *entryHook, entryHooks_) {
+        if (!entryHook->function()->getReturns().empty()) {
             ++functionsCount;
         }
-        foreach (const MemoryLocation &memoryLocation, enterHook->argumentLocations()) {
+        foreach (const MemoryLocation &memoryLocation, entryHook->argumentLocations()) {
             ++argVotes[memoryLocation].uses;
         }
     }

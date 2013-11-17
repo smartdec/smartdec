@@ -47,7 +47,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallHook.h>
 #include <nc/core/ir/cconv/Hooks.h>
-#include <nc/core/ir/cconv/EnterHook.h>
+#include <nc/core/ir/cconv/EntryHook.h>
 #include <nc/core/ir/cconv/Signatures.h>
 #include <nc/core/ir/cconv/ReturnHook.h>
 #include <nc/core/ir/cflow/BasicNode.h>
@@ -120,17 +120,17 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     setDefinition(functionDefinition.get());
 
     if (signature()) {
-        if (auto enterHook = context().hooks()->getEnterHook(function())) {
+        if (auto entryHook = context().hooks()->getEntryHook(function())) {
             foreach (const MemoryLocation &memoryLocation, signature()->arguments()) {
-                makeArgumentDeclaration(enterHook->getArgumentTerm(memoryLocation));
+                makeArgumentDeclaration(entryHook->getArgumentTerm(memoryLocation));
             }
         }
     }
 
     parent().setFunctionDeclaration(function(), functionDefinition.get());
 
-    if (cconv::EnterHook *enterHook = context().hooks()->getEnterHook(function())) {
-        foreach (const ir::Statement *statement, enterHook->entryStatements()) {
+    if (cconv::EntryHook *entryHook = context().hooks()->getEntryHook(function())) {
+        foreach (const ir::Statement *statement, entryHook->entryStatements()) {
             if (auto likecStatement = makeStatement(statement, NULL, NULL, NULL)) {
                 definition()->block()->addStatement(std::move(likecStatement));
             }

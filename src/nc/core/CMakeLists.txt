@@ -88,14 +88,12 @@ set(SOURCES
     ir/cconv/Hooks.cpp
     ir/cconv/Hooks.h
     ir/cconv/DescriptorAnalyzer.h
-    ir/cconv/EnterHook.cpp
-    ir/cconv/EnterHook.h
+    ir/cconv/EntryHook.cpp
+    ir/cconv/EntryHook.h
     ir/cconv/GenericCallHook.cpp
     ir/cconv/GenericCallHook.h
     ir/cconv/GenericDescriptorAnalyzer.cpp
     ir/cconv/GenericDescriptorAnalyzer.h
-    ir/cconv/GenericEnterHook.cpp
-    ir/cconv/GenericEnterHook.h
     ir/cconv/GenericReturnHook.cpp
     ir/cconv/GenericReturnHook.h
     ir/cconv/ReturnHook.h

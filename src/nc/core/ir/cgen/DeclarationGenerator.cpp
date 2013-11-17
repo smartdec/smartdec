@@ -33,7 +33,7 @@
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/Hooks.h>
-#include <nc/core/ir/cconv/EnterHook.h>
+#include <nc/core/ir/cconv/EntryHook.h>
 #include <nc/core/ir/cconv/Signature.h>
 #include <nc/core/ir/cconv/ReturnHook.h>
 #include <nc/core/ir/cconv/Signatures.h>
@@ -76,9 +76,9 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
     setDeclaration(functionDeclaration.get());
 
     if (signature()) {
-        if (auto enterHook = parent().context().hooks()->getEnterHook(function())) {
+        if (auto entryHook = parent().context().hooks()->getEntryHook(function())) {
             foreach (const MemoryLocation &memoryLocation, signature()->arguments()) {
-                makeArgumentDeclaration(enterHook->getArgumentTerm(memoryLocation));
+                makeArgumentDeclaration(entryHook->getArgumentTerm(memoryLocation));
             }
         }
     }

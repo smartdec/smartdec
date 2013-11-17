@@ -44,27 +44,20 @@ Argument &Argument::operator<<(const arch::Register *reg) {
     return *this << reg->memoryLocation();
 }
 
-CallingConvention::~CallingConvention() {
-    foreach (const Term *term, returnValues_) {
-        delete term;
-    }
-    foreach (const Statement *statement, entryStatements_) {
-        delete statement;
-    }
-}
+CallingConvention::CallingConvention(QString name): name_(std::move(name)) {}
+
+CallingConvention::~CallingConvention() {}
 
 void CallingConvention::addReturnValue(std::unique_ptr<Term> term) {
     assert(term != NULL);
 
-    returnValues_.reserve(returnValues_.size() + 1);
-    returnValues_.push_back(term.release());
+    returnValues_.push_back(std::move(term));
 }
 
 void CallingConvention::addEnterStatement(std::unique_ptr<Statement> statement) {
     assert(statement != NULL);
 
-    entryStatements_.reserve(entryStatements_.size() + 1);
-    entryStatements_.push_back(statement.release());
+    entryStatements_.push_back(std::move(statement));
 }
 
 } // namespace cconv

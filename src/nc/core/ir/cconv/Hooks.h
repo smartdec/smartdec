@@ -25,8 +25,6 @@
 
 #include <nc/config.h>
 
-#include <vector>
-
 #include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
 
@@ -46,12 +44,11 @@ namespace cconv {
 
 class CallHook;
 class CallingConvention;
-class CallingConventionDetector;
 class Conventions;
 class DescriptorAnalyzer;
-class EnterHook;
+class EntryHook;
 class ReturnHook;
-class Signature;
+class Signatures;
 
 /**
  * Calling conventions hooks.
@@ -59,6 +56,9 @@ class Signature;
 class Hooks {
     /** Assigned calling conventions. */
     const Conventions &conventions_;
+
+    /** Signatures of functions. */
+    const Signatures &signatures_;
 
     /** Type for the calling convention detector callback. */
     typedef std::function<void(const CalleeId &)> ConventionDetector;
@@ -69,14 +69,11 @@ class Hooks {
     /** Mapping from a call to its destination address. */
     boost::unordered_map<const Call *, ByteAddr> call2address_;
 
-    /** Mapping from a callee id to the associated calling convention. */
-    boost::unordered_map<CalleeId, const CallingConvention *> id2convention_;
-
     /** Mapping from a callee id to the associated address analyzer. */
-    boost::unordered_map<CalleeId, std::unique_ptr<DescriptorAnalyzer>> id2analyzer_;
+    boost::unordered_map<CalleeId, std::unique_ptr<DescriptorAnalyzer>> id2analyzer_; // TODO: remove
 
     /** Mapping from a function to its analyzer. */
-    boost::unordered_map<std::pair<CalleeId, const Function *>, std::unique_ptr<EnterHook>> function2analyzer_;
+    boost::unordered_map<std::pair<CalleeId, const Function *>, std::unique_ptr<EntryHook>> entryHooks_;
 
     /** Mapping from a call to its analyzer. */
     boost::unordered_map<std::pair<CalleeId, const Call *>, std::unique_ptr<CallHook>> call2analyzer_;
@@ -84,14 +81,17 @@ class Hooks {
     /** Mapping from a return to its analyzer. */
     boost::unordered_map<std::pair<CalleeId, const Return *>, std::unique_ptr<ReturnHook>> return2analyzer_;
 
+    // TODO: make a single map CalleeId -> struct { three maps inside }
+
     public:
 
     /**
      * Constructor.
      *
      * \param conventions Assigned calling conventions.
+     * \param signatures Known signatures of functions.
      */
-    Hooks(const Conventions &conventions);
+    Hooks(const Conventions &conventions, const Signatures &signatures);
 
     /**
      * Destructor.
@@ -160,10 +160,10 @@ class Hooks {
     /**
      * \param function Valid pointer to a function.
      *
-     * \return Pointer to a EnterHook instance for this function.
+     * \return Pointer to a EntryHook instance for this function.
      * Can be NULL. Such instance is created when necessary and if possible.
      */
-    EnterHook *getEnterHook(const Function *function);
+    EntryHook *getEntryHook(const Function *function);
 
     /**
      * \param call Valid pointer to a call statement.

@@ -39,8 +39,8 @@
 #include "DescriptorAnalyzer.h"
 #include "CallHook.h"
 #include "CallingConvention.h"
-#include "EnterHook.h"
-#include "Signature.h"
+#include "EntryHook.h"
+#include "Signatures.h"
 #include "ReturnHook.h"
 #include "GenericDescriptorAnalyzer.h"
 
@@ -49,8 +49,8 @@ namespace core {
 namespace ir {
 namespace cconv {
 
-Hooks::Hooks(const Conventions &conventions):
-    conventions_(conventions)
+Hooks::Hooks(const Conventions &conventions, const Signatures &signatures):
+    conventions_(conventions), signatures_(signatures)
 {}
 
 Hooks::~Hooks() {}
@@ -113,21 +113,24 @@ DescriptorAnalyzer *Hooks::getDescriptorAnalyzer(const CalleeId &calleeId) {
     return nc::find(id2analyzer_, calleeId).get();
 }
 
-EnterHook *Hooks::getEnterHook(const Function *function) {
+EntryHook *Hooks::getEntryHook(const Function *function) {
     assert(function != NULL);
 
     auto calleeId = getCalleeId(function);
+
     if (!calleeId) {
         return NULL;
     }
 
     auto key = std::make_pair(calleeId, function);
-    if (!nc::contains(function2analyzer_, key)) {
-        if (DescriptorAnalyzer *descriptorAnalyzer = getDescriptorAnalyzer(calleeId)) {
-            function2analyzer_[key] = descriptorAnalyzer->createEnterHook(function);
-        }
+
+    if (auto result = nc::find(entryHooks_, key).get()) {
+        return result;
     }
-    return nc::find(function2analyzer_, key).get();
+    if (auto convention = getCallingConvention(calleeId)) {
+        return (entryHooks_[key] = std::make_unique<EntryHook>(convention, signatures_.getSignature(calleeId))).get();
+    }
+    return NULL;
 }
 
 CallHook *Hooks::getCallHook(const Call *call) {

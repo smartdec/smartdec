@@ -138,15 +138,15 @@ class CallingConvention {
 
     MemoryLocation stackPointer_; ///< Memory location of stack pointer register.
 
-    BitOffset firstArgumentOffset_; ///< Offset of the first argument in a function's stack frame.
+    BitSize firstArgumentOffset_; ///< Offset of the first argument in a function's stack frame.
     BitSize argumentAlignment_; ///< Alignment of stack arguments in bits.
 
     std::vector<ArgumentGroup> argumentGroups_; ///< Argument groups.
-    std::vector<const Term *> returnValues_; ///< Terms where return values may be kept.
+    std::vector<std::unique_ptr<const Term>> returnValues_; ///< Terms where return values may be kept.
 
     bool calleeCleanup_; ///< Callee cleans up arguments.
 
-    std::vector<const Statement *> entryStatements_; ///< Statements executed when a function is entered.
+    std::vector<std::unique_ptr<const Statement>> entryStatements_; ///< Statements executed when a function is entered.
 
     public:
 
@@ -155,10 +155,10 @@ class CallingConvention {
      *
      * \paran name Name of the calling convention.
      */
-    CallingConvention(QString name): name_(std::move(name)) {}
+    CallingConvention(QString name);
 
     /**
-     * destructor.
+     * Destructor.
      */
     ~CallingConvention();
 
@@ -190,7 +190,9 @@ class CallingConvention {
     /**
      * \return Factories for terms where return values may be kept.
      */
-    const std::vector<const Term *> &returnValues() const { return returnValues_; }
+    const std::vector<const Term *> &returnValues() const {
+        return reinterpret_cast<const std::vector<const Term *> &>(returnValues_);
+    }
 
     /**
      * \return True if callee cleans up arguments.
@@ -204,7 +206,9 @@ class CallingConvention {
      * they are guaranteed to be set by calling convention, i.e. set Intel's direction
      * flag to zero.
      */
-    const std::vector<const Statement *> &entryStatements() const { return entryStatements_; }
+    const std::vector<const Statement *> &entryStatements() const {
+        return reinterpret_cast<const std::vector<const Statement *> &>(entryStatements_);
+    }
 
 protected:
 

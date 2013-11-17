@@ -22,67 +22,64 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "GenericEnterHook.h"
+#include "EntryHook.h"
 
-#include <algorithm> /* std::transform() */
+#include <nc/common/make_unique.h>
 
-#include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
 #include <nc/core/ir/dflow/ExecutionContext.h>
 #include <nc/core/ir/dflow/Value.h>
-#include <nc/core/ir/misc/CensusVisitor.h>
 
 #include <nc/common/Foreach.h>
-#include <nc/common/Range.h> /* nc::contains() */
 
 #include "CallingConvention.h"
-#include "GenericDescriptorAnalyzer.h"
+#include "Signature.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace cconv {
 
-GenericEnterHook::GenericEnterHook(const Function *function, const GenericDescriptorAnalyzer *addressAnalyzer):
-    EnterHook(function), addressAnalyzer_(addressAnalyzer)
-{
-    stackPointer_.reset(new MemoryLocationAccess(convention()->stackPointer()));
+EntryHook::EntryHook(const CallingConvention *convention, const Signature *signature) {
+    assert(convention != NULL);
+
+    stackPointer_ = std::make_unique<MemoryLocationAccess>(convention->stackPointer());
     stackPointer_->setAccessType(Term::WRITE);
 
-    entryStatements_.reserve(convention()->entryStatements().size());
-    foreach (const Statement *statement, convention()->entryStatements()) {
-        entryStatements_.push_back(statement->clone().release());
+    entryStatements_.reserve(convention->entryStatements().size());
+    foreach (const Statement *statement, convention->entryStatements()) {
+        entryStatements_.push_back(statement->clone());
     }
 
+    if (signature) {
+        foreach (const auto &location, signature->arguments()) {
+            arguments_[location] = std::make_unique<MemoryLocationAccess>(location);
+        }
+    }
+
+    // TODO: remove
+#if 0
     /* Precompute the set of memory locations used for passing arguments. */
-    foreach (const ArgumentGroup &group, convention()->argumentGroups()) {
+    foreach (const ArgumentGroup &group, convention->argumentGroups()) {
         foreach (const Argument &argument, group.arguments()) {
             possibleArgumentLocations_.insert(argument.locations().begin(), argument.locations().end());
         }
     }
+#endif
 }
 
-GenericEnterHook::~GenericEnterHook() {
-    foreach (const Statement *statement, entryStatements_) {
-        delete statement;
-    }
-}
+EntryHook::~EntryHook() {}
 
-inline const CallingConvention *GenericEnterHook::convention() const {
-    return addressAnalyzer()->convention();
-}
-
-void GenericEnterHook::execute(dflow::ExecutionContext &context) {
+void EntryHook::execute(dflow::ExecutionContext &context) {
+    // TODO: move
+#if 0
     /*
      * Detect all stack arguments used.
      */
-    // FIXME
-#if 0
     if (context.fixpointReached()) {
-#endif
         misc::CensusVisitor census(NULL);
         census(context.analyzer().function());
 
@@ -112,12 +109,11 @@ void GenericEnterHook::execute(dflow::ExecutionContext &context) {
         argumentLocations_.clear();
         std::transform(arguments_.begin(), arguments_.end(), std::back_inserter(argumentLocations_),
             [](std::pair<const MemoryLocation, std::unique_ptr<Term>> &x) { return x.first; });
-#if 0
     }
 #endif
 
     /**
-     * Set stack pointer offset to zero and execute him.
+     * Set stack pointer offset to zero and execute the term.
      */
     context.analyzer().dataflow().getValue(stackPointer_.get())->makeStackOffset(0);
     context.analyzer().execute(stackPointer_.get(), context);
@@ -125,34 +121,29 @@ void GenericEnterHook::execute(dflow::ExecutionContext &context) {
     /*
      * Execute entry statements.
      */
-    foreach (const auto &statement, entryStatements_) {
-        context.analyzer().execute(statement, context);
+    foreach (auto &statement, entryStatements_) {
+        context.analyzer().execute(statement.get(), context);
     }
 
     /*
-     * Execute all argument terms.
+     * Execute all arguments terms.
      */
     foreach (const auto &argument, arguments_) {
         context.analyzer().execute(argument.second.get(), context);
     }
 }
 
-const Term *GenericEnterHook::getArgumentTerm(const MemoryLocation &memoryLocation) {
-    auto &result = arguments_[memoryLocation];
-    if (!result) {
-        result.reset(new MemoryLocationAccess(memoryLocation));
-        result->setAccessType(Term::WRITE);
-    }
-    return result.get();
+const Term *EntryHook::getArgumentTerm(const MemoryLocation &memoryLocation) {
+    return nc::find(arguments_, memoryLocation).get();
 }
 
-void GenericEnterHook::visitChildStatements(Visitor<const Statement> &visitor) const {
+void EntryHook::visitChildStatements(Visitor<const Statement> &visitor) const {
     foreach (const auto &statement, entryStatements_) {
-        visitor(statement);
+        visitor(statement.get());
     }
 }
 
-void GenericEnterHook::visitChildTerms(Visitor<const Term> &visitor) const {
+void EntryHook::visitChildTerms(Visitor<const Term> &visitor) const {
     visitor(stackPointer_.get());
 
     foreach (const auto &argument, arguments_) {

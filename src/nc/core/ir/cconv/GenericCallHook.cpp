@@ -158,7 +158,7 @@ void GenericCallHook::execute(dflow::ExecutionContext &context) {
             for (; i != iend && i->addr() <= nextArgumentOffset; ++i) {
                 /*
                  * We use shifted() in order to make so that the same arguments have
-                 * matching locations when found by CallHook and by EnterHook.
+                 * matching locations when found by CallHook and by EntryHook.
                  */
                 MemoryLocation argumentLocation = i->shifted(-stackTop_);
                 getArgumentTerm(argumentLocation);

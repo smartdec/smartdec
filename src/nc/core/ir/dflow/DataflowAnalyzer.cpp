@@ -41,7 +41,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/cconv/CallHook.h>
 #include <nc/core/ir/cconv/Hooks.h>
-#include <nc/core/ir/cconv/EnterHook.h>
+#include <nc/core/ir/cconv/EntryHook.h>
 #include <nc/core/ir/cconv/ReturnHook.h>
 
 #include "Dataflow.h"
@@ -93,8 +93,8 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
             /* If this is a function entry, run the calling convention-specific code. */
             if (basicBlock == function()->entry()) {
                 if (hooks()) {
-                    if (auto enterHook = hooks()->getEnterHook(function())) {
-                        enterHook->execute(context);
+                    if (auto entryHook = hooks()->getEntryHook(function())) {
+                        entryHook->execute(context);
                     }
                 }
             }

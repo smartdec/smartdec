@@ -121,15 +121,17 @@ void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) 
 }
 
 void MasterAnalyzer::initializeHooks(Context &context) const {
-    auto conventions = std::make_unique<ir::cconv::Conventions>();
-    auto hooks       = std::make_unique<ir::cconv::Hooks>(*conventions);
+    if (!context.signatures()) {
+        context.setSignatures(std::make_unique<ir::cconv::Signatures>());
+    }
+    if (!context.conventions()) {
+        context.setConventions(std::make_unique<ir::cconv::Conventions>());
+    }
 
-    hooks->setConventionDetector([this, &context](const ir::cconv::CalleeId &calleeId) {
+    context.setHooks(std::make_unique<ir::cconv::Hooks>(*context.conventions(), *context.signatures()));
+    context.hooks()->setConventionDetector([this, &context](const ir::cconv::CalleeId &calleeId) {
         this->detectCallingConvention(context, calleeId);
     });
-
-    context.setConventions(std::move(conventions));
-    context.setHooks(std::move(hooks));
 }
 
 void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::cconv::CalleeId &/*descriptor*/) const {
