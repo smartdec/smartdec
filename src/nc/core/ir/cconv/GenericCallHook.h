@@ -44,7 +44,7 @@ class Term;
 
 namespace cconv {
 
-class GenericCallingConvention;
+class CallingConvention;
 class GenericDescriptorAnalyzer;
 
 /**
@@ -100,7 +100,7 @@ public:
     /**
      * \return Valid pointer to the calling convention.
      */
-    const GenericCallingConvention *convention() const;
+    const CallingConvention *convention() const;
 
     /**
      * \return Estimated list of locations where arguments are stored.
@@ -112,11 +112,11 @@ public:
      */
     const std::vector<const Term *> &returnValueLocations() const { return returnValueLocations_; }
 
-    virtual void executeCall(dflow::ExecutionContext &context) override;
-    virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) override;
-    virtual const Term *getReturnValueTerm(const Term *term) override;
-    virtual void visitChildStatements(Visitor<const Statement> &visitor) const override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
+    virtual void execute(dflow::ExecutionContext &context);
+    virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation);
+    virtual const Term *getReturnValueTerm(const Term *term);
+    virtual void visitChildStatements(Visitor<const Statement> &visitor) const;
+    virtual void visitChildTerms(Visitor<const Term> &visitor) const;
 };
 
 } // namespace cconv

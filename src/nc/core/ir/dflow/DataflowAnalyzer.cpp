@@ -177,7 +177,7 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
                     hooks()->setCalledAddress(call, targetValue->abstractValue().asConcrete().value());
                 }
                 if (auto callHook = hooks()->getCallHook(call)) {
-                    callHook->executeCall(context);
+                    callHook->execute(context);
                 }
             }
             break;
@@ -185,7 +185,7 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
         case Statement::RETURN: {
             if (function() && hooks()) {
                 if (auto returnHook = hooks()->getReturnHook(function(), statement->asReturn())) {
-                    returnHook->executeReturn(context);
+                    returnHook->execute(context);
                 }
             }
             break;

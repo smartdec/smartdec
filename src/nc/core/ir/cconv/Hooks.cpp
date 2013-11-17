@@ -28,6 +28,7 @@
 
 #include <nc/common/Foreach.h>
 #include <nc/common/Range.h>
+#include <nc/common/make_unique.h>
 
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/ir/BasicBlock.h>
@@ -41,6 +42,7 @@
 #include "EnterHook.h"
 #include "Signature.h"
 #include "ReturnHook.h"
+#include "GenericDescriptorAnalyzer.h"
 
 namespace nc {
 namespace core {
@@ -104,8 +106,8 @@ DescriptorAnalyzer *Hooks::getDescriptorAnalyzer(const CalleeId &calleeId) {
         return NULL;
     }
     if (!nc::contains(id2analyzer_, calleeId)) {
-        if (const CallingConvention *callingConvention = getCallingConvention(calleeId)) {
-            id2analyzer_[calleeId] = callingConvention->createDescriptorAnalyzer();
+        if (auto callingConvention = getCallingConvention(calleeId)) {
+            id2analyzer_[calleeId] = std::make_unique<GenericDescriptorAnalyzer>(callingConvention);
         }
     }
     return nc::find(id2analyzer_, calleeId).get();

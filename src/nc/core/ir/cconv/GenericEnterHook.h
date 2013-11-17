@@ -39,7 +39,7 @@ namespace core {
 namespace ir {
 namespace cconv {
 
-class GenericCallingConvention;
+class CallingConvention;
 class GenericDescriptorAnalyzer;
 
 /**
@@ -86,7 +86,7 @@ public:
     /**
      * \return Valid pointer to the calling convention.
      */
-    const GenericCallingConvention *convention() const;
+    const CallingConvention *convention() const;
 
     /**
      * \return Estimated list of locations where arguments are stored.

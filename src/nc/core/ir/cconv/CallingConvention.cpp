@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "GenericCallingConvention.h"
+#include "CallingConvention.h"
 
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
@@ -44,7 +44,7 @@ Argument &Argument::operator<<(const arch::Register *reg) {
     return *this << reg->memoryLocation();
 }
 
-GenericCallingConvention::~GenericCallingConvention() {
+CallingConvention::~CallingConvention() {
     foreach (const Term *term, returnValues_) {
         delete term;
     }
@@ -53,18 +53,14 @@ GenericCallingConvention::~GenericCallingConvention() {
     }
 }
 
-std::unique_ptr<DescriptorAnalyzer> GenericCallingConvention::createDescriptorAnalyzer() const {
-    return std::make_unique<GenericDescriptorAnalyzer>(this);
-}
-
-void GenericCallingConvention::addReturnValue(std::unique_ptr<Term> term) {
+void CallingConvention::addReturnValue(std::unique_ptr<Term> term) {
     assert(term != NULL);
 
     returnValues_.reserve(returnValues_.size() + 1);
     returnValues_.push_back(term.release());
 }
 
-void GenericCallingConvention::addEnterStatement(std::unique_ptr<Statement> statement) {
+void CallingConvention::addEnterStatement(std::unique_ptr<Statement> statement) {
     assert(statement != NULL);
 
     entryStatements_.reserve(entryStatements_.size() + 1);

@@ -39,7 +39,7 @@ namespace arch {
 namespace intel {
 
 AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architecture):
-    core::ir::cconv::GenericCallingConvention(QLatin1String("amd64"))
+    core::ir::cconv::CallingConvention(QLatin1String("amd64"))
 {
     setStackPointer(IntelRegisters::rsp()->memoryLocation());
 
@@ -82,7 +82,7 @@ AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architec
 }
 
 Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitecture *architecture):
-    core::ir::cconv::GenericCallingConvention(QLatin1String("microsoft64"))
+    core::ir::cconv::CallingConvention(QLatin1String("microsoft64"))
 {
     setStackPointer(IntelRegisters::rsp()->memoryLocation());
 
@@ -119,7 +119,7 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitectu
 }
 
 Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *architecture):
-    core::ir::cconv::GenericCallingConvention(QLatin1String("cdecl32"))
+    core::ir::cconv::CallingConvention(QLatin1String("cdecl32"))
 {
     setStackPointer(IntelRegisters::esp()->memoryLocation());
 
@@ -139,7 +139,7 @@ Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *arch
 }
 
 Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *architecture):
-    core::ir::cconv::GenericCallingConvention(QLatin1String("cdecl16"))
+    core::ir::cconv::CallingConvention(QLatin1String("cdecl16"))
 {
     setStackPointer(IntelRegisters::sp()->memoryLocation());
 
@@ -158,7 +158,7 @@ Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *arch
 }
 
 Stdcall32CallingConvention::Stdcall32CallingConvention(const IntelArchitecture *architecture):
-    core::ir::cconv::GenericCallingConvention(QLatin1String("stdcall32"))
+    core::ir::cconv::CallingConvention(QLatin1String("stdcall32"))
 {
     setStackPointer(IntelRegisters::esp()->memoryLocation());
 

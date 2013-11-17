@@ -76,7 +76,7 @@ class ReturnHook {
      * 
      * \param context Execution context.
      */
-    virtual void executeReturn(dflow::ExecutionContext &context) = 0;
+    virtual void execute(dflow::ExecutionContext &context) = 0;
 
     /**
      * Returns a valid pointer to the term representing the argument designated by given term.

@@ -47,7 +47,7 @@ namespace dflow {
 namespace cconv {
 
 /**
- * EnterHook extracts the information about location of function's arguments from function's implementation.
+ * EnterHook gets executed just before the function entry.
  */
 class EnterHook {
     const Function *function_; ///< Function this callee convention object is related to.

@@ -48,13 +48,13 @@ namespace cconv {
  * CallHook extracts the information about location of arguments and return values from a call site.
  */
 class CallHook {
-    const Call *call_; ///< Call statement for which the analyzer has been created.
+    const Call *call_; ///< Call statement for which the hooks has been created.
 
 public:
     /**
      * Class constructor.
      *
-     * \param call Valid pointer to a call statement to be analyzed.
+     * \param call Valid pointer to a call statement.
      */
     CallHook(const Call *call):
         call_(call)
@@ -66,7 +66,7 @@ public:
     virtual ~CallHook() {}
 
     /**
-     * \return Call statement for which the analyzer has been created. 
+     * \return Call statement for which the hook has been created. 
      */
     const Call *call() const { return call_; }
 
@@ -75,7 +75,7 @@ public:
      * 
      * \param context Execution context.
      */
-    virtual void executeCall(dflow::ExecutionContext &context) = 0;
+    virtual void execute(dflow::ExecutionContext &context) = 0;
 
     /**
      * \param memoryLocation Memory location.

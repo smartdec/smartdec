@@ -34,7 +34,7 @@
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statement.h>
 
-#include "GenericCallingConvention.h"
+#include "CallingConvention.h"
 #include "GenericCallHook.h"
 #include "GenericEnterHook.h"
 #include "GenericReturnHook.h"

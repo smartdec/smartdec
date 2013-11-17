@@ -34,7 +34,7 @@
 
 #include <nc/common/Foreach.h>
 
-#include "GenericCallingConvention.h"
+#include "CallingConvention.h"
 #include "GenericDescriptorAnalyzer.h"
 
 namespace nc {
@@ -52,11 +52,11 @@ GenericReturnHook::GenericReturnHook(const Return *ret, const GenericDescriptorA
 
 GenericReturnHook::~GenericReturnHook() {}
 
-inline const GenericCallingConvention *GenericReturnHook::convention() const {
+inline const CallingConvention *GenericReturnHook::convention() const {
     return addressAnalyzer()->convention();
 }
 
-void GenericReturnHook::executeReturn(dflow::ExecutionContext &context) {
+void GenericReturnHook::execute(dflow::ExecutionContext &context) {
     foreach (const auto &pair, returnValues_) {
         context.analyzer().execute(pair.second.get(), context);
     }

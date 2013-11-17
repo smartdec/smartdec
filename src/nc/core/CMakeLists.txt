@@ -83,6 +83,7 @@ set(SOURCES
     ir/Terms.h
     ir/cconv/CallHook.h
     ir/cconv/CalleeId.h
+    ir/cconv/CallingConvention.cpp
     ir/cconv/CallingConvention.h
     ir/cconv/Hooks.cpp
     ir/cconv/Hooks.h
@@ -91,8 +92,6 @@ set(SOURCES
     ir/cconv/EnterHook.h
     ir/cconv/GenericCallHook.cpp
     ir/cconv/GenericCallHook.h
-    ir/cconv/GenericCallingConvention.cpp
-    ir/cconv/GenericCallingConvention.h
     ir/cconv/GenericDescriptorAnalyzer.cpp
     ir/cconv/GenericDescriptorAnalyzer.h
     ir/cconv/GenericEnterHook.cpp

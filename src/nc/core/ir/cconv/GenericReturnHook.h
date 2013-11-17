@@ -37,7 +37,7 @@ namespace core {
 namespace ir {
 namespace cconv {
 
-class GenericCallingConvention;
+class CallingConvention;
 class GenericDescriptorAnalyzer;
 
 /**
@@ -75,14 +75,14 @@ public:
     /**
      * \return Valid pointer to the calling convention.
      */
-    const GenericCallingConvention *convention() const;
+    const CallingConvention *convention() const;
 
     /**
      * \return Estimated list of terms describing locations where arguments are stored.
      */
     const std::vector<const Term *> &returnValueLocations() const { return returnValueLocations_; }
 
-    virtual void executeReturn(dflow::ExecutionContext &context) override;
+    virtual void execute(dflow::ExecutionContext &context) override;
     virtual const Term *getReturnValueTerm(const Term *term) override;
     virtual void visitChildStatements(Visitor<const Statement> &visitor) const override;
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;

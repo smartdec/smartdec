@@ -38,7 +38,7 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/Range.h> /* nc::contains() */
 
-#include "GenericCallingConvention.h"
+#include "CallingConvention.h"
 #include "GenericDescriptorAnalyzer.h"
 
 namespace nc {
@@ -71,7 +71,7 @@ GenericEnterHook::~GenericEnterHook() {
     }
 }
 
-inline const GenericCallingConvention *GenericEnterHook::convention() const {
+inline const CallingConvention *GenericEnterHook::convention() const {
     return addressAnalyzer()->convention();
 }
 
