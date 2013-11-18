@@ -75,11 +75,11 @@ class Hooks {
     /** Mapping from a function to its analyzer. */
     boost::unordered_map<std::pair<CalleeId, const Function *>, std::unique_ptr<EntryHook>> entryHooks_;
 
+    /** Mapping from a return to its analyzer. */
+    boost::unordered_map<std::pair<CalleeId, const Return *>, std::unique_ptr<ReturnHook>> returnHooks_;
+
     /** Mapping from a call to its analyzer. */
     boost::unordered_map<std::pair<CalleeId, const Call *>, std::unique_ptr<CallHook>> call2analyzer_;
-
-    /** Mapping from a return to its analyzer. */
-    boost::unordered_map<std::pair<CalleeId, const Return *>, std::unique_ptr<ReturnHook>> return2analyzer_;
 
     // TODO: make a single map CalleeId -> struct { three maps inside }
 
@@ -166,14 +166,6 @@ class Hooks {
     EntryHook *getEntryHook(const Function *function);
 
     /**
-     * \param call Valid pointer to a call statement.
-     *
-     * \return Pointer to a CallHook instance for this call statement.
-     * Can be NULL. Such instance is created when necessary and if possible.
-     */
-    CallHook *getCallHook(const Call *call);
-
-    /**
      * \param function Valid pointer to a function.
      * \param ret Valid pointer to a return statement.
      *
@@ -181,6 +173,14 @@ class Hooks {
      * Can be NULL. Such instance is created when necessary and if possible.
      */
     ReturnHook *getReturnHook(const Function *function, const Return *ret);
+
+    /**
+     * \param call Valid pointer to a call statement.
+     *
+     * \return Pointer to a CallHook instance for this call statement.
+     * Can be NULL. Such instance is created when necessary and if possible.
+     */
+    CallHook *getCallHook(const Call *call);
 };
 
 } // namespace cconv

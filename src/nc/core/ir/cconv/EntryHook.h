@@ -32,7 +32,7 @@ class CallingConvention;
 class Signature;
 
 /**
- * GenericEntryHook is a EntryHook for a typical calling convention using registers and stack to pass arguments.
+ * Hook being executed before function's entry is executed.
  */
 class EntryHook {
     /** Term for initializing stack pointer. */

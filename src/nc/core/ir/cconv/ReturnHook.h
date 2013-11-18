@@ -25,80 +25,78 @@
 
 #include <nc/config.h>
 
-#include <cassert>
+#include <memory> /* std::unique_ptr */
 
-#include <nc/common/Types.h>
 #include <nc/common/Visitor.h>
+
+#include <boost/unordered_map.hpp>
 
 namespace nc {
 namespace core {
 namespace ir {
 
+class Statement;
+class Term;
+
 namespace dflow {
     class ExecutionContext;
 }
 
-class Return;
-class Statement;
-class Term;
-
 namespace cconv {
 
+class CallingConvention;
+class Signature;
+
 /**
- * ReturnHook extracts information about location of function's return value from a return site.
+ * Hook being executed after a return is executed.
  */
 class ReturnHook {
-    const Return *return_; ///< Return statement.
+    /** Mapping of terms where return values may be kept to their clones. */
+    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValues_;
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param ret Valid pointer to a return statement to be analyzed.
+     * \param[in] convention Valid pointer to the calling convention.
+     * \param[in] signature Pointer to the function's signature. Can be NULL.
      */
-    ReturnHook(const Return *ret):
-        return_(ret)
-    { assert(ret != NULL); }
+    ReturnHook(const CallingConvention *convention, const Signature *signature);
 
     /**
-     * Virtual destructor.
+     * Destructor.
      */
-    virtual ~ReturnHook() {}
-
-    /**
-     * \return Return statement for which the analyzer has been created.
-     */
-    const Return *ret() const { return return_; }
+    ~ReturnHook();
 
     /**
      * A method being called when specified return statement is executed.
      * 
      * \param context Execution context.
      */
-    virtual void execute(dflow::ExecutionContext &context) = 0;
+    void execute(dflow::ExecutionContext &context);
 
     /**
-     * Returns a valid pointer to the term representing the argument designated by given term.
-     * The term is created when necessary and owned by this ReturnHook.
-     *
      * \param term Valid pointer to a term.
+     *
+     * \return Pointer to the term representing the argument identified by
+     *         the given term. Will be NULL, if signature does not include
+     *         such an argument.
      */
-    virtual const Term *getReturnValueTerm(const Term *term) = 0;
+    const Term *getReturnValueTerm(const Term *term);
 
     /**
      * Calls visitor for child statements.
      *
      * \param[in] visitor Visitor.
      */
-    virtual void visitChildStatements(Visitor<const Statement> &visitor) const = 0;
+    void visitChildStatements(Visitor<const Statement> &visitor) const;
 
     /**
      * Calls visitor for child terms.
      *
      * \param[in] visitor Visitor.
      */
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const = 0;
+    void visitChildTerms(Visitor<const Term> &visitor) const;
 };
 
 } // namespace cconv

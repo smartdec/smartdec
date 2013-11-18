@@ -133,6 +133,25 @@ EntryHook *Hooks::getEntryHook(const Function *function) {
     return NULL;
 }
 
+ReturnHook *Hooks::getReturnHook(const Function *function, const Return *ret) {
+    assert(ret != NULL);
+
+    auto calleeId = getCalleeId(function);
+    if (!calleeId) {
+        return NULL;
+    }
+
+    auto key = std::make_pair(calleeId, ret);
+
+    if (auto result = nc::find(returnHooks_, key).get()) {
+        return result;
+    }
+    if (auto convention = getCallingConvention(calleeId)) {
+        return (returnHooks_[key] = std::make_unique<ReturnHook>(convention, signatures_.getSignature(calleeId))).get();
+    }
+    return NULL;
+}
+
 CallHook *Hooks::getCallHook(const Call *call) {
     assert(call != NULL);
 
@@ -148,23 +167,6 @@ CallHook *Hooks::getCallHook(const Call *call) {
         }
     }
     return nc::find(call2analyzer_, key).get();
-}
-
-ReturnHook *Hooks::getReturnHook(const Function *function, const Return *ret) {
-    assert(ret != NULL);
-
-    auto calleeId = getCalleeId(function);
-    if (!calleeId) {
-        return NULL;
-    }
-
-    auto key = std::make_pair(calleeId, ret);
-    if (!nc::contains(return2analyzer_, key)) {
-        if (DescriptorAnalyzer *addressAnalyzer = getDescriptorAnalyzer(calleeId)) {
-            return2analyzer_[key] = addressAnalyzer->createReturnHook(ret);
-        }
-    }
-    return nc::find(return2analyzer_, key).get();
 }
 
 } // namespace cconv

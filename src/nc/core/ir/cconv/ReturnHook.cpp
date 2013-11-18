@@ -22,45 +22,47 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "GenericReturnHook.h"
+#include "ReturnHook.h"
 
-#include <algorithm> /* std::transform() */
-
-#include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
 #include <nc/core/ir/dflow/ExecutionContext.h>
 
 #include <nc/common/Foreach.h>
+#include <nc/common/Range.h>
 
 #include "CallingConvention.h"
-#include "GenericDescriptorAnalyzer.h"
+#include "Signature.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace cconv {
 
-GenericReturnHook::GenericReturnHook(const Return *ret, const GenericDescriptorAnalyzer *addressAnalyzer):
-	ReturnHook(ret), addressAnalyzer_(addressAnalyzer)
-{
-    foreach (const Term *sample, convention()->returnValues()) {
-        getReturnValueTerm(sample);
+ReturnHook::ReturnHook(const CallingConvention *convention, const Signature *signature) {
+    assert(convention != NULL);
+
+    if (signature) {
+        if (signature->returnValue()) {
+            returnValues_[signature->returnValue()] = signature->returnValue()->clone();
+        }
+    } else {
+        foreach (auto term, convention->returnValues()) {
+            returnValues_[signature->returnValue()] = term->clone();
+        }
     }
 }
 
-GenericReturnHook::~GenericReturnHook() {}
+ReturnHook::~ReturnHook() {}
 
-inline const CallingConvention *GenericReturnHook::convention() const {
-    return addressAnalyzer()->convention();
-}
-
-void GenericReturnHook::execute(dflow::ExecutionContext &context) {
+void ReturnHook::execute(dflow::ExecutionContext &context) {
     foreach (const auto &pair, returnValues_) {
         context.analyzer().execute(pair.second.get(), context);
     }
     
+    // TODO: move
+#if 0
     /* 
      * Compute the candidate terms containing return value.
      *
@@ -70,7 +72,6 @@ void GenericReturnHook::execute(dflow::ExecutionContext &context) {
     returnValueLocations_.clear();
 
     // FIXME: adapt to new dflow
-#if 0
     foreach (const auto &pair, returnValues_) {
         foreach (const Term *definition, context.analyzer().dataflow().getDefinitions(pair.second.get())) {
             if (definition->statement() && !definition->statement()->isCall()) {
@@ -82,21 +83,15 @@ void GenericReturnHook::execute(dflow::ExecutionContext &context) {
 #endif
 }
 
-const Term *GenericReturnHook::getReturnValueTerm(const Term *term) {
-    auto &result = returnValues_[term];
-    if (!result) {
-        result = term->clone();
-        result->setAccessType(Term::READ);
-        result->setStatementRecursively(ret());
-    }
-    return result.get();
+const Term *ReturnHook::getReturnValueTerm(const Term *term) {
+    return nc::find(returnValues_, term).get();
 }
 
-void GenericReturnHook::visitChildStatements(Visitor<const Statement> & /*visitor*/) const {
+void ReturnHook::visitChildStatements(Visitor<const Statement> & /*visitor*/) const {
     /* Nothing to do. */
 }
 
-void GenericReturnHook::visitChildTerms(Visitor<const Term> &visitor) const {
+void ReturnHook::visitChildTerms(Visitor<const Term> &visitor) const {
     foreach (const auto &returnValue, returnValues_) {
         visitor(returnValue.second.get());
     }

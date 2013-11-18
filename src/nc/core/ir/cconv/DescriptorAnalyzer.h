@@ -62,13 +62,6 @@ class DescriptorAnalyzer {
     virtual std::unique_ptr<CallHook> createCallHook(const Call *call) = 0;
 
     /**
-     * \param ret Valid pointer to a return statement.
-     *
-     * \return Pointer to a new instance of ReturnHook for handling given function. Can be NULL.
-     */
-    virtual std::unique_ptr<ReturnHook> createReturnHook(const Return *ret) = 0;
-
-    /**
      * \return Pointer to the signature of the function at the analyzed address.
      *         Can be NULL.
      */

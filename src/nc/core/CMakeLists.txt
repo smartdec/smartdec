@@ -85,8 +85,6 @@ set(SOURCES
     ir/cconv/CalleeId.h
     ir/cconv/CallingConvention.cpp
     ir/cconv/CallingConvention.h
-    ir/cconv/Hooks.cpp
-    ir/cconv/Hooks.h
     ir/cconv/DescriptorAnalyzer.h
     ir/cconv/EntryHook.cpp
     ir/cconv/EntryHook.h
@@ -94,8 +92,9 @@ set(SOURCES
     ir/cconv/GenericCallHook.h
     ir/cconv/GenericDescriptorAnalyzer.cpp
     ir/cconv/GenericDescriptorAnalyzer.h
-    ir/cconv/GenericReturnHook.cpp
-    ir/cconv/GenericReturnHook.h
+    ir/cconv/Hooks.cpp
+    ir/cconv/Hooks.h
+    ir/cconv/ReturnHook.cpp
     ir/cconv/ReturnHook.h
     ir/cconv/Signature.h
     ir/cconv/SignatureAnalyzer.cpp

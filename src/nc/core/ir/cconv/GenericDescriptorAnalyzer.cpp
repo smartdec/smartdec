@@ -36,7 +36,6 @@
 
 #include "CallingConvention.h"
 #include "GenericCallHook.h"
-#include "GenericReturnHook.h"
 #include "Signature.h"
 
 namespace nc {
@@ -47,12 +46,6 @@ namespace cconv {
 std::unique_ptr<CallHook> GenericDescriptorAnalyzer::createCallHook(const Call *call) {
     std::unique_ptr<GenericCallHook> result(new GenericCallHook(call, this));
     callHooks_.push_back(result.get());
-    return std::move(result);
-}
-
-std::unique_ptr<ReturnHook> GenericDescriptorAnalyzer::createReturnHook(const Return *ret) {
-    std::unique_ptr<GenericReturnHook> result(new GenericReturnHook(ret, this));
-    returnHooks_.push_back(result.get());
     return std::move(result);
 }
 
