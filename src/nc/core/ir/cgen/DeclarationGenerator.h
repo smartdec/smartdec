@@ -43,7 +43,7 @@ namespace ir {
 class Function;
 class Term;
 
-namespace cconv {
+namespace calling {
     class Signature;
 }
 
@@ -60,7 +60,7 @@ class DeclarationGenerator: boost::noncopyable {
     CodeGenerator &parent_; ///< Parent code generator.
     const Function *function_; ///< Function, for which declaration is generated.
     const types::Types *types_; ///< Reconstructed types.
-    const cconv::Signature *signature_; ///< Signature of the function.
+    const calling::Signature *signature_; ///< Signature of the function.
     likec::FunctionDeclaration *declaration_; ///< Function's declaration.
 
 public:
@@ -102,7 +102,7 @@ public:
      * \return Pointer to the signature of the function, for which
      *         declaration is generated. Can be NULL.
      */
-    const cconv::Signature *signature() const { return signature_; }
+    const calling::Signature *signature() const { return signature_; }
 
     /**
      * \return Function's declaration.

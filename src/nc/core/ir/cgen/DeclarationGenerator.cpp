@@ -32,11 +32,11 @@
 #include <nc/core/arch/Registers.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cconv/Hooks.h>
-#include <nc/core/ir/cconv/EntryHook.h>
-#include <nc/core/ir/cconv/Signature.h>
-#include <nc/core/ir/cconv/ReturnHook.h>
-#include <nc/core/ir/cconv/Signatures.h>
+#include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/EntryHook.h>
+#include <nc/core/ir/calling/Signature.h>
+#include <nc/core/ir/calling/ReturnHook.h>
+#include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/likec/FunctionDeclaration.h>

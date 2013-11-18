@@ -42,7 +42,7 @@ class Constant;
 class Statement;
 class Term;
 
-namespace cconv {
+namespace calling {
 
 class CallingConvention;
 class GenericDescriptorAnalyzer;
@@ -119,7 +119,7 @@ public:
     virtual void visitChildTerms(Visitor<const Term> &visitor) const;
 };
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

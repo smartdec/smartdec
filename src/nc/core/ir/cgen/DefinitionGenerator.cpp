@@ -45,11 +45,11 @@
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cconv/CallHook.h>
-#include <nc/core/ir/cconv/Hooks.h>
-#include <nc/core/ir/cconv/EntryHook.h>
-#include <nc/core/ir/cconv/Signatures.h>
-#include <nc/core/ir/cconv/ReturnHook.h>
+#include <nc/core/ir/calling/CallHook.h>
+#include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/EntryHook.h>
+#include <nc/core/ir/calling/Signatures.h>
+#include <nc/core/ir/calling/ReturnHook.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Dfs.h>
 #include <nc/core/ir/cflow/Graph.h>
@@ -129,7 +129,7 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
 
     parent().setFunctionDeclaration(function(), functionDefinition.get());
 
-    if (cconv::EntryHook *entryHook = context().hooks()->getEntryHook(function())) {
+    if (calling::EntryHook *entryHook = context().hooks()->getEntryHook(function())) {
         foreach (const ir::Statement *statement, entryHook->entryStatements()) {
             if (auto likecStatement = makeStatement(statement, NULL, NULL, NULL)) {
                 definition()->block()->addStatement(std::move(likecStatement));

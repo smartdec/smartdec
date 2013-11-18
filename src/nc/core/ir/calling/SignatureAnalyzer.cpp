@@ -17,7 +17,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace cconv {
+namespace calling {
 
 void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
     auto computeSignature = [&](const CalleeId &calleeId) {
@@ -46,7 +46,7 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
     }
 }
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

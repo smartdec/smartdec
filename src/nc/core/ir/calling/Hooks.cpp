@@ -47,7 +47,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace cconv {
+namespace calling {
 
 Hooks::Hooks(const Conventions &conventions, const Signatures &signatures):
     conventions_(conventions), signatures_(signatures)
@@ -169,7 +169,7 @@ CallHook *Hooks::getCallHook(const Call *call) {
     return nc::find(call2analyzer_, key).get();
 }
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

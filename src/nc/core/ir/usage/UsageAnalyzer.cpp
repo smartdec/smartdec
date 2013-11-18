@@ -35,10 +35,10 @@
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cconv/CallHook.h>
-#include <nc/core/ir/cconv/Hooks.h>
-#include <nc/core/ir/cconv/Signatures.h>
-#include <nc/core/ir/cconv/ReturnHook.h>
+#include <nc/core/ir/calling/CallHook.h>
+#include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/Signatures.h>
+#include <nc/core/ir/calling/ReturnHook.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/Switch.h>

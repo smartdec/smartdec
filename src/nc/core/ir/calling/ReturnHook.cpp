@@ -38,7 +38,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace cconv {
+namespace calling {
 
 ReturnHook::ReturnHook(const CallingConvention *convention, const Signature *signature) {
     assert(convention != NULL);
@@ -97,7 +97,7 @@ void ReturnHook::visitChildTerms(Visitor<const Term> &visitor) const {
     }
 }
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

@@ -35,7 +35,7 @@ class Call;
 class Function;
 class Return;
 
-namespace cconv {
+namespace calling {
 
 class CallHook;
 class EntryHook;
@@ -68,7 +68,7 @@ class DescriptorAnalyzer {
     virtual std::unique_ptr<Signature> getSignature() const = 0;
 };
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

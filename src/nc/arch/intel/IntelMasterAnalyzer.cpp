@@ -33,8 +33,8 @@
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cconv/Conventions.h>
-#include <nc/core/ir/cconv/Hooks.h>
+#include <nc/core/ir/calling/Conventions.h>
+#include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 
 #include "IntelArchitecture.h"
@@ -85,7 +85,7 @@ void IntelMasterAnalyzer::createProgram(core::Context &context) const {
     }
 }
 
-void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::cconv::CalleeId &calleeId) const {
+void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::calling::CalleeId &calleeId) const {
     auto architecture = context.module()->architecture();
 
     auto setConvention = [&](const char *name) {

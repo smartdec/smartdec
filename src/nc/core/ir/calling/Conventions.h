@@ -13,7 +13,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace cconv {
+namespace calling {
 
 class CallingConvention;
 
@@ -72,7 +72,7 @@ public:
     }
 };
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

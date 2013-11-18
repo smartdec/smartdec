@@ -47,7 +47,7 @@ class Term;
 class UnaryOperator;
 class BinaryOperator;
 
-namespace cconv {
+namespace calling {
     class Hooks;
 }
 
@@ -65,7 +65,7 @@ class DataflowAnalyzer {
     Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Valid pointer to architecture description.
     const Function *function_; ///< Analyzed function.
-    cconv::Hooks *hooks_; ///< Calls data.
+    calling::Hooks *hooks_; ///< Calls data.
 
     public:
 
@@ -80,7 +80,7 @@ class DataflowAnalyzer {
     DataflowAnalyzer(Dataflow &dataflow,
         const arch::Architecture *architecture,
         const Function *function = NULL,
-        cconv::Hooks *hooks = NULL
+        calling::Hooks *hooks = NULL
     ):
         dataflow_(dataflow), architecture_(architecture), function_(function), hooks_(hooks)
     {
@@ -114,7 +114,7 @@ class DataflowAnalyzer {
     /**
      * \return Pointer to the calls data. Can be NULL.
      */
-    cconv::Hooks *hooks() const { return hooks_; }
+    calling::Hooks *hooks() const { return hooks_; }
 
     /**
      * Performs joint reaching definitions and constant propagation/folding

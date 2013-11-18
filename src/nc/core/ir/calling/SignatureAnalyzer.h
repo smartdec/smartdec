@@ -14,7 +14,7 @@ namespace ir {
 
 class Functions;
 
-namespace cconv {
+namespace calling {
 
 class Hooks;
 class Signatures;
@@ -49,7 +49,7 @@ public:
     void analyze(const CancellationToken &canceled);
 };
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

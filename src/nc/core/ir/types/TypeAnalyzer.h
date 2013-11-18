@@ -41,7 +41,7 @@ class Statement;
 class Term;
 class UnaryOperator;
 
-namespace cconv {
+namespace calling {
     class Hooks;
     class Signatures;
 }
@@ -65,8 +65,8 @@ class TypeAnalyzer {
     Types &types_; ///< Information about terms' types.
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const usage::Usage &usage_; ///< Set of terms producing actual high-level code.
-    cconv::Hooks &hooks_; ///< Calls data.
-    const cconv::Signatures &signatures_; ///< Signatures of functions.
+    calling::Hooks &hooks_; ///< Calls data.
+    const calling::Signatures &signatures_; ///< Signatures of functions.
 
     public:
 
@@ -80,7 +80,7 @@ class TypeAnalyzer {
      * \param signatures Signatures of functions.
      */
     TypeAnalyzer(Types &types, const dflow::Dataflow &dataflow, const usage::Usage &usage,
-        cconv::Hooks &hooks, const cconv::Signatures &signatures
+        calling::Hooks &hooks, const calling::Signatures &signatures
     ):
         types_(types), dataflow_(dataflow), usage_(usage), hooks_(hooks), signatures_(signatures)
     {}
@@ -113,12 +113,12 @@ class TypeAnalyzer {
     /**
      * \return Calls data.
      */
-    cconv::Hooks &hooks() const { return hooks_; }
+    calling::Hooks &hooks() const { return hooks_; }
 
     /**
      * \return Signatures of functions.
      */
-    const cconv::Signatures &signatures() const { return signatures_; }
+    const calling::Signatures &signatures() const { return signatures_; }
 
     /**
      * Computes type traits for all the terms in given function.

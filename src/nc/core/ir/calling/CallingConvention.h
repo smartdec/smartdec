@@ -48,7 +48,7 @@ namespace ir {
 class Statement;
 class Term;
 
-namespace cconv {
+namespace calling {
 
 class DescriptorAnalyzer;
 
@@ -262,7 +262,7 @@ protected:
     void addEnterStatement(std::unique_ptr<Statement> statement);
 };
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

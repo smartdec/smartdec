@@ -39,7 +39,7 @@ namespace arch {
 namespace intel {
 
 AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architecture):
-    core::ir::cconv::CallingConvention(QLatin1String("amd64"))
+    core::ir::calling::CallingConvention(QLatin1String("amd64"))
 {
     setStackPointer(IntelRegisters::rsp()->memoryLocation());
 
@@ -47,25 +47,25 @@ AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architec
     setArgumentAlignment(64);
 
     addArgumentGroup(
-        core::ir::cconv::ArgumentGroup("Integer Arguments")
-        << (core::ir::cconv::Argument() << IntelRegisters::rdi() << IntelRegisters::edi() << IntelRegisters::di())
-        << (core::ir::cconv::Argument() << IntelRegisters::rsi() << IntelRegisters::esi() << IntelRegisters::si())
-        << (core::ir::cconv::Argument() << IntelRegisters::rdx() << IntelRegisters::edx() << IntelRegisters::dx() << IntelRegisters::dl())
-        << (core::ir::cconv::Argument() << IntelRegisters::rcx() << IntelRegisters::ecx() << IntelRegisters::cx() << IntelRegisters::cl())
-        << (core::ir::cconv::Argument() << IntelRegisters::r8() << IntelRegisters::r8d() << IntelRegisters::r8w() << IntelRegisters::r8b())
-        << (core::ir::cconv::Argument() << IntelRegisters::r9() << IntelRegisters::r9d() << IntelRegisters::r9w() << IntelRegisters::r9b())
+        core::ir::calling::ArgumentGroup("Integer Arguments")
+        << (core::ir::calling::Argument() << IntelRegisters::rdi() << IntelRegisters::edi() << IntelRegisters::di())
+        << (core::ir::calling::Argument() << IntelRegisters::rsi() << IntelRegisters::esi() << IntelRegisters::si())
+        << (core::ir::calling::Argument() << IntelRegisters::rdx() << IntelRegisters::edx() << IntelRegisters::dx() << IntelRegisters::dl())
+        << (core::ir::calling::Argument() << IntelRegisters::rcx() << IntelRegisters::ecx() << IntelRegisters::cx() << IntelRegisters::cl())
+        << (core::ir::calling::Argument() << IntelRegisters::r8() << IntelRegisters::r8d() << IntelRegisters::r8w() << IntelRegisters::r8b())
+        << (core::ir::calling::Argument() << IntelRegisters::r9() << IntelRegisters::r9d() << IntelRegisters::r9w() << IntelRegisters::r9b())
     );
 
     addArgumentGroup(
-        core::ir::cconv::ArgumentGroup("Floating-point Arguments")
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm0())
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm1())
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm2())
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm3())
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm4())
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm5())
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm6())
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm7())
+        core::ir::calling::ArgumentGroup("Floating-point Arguments")
+        << (core::ir::calling::Argument() << IntelRegisters::xmm0())
+        << (core::ir::calling::Argument() << IntelRegisters::xmm1())
+        << (core::ir::calling::Argument() << IntelRegisters::xmm2())
+        << (core::ir::calling::Argument() << IntelRegisters::xmm3())
+        << (core::ir::calling::Argument() << IntelRegisters::xmm4())
+        << (core::ir::calling::Argument() << IntelRegisters::xmm5())
+        << (core::ir::calling::Argument() << IntelRegisters::xmm6())
+        << (core::ir::calling::Argument() << IntelRegisters::xmm7())
     );
 
     auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
@@ -82,7 +82,7 @@ AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architec
 }
 
 Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitecture *architecture):
-    core::ir::cconv::CallingConvention(QLatin1String("microsoft64"))
+    core::ir::calling::CallingConvention(QLatin1String("microsoft64"))
 {
     setStackPointer(IntelRegisters::rsp()->memoryLocation());
 
@@ -90,19 +90,19 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitectu
     setArgumentAlignment(64);
 
     addArgumentGroup(
-        core::ir::cconv::ArgumentGroup("Integer Arguments")
-        << (core::ir::cconv::Argument() << IntelRegisters::rcx() << IntelRegisters::ecx() << IntelRegisters::cx() << IntelRegisters::cl())
-        << (core::ir::cconv::Argument() << IntelRegisters::rdx() << IntelRegisters::edx() << IntelRegisters::dx() << IntelRegisters::dl())
-        << (core::ir::cconv::Argument() << IntelRegisters::r8() << IntelRegisters::r8d() << IntelRegisters::r8w() << IntelRegisters::r8b())
-        << (core::ir::cconv::Argument() << IntelRegisters::r9() << IntelRegisters::r9d() << IntelRegisters::r9w() << IntelRegisters::r9b())
+        core::ir::calling::ArgumentGroup("Integer Arguments")
+        << (core::ir::calling::Argument() << IntelRegisters::rcx() << IntelRegisters::ecx() << IntelRegisters::cx() << IntelRegisters::cl())
+        << (core::ir::calling::Argument() << IntelRegisters::rdx() << IntelRegisters::edx() << IntelRegisters::dx() << IntelRegisters::dl())
+        << (core::ir::calling::Argument() << IntelRegisters::r8() << IntelRegisters::r8d() << IntelRegisters::r8w() << IntelRegisters::r8b())
+        << (core::ir::calling::Argument() << IntelRegisters::r9() << IntelRegisters::r9d() << IntelRegisters::r9w() << IntelRegisters::r9b())
     );
 
     addArgumentGroup(
-        core::ir::cconv::ArgumentGroup("Floating-point Arguments")
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm0())
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm1())
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm2())
-        << (core::ir::cconv::Argument() << IntelRegisters::xmm3())
+        core::ir::calling::ArgumentGroup("Floating-point Arguments")
+        << (core::ir::calling::Argument() << IntelRegisters::xmm0())
+        << (core::ir::calling::Argument() << IntelRegisters::xmm1())
+        << (core::ir::calling::Argument() << IntelRegisters::xmm2())
+        << (core::ir::calling::Argument() << IntelRegisters::xmm3())
     );
 
     auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
@@ -119,7 +119,7 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitectu
 }
 
 Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *architecture):
-    core::ir::cconv::CallingConvention(QLatin1String("cdecl32"))
+    core::ir::calling::CallingConvention(QLatin1String("cdecl32"))
 {
     setStackPointer(IntelRegisters::esp()->memoryLocation());
 
@@ -139,7 +139,7 @@ Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *arch
 }
 
 Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *architecture):
-    core::ir::cconv::CallingConvention(QLatin1String("cdecl16"))
+    core::ir::calling::CallingConvention(QLatin1String("cdecl16"))
 {
     setStackPointer(IntelRegisters::sp()->memoryLocation());
 
@@ -158,7 +158,7 @@ Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *arch
 }
 
 Stdcall32CallingConvention::Stdcall32CallingConvention(const IntelArchitecture *architecture):
-    core::ir::cconv::CallingConvention(QLatin1String("stdcall32"))
+    core::ir::calling::CallingConvention(QLatin1String("stdcall32"))
 {
     setStackPointer(IntelRegisters::esp()->memoryLocation());
 

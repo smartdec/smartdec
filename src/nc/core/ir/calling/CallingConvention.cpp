@@ -36,7 +36,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace cconv {
+namespace calling {
 
 Argument &Argument::operator<<(const arch::Register *reg) {
     assert(reg != NULL);
@@ -60,7 +60,7 @@ void CallingConvention::addEnterStatement(std::unique_ptr<Statement> statement) 
     entryStatements_.push_back(std::move(statement));
 }
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

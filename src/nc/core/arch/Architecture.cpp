@@ -27,7 +27,7 @@
 #include <nc/common/Foreach.h>
 
 #include <nc/core/ir/MemoryLocation.h>
-#include <nc/core/ir/cconv/CallingConvention.h>
+#include <nc/core/ir/calling/CallingConvention.h>
 
 namespace nc {
 namespace core {
@@ -121,7 +121,7 @@ bool Architecture::isGlobalMemory(const ir::MemoryLocation &memoryLocation) cons
     return memoryLocation.domain() == ir::MemoryDomain::MEMORY;
 }
 
-void Architecture::addCallingConvention(std::unique_ptr<ir::cconv::CallingConvention> convention) {
+void Architecture::addCallingConvention(std::unique_ptr<ir::calling::CallingConvention> convention) {
     assert(convention != NULL);
     assert(getCallingConvention(convention->name()) == NULL &&
            "No two calling conventions with the same name allowed.");
@@ -129,7 +129,7 @@ void Architecture::addCallingConvention(std::unique_ptr<ir::cconv::CallingConven
     callingConventions_.push_back(std::move(convention));
 }
 
-const ir::cconv::CallingConvention *Architecture::getCallingConvention(const QString &name) const {
+const ir::calling::CallingConvention *Architecture::getCallingConvention(const QString &name) const {
     foreach (auto convention, callingConventions()) {
         if (convention->name() == name) {
             return convention;

@@ -40,7 +40,7 @@ class Call;
 class Function;
 class Return;
 
-namespace cconv {
+namespace calling {
 
 class CallHook;
 class CallingConvention;
@@ -183,7 +183,7 @@ class Hooks {
     CallHook *getCallHook(const Call *call);
 };
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

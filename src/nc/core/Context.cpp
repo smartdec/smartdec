@@ -33,9 +33,9 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Program.h>
-#include <nc/core/ir/cconv/Conventions.h>
-#include <nc/core/ir/cconv/Hooks.h>
-#include <nc/core/ir/cconv/Signatures.h>
+#include <nc/core/ir/calling/Conventions.h>
+#include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/misc/TermToFunction.h>
@@ -77,17 +77,17 @@ void Context::setFunctions(std::unique_ptr<ir::Functions> functions) {
     functions_ = std::move(functions);
 }
 
-void Context::setConventions(std::unique_ptr<ir::cconv::Conventions> conventions) {
+void Context::setConventions(std::unique_ptr<ir::calling::Conventions> conventions) {
     conventions_ = std::move(conventions);
 }
 
-void Context::setHooks(std::unique_ptr<ir::cconv::Hooks> hooks) {
+void Context::setHooks(std::unique_ptr<ir::calling::Hooks> hooks) {
     assert(hooks);
     assert(!hooks_);
     hooks_ = std::move(hooks);
 }
 
-void Context::setSignatures(std::unique_ptr<ir::cconv::Signatures> signatures) {
+void Context::setSignatures(std::unique_ptr<ir::calling::Signatures> signatures) {
     assert(signatures);
     assert(!signatures_);
     signatures_ = std::move(signatures);

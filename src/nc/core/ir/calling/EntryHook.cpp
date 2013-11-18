@@ -41,7 +41,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace cconv {
+namespace calling {
 
 EntryHook::EntryHook(const CallingConvention *convention, const Signature *signature) {
     assert(convention != NULL);
@@ -151,7 +151,7 @@ void EntryHook::visitChildTerms(Visitor<const Term> &visitor) const {
     }
 }
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

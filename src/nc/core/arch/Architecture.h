@@ -41,7 +41,7 @@ class MasterAnalyzer;
 namespace ir {
     class MemoryLocation;
 
-    namespace cconv {
+    namespace calling {
         class CallingConvention;
     }
 }
@@ -135,14 +135,14 @@ public:
     /**
      * \return List of available calling conventions.
      */
-    const std::vector<const ir::cconv::CallingConvention *> &callingConventions() const {
-        return reinterpret_cast<const std::vector<const ir::cconv::CallingConvention *> &>(callingConventions_);
+    const std::vector<const ir::calling::CallingConvention *> &callingConventions() const {
+        return reinterpret_cast<const std::vector<const ir::calling::CallingConvention *> &>(callingConventions_);
     }
 
     /**
      * \return Pointer to the calling convention with the given name. Can be NULL.
      */
-    const ir::cconv::CallingConvention *getCallingConvention(const QString &name) const;
+    const ir::calling::CallingConvention *getCallingConvention(const QString &name) const;
 
 protected:
     /**
@@ -210,7 +210,7 @@ protected:
      *
      * \param convention Valid pointer to the calling convention.
      */
-    void addCallingConvention(std::unique_ptr<ir::cconv::CallingConvention> convention);
+    void addCallingConvention(std::unique_ptr<ir::calling::CallingConvention> convention);
 
 private:
     /** Name of the architecture. */
@@ -244,7 +244,7 @@ private:
     const Register *mInstructionPointer;
 
     /** Calling conventions. */
-    std::vector<std::unique_ptr<ir::cconv::CallingConvention>> callingConventions_;
+    std::vector<std::unique_ptr<ir::calling::CallingConvention>> callingConventions_;
 };
 
 } // namespace arch

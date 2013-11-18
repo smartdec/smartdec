@@ -25,83 +25,89 @@
 
 #include <nc/config.h>
 
-#include <memory> /* std::unique_ptr */
+#include <cassert>
 
+#include <nc/common/Types.h>
 #include <nc/common/Visitor.h>
-
-#include <boost/unordered_map.hpp>
 
 namespace nc {
 namespace core {
 namespace ir {
 
-class Statement;
-class Term;
-
 namespace dflow {
     class ExecutionContext;
 }
 
-namespace cconv {
+class Call;
+class Statement;
+class Term;
 
-class CallingConvention;
-class Signature;
+namespace calling {
 
 /**
- * Hook being executed after a return is executed.
+ * CallHook extracts the information about location of arguments and return values from a call site.
  */
-class ReturnHook {
-    /** Mapping of terms where return values may be kept to their clones. */
-    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValues_;
+class CallHook {
+    const Call *call_; ///< Call statement for which the hooks has been created.
 
 public:
     /**
      * Class constructor.
      *
-     * \param[in] convention Valid pointer to the calling convention.
-     * \param[in] signature Pointer to the function's signature. Can be NULL.
+     * \param call Valid pointer to a call statement.
      */
-    ReturnHook(const CallingConvention *convention, const Signature *signature);
+    CallHook(const Call *call):
+        call_(call)
+    { assert(call != NULL); }
 
     /**
-     * Destructor.
+     * Virtual destructor.
      */
-    ~ReturnHook();
+    virtual ~CallHook() {}
 
     /**
-     * A method being called when specified return statement is executed.
+     * \return Call statement for which the hook has been created. 
+     */
+    const Call *call() const { return call_; }
+
+    /**
+     * A method being called when specified call statement is executed.
      * 
      * \param context Execution context.
      */
-    void execute(dflow::ExecutionContext &context);
+    virtual void execute(dflow::ExecutionContext &context) = 0;
+
+    /**
+     * \param memoryLocation Memory location.
+     *
+     * \return A valid pointer to the term representing the argument at given memory location.
+     * The term is created when necessary and owned by this CallHook.
+     */
+    virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) = 0;
 
     /**
      * \param term Valid pointer to a term.
      *
-     * \return Pointer to the term representing the argument identified by
-     *         the given term. Will be NULL, if signature does not include
-     *         such an argument.
+     * \return A valid pointer to the term representing the argument designated by given term.
+     * The former term is created when necessary and owned by this CallHook.
      */
-    const Term *getReturnValueTerm(const Term *term);
+    virtual const Term *getReturnValueTerm(const Term *term) = 0;
 
     /**
      * Calls visitor for child statements.
      *
      * \param[in] visitor Visitor.
      */
-    void visitChildStatements(Visitor<const Statement> &visitor) const;
+    virtual void visitChildStatements(Visitor<const Statement> &visitor) const = 0;
 
     /**
      * Calls visitor for child terms.
      *
      * \param[in] visitor Visitor.
      */
-    void visitChildTerms(Visitor<const Term> &visitor) const;
+    virtual void visitChildTerms(Visitor<const Term> &visitor) const = 0;
 };
 
-} // namespace cconv
-} // namespace ir
-} // namespace core
-} // namespace nc
+}}}} // namespace nc::core::ir::calling
 
 /* vim:set et ts=4 sw=4: */

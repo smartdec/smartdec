@@ -32,7 +32,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace cconv {
+namespace calling {
 
 /**
  * An immutable class with value semantics used to identify functions
@@ -111,7 +111,7 @@ class CalleeId {
     friend struct std::hash<CalleeId>;
 };
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc
@@ -124,7 +124,7 @@ namespace std {
  * This makes it possible to use callee ids as keys in hash maps.
  */
 template<>
-struct hash<nc::core::ir::cconv::CalleeId>: public unary_function<nc::core::ir::cconv::CalleeId, size_t> {
+struct hash<nc::core::ir::calling::CalleeId>: public unary_function<nc::core::ir::calling::CalleeId, size_t> {
 public:
     result_type operator()(const argument_type &value) const {
         return hash_value(static_cast<int>(value.kind_)) ^ hash_value(value.address_);
@@ -139,7 +139,7 @@ protected:
 
 } // namespace std
 
-namespace nc { namespace core { namespace ir { namespace cconv {
+namespace nc { namespace core { namespace ir { namespace calling {
 
 /**
  * Qt hash function for memory locations.
@@ -155,6 +155,6 @@ inline std::size_t hash_value(const CalleeId &value) {
     return std::hash<CalleeId>()(value);
 }
 
-}}}} // namespace nc::core::ir::cconv
+}}}} // namespace nc::core::ir::calling
 
 /* vim:set et sts=4 sw=4: */

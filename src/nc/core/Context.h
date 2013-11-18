@@ -58,7 +58,7 @@ namespace ir {
     class Functions;
     class Program;
 
-    namespace cconv {
+    namespace calling {
         class Conventions;
         class Hooks;
         class Signatures;
@@ -99,9 +99,9 @@ class Context: public QObject {
     std::shared_ptr<const arch::Instructions> instructions_; ///< Instructions being decompiled.
     std::unique_ptr<ir::Program> program_; ///< Program.
     std::unique_ptr<ir::Functions> functions_; ///< Functions.
-    std::unique_ptr<ir::cconv::Conventions> conventions_; ///< Assigned calling conventions.
-    std::unique_ptr<ir::cconv::Hooks> hooks_; ///< Hooks of calling conventions.
-    std::unique_ptr<ir::cconv::Signatures> signatures_; ///< Signatures.
+    std::unique_ptr<ir::calling::Conventions> conventions_; ///< Assigned calling conventions.
+    std::unique_ptr<ir::calling::Hooks> hooks_; ///< Hooks of calling conventions.
+    std::unique_ptr<ir::calling::Signatures> signatures_; ///< Signatures.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::dflow::Dataflow> > dataflows_; ///< Dataflow information.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::usage::Usage> > usages_; ///< Term usage information.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::types::Types> > types_; ///< Information about types.
@@ -176,36 +176,36 @@ public:
      *
      * \param hooks Valid pointer to the assigned calling conventions.
      */
-    void setConventions(std::unique_ptr<ir::cconv::Conventions> conventions);
+    void setConventions(std::unique_ptr<ir::calling::Conventions> conventions);
 
     /**
      * \return Valid pointer to the information on calling conventions of functions.
      */
-    ir::cconv::Conventions *conventions() const { return conventions_.get(); }
+    ir::calling::Conventions *conventions() const { return conventions_.get(); }
 
     /**
      * Sets the calling conventions hooks.
      *
      * \param hooks Valid pointer to the hooks information.
      */
-    void setHooks(std::unique_ptr<ir::cconv::Hooks> hooks);
+    void setHooks(std::unique_ptr<ir::calling::Hooks> hooks);
 
     /**
      * \return Valid pointer to the information on calling conventions of functions.
      */
-    ir::cconv::Hooks *hooks() const { return hooks_.get(); }
+    ir::calling::Hooks *hooks() const { return hooks_.get(); }
 
     /**
      * Sets the reconstructed signatures.
      *
      * \param signatures Valid pointer to the signatures.
      */
-    void setSignatures(std::unique_ptr<ir::cconv::Signatures> signatures);
+    void setSignatures(std::unique_ptr<ir::calling::Signatures> signatures);
 
     /**
      * \return Pointer to the signatures of functions. Can be NULL, if not set.
      */
-    const ir::cconv::Signatures *signatures() const { return signatures_.get(); }
+    const ir::calling::Signatures *signatures() const { return signatures_.get(); }
 
     /**
      * Sets the term to function mapping.

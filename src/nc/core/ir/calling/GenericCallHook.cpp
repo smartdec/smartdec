@@ -41,7 +41,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace cconv {
+namespace calling {
 
 namespace {
 
@@ -269,7 +269,7 @@ void GenericCallHook::visitChildTerms(Visitor<const Term> &visitor) const {
     }
 }
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

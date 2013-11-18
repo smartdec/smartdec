@@ -34,7 +34,7 @@
 
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
-#include <nc/core/ir/cconv/Hooks.h>
+#include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/types/Type.h>
 
 #include <nc/core/likec/FunctionDefinition.h>

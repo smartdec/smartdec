@@ -39,10 +39,10 @@
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/FunctionsGenerator.h>
 #include <nc/core/ir/Program.h>
-#include <nc/core/ir/cconv/Conventions.h>
-#include <nc/core/ir/cconv/Hooks.h>
-#include <nc/core/ir/cconv/SignatureAnalyzer.h>
-#include <nc/core/ir/cconv/Signatures.h>
+#include <nc/core/ir/calling/Conventions.h>
+#include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/SignatureAnalyzer.h>
+#include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/GraphBuilder.h>
 #include <nc/core/ir/cflow/StructureAnalyzer.h>
@@ -122,19 +122,19 @@ void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) 
 
 void MasterAnalyzer::initializeHooks(Context &context) const {
     if (!context.signatures()) {
-        context.setSignatures(std::make_unique<ir::cconv::Signatures>());
+        context.setSignatures(std::make_unique<ir::calling::Signatures>());
     }
     if (!context.conventions()) {
-        context.setConventions(std::make_unique<ir::cconv::Conventions>());
+        context.setConventions(std::make_unique<ir::calling::Conventions>());
     }
 
-    context.setHooks(std::make_unique<ir::cconv::Hooks>(*context.conventions(), *context.signatures()));
-    context.hooks()->setConventionDetector([this, &context](const ir::cconv::CalleeId &calleeId) {
+    context.setHooks(std::make_unique<ir::calling::Hooks>(*context.conventions(), *context.signatures()));
+    context.hooks()->setConventionDetector([this, &context](const ir::calling::CalleeId &calleeId) {
         this->detectCallingConvention(context, calleeId);
     });
 }
 
-void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::cconv::CalleeId &/*descriptor*/) const {
+void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::calling::CalleeId &/*descriptor*/) const {
     /* Nothing to do. */
 }
 
@@ -153,9 +153,9 @@ void MasterAnalyzer::analyzeDataflow(Context &context, const ir::Function *funct
 }
 
 void MasterAnalyzer::reconstructSignatures(Context &context) const {
-    auto signatures = std::make_unique<ir::cconv::Signatures>();
+    auto signatures = std::make_unique<ir::calling::Signatures>();
 
-    ir::cconv::SignatureAnalyzer(*signatures, *context.functions(), *context.hooks())
+    ir::calling::SignatureAnalyzer(*signatures, *context.functions(), *context.hooks())
         .analyze(context.cancellationToken());
 
     context.setSignatures(std::move(signatures));

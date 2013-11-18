@@ -33,7 +33,7 @@ namespace ir {
 
 class Term;
 
-namespace cconv {
+namespace calling {
 
 /**
  * Signature of a function: a list of its arguments, and a return value.
@@ -89,7 +89,7 @@ class Signature {
     void setReturnValue(const Term *term) { returnValue_ = term; }
 };
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

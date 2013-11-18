@@ -26,7 +26,7 @@ namespace dflow {
     class ExecutionContext;
 }
 
-namespace cconv {
+namespace calling {
 
 class CallingConvention;
 class Signature;
@@ -99,7 +99,7 @@ public:
     void visitChildTerms(Visitor<const Term> &visitor) const;
 };
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

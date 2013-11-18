@@ -81,24 +81,24 @@ set(SOURCES
     ir/Term.h
     ir/Terms.cpp
     ir/Terms.h
-    ir/cconv/CallHook.h
-    ir/cconv/CalleeId.h
-    ir/cconv/CallingConvention.cpp
-    ir/cconv/CallingConvention.h
-    ir/cconv/DescriptorAnalyzer.h
-    ir/cconv/EntryHook.cpp
-    ir/cconv/EntryHook.h
-    ir/cconv/GenericCallHook.cpp
-    ir/cconv/GenericCallHook.h
-    ir/cconv/GenericDescriptorAnalyzer.cpp
-    ir/cconv/GenericDescriptorAnalyzer.h
-    ir/cconv/Hooks.cpp
-    ir/cconv/Hooks.h
-    ir/cconv/ReturnHook.cpp
-    ir/cconv/ReturnHook.h
-    ir/cconv/Signature.h
-    ir/cconv/SignatureAnalyzer.cpp
-    ir/cconv/SignatureAnalyzer.h
+    ir/calling/CallHook.h
+    ir/calling/CalleeId.h
+    ir/calling/CallingConvention.cpp
+    ir/calling/CallingConvention.h
+    ir/calling/DescriptorAnalyzer.h
+    ir/calling/EntryHook.cpp
+    ir/calling/EntryHook.h
+    ir/calling/GenericCallHook.cpp
+    ir/calling/GenericCallHook.h
+    ir/calling/GenericDescriptorAnalyzer.cpp
+    ir/calling/GenericDescriptorAnalyzer.h
+    ir/calling/Hooks.cpp
+    ir/calling/Hooks.h
+    ir/calling/ReturnHook.cpp
+    ir/calling/ReturnHook.h
+    ir/calling/Signature.h
+    ir/calling/SignatureAnalyzer.cpp
+    ir/calling/SignatureAnalyzer.h
     ir/cflow/BasicNode.cpp
     ir/cflow/BasicNode.h
     ir/cflow/Dfs.cpp

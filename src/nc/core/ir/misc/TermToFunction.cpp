@@ -37,7 +37,7 @@ namespace core {
 namespace ir {
 namespace misc {
 
-TermToFunction::TermToFunction(const Functions *functions, cconv::Hooks *hooks) {
+TermToFunction::TermToFunction(const Functions *functions, calling::Hooks *hooks) {
     assert(functions != NULL);
 
     foreach (const ir::Function *function, functions->functions()) {

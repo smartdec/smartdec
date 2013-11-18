@@ -37,7 +37,7 @@
 namespace nc {
 namespace core {
 namespace ir {
-namespace cconv {
+namespace calling {
 
 class GenericCallHook;
 class CallingConvention;
@@ -89,7 +89,7 @@ class GenericDescriptorAnalyzer: public DescriptorAnalyzer {
     virtual std::unique_ptr<Signature> getSignature() const override;
 };
 
-} // namespace cconv
+} // namespace calling
 } // namespace ir
 } // namespace core
 } // namespace nc

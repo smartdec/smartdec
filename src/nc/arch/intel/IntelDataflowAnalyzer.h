@@ -36,7 +36,7 @@ class IntelDataflowAnalyzer: public core::ir::dflow::DataflowAnalyzer {
         core::ir::dflow::Dataflow &dataflow,
         const core::arch::Architecture *architecture,
         const core::ir::Function *function,
-        core::ir::cconv::Hooks *hooks
+        core::ir::calling::Hooks *hooks
     ):
         core::ir::dflow::DataflowAnalyzer(dataflow, architecture, function, hooks)
     {}
