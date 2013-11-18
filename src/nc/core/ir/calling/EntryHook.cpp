@@ -56,7 +56,9 @@ EntryHook::EntryHook(const Convention *convention, const Signature *signature) {
 
     if (signature) {
         foreach (const auto &location, signature->arguments()) {
-            arguments_[location] = std::make_unique<MemoryLocationAccess>(location);
+            auto argument = std::make_unique<MemoryLocationAccess>(location);
+            argument->setAccessType(Term::WRITE);
+            arguments_[location] = std::move(argument);
         }
     }
 
