@@ -44,7 +44,7 @@ namespace dflow {
 
 namespace calling {
 
-class CallingConvention;
+class Convention;
 class Signature;
 
 /**
@@ -61,7 +61,7 @@ public:
      * \param[in] convention Valid pointer to the calling convention.
      * \param[in] signature Pointer to the function's signature. Can be NULL.
      */
-    ReturnHook(const CallingConvention *convention, const Signature *signature);
+    ReturnHook(const Convention *convention, const Signature *signature);
 
     /**
      * Destructor.

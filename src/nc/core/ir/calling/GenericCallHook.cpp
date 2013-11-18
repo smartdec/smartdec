@@ -35,7 +35,7 @@
 #include <nc/core/ir/dflow/ExecutionContext.h>
 #include <nc/core/ir/dflow/Value.h>
 
-#include "CallingConvention.h"
+#include "Convention.h"
 #include "GenericDescriptorAnalyzer.h"
 
 namespace nc {
@@ -77,7 +77,7 @@ GenericCallHook::GenericCallHook(const Call *call, const GenericDescriptorAnalyz
 
 GenericCallHook::~GenericCallHook() {}
 
-inline const CallingConvention *GenericCallHook::convention() const {
+inline const Convention *GenericCallHook::convention() const {
     return addressAnalyzer()->convention();
 }
 

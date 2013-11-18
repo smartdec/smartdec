@@ -32,7 +32,7 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/Range.h>
 
-#include "CallingConvention.h"
+#include "Convention.h"
 #include "Signature.h"
 
 namespace nc {
@@ -40,7 +40,7 @@ namespace core {
 namespace ir {
 namespace calling {
 
-ReturnHook::ReturnHook(const CallingConvention *convention, const Signature *signature) {
+ReturnHook::ReturnHook(const Convention *convention, const Signature *signature) {
     assert(convention != NULL);
 
     if (signature) {

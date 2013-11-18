@@ -43,7 +43,7 @@ class Return;
 namespace calling {
 
 class CallHook;
-class CallingConvention;
+class Convention;
 class Conventions;
 class DescriptorAnalyzer;
 class EntryHook;
@@ -144,7 +144,7 @@ class Hooks {
      *
      * \return Pointer to the calling convention used for calls to given address. Can be NULL.
      */
-    const CallingConvention *getCallingConvention(const CalleeId &calleeId);
+    const Convention *getConvention(const CalleeId &calleeId);
 
     /**
      * Returns the calling convention for the given callee id taken from

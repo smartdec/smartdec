@@ -44,7 +44,7 @@ class Term;
 
 namespace calling {
 
-class CallingConvention;
+class Convention;
 class GenericDescriptorAnalyzer;
 
 /**
@@ -100,7 +100,7 @@ public:
     /**
      * \return Valid pointer to the calling convention.
      */
-    const CallingConvention *convention() const;
+    const Convention *convention() const;
 
     /**
      * \return Estimated list of locations where arguments are stored.

@@ -35,7 +35,7 @@
 
 #include <nc/common/Foreach.h>
 
-#include "CallingConvention.h"
+#include "Convention.h"
 #include "Signature.h"
 
 namespace nc {
@@ -43,7 +43,7 @@ namespace core {
 namespace ir {
 namespace calling {
 
-EntryHook::EntryHook(const CallingConvention *convention, const Signature *signature) {
+EntryHook::EntryHook(const Convention *convention, const Signature *signature) {
     assert(convention != NULL);
 
     stackPointer_ = std::make_unique<MemoryLocationAccess>(convention->stackPointer());

@@ -40,14 +40,14 @@ namespace ir {
 namespace calling {
 
 class GenericCallHook;
-class CallingConvention;
+class Convention;
 class GenericReturnHook;
 
 /**
  * Address analyzer for a typical calling convention using registers and stack for passing arguments.
  */
 class GenericDescriptorAnalyzer: public DescriptorAnalyzer {
-    const CallingConvention *convention_; ///< Calling convention.
+    const Convention *convention_; ///< Calling convention.
 
     std::vector<GenericCallHook *> callHooks_; ///< All created call analyzers.
     std::vector<EntryHook *> entryHooks_; ///< All created function analyzers.
@@ -62,7 +62,7 @@ class GenericDescriptorAnalyzer: public DescriptorAnalyzer {
      *
      * \param convention Valid pointer to the calling convention.
      */
-    GenericDescriptorAnalyzer(const CallingConvention *convention):
+    GenericDescriptorAnalyzer(const Convention *convention):
         convention_(convention)
     {
         assert(convention);
@@ -71,7 +71,7 @@ class GenericDescriptorAnalyzer: public DescriptorAnalyzer {
     /**
      * \return Valid pointer to the calling convention.
      */
-    const CallingConvention *convention() const { return convention_; }
+    const Convention *convention() const { return convention_; }
 
     /**
      * \return Size of arguments in bytes, if known.

@@ -34,7 +34,7 @@
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statement.h>
 
-#include "CallingConvention.h"
+#include "Convention.h"
 #include "GenericCallHook.h"
 #include "Signature.h"
 

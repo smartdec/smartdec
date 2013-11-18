@@ -38,7 +38,7 @@
 #include "Conventions.h"
 #include "DescriptorAnalyzer.h"
 #include "CallHook.h"
-#include "CallingConvention.h"
+#include "Convention.h"
 #include "EntryHook.h"
 #include "Signatures.h"
 #include "ReturnHook.h"
@@ -89,15 +89,15 @@ void Hooks::setCalledAddress(const Call *call, ByteAddr addr) {
     call2address_[call] = addr;
 }
 
-const CallingConvention *Hooks::getCallingConvention(const CalleeId &calleeId) {
+const Convention *Hooks::getConvention(const CalleeId &calleeId) {
     if (!calleeId) {
         return NULL;
     }
-    if (auto result = conventions_.getCallingConvention(calleeId)) {
+    if (auto result = conventions_.getConvention(calleeId)) {
         return result;
     } else {
         conventionDetector_(calleeId);
-        return conventions_.getCallingConvention(calleeId);
+        return conventions_.getConvention(calleeId);
     }
 }
 
@@ -106,8 +106,8 @@ DescriptorAnalyzer *Hooks::getDescriptorAnalyzer(const CalleeId &calleeId) {
         return NULL;
     }
     if (!nc::contains(id2analyzer_, calleeId)) {
-        if (auto callingConvention = getCallingConvention(calleeId)) {
-            id2analyzer_[calleeId] = std::make_unique<GenericDescriptorAnalyzer>(callingConvention);
+        if (auto convention = getConvention(calleeId)) {
+            id2analyzer_[calleeId] = std::make_unique<GenericDescriptorAnalyzer>(convention);
         }
     }
     return nc::find(id2analyzer_, calleeId).get();
@@ -127,7 +127,7 @@ EntryHook *Hooks::getEntryHook(const Function *function) {
     if (auto result = nc::find(entryHooks_, key).get()) {
         return result;
     }
-    if (auto convention = getCallingConvention(calleeId)) {
+    if (auto convention = getConvention(calleeId)) {
         return (entryHooks_[key] = std::make_unique<EntryHook>(convention, signatures_.getSignature(calleeId))).get();
     }
     return NULL;
@@ -146,7 +146,7 @@ ReturnHook *Hooks::getReturnHook(const Function *function, const Return *ret) {
     if (auto result = nc::find(returnHooks_, key).get()) {
         return result;
     }
-    if (auto convention = getCallingConvention(calleeId)) {
+    if (auto convention = getConvention(calleeId)) {
         return (returnHooks_[key] = std::make_unique<ReturnHook>(convention, signatures_.getSignature(calleeId))).get();
     }
     return NULL;

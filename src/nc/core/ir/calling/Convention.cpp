@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "CallingConvention.h"
+#include "Convention.h"
 
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
@@ -44,17 +44,17 @@ Argument &Argument::operator<<(const arch::Register *reg) {
     return *this << reg->memoryLocation();
 }
 
-CallingConvention::CallingConvention(QString name): name_(std::move(name)) {}
+Convention::Convention(QString name): name_(std::move(name)) {}
 
-CallingConvention::~CallingConvention() {}
+Convention::~Convention() {}
 
-void CallingConvention::addReturnValue(std::unique_ptr<Term> term) {
+void Convention::addReturnValue(std::unique_ptr<Term> term) {
     assert(term != NULL);
 
     returnValues_.push_back(std::move(term));
 }
 
-void CallingConvention::addEnterStatement(std::unique_ptr<Statement> statement) {
+void Convention::addEnterStatement(std::unique_ptr<Statement> statement) {
     assert(statement != NULL);
 
     entryStatements_.push_back(std::move(statement));

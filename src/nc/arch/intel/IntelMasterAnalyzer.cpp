@@ -89,7 +89,7 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
     auto architecture = context.module()->architecture();
 
     auto setConvention = [&](const char *name) {
-        context.conventions()->setCallingConvention(calleeId, architecture->getCallingConvention(QLatin1String(name)));
+        context.conventions()->setConvention(calleeId, architecture->getCallingConvention(QLatin1String(name)));
     };
 
     if (architecture->bitness() == 32) {

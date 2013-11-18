@@ -15,14 +15,14 @@ namespace core {
 namespace ir {
 namespace calling {
 
-class CallingConvention;
+class Convention;
 
 /**
  * Information about assigned calling conventions and their parameters.
  */
 class Conventions {
     /** Mapping from a callee id to the associated calling convention. */
-    boost::unordered_map<CalleeId, const CallingConvention *> id2convention_;
+    boost::unordered_map<CalleeId, const Convention *> id2convention_;
 
     /** Mapping from a callee id to its arguments size. */
     boost::unordered_map<CalleeId, ByteSize> id2argumentsSize_;
@@ -35,7 +35,7 @@ public:
      * \param calleeId Callee id.
      * \param convention Pointer to a calling convention of the function. Can be NULL.
      */
-    void setCallingConvention(const CalleeId &calleeId, const CallingConvention *convention) {
+    void setConvention(const CalleeId &calleeId, const Convention *convention) {
         id2convention_[calleeId] = convention;
     }
 
@@ -44,7 +44,7 @@ public:
      *
      * \return Pointer to the calling convention used for calls to given address. Can be NULL.
      */
-    const CallingConvention *getCallingConvention(const CalleeId &calleeId) const {
+    const Convention *getConvention(const CalleeId &calleeId) const {
         return nc::find(id2convention_, calleeId);
     }
 

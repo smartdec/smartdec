@@ -133,7 +133,7 @@ class ArgumentGroup {
 /**
  * An interface for a factory of address analyzers.
  */
-class CallingConvention {
+class Convention {
     QString name_; ///< Name of the calling convention.
 
     MemoryLocation stackPointer_; ///< Memory location of stack pointer register.
@@ -155,12 +155,12 @@ class CallingConvention {
      *
      * \paran name Name of the calling convention.
      */
-    CallingConvention(QString name);
+    Convention(QString name);
 
     /**
      * Destructor.
      */
-    ~CallingConvention();
+    ~Convention();
 
     /**
      * \return Name of the calling convention.
