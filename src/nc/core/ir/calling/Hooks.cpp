@@ -147,7 +147,7 @@ ReturnHook *Hooks::getReturnHook(const Function *function, const Return *ret) {
         return result;
     }
     if (auto convention = getConvention(calleeId)) {
-        return (returnHooks_[key] = std::make_unique<ReturnHook>(convention, signatures_.getSignature(calleeId))).get();
+        return (returnHooks_[key] = std::make_unique<ReturnHook>(ret, convention, signatures_.getSignature(calleeId))).get();
     }
     return NULL;
 }

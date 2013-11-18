@@ -24,6 +24,7 @@
 
 #include "ReturnHook.h"
 
+#include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
@@ -40,7 +41,8 @@ namespace core {
 namespace ir {
 namespace calling {
 
-ReturnHook::ReturnHook(const Convention *convention, const Signature *signature) {
+ReturnHook::ReturnHook(const Return *ret, const Convention *convention, const Signature *signature) {
+    assert(ret != NULL);
     assert(convention != NULL);
 
     if (signature) {
@@ -51,6 +53,11 @@ ReturnHook::ReturnHook(const Convention *convention, const Signature *signature)
         foreach (auto term, convention->returnValues()) {
             returnValues_[signature->returnValue()] = term->clone();
         }
+    }
+
+    foreach (const auto &pair, returnValues_) {
+        pair.second->setAccessType(Term::READ);
+        pair.second->setStatementRecursively(ret);
     }
 }
 
