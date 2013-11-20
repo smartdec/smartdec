@@ -68,19 +68,24 @@ class Hooks {
     /** Mapping from a call to its destination address. */
     boost::unordered_map<const Call *, ByteAddr> call2address_;
 
-    /** Mapping from a function to its analyzer. */
-    boost::unordered_map<std::pair<CalleeId, const Function *>, std::unique_ptr<EntryHook>> entryHooks_;
+public:
+    /** All hooks of a certain callee id. */
+    struct CalleeHooks {
+        /** Mapping from a function to its entry hook. */
+        boost::unordered_map<const Function *, std::unique_ptr<EntryHook>> entryHooks;
 
-    /** Mapping from a return to its analyzer. */
-    boost::unordered_map<std::pair<CalleeId, const Return *>, std::unique_ptr<ReturnHook>> returnHooks_;
+        /** Mapping from a return statement to its return hook. */
+        boost::unordered_map<const Return *, std::unique_ptr<ReturnHook>> returnHooks;
 
-    /** Mapping from a call to its analyzer. */
-    boost::unordered_map<std::pair<CalleeId, const Call *>, std::unique_ptr<CallHook>> callHooks_;
+        /** Mapping from a call statement to its call hook. */
+        boost::unordered_map<const Call *, std::unique_ptr<CallHook>> callHooks;
+    };
 
-    // TODO: make a single map CalleeId -> struct { three maps inside }
+private:
+    /** Hooks per callee id. */
+    boost::unordered_map<CalleeId, CalleeHooks> calleeHooks_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -166,6 +171,13 @@ class Hooks {
      * Can be NULL. Such instance is created when necessary and if possible.
      */
     CallHook *getCallHook(const Call *call);
+
+    /**
+     * \param calleeId Callee id.
+     *
+     * \return CalleeHooks object for the given callee id.
+     */
+    const CalleeHooks &getHooks(const CalleeId &calleeId) const;
 };
 
 } // namespace calling

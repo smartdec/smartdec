@@ -25,16 +25,13 @@
 
 #include <nc/config.h>
 
-#include <cassert>
 #include <vector>
 
 #include <QString>
 
-#include <nc/common/Types.h>
-
 #include <nc/core/ir/MemoryLocation.h>
 
-#include <memory> /* std::unique_ptr */
+#include <memory>
 
 namespace nc {
 namespace core {
@@ -129,7 +126,7 @@ class ArgumentGroup {
 };
 
 /**
- * An interface for a factory of address analyzers.
+ * Description of a calling convention.
  */
 class Convention {
     QString name_; ///< Name of the calling convention.

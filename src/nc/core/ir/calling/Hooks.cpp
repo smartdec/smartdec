@@ -108,13 +108,12 @@ EntryHook *Hooks::getEntryHook(const Function *function) {
         return NULL;
     }
 
-    auto key = std::make_pair(calleeId, function);
-
-    if (auto result = nc::find(entryHooks_, key).get()) {
+    if (auto result = nc::find(nc::find(calleeHooks_, calleeId).entryHooks, function).get()) {
         return result;
     }
     if (auto convention = getConvention(calleeId)) {
-        return (entryHooks_[key] = std::make_unique<EntryHook>(convention, signatures_.getSignature(calleeId))).get();
+        return (calleeHooks_[calleeId].entryHooks[function] =
+            std::make_unique<EntryHook>(convention, signatures_.getSignature(calleeId))).get();
     }
     return NULL;
 }
@@ -127,13 +126,12 @@ ReturnHook *Hooks::getReturnHook(const Function *function, const Return *ret) {
         return NULL;
     }
 
-    auto key = std::make_pair(calleeId, ret);
-
-    if (auto result = nc::find(returnHooks_, key).get()) {
+    if (auto result = nc::find(nc::find(calleeHooks_, calleeId).returnHooks, ret).get()) {
         return result;
     }
     if (auto convention = getConvention(calleeId)) {
-        return (returnHooks_[key] = std::make_unique<ReturnHook>(ret, convention, signatures_.getSignature(calleeId))).get();
+        return (calleeHooks_[calleeId].returnHooks[ret] =
+            std::make_unique<ReturnHook>(ret, convention, signatures_.getSignature(calleeId))).get();
     }
     return NULL;
 }
@@ -146,16 +144,18 @@ CallHook *Hooks::getCallHook(const Call *call) {
         return NULL;
     }
 
-    auto key = std::make_pair(calleeId, call);
-
-    if (auto result = nc::find(callHooks_, key).get()) {
+    if (auto result = nc::find(nc::find(calleeHooks_, calleeId).callHooks, call).get()) {
         return result;
     }
     if (auto convention = getConvention(calleeId)) {
-        return (callHooks_[key] = std::make_unique<CallHook>(
+        return (calleeHooks_[calleeId].callHooks[call] = std::make_unique<CallHook>(
             call, convention, signatures_.getSignature(calleeId), conventions_.getStackArgumentsSize(calleeId))).get();
     }
     return NULL;
+}
+
+const Hooks::CalleeHooks &Hooks::getHooks(const CalleeId &calleeId) const {
+    return nc::find(calleeHooks_, calleeId);
 }
 
 } // namespace calling
