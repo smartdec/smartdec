@@ -49,7 +49,7 @@ void Disassembler::disassemble(const image::ByteSource *source, ByteAddr begin, 
     const ByteSize bufferCapacity = std::max(4096, maxInstructionSize);
     std::unique_ptr<char[]> buffer(new char[bufferCapacity]);
 
-    ByteOffset bufferOffset = 0;
+    ByteSize bufferOffset = 0;
     ByteSize bufferSize = 0;
 
     while (begin < end) {

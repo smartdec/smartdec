@@ -24,6 +24,7 @@
 
 #include "EntryHook.h"
 
+#include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/ir/Statements.h>
@@ -32,8 +33,6 @@
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
 #include <nc/core/ir/dflow/ExecutionContext.h>
 #include <nc/core/ir/dflow/Value.h>
-
-#include <nc/common/Foreach.h>
 
 #include "Convention.h"
 #include "Signature.h"
@@ -135,7 +134,7 @@ void EntryHook::execute(dflow::ExecutionContext &context) {
     }
 }
 
-const Term *EntryHook::getArgumentTerm(const MemoryLocation &memoryLocation) {
+const Term *EntryHook::getArgumentTerm(const MemoryLocation &memoryLocation) const {
     return nc::find(arguments_, memoryLocation).get();
 }
 

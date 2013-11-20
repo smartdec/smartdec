@@ -81,6 +81,7 @@ set(SOURCES
     ir/Term.h
     ir/Terms.cpp
     ir/Terms.h
+    ir/calling/CallHook.cpp
     ir/calling/CallHook.h
     ir/calling/CalleeId.h
     ir/calling/Convention.cpp
@@ -88,8 +89,6 @@ set(SOURCES
     ir/calling/DescriptorAnalyzer.h
     ir/calling/EntryHook.cpp
     ir/calling/EntryHook.h
-    ir/calling/GenericCallHook.cpp
-    ir/calling/GenericCallHook.h
     ir/calling/GenericDescriptorAnalyzer.cpp
     ir/calling/GenericDescriptorAnalyzer.h
     ir/calling/Hooks.cpp

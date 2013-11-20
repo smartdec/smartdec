@@ -25,89 +25,107 @@
 
 #include <nc/config.h>
 
-#include <cassert>
+#include <memory> /* unique_ptr */
 
-#include <nc/common/Types.h>
+#include <boost/optional.hpp>
+#include <boost/unordered_map.hpp>
+
 #include <nc/common/Visitor.h>
+
+#include <nc/core/ir/MemoryLocation.h>
 
 namespace nc {
 namespace core {
 namespace ir {
 
-namespace dflow {
-    class ExecutionContext;
-}
-
 class Call;
 class Statement;
 class Term;
 
+namespace dflow {
+    class ExecutionContext;
+}
+
 namespace calling {
 
+class Convention;
+class Signature;
+
 /**
- * CallHook extracts the information about location of arguments and return values from a call site.
+ * Hook being executed after a return is executed after a call is executed.
  */
 class CallHook {
-    const Call *call_; ///< Call statement for which the hooks has been created.
+    /** Mapping of argument memory locations to corresponding terms. */
+    boost::unordered_map<MemoryLocation, std::unique_ptr<Term>> arguments_;
+
+    /** Mapping of terms where return values may be kept to their clones. */
+    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValues_;
+
+    /** Term for tracking stack pointer. */
+    std::unique_ptr<Term> stackPointer_;
+
+    /** Statement to change stack pointer by the amendment constant. */
+    std::unique_ptr<Statement> cleanupStatement_;
 
 public:
     /**
      * Class constructor.
      *
-     * \param call Valid pointer to a call statement.
+     * \param[in] call Valid pointer to the call statement being hooked.
+     * \param[in] convention Valid pointer to the calling convention.
+     * \param[in] signature Pointer to the function's signature. Can be NULL.
+     * \param[in] stackArgumentsSize Size of arguments passed on the stack.
      */
-    CallHook(const Call *call):
-        call_(call)
-    { assert(call != NULL); }
+    CallHook(const Call *call, const Convention *convention, const Signature *signature, boost::optional<ByteSize> stackArgumentsSize);
 
     /**
-     * Virtual destructor.
+     * Destructor.
      */
-    virtual ~CallHook() {}
-
-    /**
-     * \return Call statement for which the hook has been created. 
-     */
-    const Call *call() const { return call_; }
+    ~CallHook();
 
     /**
      * A method being called when specified call statement is executed.
-     * 
+     *
      * \param context Execution context.
      */
-    virtual void execute(dflow::ExecutionContext &context) = 0;
+    void execute(dflow::ExecutionContext &context);
 
     /**
      * \param memoryLocation Memory location.
      *
-     * \return A valid pointer to the term representing the argument at given memory location.
-     * The term is created when necessary and owned by this CallHook.
+     * \return Pointer to the term representing the argument at given memory
+     *         location. Will be NULL, if signature does not include such an
+     *         argument.
      */
-    virtual const Term *getArgumentTerm(const MemoryLocation &memoryLocation) = 0;
+    const Term *getArgumentTerm(const MemoryLocation &memoryLocation) const;
 
     /**
      * \param term Valid pointer to a term.
      *
-     * \return A valid pointer to the term representing the argument designated by given term.
-     * The former term is created when necessary and owned by this CallHook.
+     * \return Pointer to the term representing the argument identified by
+     *         the given term. Will be NULL, if signature does not include
+     *         such an argument.
      */
-    virtual const Term *getReturnValueTerm(const Term *term) = 0;
+    const Term *getReturnValueTerm(const Term *term) const;
 
     /**
      * Calls visitor for child statements.
      *
      * \param[in] visitor Visitor.
      */
-    virtual void visitChildStatements(Visitor<const Statement> &visitor) const = 0;
+    void visitChildStatements(Visitor<const Statement> &visitor) const;
 
     /**
      * Calls visitor for child terms.
      *
      * \param[in] visitor Visitor.
      */
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const = 0;
+    void visitChildTerms(Visitor<const Term> &visitor) const;
 };
 
-}}}} // namespace nc::core::ir::calling
+} // namespace calling
+} // namespace ir
+} // namespace core
+} // namespace nc
 
 /* vim:set et ts=4 sw=4: */

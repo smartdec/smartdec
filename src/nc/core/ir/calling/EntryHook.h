@@ -82,7 +82,7 @@ public:
      *         location. Will be NULL, if signature does not include such an
      *         argument.
      */
-    const Term *getArgumentTerm(const MemoryLocation &memoryLocation);
+    const Term *getArgumentTerm(const MemoryLocation &memoryLocation) const;
 
     /**
      * Calls visitor for child statements.

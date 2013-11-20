@@ -59,7 +59,7 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] ret Valid pointer to the return being hooked.
+     * \param[in] ret Valid pointer to the return statement being hooked.
      * \param[in] convention Valid pointer to the calling convention.
      * \param[in] signature Pointer to the function's signature. Can be NULL.
      */
@@ -84,7 +84,7 @@ public:
      *         the given term. Will be NULL, if signature does not include
      *         such an argument.
      */
-    const Term *getReturnValueTerm(const Term *term);
+    const Term *getReturnValueTerm(const Term *term) const;
 
     /**
      * Calls visitor for child statements.

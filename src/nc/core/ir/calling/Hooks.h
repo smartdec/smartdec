@@ -79,7 +79,7 @@ class Hooks {
     boost::unordered_map<std::pair<CalleeId, const Return *>, std::unique_ptr<ReturnHook>> returnHooks_;
 
     /** Mapping from a call to its analyzer. */
-    boost::unordered_map<std::pair<CalleeId, const Call *>, std::unique_ptr<CallHook>> call2analyzer_;
+    boost::unordered_map<std::pair<CalleeId, const Call *>, std::unique_ptr<CallHook>> callHooks_;
 
     // TODO: make a single map CalleeId -> struct { three maps inside }
 

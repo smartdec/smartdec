@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "GenericCallHook.h"
+#include "CallHook.h"
 
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
@@ -36,13 +36,15 @@
 #include <nc/core/ir/dflow/Value.h>
 
 #include "Convention.h"
-#include "GenericDescriptorAnalyzer.h"
+#include "Signature.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace calling {
 
+// TODO: remove
+#if 0
 namespace {
 
 class CompareAddress {
@@ -54,34 +56,82 @@ class CompareAddress {
 };
 
 } // anonymous namespace
+#endif
 
-GenericCallHook::GenericCallHook(const Call *call, const GenericDescriptorAnalyzer *addressAnalyzer):
-    CallHook(call), addressAnalyzer_(addressAnalyzer), stackTop_(0)
+CallHook::CallHook(const Call *call, const Convention *convention, const Signature *signature,
+    boost::optional<ByteSize> stackArgumentsSize)
 {
-    auto stackAmendmentConstant = std::make_unique<Constant>(SizedValue(convention()->stackPointer().size(), 0));
-    stackAmendmentConstant_ = stackAmendmentConstant.get();
+    assert(call != NULL);
+    assert(convention != NULL);
 
-    stackAmendmentStatement_.reset(
-        new Assignment(
-            std::make_unique<MemoryLocationAccess>(convention()->stackPointer()),
+    if (signature) {
+        foreach (const auto &location, signature->arguments()) {
+            if (location.domain() == MemoryDomain::STACK) {
+                assert(location.addr() % CHAR_BIT == 0);
+                arguments_[location] = std::make_unique<Dereference>(
+                    std::make_unique<BinaryOperator>(BinaryOperator::ADD,
+                        std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
+                        std::make_unique<Constant>(SizedValue(convention->stackPointer().size(), location.addr() / CHAR_BIT)),
+                        convention->stackPointer().size()),
+                    MemoryDomain::MEMORY,
+                    location.size());
+            } else {
+                arguments_[location] = std::make_unique<MemoryLocationAccess>(location);
+            }
+        }
+        if (signature->returnValue()) {
+            returnValues_[signature->returnValue()] = signature->returnValue()->clone();
+        }
+    } else {
+        foreach (auto term, convention->returnValues()) {
+            returnValues_[signature->returnValue()] = term->clone();
+        }
+    }
+
+    foreach (const auto &pair, arguments_) {
+        pair.second->setAccessType(Term::READ);
+        pair.second->setStatementRecursively(call);
+    }
+    foreach (const auto &pair, returnValues_) {
+        pair.second->setAccessType(Term::WRITE);
+        pair.second->setStatementRecursively(call);
+    }
+
+    if (convention->calleeCleanup() && stackArgumentsSize) {
+        cleanupStatement_ = std::make_unique<Assignment>(
+            std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
             std::make_unique<BinaryOperator>(
-                BinaryOperator::ADD, 
-                std::make_unique<MemoryLocationAccess>(convention()->stackPointer()), 
-                std::move(stackAmendmentConstant),
-                convention()->stackPointer().size<SmallBitSize>())));
-
-    foreach (const Term *returnValue, convention()->returnValues()) {
-        getReturnValueTerm(returnValue);
+                BinaryOperator::ADD,
+                std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
+                std::make_unique<Constant>(SizedValue(convention->stackPointer().size(), *stackArgumentsSize)),
+                convention->stackPointer().size<SmallBitSize>()));
     }
 }
 
-GenericCallHook::~GenericCallHook() {}
+CallHook::~CallHook() {}
 
-inline const Convention *GenericCallHook::convention() const {
-    return addressAnalyzer()->convention();
-}
+void CallHook::execute(dflow::ExecutionContext &context) {
+    /* Execute all argument terms. */
+    foreach (const auto &pair, arguments_) {
+        context.analyzer().execute(pair.second.get(), context);
+    }
 
-void GenericCallHook::execute(dflow::ExecutionContext &context) {
+    /* Execute the cleanup statement. */
+    if (cleanupStatement_) {
+        context.analyzer().execute(cleanupStatement_.get(), context);
+    }
+
+    /* Execute all return value terms. */
+    foreach (const auto &pair, returnValues_) {
+        auto value = context.analyzer().dataflow().getValue(pair.second.get());
+        value->setAbstractValue(dflow::AbstractValue(pair.second->size(), -1, -1));
+        value->makeNotStackOffset();
+
+        context.analyzer().execute(pair.second.get(), context);
+    }
+
+    // FIXME
+#if 0
     argumentLocations_.clear();
 
     /*
@@ -96,8 +146,6 @@ void GenericCallHook::execute(dflow::ExecutionContext &context) {
             bool argumentFound = false;
 
             foreach (const MemoryLocation &location, argument.locations()) {
-                // FIXME
-#if 0
                 foreach (const Term *definition, context.definitions().getDefinitions(location)) {
                     if (definition->statement() && !definition->statement()->isCall()) {
                         getArgumentTerm(location);
@@ -106,7 +154,6 @@ void GenericCallHook::execute(dflow::ExecutionContext &context) {
                         break;
                     }
                 }
-#endif
                 if (argumentFound) {
                     break;
                 }
@@ -167,32 +214,9 @@ void GenericCallHook::execute(dflow::ExecutionContext &context) {
             }
         }
     }
-
-    /* Execute all argument terms. */
-    foreach (const auto &argument, arguments_) {
-        context.analyzer().execute(argument.second.get(), context);
-    }
-
-    // FIXME: unnecessary?
-#if 0
-    /* Kill all estimated arguments. */
-    foreach (const MemoryLocation &memoryLocation, argumentLocations_) {
-        context.definitions().killDefinitions(
-            memoryLocation.domain() == MemoryDomain::STACK ?
-                memoryLocation.shifted(stackTop_) :
-                memoryLocation);
-    }
 #endif
 
-    /* Execute all return value terms. */
-    foreach (const auto &pair, returnValues_) {
-        dflow::Value *value = context.analyzer().dataflow().getValue(pair.second.get());
-        value->setAbstractValue(dflow::AbstractValue(pair.second->size(), -1, -1));
-        value->makeNotStackOffset();
-
-        context.analyzer().execute(pair.second.get(), context);
-    }
-
+    // TODO: remove
 #if 0
     /* If return values can overlap, they kill each other and the following hack is necessary. */
     foreach (const auto &pair, returnValues_) {
@@ -217,18 +241,13 @@ void GenericCallHook::execute(dflow::ExecutionContext &context) {
         }
     }
 #endif
-    /* Compute the stack pointer amendment. */
-    ByteOffset amendment = convention()->firstArgumentOffset() / 8;
-    if (convention()->calleeCleanup() && addressAnalyzer()->argumentsSize()) {
-        amendment += *addressAnalyzer()->argumentsSize();
-    }
-    stackAmendmentConstant_->setValue(amendment);
-    
-    /* Execute the amendment statement. */
-    context.analyzer().execute(stackAmendmentStatement_.get(), context);
 }
 
-const Term *GenericCallHook::getArgumentTerm(const MemoryLocation &memoryLocation) {
+const Term *CallHook::getArgumentTerm(const MemoryLocation &memoryLocation) const {
+    return nc::find(arguments_, memoryLocation).get();
+
+// TODO: remove
+#if 0
     auto &result = arguments_[memoryLocation];
     if (!result) {
         result.reset(new MemoryLocationAccess(
@@ -239,25 +258,21 @@ const Term *GenericCallHook::getArgumentTerm(const MemoryLocation &memoryLocatio
         result->setStatementRecursively(call());
     }
     return result.get();
+#endif
 }
 
-const Term *GenericCallHook::getReturnValueTerm(const Term *term) {
+const Term *CallHook::getReturnValueTerm(const Term *term) const {
     assert(term != NULL);
+    return nc::find(returnValues_, term).get();
+}
 
-    auto &result = returnValues_[term];
-    if (!result) {
-        result = term->clone();
-        result->setAccessType(Term::WRITE);
-        result->setStatementRecursively(call());
+void CallHook::visitChildStatements(Visitor<const Statement> &visitor) const {
+    if (cleanupStatement_) {
+        visitor(cleanupStatement_.get());
     }
-    return result.get();
 }
 
-void GenericCallHook::visitChildStatements(Visitor<const Statement> &visitor) const {
-    visitor(stackAmendmentStatement_.get());
-}
-
-void GenericCallHook::visitChildTerms(Visitor<const Term> &visitor) const {
+void CallHook::visitChildTerms(Visitor<const Term> &visitor) const {
     foreach (const auto &pair, arguments_) {
         visitor(pair.second.get());
     }

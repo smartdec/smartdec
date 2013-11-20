@@ -161,12 +161,15 @@ CallHook *Hooks::getCallHook(const Call *call) {
     }
 
     auto key = std::make_pair(calleeId, call);
-    if (!nc::contains(call2analyzer_, key)) {
-        if (DescriptorAnalyzer *descriptorAnalyzer = getDescriptorAnalyzer(calleeId)) {
-            call2analyzer_[key] = descriptorAnalyzer->createCallHook(call);
-        }
+
+    if (auto result = nc::find(callHooks_, key).get()) {
+        return result;
     }
-    return nc::find(call2analyzer_, key).get();
+    if (auto convention = getConvention(calleeId)) {
+        return (callHooks_[key] = std::make_unique<CallHook>(
+            call, convention, signatures_.getSignature(calleeId), conventions_.getStackArgumentsSize(calleeId))).get();
+    }
+    return NULL;
 }
 
 } // namespace calling

@@ -175,7 +175,7 @@ class Convention {
     /**
      * \return Offset of the first argument in a function's stack frame.
      */
-    BitOffset firstArgumentOffset() const { return firstArgumentOffset_; }
+    BitSize firstArgumentOffset() const { return firstArgumentOffset_; }
 
     /**
      * \return Alignment of stack arguments in bits.
@@ -224,7 +224,7 @@ protected:
      *
      * \param firstArgumentOffset The offset.
      */
-    void setFirstArgumentOffset(BitOffset firstArgumentOffset) { firstArgumentOffset_ = firstArgumentOffset; }
+    void setFirstArgumentOffset(BitSize firstArgumentOffset) { firstArgumentOffset_ = firstArgumentOffset; }
 
     /**
      * Sets alignment of stack arguments.

@@ -110,7 +110,7 @@ const likec::StructType *CodeGenerator::makeStructuralType(const types::Type *ty
 
     bool isStruct = false;
     foreach (auto offset, typeTraits->offsets()) {
-        ByteOffset offsetValue = offset.first;
+        ByteSize offsetValue = offset.first;
         const types::Type *offsetType = offset.second->findSet();
 
         if (offsetValue > 0 && offsetType == typeTraits) {
@@ -132,7 +132,7 @@ const likec::StructType *CodeGenerator::makeStructuralType(const types::Type *ty
     traits2structType_[typeTraits] = type;
 
     foreach (auto offset, typeTraits->offsets()) {
-        ByteOffset offsetValue = offset.first;
+        ByteSize offsetValue = offset.first;
         const types::Type *offsetType = offset.second->findSet();
 
         if (offsetValue > 0 && offsetType == typeTraits) {

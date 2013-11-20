@@ -24,7 +24,7 @@
         int number;
         const char *name;
         nc::core::ir::Domain domain;
-        nc::BitOffset offset;
+        nc::BitSize offset;
         nc::BitSize size;
         const char *comment;
     };

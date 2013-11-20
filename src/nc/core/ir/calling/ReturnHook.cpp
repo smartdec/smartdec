@@ -90,7 +90,8 @@ void ReturnHook::execute(dflow::ExecutionContext &context) {
 #endif
 }
 
-const Term *ReturnHook::getReturnValueTerm(const Term *term) {
+const Term *ReturnHook::getReturnValueTerm(const Term *term) const {
+    assert(term != NULL);
     return nc::find(returnValues_, term).get();
 }
 

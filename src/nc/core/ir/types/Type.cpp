@@ -110,7 +110,7 @@ void Type::updateFactor(ConstantValue increment) {
 }
 
 #ifdef NC_STRUCT_RECOVERY
-void Type::addOffset(ByteOffset offset, Type *typeTraits) {
+void Type::addOffset(ByteSize offset, Type *typeTraits) {
     Type *&existingTraits = offsets_[offset];
     if (existingTraits) {
         existingTraits->unionSet(typeTraits);

@@ -24,8 +24,8 @@ class Conventions {
     /** Mapping from a callee id to the associated calling convention. */
     boost::unordered_map<CalleeId, const Convention *> id2convention_;
 
-    /** Mapping from a callee id to its arguments size. */
-    boost::unordered_map<CalleeId, ByteSize> id2argumentsSize_;
+    /** Mapping from a callee id to the size of its arguments passed on the stack. */
+    boost::unordered_map<CalleeId, ByteSize> id2stackArgumentsSize_;
 
 public:
 
@@ -54,11 +54,11 @@ public:
      * \param calleeId Callee id.
      * \param size Size of the arguments passed on the stack, or boost::none if unknown.
      */
-    void setArgumentsSize(const CalleeId &calleeId, const boost::optional<ByteSize> &size) {
+    void setStackArgumentsSize(const CalleeId &calleeId, const boost::optional<ByteSize> &size) {
         if (size) {
-            id2argumentsSize_[calleeId] = *size;
+            id2stackArgumentsSize_[calleeId] = *size;
         } else {
-            id2argumentsSize_.erase(calleeId);
+            id2stackArgumentsSize_.erase(calleeId);
         }
     }
 
@@ -67,8 +67,8 @@ public:
      *
      * \return Size of the arguments passed on the stack, or boost::none if unknown.
      */
-    boost::optional<ByteSize> getArgumentsSize(const CalleeId &calleeId) {
-        return nc::find_optional(id2argumentsSize_, calleeId);
+    boost::optional<ByteSize> getStackArgumentsSize(const CalleeId &calleeId) const {
+        return nc::find_optional(id2stackArgumentsSize_, calleeId);
     }
 };
 

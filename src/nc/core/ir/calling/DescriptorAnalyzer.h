@@ -23,6 +23,8 @@
 
 #pragma once
 
+// TODO: delete this file
+
 #include <nc/config.h>
 
 #include <memory> /* std::unique_ptr */
@@ -53,13 +55,6 @@ class DescriptorAnalyzer {
      * Virtual destructor.
      */
     virtual ~DescriptorAnalyzer() {}
-
-    /**
-     * \param call Valid pointer to a call statement.
-     *
-     * \return Pointer to a new instance of CallHook for handling given call statement. Can be NULL.
-     */
-    virtual std::unique_ptr<CallHook> createCallHook(const Call *call) = 0;
 
     /**
      * \return Pointer to the signature of the function at the analyzed address.

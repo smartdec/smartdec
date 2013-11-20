@@ -36,7 +36,7 @@ typedef boost::error_info<struct LineTag, int> ErrorLine;
 /** Error info structure for error column.  */
 typedef boost::error_info<struct ColumnTag, int> ErrorColumn;
 /** Error info structure for error offset. */
-typedef boost::error_info<struct PositionTag, ByteOffset> ErrorOffset;
+typedef boost::error_info<struct PositionTag, ByteSize> ErrorOffset;
 
 /**
  * Parse error.

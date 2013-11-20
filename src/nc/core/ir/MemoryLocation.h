@@ -110,7 +110,7 @@ class MemoryLocation: public boost::equality_comparable1<MemoryLocation>, public
      * \param offset Offset in bits.
      * \return New memory location.
      */
-    MemoryLocation shifted(BitOffset offset) const {
+    MemoryLocation shifted(BitSize offset) const {
         return MemoryLocation(domain_, addr_ + offset, size_);
     }
 

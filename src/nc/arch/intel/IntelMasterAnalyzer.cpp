@@ -100,7 +100,7 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
                 ByteSize argumentsSize;
                 if (stringToInt(symbol.mid(index + 1), &argumentsSize)) {
                     setConvention("stdcall32");
-                    context.conventions()->setArgumentsSize(calleeId, argumentsSize);
+                    context.conventions()->setStackArgumentsSize(calleeId, argumentsSize);
                     return;
                 }
             }

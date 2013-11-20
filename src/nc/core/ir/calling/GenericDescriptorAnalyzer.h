@@ -85,7 +85,6 @@ class GenericDescriptorAnalyzer: public DescriptorAnalyzer {
      */
     void setArgumentsSize(boost::optional<ByteSize> size) { argumentsSize_ = size; }
 
-    virtual std::unique_ptr<CallHook> createCallHook(const Call *call) override;
     virtual std::unique_ptr<Signature> getSignature() const override;
 };
 

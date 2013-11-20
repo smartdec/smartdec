@@ -34,7 +34,7 @@ QString ParseError::unicodeWhat() const noexcept {
             return tr("%1:%2: %3").arg(*line).arg(*column).arg(Exception::unicodeWhat());
         }
 
-        if (const ByteOffset *offset = boost::get_error_info<ErrorOffset>(*this)) {
+        if (const ByteSize *offset = boost::get_error_info<ErrorOffset>(*this)) {
             return tr("offset 0x%1: %2").arg(*offset, 0, 16).arg(Exception::unicodeWhat());
         }
 

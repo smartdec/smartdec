@@ -34,20 +34,14 @@
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statement.h>
 
+#include "CallHook.h"
 #include "Convention.h"
-#include "GenericCallHook.h"
 #include "Signature.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace calling {
-
-std::unique_ptr<CallHook> GenericDescriptorAnalyzer::createCallHook(const Call *call) {
-    std::unique_ptr<GenericCallHook> result(new GenericCallHook(call, this));
-    callHooks_.push_back(result.get());
-    return std::move(result);
-}
 
 std::unique_ptr<Signature> GenericDescriptorAnalyzer::getSignature() const {
     auto signature = std::make_unique<Signature>();
