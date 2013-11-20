@@ -59,9 +59,11 @@ class Hooks {
     /** Signatures of functions. */
     const Signatures &signatures_;
 
+public:
     /** Type for the calling convention detector callback. */
     typedef std::function<void(const CalleeId &)> ConventionDetector;
 
+private:
     /** Calling convention detector. */
     ConventionDetector conventionDetector_;
 
@@ -138,7 +140,7 @@ public:
      * \param call Valid pointer to a Call instance.
      * \param addr New destination address of the call.
      */
-    void setCalledAddress(const Call *call, ByteAddr addr);
+    void setCalledAddress(const Call *call, boost::optional<ByteAddr> addr);
 
     /**
      * \param calleeId Callee id.

@@ -81,10 +81,14 @@ boost::optional<ByteAddr> Hooks::getCalledAddress(const Call *call) const {
     return nc::find_optional(call2address_, call);
 }
 
-void Hooks::setCalledAddress(const Call *call, ByteAddr addr) {
+void Hooks::setCalledAddress(const Call *call, boost::optional<ByteAddr> addr) {
     assert(call != NULL);
 
-    call2address_[call] = addr;
+    if (addr) {
+        call2address_[call] = *addr;
+    } else {
+        call2address_.erase(call);
+    }
 }
 
 const Convention *Hooks::getConvention(const CalleeId &calleeId) {

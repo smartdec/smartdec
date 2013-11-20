@@ -21,6 +21,8 @@
  * along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// TODO: remove this file
+//
 #pragma once
 
 #include <nc/config.h>

@@ -173,9 +173,13 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
 
             if (hooks()) {
                 const Value *targetValue = dataflow().getValue(call->target());
+
                 if (targetValue->abstractValue().isConcrete()) {
                     hooks()->setCalledAddress(call, targetValue->abstractValue().asConcrete().value());
+                } else {
+                    hooks()->setCalledAddress(call, boost::none);
                 }
+
                 if (auto callHook = hooks()->getCallHook(call)) {
                     callHook->execute(context);
                 }
