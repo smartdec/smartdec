@@ -31,8 +31,6 @@
 #include <nc/core/ir/Statement.h>
 #include <nc/core/ir/Term.h>
 
-#include "GenericDescriptorAnalyzer.h"
-
 namespace nc {
 namespace core {
 namespace ir {
@@ -40,7 +38,6 @@ namespace calling {
 
 Argument &Argument::operator<<(const arch::Register *reg) {
     assert(reg != NULL);
-
     return *this << reg->memoryLocation();
 }
 
@@ -50,13 +47,11 @@ Convention::~Convention() {}
 
 void Convention::addReturnValue(std::unique_ptr<Term> term) {
     assert(term != NULL);
-
     returnValues_.push_back(std::move(term));
 }
 
 void Convention::addEnterStatement(std::unique_ptr<Statement> statement) {
     assert(statement != NULL);
-
     entryStatements_.push_back(std::move(statement));
 }
 

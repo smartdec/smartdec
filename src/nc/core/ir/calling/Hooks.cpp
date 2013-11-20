@@ -36,13 +36,11 @@
 #include <nc/core/ir/Statements.h>
 
 #include "Conventions.h"
-#include "DescriptorAnalyzer.h"
 #include "CallHook.h"
 #include "Convention.h"
 #include "EntryHook.h"
 #include "Signatures.h"
 #include "ReturnHook.h"
-#include "GenericDescriptorAnalyzer.h"
 
 namespace nc {
 namespace core {
@@ -99,18 +97,6 @@ const Convention *Hooks::getConvention(const CalleeId &calleeId) {
         conventionDetector_(calleeId);
         return conventions_.getConvention(calleeId);
     }
-}
-
-DescriptorAnalyzer *Hooks::getDescriptorAnalyzer(const CalleeId &calleeId) {
-    if (!calleeId) {
-        return NULL;
-    }
-    if (!nc::contains(id2analyzer_, calleeId)) {
-        if (auto convention = getConvention(calleeId)) {
-            id2analyzer_[calleeId] = std::make_unique<GenericDescriptorAnalyzer>(convention);
-        }
-    }
-    return nc::find(id2analyzer_, calleeId).get();
 }
 
 EntryHook *Hooks::getEntryHook(const Function *function) {

@@ -50,8 +50,6 @@ class Term;
 
 namespace calling {
 
-class DescriptorAnalyzer;
-
 /**
  * A set of locations where an argument can be stored.
  *

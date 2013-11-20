@@ -11,7 +11,6 @@
 #include <nc/core/ir/misc/CensusVisitor.h>
 
 #include "Hooks.h"
-#include "DescriptorAnalyzer.h"
 #include "Signatures.h"
 
 namespace nc {
@@ -23,9 +22,12 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
     auto computeSignature = [&](const CalleeId &calleeId) {
         if (calleeId) {
             if (signatures_.getSignature(calleeId) == NULL) {
+// FIXME
+#if 0
                 if (auto analyzer = hooks_.getDescriptorAnalyzer(calleeId)) {
                     signatures_.setSignature(calleeId, analyzer->getSignature());
                 }
+#endif
             }
         }
     };

@@ -45,7 +45,6 @@ namespace calling {
 class CallHook;
 class Convention;
 class Conventions;
-class DescriptorAnalyzer;
 class EntryHook;
 class ReturnHook;
 class Signatures;
@@ -68,9 +67,6 @@ class Hooks {
 
     /** Mapping from a call to its destination address. */
     boost::unordered_map<const Call *, ByteAddr> call2address_;
-
-    /** Mapping from a callee id to the associated address analyzer. */
-    boost::unordered_map<CalleeId, std::unique_ptr<DescriptorAnalyzer>> id2analyzer_; // TODO: remove
 
     /** Mapping from a function to its analyzer. */
     boost::unordered_map<std::pair<CalleeId, const Function *>, std::unique_ptr<EntryHook>> entryHooks_;
@@ -145,17 +141,6 @@ class Hooks {
      * \return Pointer to the calling convention used for calls to given address. Can be NULL.
      */
     const Convention *getConvention(const CalleeId &calleeId);
-
-    /**
-     * Returns the calling convention for the given callee id taken from
-     * the Conventions object passed to the constructor of *this object.
-     * If it is NULL, calls the detector callback and tries again.
-     *
-     * \param calleeId Callee id.
-     *
-     * \return Pointer to the associated descriptor analyzer. Can be NULL.
-     */
-    DescriptorAnalyzer *getDescriptorAnalyzer(const CalleeId &calleeId);
 
     /**
      * \param function Valid pointer to a function.
