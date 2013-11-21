@@ -5,7 +5,8 @@
 
 #include <nc/config.h>
 
-#include <memory> /* std::unique_ptr */
+#include <memory>
+#include <vector>
 
 #include <boost/unordered_map.hpp>
 
@@ -17,7 +18,6 @@ namespace nc {
 namespace core {
 namespace ir {
 
-class Function;
 class MemoryLocation;
 class Statement;
 class Term;

@@ -36,10 +36,9 @@ namespace core {
 namespace ir {
 namespace calling {
 
-Argument &Argument::operator<<(const arch::Register *reg) {
-    assert(reg != NULL);
-    return *this << reg->memoryLocation();
-}
+Argument::Argument(const core::arch::Register *reg):
+    location_(reg->memoryLocation())
+{}
 
 Convention::Convention(QString name): name_(std::move(name)) {}
 

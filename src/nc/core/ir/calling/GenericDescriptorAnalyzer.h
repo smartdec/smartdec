@@ -22,7 +22,7 @@
  */
 
 // TODO: remove this file
-//
+
 #pragma once
 
 #include <nc/config.h>

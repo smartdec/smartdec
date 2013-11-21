@@ -48,40 +48,35 @@ class Term;
 namespace calling {
 
 /**
- * A set of locations where an argument can be stored.
- *
- * For example, first argument in AMD64 calling convention can be stored in rdi, edi or di registers.
+ * Description of an argument location.
  */
 class Argument {
-    std::vector<MemoryLocation> locations_; ///< The set of memory locations where an argument can be stored.
+    /** Memory location of the argument. */
+    MemoryLocation location_;
 
-    public:
-
+public:
     /**
-     * \return The set of memory locations where an argument can be stored.
-     */
-    const std::vector<MemoryLocation> &locations() const { return locations_; }
-
-    /**
-     * Adds given memory location to the list of locations where the argument can be stored.
+     * Constructs an argument located withing given memory location.
      *
-     * \param location                  Memory location.
-     *
-     * \return                          *this.
+     * \param location Valid memory location.
      */
-    Argument &operator<<(const MemoryLocation &location) {
-        locations_.push_back(location);
-        return *this;
+    Argument(const MemoryLocation &location):
+        location_(location)
+    {
+        assert(location);
     }
 
     /**
-     * Adds memory location of given register to the list of locations where the argument can be stored.
+     * Constructs an argument located in a given register.
      *
-     * \param reg                       Valid pointer to a register.
-     *
-     * \return                          *this.
+     * \param reg Valid pointer to a register.
      */
-    Argument &operator<<(const core::arch::Register *reg);
+    Argument(const core::arch::Register *location);
+
+    /**
+     * \return Memory location of the argument.
+     */
+    const MemoryLocation &location() const { return location_; }
 };
 
 /**
