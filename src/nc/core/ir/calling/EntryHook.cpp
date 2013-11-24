@@ -60,63 +60,17 @@ EntryHook::EntryHook(const Convention *convention, const Signature *signature) {
             arguments_[location] = std::move(argument);
         }
     }
-
-    // TODO: remove
-#if 0
-    /* Precompute the set of memory locations used for passing arguments. */
-    foreach (const ArgumentGroup &group, convention->argumentGroups()) {
-        foreach (const Argument &argument, group.arguments()) {
-            possibleArgumentLocations_.insert(argument.locations().begin(), argument.locations().end());
-        }
-    }
-#endif
 }
 
 EntryHook::~EntryHook() {}
 
 void EntryHook::execute(dflow::ExecutionContext &context) {
-    // TODO: move
-#if 0
-    /*
-     * Detect all stack arguments used.
-     */
-    if (context.fixpointReached()) {
-        misc::CensusVisitor census(NULL);
-        census(context.analyzer().function());
-
-        /* Estimate memory locations of arguments. */
-        foreach (const Term *term, census.terms()) {
-            MemoryLocation memoryLocation = context.analyzer().dataflow().getMemoryLocation(term);
-
-            /*
-             * If one reads a register that has not been defined
-             * and the register can be used for passing arguments,
-             * then this register is used for passing an argument.
-             *
-             * If one reads or writes a location on the stack
-             * which lies above the call return address,
-             * then this location is used for passing an argument.
-             */
-            if (memoryLocation && term->isRead() &&
-                ((contains(possibleArgumentLocations_, memoryLocation) &&
-                  context.analyzer().dataflow().getDefinitions(term).empty()) ||
-                 (memoryLocation.domain() == MemoryDomain::STACK &&
-                  memoryLocation.addr() >= convention()->firstArgumentOffset())))
-            {
-                getArgumentTerm(memoryLocation);
-            }
-        }
-
-        argumentLocations_.clear();
-        std::transform(arguments_.begin(), arguments_.end(), std::back_inserter(argumentLocations_),
-            [](std::pair<const MemoryLocation, std::unique_ptr<Term>> &x) { return x.first; });
-    }
-#endif
-
     /**
      * Set stack pointer offset to zero and execute the term.
      */
-    context.analyzer().dataflow().getValue(stackPointer_.get())->makeStackOffset(0);
+    auto value = context.analyzer().dataflow().getValue(stackPointer_.get());
+    value->makeStackOffset(0);
+    value->setAbstractValue(dflow::AbstractValue(stackPointer_->size(), -1, -1));
     context.analyzer().execute(stackPointer_.get(), context);
 
     /*
