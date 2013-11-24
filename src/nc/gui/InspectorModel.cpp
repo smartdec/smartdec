@@ -31,7 +31,7 @@
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/likec/BinaryOperator.h>
@@ -179,7 +179,7 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
     item->addChild(tr("size = %1").arg(term->size()));
 
     if (const core::ir::Function *function = context->termToFunction()->getFunction(term)) {
-        auto dataflow = context->getDataflow(function);
+        auto dataflow = context->dataflows()->getDataflow(function);
 
         if (const core::ir::dflow::Value *value = dataflow->getValue(term)) {
             InspectorItem *valueItem = item->addChild(tr("value properties"));

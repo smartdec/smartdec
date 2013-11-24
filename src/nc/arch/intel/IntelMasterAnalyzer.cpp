@@ -35,7 +35,7 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/calling/Conventions.h>
 #include <nc/core/ir/calling/Hooks.h>
-#include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Dataflows.h>
 
 #include "IntelArchitecture.h"
 #include "IntelDataflowAnalyzer.h"
@@ -126,7 +126,10 @@ void IntelMasterAnalyzer::analyzeDataflow(core::Context &context, const core::ir
     IntelDataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.hooks())
         .analyze(context.cancellationToken());
 
-    context.setDataflow(function, std::move(dataflow));
+    if (!context.dataflows()) {
+        context.setDataflows(std::make_unique<core::ir::dflow::Dataflows>());
+    }
+    context.dataflows()->setDataflow(function, std::move(dataflow));
 }
 
 } // namespace intel

@@ -72,7 +72,7 @@ CallHook::CallHook(const Call *call, const Convention *convention, const Signatu
                     std::make_unique<BinaryOperator>(BinaryOperator::ADD,
                         std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
                         std::make_unique<Constant>(SizedValue(convention->stackPointer().size(), location.addr() / CHAR_BIT)),
-                        convention->stackPointer().size()),
+                        convention->stackPointer().size<SmallBitSize>()),
                     MemoryDomain::MEMORY,
                     location.size());
             } else {
@@ -84,7 +84,7 @@ CallHook::CallHook(const Call *call, const Convention *convention, const Signatu
         }
     } else {
         foreach (auto term, convention->returnValues()) {
-            returnValues_[signature->returnValue()] = term->clone();
+            returnValues_[term] = term->clone();
         }
     }
 

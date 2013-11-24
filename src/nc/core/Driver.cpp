@@ -88,7 +88,7 @@ void Driver::disassemble(Context &context, const image::ByteSource *source, Byte
         context.setInstructions(newInstructions);
 
         context.logToken() << tr("Disassembly completed.");
-    } catch (const CancellationException &e) {
+    } catch (const CancellationException &) {
         context.logToken() << tr("Disassembly canceled.");
     }
 }
@@ -105,7 +105,6 @@ void Driver::decompile(Context &context) {
         masterAnalyzer->createFunctions(context);
         context.cancellationToken().poll();
 
-        context.logToken() << tr("Initializing calling conventions hooks...");
         masterAnalyzer->initializeHooks(context);
         context.cancellationToken().poll();
 
@@ -117,6 +116,9 @@ void Driver::decompile(Context &context) {
 
         context.logToken() << tr("Reconstructing signatures of functions...");
         masterAnalyzer->reconstructSignatures(context);
+        context.cancellationToken().poll();
+
+        masterAnalyzer->initializeHooks(context);
         context.cancellationToken().poll();
 
         foreach (auto function, context.functions()->functions()) {

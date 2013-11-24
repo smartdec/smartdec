@@ -71,7 +71,7 @@ public:
     /**
      * \param[in] term Valid pointer to a term.
      *
-     * \return Valid pointer to the value description for this term.
+     * \return Pointer to the value description for this term. Can be NULL.
      *         If the term is being assigned to, the value description
      *         for the right hand side of the assignment is returned.
      */

@@ -158,10 +158,6 @@ CallHook *Hooks::getCallHook(const Call *call) {
     return NULL;
 }
 
-const Hooks::CalleeHooks &Hooks::getHooks(const CalleeId &calleeId) const {
-    return nc::find(calleeHooks_, calleeId);
-}
-
 } // namespace calling
 } // namespace ir
 } // namespace core

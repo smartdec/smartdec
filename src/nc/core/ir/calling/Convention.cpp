@@ -44,6 +44,24 @@ Convention::Convention(QString name): name_(std::move(name)) {}
 
 Convention::~Convention() {}
 
+bool Convention::isArgumentLocation(const MemoryLocation &memoryLocation) const {
+    if (memoryLocation.domain() == MemoryDomain::STACK &&
+        memoryLocation.addr() >= firstArgumentOffset()
+    ) {
+        return true;
+    }
+
+    foreach (const auto &group, argumentGroups()) {
+        foreach (const auto &argument, group.arguments()) {
+            if (argument.location().covers(memoryLocation)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void Convention::addReturnValue(std::unique_ptr<Term> term) {
     assert(term != NULL);
     returnValues_.push_back(std::move(term));

@@ -102,6 +102,11 @@ public:
     ~Hooks();
 
     /**
+     * \return Assigned calling conventions.
+     */
+    const Conventions &conventions() const { return conventions_; }
+
+    /**
      * Sets the function being called when a calling convention for a particular
      * callee is requested, but currently unknown. It is assumed that this function
      * will detect this convention and modify Conventions object passed to the
@@ -175,11 +180,9 @@ public:
     CallHook *getCallHook(const Call *call);
 
     /**
-     * \param calleeId Callee id.
-     *
-     * \return CalleeHooks object for the given callee id.
+     * \return Mapping from a callee id to its hooks.
      */
-    const CalleeHooks &getHooks(const CalleeId &calleeId) const;
+    const boost::unordered_map<CalleeId, CalleeHooks> &calleeHooks() const { return calleeHooks_; }
 };
 
 } // namespace calling

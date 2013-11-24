@@ -47,7 +47,7 @@
 #include <nc/core/ir/cflow/GraphBuilder.h>
 #include <nc/core/ir/cflow/StructureAnalyzer.h>
 #include <nc/core/ir/cgen/CodeGenerator.h>
-#include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
 #include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/ir/types/TypeAnalyzer.h>
@@ -149,13 +149,16 @@ void MasterAnalyzer::analyzeDataflow(Context &context, const ir::Function *funct
     ir::dflow::DataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.hooks())
         .analyze(context.cancellationToken());
 
-    context.setDataflow(function, std::move(dataflow));
+    if (!context.dataflows()) {
+        context.setDataflows(std::make_unique<ir::dflow::Dataflows>());
+    }
+    context.dataflows()->setDataflow(function, std::move(dataflow));
 }
 
 void MasterAnalyzer::reconstructSignatures(Context &context) const {
     auto signatures = std::make_unique<ir::calling::Signatures>();
 
-    ir::calling::SignatureAnalyzer(*signatures, *context.functions(), *context.hooks())
+    ir::calling::SignatureAnalyzer(*signatures, *context.dataflows(), *context.hooks())
         .analyze(context.cancellationToken());
 
     context.setSignatures(std::move(signatures));
@@ -165,7 +168,7 @@ void MasterAnalyzer::computeUsage(Context &context, const ir::Function *function
     std::unique_ptr<ir::usage::Usage> usage(new ir::usage::Usage());
 
     ir::usage::UsageAnalyzer(*usage, function,
-        *context.getDataflow(function), context.module()->architecture(),
+        *context.dataflows()->getDataflow(function), context.module()->architecture(),
         *context.getRegionGraph(function), *context.hooks(), *context.signatures())
     .analyze();
 
@@ -176,7 +179,7 @@ void MasterAnalyzer::reconstructTypes(Context &context, const ir::Function *func
     std::unique_ptr<ir::types::Types> types(new ir::types::Types());
 
     ir::types::TypeAnalyzer(
-        *types, *context.getDataflow(function), *context.getUsage(function),
+        *types, *context.dataflows()->getDataflow(function), *context.getUsage(function),
         *context.hooks(), *context.signatures())
     .analyze(function, context.cancellationToken());
 
@@ -186,7 +189,7 @@ void MasterAnalyzer::reconstructTypes(Context &context, const ir::Function *func
 void MasterAnalyzer::reconstructVariables(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
 
-    ir::vars::VariableAnalyzer analyzer(*variables, *context.getDataflow(function), context.hooks());
+    ir::vars::VariableAnalyzer analyzer(*variables, *context.dataflows()->getDataflow(function), context.hooks());
     analyzer.analyze(function);
 
     context.setVariables(function, std::move(variables));
@@ -196,7 +199,7 @@ void MasterAnalyzer::doStructuralAnalysis(Context &context, const ir::Function *
     std::unique_ptr<ir::cflow::Graph> graph(new ir::cflow::Graph());
 
     ir::cflow::GraphBuilder()(*graph, function);
-    ir::cflow::StructureAnalyzer(*graph, *context.getDataflow(function)).analyze();
+    ir::cflow::StructureAnalyzer(*graph, *context.dataflows()->getDataflow(function)).analyze();
 
     context.setRegionGraph(function, std::move(graph));
 }

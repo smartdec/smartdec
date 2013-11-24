@@ -258,6 +258,7 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
 }
 
 void UsageAnalyzer::makeUsed(const Term *term) {
+    assert(term != NULL);
     if (!usage().isUsed(term)) {
         usage().makeUsed(term);
         propagateUsage(term);

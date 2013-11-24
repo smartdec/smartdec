@@ -178,6 +178,14 @@ class Convention {
     const std::vector<ArgumentGroup> &argumentGroups() const { return argumentGroups_; }
 
     /**
+     * \param memoryLocation A memory location.
+     *
+     * \return True if the given memory location can be used for passing
+     *         arguments, false otherwise.
+     */
+    bool isArgumentLocation(const MemoryLocation &memoryLocation) const;
+
+    /**
      * \return Factories for terms where return values may be kept.
      */
     const std::vector<const Term *> &returnValues() const {

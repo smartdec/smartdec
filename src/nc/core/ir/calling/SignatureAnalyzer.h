@@ -12,7 +12,9 @@ class CancellationToken;
 namespace core {
 namespace ir {
 
-class Functions;
+namespace dflow {
+    class Dataflows;
+}
 
 namespace calling {
 
@@ -24,20 +26,20 @@ class Signatures;
  */
 class SignatureAnalyzer {
     Signatures &signatures_;
-    const Functions &functions_;
-    Hooks &hooks_;
+    const dflow::Dataflows &dataflows_;
+    const Hooks &hooks_;
 
 public:
     /**
      * Constructor.
      *
      * \param signatures An object where to store reconstructed signatures.
-     * \param functions Functions.
+     * \param dataflows Dataflows.
      * \param hooks Calls data.
      */
-    SignatureAnalyzer(Signatures &signatures, const Functions &functions, Hooks &hooks):
+    SignatureAnalyzer(Signatures &signatures, const dflow::Dataflows &dataflows, const Hooks &hooks):
         signatures_(signatures),
-        functions_(functions),
+        dataflows_(dataflows),
         hooks_(hooks)
     {}
 

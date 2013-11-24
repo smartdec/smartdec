@@ -37,7 +37,7 @@
 #include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/cflow/Graph.h>
-#include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/ir/usage/Usage.h>
@@ -82,25 +82,15 @@ void Context::setConventions(std::unique_ptr<ir::calling::Conventions> conventio
 }
 
 void Context::setHooks(std::unique_ptr<ir::calling::Hooks> hooks) {
-    assert(hooks);
-    assert(!hooks_);
     hooks_ = std::move(hooks);
 }
 
 void Context::setSignatures(std::unique_ptr<ir::calling::Signatures> signatures) {
-    assert(signatures);
-    assert(!signatures_);
     signatures_ = std::move(signatures);
 }
 
-void Context::setDataflow(const ir::Function *function, std::unique_ptr<ir::dflow::Dataflow> dataflow) {
-    assert(function);
-    assert(dataflow);
-    dataflows_[function] = std::move(dataflow);
-}
-
-const ir::dflow::Dataflow *Context::getDataflow(const ir::Function *function) const {
-    return nc::find(dataflows_, function).get();
+void Context::setDataflows(std::unique_ptr<ir::dflow::Dataflows> dataflows) {
+    dataflows_ = std::move(dataflows);
 }
 
 void Context::setUsage(const ir::Function *function, std::unique_ptr<ir::usage::Usage> usage) {

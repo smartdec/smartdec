@@ -51,7 +51,7 @@ ReturnHook::ReturnHook(const Return *ret, const Convention *convention, const Si
         }
     } else {
         foreach (auto term, convention->returnValues()) {
-            returnValues_[signature->returnValue()] = term->clone();
+            returnValues_[term] = term->clone();
         }
     }
 

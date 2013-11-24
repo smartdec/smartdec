@@ -67,7 +67,7 @@ namespace ir {
         class Graph;
     }
     namespace dflow {
-        class Dataflow;
+        class Dataflows;
     }
     namespace misc {
         class TermToFunction;
@@ -102,7 +102,7 @@ class Context: public QObject {
     std::unique_ptr<ir::calling::Conventions> conventions_; ///< Assigned calling conventions.
     std::unique_ptr<ir::calling::Hooks> hooks_; ///< Hooks of calling conventions.
     std::unique_ptr<ir::calling::Signatures> signatures_; ///< Signatures.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::dflow::Dataflow> > dataflows_; ///< Dataflow information.
+    std::unique_ptr<ir::dflow::Dataflows> dataflows_; ///< Dataflows.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::usage::Usage> > usages_; ///< Term usage information.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::types::Types> > types_; ///< Information about types.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::vars::Variables> > variables_; ///< Reconstructed variables.
@@ -220,19 +220,18 @@ public:
     const ir::misc::TermToFunction *termToFunction() const { return termToFunction_.get(); }
 
     /**
-     * Sets the dataflow information for a function.
+     * Sets the dataflows.
      *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] dataflow Dataflow information.
+     * \param[in] dataflow Dataflows.
      */
-    void setDataflow(const ir::Function *function, std::unique_ptr<ir::dflow::Dataflow> dataflow);
+    void setDataflows(std::unique_ptr<ir::dflow::Dataflows> dataflows);
 
     /**
      * \param[in] function Valid pointer to a function.
      *
-     * \return Pointer to the dataflow information for a given function. Can be NULL.
+     * \return Pointer to the dataflows.
      */
-    const ir::dflow::Dataflow *getDataflow(const ir::Function *function) const;
+    ir::dflow::Dataflows *dataflows() const { return dataflows_.get(); }
 
     /**
      * Sets the dataflow information for a function.

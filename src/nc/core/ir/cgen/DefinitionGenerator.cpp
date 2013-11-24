@@ -54,7 +54,7 @@
 #include <nc/core/ir/cflow/Dfs.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/Switch.h>
-#include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/types/Type.h>
 #include <nc/core/ir/types/Types.h>
@@ -96,7 +96,7 @@ namespace cgen {
 
 DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *function):
     DeclarationGenerator(parent, function),
-    dataflow_(parent.context().getDataflow(function)),
+    dataflow_(parent.context().dataflows()->getDataflow(function)),
     variables_(parent.context().getVariables(function)),
     usage_(parent.context().getUsage(function)),
     regionGraph_(parent.context().getRegionGraph(function)),
