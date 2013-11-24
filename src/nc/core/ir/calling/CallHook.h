@@ -33,6 +33,7 @@
 #include <nc/common/Visitor.h>
 
 #include <nc/core/ir/MemoryLocation.h>
+#include <nc/core/ir/dflow/ReachingDefinitions.h>
 
 namespace nc {
 namespace core {
@@ -67,6 +68,9 @@ class CallHook {
     /** Statement to change stack pointer by the amendment constant. */
     std::unique_ptr<Statement> cleanupStatement_;
 
+    /** Definitions reaching this hook. */
+    dflow::ReachingDefinitions reachingDefinitions_;
+
 public:
     /**
      * Class constructor.
@@ -89,6 +93,11 @@ public:
      * \param context Execution context.
      */
     void execute(dflow::ExecutionContext &context);
+
+    /**
+     * \return Definitions reaching this hook.
+     */
+    const dflow::ReachingDefinitions &reachingDefinitions() const { return reachingDefinitions_; }
 
     /**
      * \param memoryLocation Memory location.

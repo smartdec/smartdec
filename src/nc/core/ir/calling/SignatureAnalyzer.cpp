@@ -11,6 +11,7 @@
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
 
+#include "CallHook.h"
 #include "Convention.h"
 #include "Conventions.h"
 #include "Hooks.h"
@@ -58,6 +59,21 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
         std::sort(result.begin(), result.end());
         result.erase(std::unique(result.begin(), result.end()), result.end());
 
+        return result;
+    };
+
+    auto getDefinedArguments = [](const CallHook *callHook, const Convention *convention) {
+        assert(callHook);
+        assert(convention);
+
+        std::vector<MemoryLocation> result;
+        foreach (const auto &group, convention->argumentGroups()) {
+            foreach (const auto &argument, group.arguments()) {
+                if (callHook->reachingDefinitions().projected(argument.location()).empty()) {
+                    result.push_back(argument.location());
+                }
+            }
+        }
         return result;
     };
 

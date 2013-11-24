@@ -55,6 +55,7 @@
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/Switch.h>
 #include <nc/core/ir/dflow/Dataflows.h>
+#include <nc/core/ir/dflow/Uses.h>
 #include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/types/Type.h>
 #include <nc/core/ir/types/Types.h>
@@ -103,7 +104,15 @@ DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *
     definition_(NULL),
     serial_(0)
 {
+    assert(dataflow_ != NULL);
+    assert(variables_ != NULL);
+    assert(usage_ != NULL);
+    assert(regionGraph_ != NULL);
+
+    uses_ = std::make_unique<dflow::Uses>(*dataflow_);
 }
+
+DefinitionGenerator::~DefinitionGenerator() {}
 
 void DefinitionGenerator::setDefinition(likec::FunctionDefinition *definition) {
     assert(!definition_); 
@@ -1107,22 +1116,22 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const
 }
 
 bool DefinitionGenerator::isIntermediate(const Term *term) const {
-    // FIXME: adapt to new dflow
 #if 0
     if (term->isWrite()) {
-        const std::vector<const Term *> &reads = dataflow().getUses(term);
+        const auto &reads = uses_.getUses(term);
+        const Term *usedRead = NULL;
 
-        const Term *usedRead;
-
-        int usedReadsCount = 0;
         foreach (const Term *read, reads) {
             if (usage().isUsed(read)) {
-                ++usedReadsCount;
-                usedRead = read;
+                if (usedRead == NULL) {
+                    usedRead = read;
+                } else {
+                    return false;
+                }
             }
         }
 
-        if (usedReadsCount == 1 && term->assignee()) {
+        if (usedRead && term->assignee()) {
             const Term *write = term->assignee();
 
             return usedRead->statement() && write->statement() &&
@@ -1130,14 +1139,60 @@ bool DefinitionGenerator::isIntermediate(const Term *term) const {
                    usedRead->statement()->basicBlock() != NULL;
         }
         return false;
-    }
-    if (term->isRead()) {
+    } else if (term->isRead()) {
         const std::vector<const Term *> &writes = dataflow().getDefinitions(term);
         return writes.size() == 1 && isIntermediate(writes.front());
+    } else {
+        unreachable();
     }
 #endif
     return false;
 }
+
+#if 0
+const vars::Variable *DefinitionGenerator::getFirstCopy(const vars::Variable *variable) {
+    auto getSingleWrite = [this](const vars::Variable *variable) -> const Term * {
+        const Term *result = NULL;
+        foreach (const Term *term, variable->terms()) {
+            if (term->isWrite()) {
+                if (result == NULL) {
+                    result = term;
+                } else {
+                    return NULL;
+                }
+            }
+        }
+        return result;
+    };
+
+    if (auto singleWrite = getSingleWrite(variable)) {
+        if (dataflow().getMemoryLocation(singleWrite) == variable->memoryLocation()) {
+            if (singleWrite->assignee()) {
+                if (auto previousVariable = variables().getVariable(singleWrite->assignee())) {
+                    if (getSingleWrite(previousVariable)) {
+                    }
+                }
+            }
+        }
+    }
+
+    if (!singleWrite) {
+        return NULL;
+    }
+    if () {
+        return NULL;
+    }
+    if (!singleWrite->assignee()) {
+        return NULL;
+    }
+
+    auto previousVariable = ;
+
+    if (!previousVariable) {
+        return NULL;
+    }
+}
+#endif
 
 } // namespace cgen
 } // namespace ir

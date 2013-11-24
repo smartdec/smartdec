@@ -136,10 +136,27 @@ public:
     void killDefinitions(const MemoryLocation &memoryLocation);
 
     /**
+     * Computes a subset of reaching definitions defining (parts of)
+     * given memory location.
+     *
      * \param[in]  memoryLocation   Memory location.
-     * \param[out] result           Definitions of the memory locations contained in the given one.
+     * \param[out] result           Resulting reaching definitions.
      */
     void project(const MemoryLocation &memoryLocation, ReachingDefinitions &result) const;
+
+    /**
+     * \param[in]  memoryLocation   Memory location.
+     *
+     * \return A subset of reaching definitions defining (parts of)
+     * given memory location.
+     *
+     * \note Prefer using project() as it does less memory allocations.
+     */
+    ReachingDefinitions projected(const MemoryLocation &memoryLocation) const {
+        ReachingDefinitions result;
+        project(memoryLocation, result);
+        return result;
+    }
 
     /**
      * \return All defined memory locations in the domain.

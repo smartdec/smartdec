@@ -111,6 +111,9 @@ CallHook::CallHook(const Call *call, const Convention *convention, const Signatu
 CallHook::~CallHook() {}
 
 void CallHook::execute(dflow::ExecutionContext &context) {
+    /* Remember reaching definitions. */
+    reachingDefinitions_ = context.definitions();
+
     /* Execute all argument terms. */
     foreach (const auto &pair, arguments_) {
         context.analyzer().execute(pair.second.get(), context);

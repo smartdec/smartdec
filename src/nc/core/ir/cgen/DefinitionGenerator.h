@@ -57,6 +57,7 @@ namespace cflow {
 
 namespace dflow {
     class Dataflow;
+    class Uses;
 }
 
 namespace vars {
@@ -80,6 +81,7 @@ class DefinitionGenerator: public DeclarationGenerator {
     const vars::Variables *variables_; ///< Information about variables.
     const usage::Usage *usage_; ///< Information about necessity of terms for code generation.
     const cflow::Graph *regionGraph_; ///< Control flow graph after structural analysis.
+    std::unique_ptr<dflow::Uses> uses_; ///< Information about which term is used by which term.
 
     likec::FunctionDefinition *definition_; ///< Function's definition.
 
@@ -95,6 +97,11 @@ class DefinitionGenerator: public DeclarationGenerator {
      * \param[in] function Valid pointer to the function being translated.
      */
     DefinitionGenerator(CodeGenerator &parent, const Function *function);
+
+    /**
+     * Destructor.
+     */
+    ~DefinitionGenerator();
 
     /**
      * \return Context with the analyzer program.
