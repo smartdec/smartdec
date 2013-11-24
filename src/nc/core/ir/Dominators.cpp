@@ -54,6 +54,10 @@ Dominators::Dominators(const CFG &cfg) {
             }
         }
     } while (changed);
+
+    foreach (auto &pair, dominators_) {
+        std::sort(pair.second.begin(), pair.second.end());
+    }
 }
 
 } // namespace ir

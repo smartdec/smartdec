@@ -44,6 +44,22 @@ public:
         assert(nc::contains(dominators_, basicBlock));
         return nc::find(dominators_, basicBlock);
     }
+
+    /**
+     * \param dominating Valid pointer to a basic block.
+     * \param dominated Valid pointer to a basic block.
+     *
+     * \return True of dominating dominates dominated.
+     */
+    bool isDominating(const BasicBlock *dominating, const BasicBlock *dominated) const {
+        assert(dominating != NULL);
+        assert(nc::contains(dominators_, dominating));
+        assert(dominated != NULL);
+        assert(nc::contains(dominators_, dominated));
+
+        const auto &dominators = getDominators(dominated);
+        return std::binary_search(dominators.begin(), dominators.end(), dominating);
+    }
 };
 
 } // namespace ir

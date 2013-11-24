@@ -41,6 +41,8 @@
 #include <nc/core/image/Section.h>
 #endif
 #include <nc/core/ir/BasicBlock.h>
+#include <nc/core/ir/CFG.h>
+#include <nc/core/ir/Dominators.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
@@ -110,6 +112,7 @@ DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *
     assert(regionGraph_ != NULL);
 
     uses_ = std::make_unique<dflow::Uses>(*dataflow_);
+    dominators_ = std::make_unique<Dominators>(CFG(function->basicBlocks()));
 }
 
 DefinitionGenerator::~DefinitionGenerator() {}
@@ -819,12 +822,9 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
     }
 #endif
 
-    // FIXME: adapt to new dflow
-#if 0
     if (isIntermediate(term)) {
-        return makeExpression(dataflow().getDefinitions(term).front()->assignee());
+        return makeExpression(dataflow().getDefinitions(term).chunks().front().definitions().front()->assignee());
     }
-#endif
 
     switch (term->kind()) {
         case Term::INT_CONST: {
@@ -1116,6 +1116,108 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const
 }
 
 bool DefinitionGenerator::isIntermediate(const Term *term) const {
+    // TODO: needs cleanup and testing.
+
+    /*
+     * Checks that a variable has a single write defining the whole
+     * variable and returns a pointer to it. If it has no writes or more
+     * that one, NULL is returned.
+     */
+    auto getSingleDefinition = [this](const vars::Variable *variable) -> const Term * {
+        const Term *result = NULL;
+        foreach (const Term *term, variable->terms()) {
+            if (term->isWrite()) {
+                if (result == NULL) {
+                    result = term;
+                } else {
+                    return NULL;
+                }
+            }
+        }
+        if (dataflow().getMemoryLocation(result) == variable->memoryLocation()) {
+            return result;
+        } else {
+            return NULL;
+        }
+    };
+
+    /*
+     * Returns true if the write dominates the read.
+     */
+    auto isDominating = [&](const Term *write, const Term *read) {
+        assert(write);
+        assert(write->isWrite());
+        assert(read);
+        assert(read->isRead());
+
+        if (!write->statement() || !write->statement()->basicBlock()) {
+            return false;
+        }
+        if (!read->statement() || !read->statement()->basicBlock()) {
+            return false;
+        }
+        if (write->statement()->basicBlock() == read->statement()->basicBlock()) {
+            if (write->statement()->instruction() && read->statement()->instruction() &&
+                write->statement()->instruction() != read->statement()->instruction())
+            {
+                return write->statement()->instruction()->addr() < read->statement()->instruction()->addr();
+            } else {
+                const auto &statements = read->statement()->basicBlock()->statements();
+                assert(nc::contains(statements, write->statement()));
+                assert(nc::contains(statements, read->statement()));
+                return std::find(statements.begin(), statements.end(), write->statement()) <
+                       std::find(statements.begin(), statements.end(), read->statement());
+            }
+        } else {
+            return dominators_->isDominating(write->statement()->basicBlock(), read->statement()->basicBlock());
+        }
+    };
+
+    /*
+     * Returns true if the variable is always initialized before it is
+     * read. Works only for variables with a single definition. Returns
+     * false for others.
+     */
+    auto isAlwaysInitialized = [&](const vars::Variable *variable) -> bool {
+        auto definition = getSingleDefinition(variable);
+        if (!definition) {
+            return false;
+        }
+        foreach (const Term *term, variable->terms()) {
+            if (term->isRead() && usage_->isUsed(term)) {
+                if (!isDominating(definition, term)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+
+    auto variable = variables().getVariable(term);
+    if (!variable) {
+        return false;
+    }
+    if (!isAlwaysInitialized(variable)) {
+        return false;
+    }
+
+    auto definition = getSingleDefinition(variable);
+    assert(definition != NULL);
+
+    if (!definition->assignee()) {
+        return false;
+    }
+
+    auto assigneeVariable = variables().getVariable(definition->assignee());
+    if (!assigneeVariable) {
+        return false;
+    }
+    if (!isAlwaysInitialized(assigneeVariable)) {
+        return false;
+    }
+
+    return true;
+
 #if 0
     if (term->isWrite()) {
         const auto &reads = uses_.getUses(term);

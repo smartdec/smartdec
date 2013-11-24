@@ -46,6 +46,7 @@ namespace ir {
 
 class BinaryOperator;
 class BasicBlock;
+class Dominators;
 class JumpTarget;
 class Statement;
 class UnaryOperator;
@@ -82,6 +83,7 @@ class DefinitionGenerator: public DeclarationGenerator {
     const usage::Usage *usage_; ///< Information about necessity of terms for code generation.
     const cflow::Graph *regionGraph_; ///< Control flow graph after structural analysis.
     std::unique_ptr<dflow::Uses> uses_; ///< Information about which term is used by which term.
+    std::unique_ptr<Dominators> dominators_; ///< Dominator sets for the function.
 
     likec::FunctionDefinition *definition_; ///< Function's definition.
 
