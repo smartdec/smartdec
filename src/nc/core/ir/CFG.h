@@ -60,7 +60,7 @@ class CFG: public PrintableBase<CFG> {
     public:
 
     /**
-     * Constructor from a set of basic blocks.
+     * Constructs control flow graph from a set of basic blocks.
      *
      * \param[in] basicBlocks Basic blocks.
      *

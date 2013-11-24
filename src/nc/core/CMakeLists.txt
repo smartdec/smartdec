@@ -58,6 +58,8 @@ set(SOURCES
     ir/CFG.h
     ir/CommentText.cpp
     ir/CommentText.h
+    ir/Dominators.cpp
+    ir/Dominators.h
     ir/Function.cpp
     ir/Function.h
     ir/Functions.cpp
@@ -128,6 +130,8 @@ set(SOURCES
     ir/dflow/ExecutionContext.h
     ir/dflow/ReachingDefinitions.cpp
     ir/dflow/ReachingDefinitions.h
+    ir/dflow/Uses.cpp
+    ir/dflow/Uses.h
     ir/dflow/Utils.cpp
     ir/dflow/Utils.h
     ir/dflow/Value.cpp
