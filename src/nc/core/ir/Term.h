@@ -171,7 +171,7 @@ public:
      *         returns the right hand size of this assignment. Otherwise,
      *         NULL is returned.
      */
-    const Term *assignee() const;
+    const Term *source() const;
 
     /**
      * Calls visitor for term's child terms.

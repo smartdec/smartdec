@@ -38,8 +38,8 @@ Dataflow::~Dataflow() {}
 Value *Dataflow::getValue(const Term *term) {
     assert(term != NULL);
 
-    if (term->assignee()) {
-        term = term->assignee();
+    if (term->source()) {
+        term = term->source();
     }
 
     auto &result = term2value_[term];

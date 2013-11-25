@@ -823,7 +823,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
 #endif
 
     if (isIntermediate(term)) {
-        return makeExpression(dataflow().getDefinitions(term).chunks().front().definitions().front()->assignee());
+        return makeExpression(dataflow().getDefinitions(term).chunks().front().definitions().front()->source());
     }
 
     switch (term->kind()) {
@@ -1205,15 +1205,15 @@ bool DefinitionGenerator::isIntermediate(const Term *term) const {
     auto definition = getSingleDefinition(variable);
     assert(definition != NULL);
 
-    if (!definition->assignee()) {
+    if (!definition->source()) {
         return false;
     }
 
-    auto assigneeVariable = variables().getVariable(definition->assignee());
-    if (!assigneeVariable) {
+    auto sourceVariable = variables().getVariable(definition->source());
+    if (!sourceVariable) {
         return false;
     }
-    if (!isAlwaysInitialized(assigneeVariable)) {
+    if (!isAlwaysInitialized(sourceVariable)) {
         return false;
     }
 

@@ -50,8 +50,8 @@ const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
         visited.insert(term);
 
         if (term->isWrite()) {
-            if (term->assignee()) {
-                term = term->assignee();
+            if (term->source()) {
+                term = term->source();
             } else {
                 break;
             }
