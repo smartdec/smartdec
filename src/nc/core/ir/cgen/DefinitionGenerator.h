@@ -66,8 +66,8 @@ namespace vars {
     class Variables;
 }
 
-namespace usage {
-    class Usage;
+namespace liveness {
+    class Liveness;
 }
 
 namespace cgen {
@@ -79,8 +79,8 @@ class SwitchContext;
  */
 class DefinitionGenerator: public DeclarationGenerator {
     const dflow::Dataflow *dataflow_; ///< Dataflow information.
+    const liveness::Liveness *liveness_; ///< Liveness information.
     const vars::Variables *variables_; ///< Information about variables.
-    const usage::Usage *usage_; ///< Information about necessity of terms for code generation.
     const cflow::Graph *regionGraph_; ///< Control flow graph after structural analysis.
     std::unique_ptr<dflow::Uses> uses_; ///< Information about which term is used by which term.
     std::unique_ptr<Dominators> dominators_; ///< Dominator sets for the function.
@@ -121,9 +121,9 @@ class DefinitionGenerator: public DeclarationGenerator {
     const vars::Variables &variables() const { return *variables_; }
 
     /**
-     * \return Information about necessity of terms for code generation.
+     * \return Liveness information.
      */
-    const usage::Usage &usage() const { return *usage_; }
+    const liveness::Liveness &liveness() const { return *liveness_; }
 
     /**
      * \return Control flow graph after structural analysis.

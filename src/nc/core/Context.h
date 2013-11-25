@@ -75,8 +75,8 @@ namespace ir {
     namespace types {
         class Types;
     }
-    namespace usage {
-        class Usage;
+    namespace liveness {
+        class Liveness;
     }
     namespace vars {
         class Variables;
@@ -103,7 +103,7 @@ class Context: public QObject {
     std::unique_ptr<ir::calling::Hooks> hooks_; ///< Hooks of calling conventions.
     std::unique_ptr<ir::calling::Signatures> signatures_; ///< Signatures.
     std::unique_ptr<ir::dflow::Dataflows> dataflows_; ///< Dataflows.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::usage::Usage> > usages_; ///< Term usage information.
+    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::liveness::Liveness> > livenesses_; ///< Liveness information.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::types::Types> > types_; ///< Information about types.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::vars::Variables> > variables_; ///< Reconstructed variables.
     boost::unordered_map<const ir::Function *, std::unique_ptr<ir::cflow::Graph> > regionGraphs_; ///< Region graphs.
@@ -237,16 +237,16 @@ public:
      * Sets the dataflow information for a function.
      *
      * \param[in] function Valid pointer to a function.
-     * \param[in] usage Valid pointer to the usage information.
+     * \param[in] liveness Valid pointer to the liveness information.
      */
-    void setUsage(const ir::Function *function, std::unique_ptr<ir::usage::Usage> usage);
+    void setLiveness(const ir::Function *function, std::unique_ptr<ir::liveness::Liveness> liveness);
 
     /**
      * \param[in] function Valid pointer to a function.
      *
-     * \return Pointer to the usage information. Can be NULL.
+     * \return Pointer to the liveness information. Can be NULL.
      */
-    const ir::usage::Usage *getUsage(const ir::Function *function) const;
+    const ir::liveness::Liveness *getLiveness(const ir::Function *function) const;
 
     /**
      * Sets the type information for a function.

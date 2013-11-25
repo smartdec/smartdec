@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "UsageAnalyzer.h"
+#include "LivenessAnalyzer.h"
 
 #include <cassert>
 
@@ -46,14 +46,14 @@
 #include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
 
-#include "Usage.h"
+#include "Liveness.h"
 
 namespace nc {
 namespace core {
 namespace ir {
-namespace usage {
+namespace liveness {
 
-void UsageAnalyzer::analyze() {
+void LivenessAnalyzer::analyze() {
     uselessJumps_.clear();
 
     foreach (auto node, regionGraph().nodes()) {
@@ -71,14 +71,11 @@ void UsageAnalyzer::analyze() {
     misc::CensusVisitor census(&hooks());
     census(function());
 
-    foreach (const Term *term, census.terms()) {
-        usage().makeUnused(term);
-    }
     foreach (const Statement *statement, census.statements()) {
-        computeUsage(statement);
+        computeLiveness(statement);
     }
     foreach (const Term *term, census.terms()) {
-        computeUsage(term);
+        computeLiveness(term);
     }
 
     if (auto calleeId = hooks().getCalleeId(function())) {
@@ -86,7 +83,7 @@ void UsageAnalyzer::analyze() {
             if (signature->returnValue()) {
                 foreach (const Return *ret, function()->getReturns()) {
                     if (auto returnHook = hooks().getReturnHook(function(), ret)) {
-                        makeUsed(returnHook->getReturnValueTerm(signature->returnValue()));
+                        makeLive(returnHook->getReturnValueTerm(signature->returnValue()));
                     }
                 }
             }
@@ -94,7 +91,7 @@ void UsageAnalyzer::analyze() {
     }
 }
 
-void UsageAnalyzer::computeUsage(const Statement *statement) {
+void LivenessAnalyzer::computeLiveness(const Statement *statement) {
     switch (statement->kind()) {
         case Statement::COMMENT:
             break;
@@ -109,13 +106,13 @@ void UsageAnalyzer::computeUsage(const Statement *statement) {
 
             if (!std::binary_search(uselessJumps_.begin(), uselessJumps_.end(), jump)) {
                 if (jump->condition()) {
-                    makeUsed(jump->condition());
+                    makeLive(jump->condition());
                 }
                 if (jump->thenTarget().address()) {
-                    makeUsed(jump->thenTarget().address());
+                    makeLive(jump->thenTarget().address());
                 }
                 if (jump->elseTarget().address()) {
-                    makeUsed(jump->elseTarget().address());
+                    makeLive(jump->elseTarget().address());
                 }
             }
             break;
@@ -123,13 +120,13 @@ void UsageAnalyzer::computeUsage(const Statement *statement) {
         case Statement::CALL: {
             const Call *call = statement->asCall();
 
-            makeUsed(call->target());
+            makeLive(call->target());
 
             if (auto calleeId = hooks().getCalleeId(call)) {
                 if (auto signature = signatures().getSignature(calleeId)) {
                     if (auto callHook = hooks().getCallHook(call)) {
                         foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
-                            makeUsed(callHook->getArgumentTerm(memoryLocation));
+                            makeLive(callHook->getArgumentTerm(memoryLocation));
                         }
                     }
                 }
@@ -145,7 +142,7 @@ void UsageAnalyzer::computeUsage(const Statement *statement) {
     }
 }
 
-void UsageAnalyzer::computeUsage(const Term *term) {
+void LivenessAnalyzer::computeLiveness(const Term *term) {
     switch (term->kind()) {
         case Term::INT_CONST:
             break;
@@ -157,7 +154,7 @@ void UsageAnalyzer::computeUsage(const Term *term) {
             if (term->isWrite()) {
                 const MemoryLocationAccess *access = term->asMemoryLocationAccess();
                 if (architecture()->isGlobalMemory(access->memoryLocation())) {
-                    makeUsed(access);
+                    makeLive(access);
                 }
             }
             break;
@@ -166,7 +163,7 @@ void UsageAnalyzer::computeUsage(const Term *term) {
             if (term->isWrite()) {
                 const MemoryLocation &memoryLocation = dataflow().getMemoryLocation(term);
                 if (!memoryLocation || architecture()->isGlobalMemory(memoryLocation)) {
-                    makeUsed(term);
+                    makeLive(term);
                 }
             }
             break;
@@ -183,7 +180,7 @@ void UsageAnalyzer::computeUsage(const Term *term) {
     }
 }
 
-void UsageAnalyzer::propagateUsage(const Term *term) {
+void LivenessAnalyzer::propagateLiveness(const Term *term) {
     assert(term != NULL);
 
 #ifdef NC_PREFER_CONSTANTS_TO_EXPRESSIONS
@@ -203,12 +200,12 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
             if (term->isRead()) {
                 foreach (auto &chunk, dataflow().getDefinitions(term).chunks()) {
                     foreach (const Term *definition, chunk.definitions()) {
-                        makeUsed(definition);
+                        makeLive(definition);
                     }
                 }
             } else if (term->isWrite()) {
                 if (term->assignee()) {
-                    makeUsed(term->assignee());
+                    makeLive(term->assignee());
                 }
             }
             break;
@@ -217,37 +214,37 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
             if (term->isRead()) {
                 foreach (auto &chunk, dataflow().getDefinitions(term).chunks()) {
                     foreach (const Term *definition, chunk.definitions()) {
-                        makeUsed(definition);
+                        makeLive(definition);
                     }
                 }
             } else if (term->isWrite()) {
                 if (term->assignee()) {
-                    makeUsed(term->assignee());
+                    makeLive(term->assignee());
                 }
             }
 
             if (!dataflow().getMemoryLocation(term)) {
-                makeUsed(term->asDereference()->address());
+                makeLive(term->asDereference()->address());
             }
             break;
         }
         case Term::UNARY_OPERATOR: {
             const UnaryOperator *unary = term->asUnaryOperator();
-            makeUsed(unary->operand());
+            makeLive(unary->operand());
             break;
         }
         case Term::BINARY_OPERATOR: {
             const BinaryOperator *binary = term->asBinaryOperator();
-            makeUsed(binary->left());
-            makeUsed(binary->right());
+            makeLive(binary->left());
+            makeLive(binary->right());
             break;
         }
         case Term::CHOICE: {
             const Choice *choice = term->asChoice();
             if (!dataflow().getDefinitions(choice->preferredTerm()).empty()) {
-                makeUsed(choice->preferredTerm());
+                makeLive(choice->preferredTerm());
             } else {
-                makeUsed(choice->defaultTerm());
+                makeLive(choice->defaultTerm());
             }
             break;
         }
@@ -257,15 +254,15 @@ void UsageAnalyzer::propagateUsage(const Term *term) {
     }
 }
 
-void UsageAnalyzer::makeUsed(const Term *term) {
+void LivenessAnalyzer::makeLive(const Term *term) {
     assert(term != NULL);
-    if (!usage().isUsed(term)) {
-        usage().makeUsed(term);
-        propagateUsage(term);
+    if (!liveness().isLive(term)) {
+        liveness().makeLive(term);
+        propagateLiveness(term);
     }
 }
 
-} // namespace usage
+} // namespace liveness
 } // namespace ir
 } // namespace core
 } // namespace nc

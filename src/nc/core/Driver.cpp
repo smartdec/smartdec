@@ -133,7 +133,7 @@ void Driver::decompile(Context &context) {
             context.cancellationToken().poll();
 
             context.logToken() << tr("Running liveness analysis on %1...").arg(function->name());
-            masterAnalyzer->computeUsage(context, function);
+            masterAnalyzer->computeLiveness(context, function);
             context.cancellationToken().poll();
 
             context.logToken() << tr("Running type reconstruction on %1...").arg(function->name());

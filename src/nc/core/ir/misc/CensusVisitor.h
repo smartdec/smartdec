@@ -53,7 +53,7 @@ class CensusVisitor:
     public Visitor<const BasicBlock>, public Visitor<const Statement>,
     public Visitor<const Term>
 {
-    calling::Hooks *hooks_; ///< Calls data.
+    calling::Hooks *hooks_; ///< Calling conventions hooks.
 
     std::vector<const Statement *> statements_; ///< Statements visited.
     std::vector<const Term *> terms_; ///< Terms visited.
@@ -70,7 +70,7 @@ class CensusVisitor:
     CensusVisitor(calling::Hooks *hooks): hooks_(hooks), currentFunction_(NULL) {}
 
     /**
-     * \return Pointer to the calls data being used. Can be NULL.
+     * \return Pointer to the calling conventions hooks. Can be NULL.
      */
     calling::Hooks *hooks() const { return hooks_; }
 

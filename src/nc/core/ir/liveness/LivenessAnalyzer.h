@@ -54,15 +54,22 @@ namespace dflow {
     class Dataflow;
 }
 
-namespace usage {
+namespace liveness {
 
-class Usage;
+class Liveness;
 
 /**
- * Class computes the set of terms that will be used during code generation.
+ * This class computes the set of terms which compute values actually used
+ * in the high-level code to be generated.
+ *
+ * Note that this differs from the classic liveness analysis. Although a term
+ * may be live in the classic definition sense, it may be not used for
+ * generating actual code and therefore be dead in our sense. For example,
+ * stack pointer updates do not appear in the generated code, as long as
+ * offsets from the frame base can be inferred.
  */
-class UsageAnalyzer {
-    Usage &usage_; ///< Usage information.
+class LivenessAnalyzer {
+    Liveness &liveness_; ///< Liveness information.
     const Function *function_; ///< Function to be analyzed.
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Architecture.
@@ -75,20 +82,20 @@ public:
     /**
      * Constructor.
      *
-     * \param[out] usage Usage information.
-     * \param[in] function Valid pointer to a function to be analyzed.
-     * \param[in] dataflow Dataflow information.
-     * \param[in] architecture Valid pointer to the architecture.
-     * \param[in] regionGraph Reduced control-flow graph.
-     * \param[in] hooks Calls data.
-     * \param[in] signatures Signatures of functions.
+     * \param[out] liveness     Liveness information.
+     * \param[in]  function     Valid pointer to a function to be analyzed.
+     * \param[in]  dataflow     Dataflow information.
+     * \param[in]  architecture Valid pointer to the architecture.
+     * \param[in]  regionGraph  Reduced control-flow graph.
+     * \param[in]  hooks        Calls data.
+     * \param[in]  signatures   Signatures of functions.
      */
-    UsageAnalyzer(Usage &usage, const Function *function,
+    LivenessAnalyzer(Liveness &liveness, const Function *function,
         const dflow::Dataflow &dataflow, const arch::Architecture *architecture, 
         const cflow::Graph &regionGraph, calling::Hooks &hooks,
         const calling::Signatures &signatures
     ):
-        usage_(usage), function_(function), dataflow_(dataflow),
+        liveness_(liveness), function_(function), dataflow_(dataflow),
         architecture_(architecture), regionGraph_(regionGraph),
         hooks_(hooks), signatures_(signatures)
     {}
@@ -96,17 +103,17 @@ public:
     /**
      * Virtual destructor.
      */
-    virtual ~UsageAnalyzer() {}
+    virtual ~LivenessAnalyzer() {}
 
     /**
-     * \return Usage information.
+     * \return Liveness information.
      */
-    Usage &usage() { return usage_; }
+    Liveness &liveness() { return liveness_; }
 
     /**
-     * \return Usage information.
+     * \return Liveness information.
      */
-    const Usage &usage() const { return usage_; }
+    const Liveness &liveness() const { return liveness_; }
 
     /**
      * \return Valid pointer to the function being analyzed.
@@ -145,35 +152,35 @@ public:
 
 protected:
     /**
-     * Computes usage of statement's terms based on the statement's kind.
+     * Computes liveness of statement's terms based on the statement's kind.
      *
      * \param[in] statement Statement.
      */
-    virtual void computeUsage(const Statement *statement);
+    virtual void computeLiveness(const Statement *statement);
 
     /**
-     * Computes usage of a term based on the term's kind.
+     * Computes liveness of a term based on the term's kind.
      *
      * \param[in] term Term to consider.
      */
-    virtual void computeUsage(const Term *term);
+    virtual void computeLiveness(const Term *term);
 
     /**
      * Marks as used all the terms, used by given term in order to generate code.
      *
      * \param[in] term Used term.
      */
-    virtual void propagateUsage(const Term *term);
+    virtual void propagateLiveness(const Term *term);
 
     /**
-     * If given term is not used, marks it as used and propagates usage further.
+     * If given term is not used, marks it as used and propagates liveness further.
      *
      * \param[in] term Term.
      */
-    void makeUsed(const Term *term);
+    void makeLive(const Term *term);
 };
 
-} // namespace usage
+} // namespace liveness
 } // namespace ir
 } // namespace core
 } // namespace nc

@@ -38,9 +38,9 @@
 #include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/dflow/Dataflows.h>
+#include <nc/core/ir/liveness/Liveness.h>
 #include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/ir/types/Types.h>
-#include <nc/core/ir/usage/Usage.h>
 #include <nc/core/ir/vars/Variables.h>
 #include <nc/core/likec/Tree.h>
 
@@ -93,16 +93,16 @@ void Context::setDataflows(std::unique_ptr<ir::dflow::Dataflows> dataflows) {
     dataflows_ = std::move(dataflows);
 }
 
-void Context::setUsage(const ir::Function *function, std::unique_ptr<ir::usage::Usage> usage) {
+void Context::setLiveness(const ir::Function *function, std::unique_ptr<ir::liveness::Liveness> liveness) {
     assert(function);
-    assert(usage);
-    auto &entry = usages_[function];
+    assert(liveness);
+    auto &entry = livenesses_[function];
     assert(!entry);
-    entry = std::move(usage);
+    entry = std::move(liveness);
 }
 
-const ir::usage::Usage *Context::getUsage(const ir::Function *function) const {
-    return nc::find(usages_, function).get();
+const ir::liveness::Liveness *Context::getLiveness(const ir::Function *function) const {
+    return nc::find(livenesses_, function).get();
 }
 
 void Context::setTypes(const ir::Function *function, std::unique_ptr<ir::types::Types> types) {

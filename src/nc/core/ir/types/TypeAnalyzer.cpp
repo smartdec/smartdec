@@ -37,8 +37,8 @@
 #include <nc/core/ir/calling/ReturnHook.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/Value.h>
+#include <nc/core/ir/liveness/Liveness.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
-#include <nc/core/ir/usage/Usage.h>
 
 #include "Type.h"
 #include "Types.h"
@@ -92,11 +92,11 @@ void TypeAnalyzer::analyze(const Function *function, const CancellationToken &ca
     /*
      * We want to keep the natural ordering of terms in function's code.
      * Iterative process converges much faster then.
-     * This is why we don't just take usage().usedTerms_.
+     * This is why we don't just take liveness().liveTerms_.
      */
     std::vector<const Term *> terms(census.terms().begin(), census.terms().end());
     terms.erase(std::remove_if(terms.begin(), terms.end(),
-        [this](const Term *term) { return !this->usage().isUsed(term); }), terms.end());
+        [this](const Term *term) { return !this->liveness().isLive(term); }), terms.end());
 
     bool changed;
     do {

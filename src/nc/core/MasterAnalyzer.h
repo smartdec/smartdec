@@ -124,12 +124,12 @@ class MasterAnalyzer {
     virtual void reconstructSignatures(Context &context) const;
 
     /**
-     * Analyzes the usage of function's terms.
+     * Analyzes the liveness of function's terms.
      *
      * \param context Context.
      * \param function Valid pointer to the function.
      */
-    virtual void computeUsage(Context &context, const ir::Function *function) const;
+    virtual void computeLiveness(Context &context, const ir::Function *function) const;
 
     /**
      * Computes types of function's terms.

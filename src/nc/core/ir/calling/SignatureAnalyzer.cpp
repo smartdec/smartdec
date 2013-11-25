@@ -62,7 +62,7 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
         return result;
     };
 
-    auto getDefinedArguments = [](const CallHook *callHook, const Convention *convention) {
+    auto getDefinedArguments = [](CallHook *callHook, const Convention *convention) {
         assert(callHook);
         assert(convention);
 

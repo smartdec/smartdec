@@ -49,11 +49,11 @@
 #include <nc/core/ir/cgen/CodeGenerator.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
+#include <nc/core/ir/liveness/Liveness.h>
+#include <nc/core/ir/liveness/LivenessAnalyzer.h>
 #include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/ir/types/TypeAnalyzer.h>
 #include <nc/core/ir/types/Types.h>
-#include <nc/core/ir/usage/Usage.h>
-#include <nc/core/ir/usage/UsageAnalyzer.h>
 #include <nc/core/ir/vars/VariableAnalyzer.h>
 #include <nc/core/ir/vars/Variables.h>
 #include <nc/core/likec/Tree.h>
@@ -164,22 +164,22 @@ void MasterAnalyzer::reconstructSignatures(Context &context) const {
     context.setSignatures(std::move(signatures));
 }
 
-void MasterAnalyzer::computeUsage(Context &context, const ir::Function *function) const {
-    std::unique_ptr<ir::usage::Usage> usage(new ir::usage::Usage());
+void MasterAnalyzer::computeLiveness(Context &context, const ir::Function *function) const {
+    std::unique_ptr<ir::liveness::Liveness> liveness(new ir::liveness::Liveness());
 
-    ir::usage::UsageAnalyzer(*usage, function,
+    ir::liveness::LivenessAnalyzer(*liveness, function,
         *context.dataflows()->getDataflow(function), context.module()->architecture(),
         *context.getRegionGraph(function), *context.hooks(), *context.signatures())
     .analyze();
 
-    context.setUsage(function, std::move(usage));
+    context.setLiveness(function, std::move(liveness));
 }
 
 void MasterAnalyzer::reconstructTypes(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::types::Types> types(new ir::types::Types());
 
     ir::types::TypeAnalyzer(
-        *types, *context.dataflows()->getDataflow(function), *context.getUsage(function),
+        *types, *context.dataflows()->getDataflow(function), *context.getLiveness(function),
         *context.hooks(), *context.signatures())
     .analyze(function, context.cancellationToken());
 

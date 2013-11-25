@@ -50,8 +50,8 @@ namespace dflow {
     class Dataflow;
 }
 
-namespace usage {
-    class Usage;
+namespace liveness {
+    class Liveness;
 }
 
 namespace types {
@@ -64,7 +64,7 @@ class Types;
 class TypeAnalyzer {
     Types &types_; ///< Information about terms' types.
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
-    const usage::Usage &usage_; ///< Set of terms producing actual high-level code.
+    const liveness::Liveness &liveness_; ///< Set of terms producing actual high-level code.
     calling::Hooks &hooks_; ///< Calls data.
     const calling::Signatures &signatures_; ///< Signatures of functions.
 
@@ -75,14 +75,14 @@ class TypeAnalyzer {
      *
      * \param types Information about terms' types.
      * \param dataflow Dataflow information.
-     * \param usage Set of terms producing actual high-level code.
-     * \param hooks Calls data.
+     * \param liveness Liveness information.
+     * \param hooks Calling conventions hooks.
      * \param signatures Signatures of functions.
      */
-    TypeAnalyzer(Types &types, const dflow::Dataflow &dataflow, const usage::Usage &usage,
+    TypeAnalyzer(Types &types, const dflow::Dataflow &dataflow, const liveness::Liveness &liveness,
         calling::Hooks &hooks, const calling::Signatures &signatures
     ):
-        types_(types), dataflow_(dataflow), usage_(usage), hooks_(hooks), signatures_(signatures)
+        types_(types), dataflow_(dataflow), liveness_(liveness), hooks_(hooks), signatures_(signatures)
     {}
 
     /**
@@ -106,9 +106,9 @@ class TypeAnalyzer {
     const dflow::Dataflow& dataflow() const { return dataflow_; }
 
     /**
-     * \return Usage information.
+     * \return Liveness information.
      */
-    const usage::Usage& usage() const { return usage_; }
+    const liveness::Liveness& liveness() const { return liveness_; }
 
     /**
      * \return Calls data.

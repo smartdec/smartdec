@@ -59,9 +59,9 @@
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/Uses.h>
 #include <nc/core/ir/dflow/Value.h>
+#include <nc/core/ir/liveness/Liveness.h>
 #include <nc/core/ir/types/Type.h>
 #include <nc/core/ir/types/Types.h>
-#include <nc/core/ir/usage/Usage.h>
 #include <nc/core/ir/vars/Variables.h>
 #include <nc/core/likec/BinaryOperator.h>
 #include <nc/core/likec/Block.h>
@@ -100,15 +100,15 @@ namespace cgen {
 DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *function):
     DeclarationGenerator(parent, function),
     dataflow_(parent.context().dataflows()->getDataflow(function)),
+    liveness_(parent.context().getLiveness(function)),
     variables_(parent.context().getVariables(function)),
-    usage_(parent.context().getUsage(function)),
     regionGraph_(parent.context().getRegionGraph(function)),
     definition_(NULL),
     serial_(0)
 {
     assert(dataflow_ != NULL);
+    assert(liveness_ != NULL);
     assert(variables_ != NULL);
-    assert(usage_ != NULL);
     assert(regionGraph_ != NULL);
 
     uses_ = std::make_unique<dflow::Uses>(*dataflow_);
@@ -659,7 +659,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
         case Statement::ASSIGNMENT: {
             const Assignment *assignment = statement->asAssignment();
 
-            if (usage().isUsed(assignment->left()) && !isIntermediate(assignment->left())) {
+            if (liveness().isLive(assignment->left()) && !isIntermediate(assignment->left())) {
                 std::unique_ptr<likec::Expression> left(makeExpression(assignment->left()));
                 std::unique_ptr<likec::Expression> right(makeExpression(assignment->right()));
 
@@ -1150,6 +1150,7 @@ bool DefinitionGenerator::isIntermediate(const Term *term) const {
         assert(read);
         assert(read->isRead());
 
+        // TODO: handle the case when the write is done in EntryHook.
         if (!write->statement() || !write->statement()->basicBlock()) {
             return false;
         }
@@ -1184,7 +1185,7 @@ bool DefinitionGenerator::isIntermediate(const Term *term) const {
             return false;
         }
         foreach (const Term *term, variable->terms()) {
-            if (term->isRead() && usage_->isUsed(term)) {
+            if (term->isRead() && liveness_->isLive(term)) {
                 if (!isDominating(definition, term)) {
                     return false;
                 }
@@ -1217,84 +1218,7 @@ bool DefinitionGenerator::isIntermediate(const Term *term) const {
     }
 
     return true;
-
-#if 0
-    if (term->isWrite()) {
-        const auto &reads = uses_.getUses(term);
-        const Term *usedRead = NULL;
-
-        foreach (const Term *read, reads) {
-            if (usage().isUsed(read)) {
-                if (usedRead == NULL) {
-                    usedRead = read;
-                } else {
-                    return false;
-                }
-            }
-        }
-
-        if (usedRead && term->assignee()) {
-            const Term *write = term->assignee();
-
-            return usedRead->statement() && write->statement() &&
-                   usedRead->statement()->basicBlock() == write->statement()->basicBlock() &&
-                   usedRead->statement()->basicBlock() != NULL;
-        }
-        return false;
-    } else if (term->isRead()) {
-        const std::vector<const Term *> &writes = dataflow().getDefinitions(term);
-        return writes.size() == 1 && isIntermediate(writes.front());
-    } else {
-        unreachable();
-    }
-#endif
-    return false;
 }
-
-#if 0
-const vars::Variable *DefinitionGenerator::getFirstCopy(const vars::Variable *variable) {
-    auto getSingleWrite = [this](const vars::Variable *variable) -> const Term * {
-        const Term *result = NULL;
-        foreach (const Term *term, variable->terms()) {
-            if (term->isWrite()) {
-                if (result == NULL) {
-                    result = term;
-                } else {
-                    return NULL;
-                }
-            }
-        }
-        return result;
-    };
-
-    if (auto singleWrite = getSingleWrite(variable)) {
-        if (dataflow().getMemoryLocation(singleWrite) == variable->memoryLocation()) {
-            if (singleWrite->assignee()) {
-                if (auto previousVariable = variables().getVariable(singleWrite->assignee())) {
-                    if (getSingleWrite(previousVariable)) {
-                    }
-                }
-            }
-        }
-    }
-
-    if (!singleWrite) {
-        return NULL;
-    }
-    if () {
-        return NULL;
-    }
-    if (!singleWrite->assignee()) {
-        return NULL;
-    }
-
-    auto previousVariable = ;
-
-    if (!previousVariable) {
-        return NULL;
-    }
-}
-#endif
 
 } // namespace cgen
 } // namespace ir

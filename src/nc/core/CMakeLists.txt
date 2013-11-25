@@ -152,9 +152,9 @@ set(SOURCES
     ir/types/TypeAnalyzer.h
     ir/types/Types.cpp
     ir/types/Types.h
-    ir/usage/Usage.h
-    ir/usage/UsageAnalyzer.cpp
-    ir/usage/UsageAnalyzer.h
+    ir/liveness/Liveness.h
+    ir/liveness/LivenessAnalyzer.cpp
+    ir/liveness/LivenessAnalyzer.h
     ir/vars/Variable.h
     ir/vars/VariableAnalyzer.cpp
     ir/vars/VariableAnalyzer.h
