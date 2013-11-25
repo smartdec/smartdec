@@ -30,6 +30,7 @@
 namespace nc {
 namespace core {
 namespace ir {
+namespace misc {
 
 /**
  * Class representing a comment text.
@@ -53,6 +54,7 @@ class CommentText {
     void append(const QString &something);
 };
 
+} // namespace misc
 } // namespace ir
 } // namespace core
 } // namespace nc

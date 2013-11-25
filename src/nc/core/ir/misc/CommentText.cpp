@@ -27,6 +27,7 @@
 namespace nc {
 namespace core {
 namespace ir {
+namespace misc {
 
 void CommentText::append(const QString &something) {
     if (!something.trimmed().isEmpty()) {
@@ -37,6 +38,7 @@ void CommentText::append(const QString &something) {
     }
 }
 
+} // namespace misc
 } // namespace ir
 } // namespace core
 } // namespace nc

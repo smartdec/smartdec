@@ -56,8 +56,6 @@ set(SOURCES
     ir/BasicBlock.h
     ir/CFG.cpp
     ir/CFG.h
-    ir/CommentText.cpp
-    ir/CommentText.h
     ir/Dominators.cpp
     ir/Dominators.h
     ir/Function.cpp
@@ -142,6 +140,8 @@ set(SOURCES
     ir/misc/BoundsCheck.h
     ir/misc/CensusVisitor.cpp
     ir/misc/CensusVisitor.h
+    ir/misc/CommentText.cpp
+    ir/misc/CommentText.h
     ir/misc/PatternRecognition.cpp
     ir/misc/PatternRecognition.h
     ir/misc/TermToFunction.cpp

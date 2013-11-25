@@ -34,7 +34,7 @@
 #include <nc/common/Printable.h>
 #include <nc/common/Types.h>
 
-#include "CommentText.h"
+#include "nc/core/ir/misc/CommentText.h"
 
 namespace nc {
 namespace core {
@@ -53,7 +53,7 @@ class Functions: public PrintableBase<Functions>, boost::noncopyable {
     boost::unordered_map<ByteAddr, std::vector<Function *>> entry2functions_;
 
     /** Comment for the whole set of functions. */
-    CommentText comment_;
+    misc::CommentText comment_;
 
 public:
     /**
@@ -97,12 +97,12 @@ public:
     /**
      * \return Comment for this set of functions.
      */
-    CommentText &comment() { return comment_; }
+    misc::CommentText &comment() { return comment_; }
 
     /**
      * \return Comment for this set of functions.
      */
-    const CommentText &comment() const { return comment_; }
+    const misc::CommentText &comment() const { return comment_; }
 };
 
 } // namespace ir

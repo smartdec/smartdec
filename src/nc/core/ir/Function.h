@@ -35,7 +35,7 @@
 
 #include <nc/common/Printable.h>
 
-#include "CommentText.h"
+#include "nc/core/ir/misc/CommentText.h"
 
 namespace nc {
 namespace core {
@@ -51,7 +51,7 @@ class Function: public PrintableBase<Function>, boost::noncopyable {
     BasicBlock *entry_; ///< Entry basic block.
     std::vector<std::unique_ptr<BasicBlock>> basicBlocks_; ///< All basic blocks of the function.
     QString name_; ///< Name of this function.
-    CommentText comment_; ///< Comment to be displayed before a definition or declaration of this function.
+    misc::CommentText comment_; ///< Comment to be displayed before a definition or declaration of this function.
 
 public:
     /**
@@ -125,12 +125,12 @@ public:
     /**
      * \return Comment for this function.
      */
-    CommentText &comment() { return comment_; }
+    misc::CommentText &comment() { return comment_; }
 
     /**
      * \return Comment for this function.
      */
-    const CommentText &comment() const { return comment_; }
+    const misc::CommentText &comment() const { return comment_; }
 
     /**
      * \param function Valid pointer to a function.
