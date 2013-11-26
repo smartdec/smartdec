@@ -44,8 +44,8 @@ public:
      * \param[in] tree Owning tree.
      * \param[in] identifier Name of the label.
      */
-    LabelDeclaration(Tree &tree, const QString &identifier):
-        Declaration(tree, LABEL_DECLARATION, identifier), referenceCount_(0)
+    LabelDeclaration(Tree &tree, const QString identifier):
+        Declaration(tree, LABEL_DECLARATION, std::move(identifier)), referenceCount_(0)
     {}
 
     virtual LabelDeclaration *rewrite() override { return this; }

@@ -63,8 +63,8 @@ public:
      * \param[in] declarationKind Declaration kind.
      * \param[in] identifier Name of declared entity.
      */
-    Declaration(Tree &tree, int declarationKind, const QString &identifier):
-        TreeNode(tree, DECLARATION), declarationKind_(declarationKind), identifier_(identifier)
+    Declaration(Tree &tree, int declarationKind, QString identifier):
+        TreeNode(tree, DECLARATION), declarationKind_(declarationKind), identifier_(std::move(identifier))
     {}
 
     /**

@@ -823,7 +823,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
 #endif
 
     if (isIntermediate(term)) {
-        return makeExpression(dataflow().getDefinitions(term).chunks().front().definitions().front()->source());
+        return makeExpression(getSingleDefinition(variables().getVariable(term))->source());
     }
 
     switch (term->kind()) {
@@ -1115,90 +1115,139 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const
     }
 }
 
-bool DefinitionGenerator::isIntermediate(const Term *term) const {
-    // TODO: needs cleanup and testing.
+bool DefinitionGenerator::isDominating(const Term *write, const Term *read) const {
+    assert(write != NULL);
+    assert(write->isWrite());
+    assert(read != NULL);
+    assert(read->isRead());
 
-    /*
-     * Checks that a variable has a single write defining the whole
-     * variable and returns a pointer to it. If it has no writes or more
-     * that one, NULL is returned.
-     */
-    auto getSingleDefinition = [this](const vars::Variable *variable) -> const Term * {
-        const Term *result = NULL;
-        foreach (const Term *term, variable->terms()) {
-            if (term->isWrite()) {
-                if (result == NULL) {
-                    result = term;
-                } else {
-                    return NULL;
-                }
+    if (!write->statement() || !write->statement()->basicBlock()) {
+        if (auto entryHook = context().hooks()->getEntryHook(function())) {
+            /* Assignments to arguments dominate everything in the function. */
+            if (write == entryHook->getArgumentTerm(dataflow().getMemoryLocation(write))) {
+                return true;
             }
         }
-        if (dataflow().getMemoryLocation(result) == variable->memoryLocation()) {
-            return result;
+        return false;
+    }
+    if (!read->statement() || !read->statement()->basicBlock()) {
+        return false;
+    }
+    if (write->statement()->basicBlock() == read->statement()->basicBlock()) {
+        if (write->statement()->instruction() && read->statement()->instruction() &&
+            write->statement()->instruction() != read->statement()->instruction())
+        {
+            return write->statement()->instruction()->addr() < read->statement()->instruction()->addr();
         } else {
-            return NULL;
+            const auto &statements = read->statement()->basicBlock()->statements();
+            assert(nc::contains(statements, write->statement()));
+            assert(nc::contains(statements, read->statement()));
+            return std::find(statements.begin(), statements.end(), write->statement()) <
+                   std::find(statements.begin(), statements.end(), read->statement());
         }
-    };
+    } else {
+        return dominators_->isDominating(write->statement()->basicBlock(), read->statement()->basicBlock());
+    }
+}
 
-    /*
-     * Returns true if the write dominates the read.
-     */
-    auto isDominating = [&](const Term *write, const Term *read) {
-        assert(write);
-        assert(write->isWrite());
-        assert(read);
-        assert(read->isRead());
+const Term *DefinitionGenerator::getSingleDefinition(const vars::Variable *variable) const {
+    assert(variable != NULL);
 
-        // TODO: handle the case when the write is done in EntryHook.
-        if (!write->statement() || !write->statement()->basicBlock()) {
-            return false;
-        }
-        if (!read->statement() || !read->statement()->basicBlock()) {
-            return false;
-        }
-        if (write->statement()->basicBlock() == read->statement()->basicBlock()) {
-            if (write->statement()->instruction() && read->statement()->instruction() &&
-                write->statement()->instruction() != read->statement()->instruction())
-            {
-                return write->statement()->instruction()->addr() < read->statement()->instruction()->addr();
+    const Term *result = NULL;
+    foreach (const Term *term, variable->terms()) {
+        if (term->isWrite()) {
+            if (result == NULL) {
+                result = term;
             } else {
-                const auto &statements = read->statement()->basicBlock()->statements();
-                assert(nc::contains(statements, write->statement()));
-                assert(nc::contains(statements, read->statement()));
-                return std::find(statements.begin(), statements.end(), write->statement()) <
-                       std::find(statements.begin(), statements.end(), read->statement());
+                return NULL;
             }
-        } else {
-            return dominators_->isDominating(write->statement()->basicBlock(), read->statement()->basicBlock());
         }
-    };
+    }
+    return result;
+}
 
-    /*
-     * Returns true if the variable is always initialized before it is
-     * read. Works only for variables with a single definition. Returns
-     * false for others.
-     */
-    auto isAlwaysInitialized = [&](const vars::Variable *variable) -> bool {
-        auto definition = getSingleDefinition(variable);
-        if (!definition) {
-            return false;
+const Term *DefinitionGenerator::getSingleUse(const vars::Variable *variable) const {
+    assert(variable != NULL);
+
+    const Term *result = NULL;
+    foreach (const Term *term, variable->terms()) {
+        if (term->isRead() && liveness().isLive(term)) {
+            if (result == NULL) {
+                result = term;
+            } else {
+                return NULL;
+            }
         }
-        foreach (const Term *term, variable->terms()) {
-            if (term->isRead() && liveness_->isLive(term)) {
-                if (!isDominating(definition, term)) {
-                    return false;
+    }
+    return result;
+}
+
+bool DefinitionGenerator::isSingleAssignment(const vars::Variable *variable) const {
+    assert(variable != NULL);
+
+    auto definition = getSingleDefinition(variable);
+    if (!definition) {
+        return false;
+    }
+
+    foreach (const Term *term, variable->terms()) {
+        if (term->isRead() && liveness().isLive(term)) {
+            if (!isDominating(definition, term)) {
+                return false;
+            }
+            if (dataflow().getMemoryLocation(term) != variable->memoryLocation()) {
+                return false;
+            }
+        } else if (term->isWrite()) {
+            if (dataflow().getMemoryLocation(term) != variable->memoryLocation()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool DefinitionGenerator::isMovable(const Term *term) const {
+    if (auto variable = variables().getVariable(term)) {
+        return isSingleAssignment(variable);
+    } else {
+        switch (term->kind()) {
+            case Term::INT_CONST:
+                return true;
+            case Term::INTRINSIC:
+                return false;
+            case Term::UNDEFINED:
+                return true;
+            case Term::MEMORY_LOCATION_ACCESS:
+                return false;
+            case Term::DEREFERENCE:
+                return false;
+            case Term::UNARY_OPERATOR:
+                return isMovable(term->asUnaryOperator()->operand());
+            case Term::BINARY_OPERATOR: {
+                auto binary = term->asBinaryOperator();
+                return isMovable(binary->left()) && isMovable(binary->right());
+            }
+            case Term::CHOICE: {
+                auto choice = term->asChoice();
+                if (!dataflow().getDefinitions(choice->preferredTerm()).empty()) {
+                    return isMovable(choice->preferredTerm());
+                } else {
+                    return isMovable(choice->defaultTerm());
                 }
             }
+            default:
+                unreachable();
         }
-        return true;
-    };
+    }
+}
 
+bool DefinitionGenerator::isIntermediate(const Term *term) const {
     auto variable = variables().getVariable(term);
     if (!variable) {
         return false;
     }
-    if (!isAlwaysInitialized(variable)) {
+    if (!isSingleAssignment(variable)) {
         return false;
     }
 
@@ -1209,15 +1258,18 @@ bool DefinitionGenerator::isIntermediate(const Term *term) const {
         return false;
     }
 
-    auto sourceVariable = variables().getVariable(definition->source());
-    if (!sourceVariable) {
-        return false;
+    /*
+     * We do not want to substitute complex expressions multiple times.
+     */
+    if (getSingleUse(variable)) {
+        return isMovable(definition->source());
+    } else {
+        if (auto sourceVariable = variables().getVariable(definition->source())) {
+            return isSingleAssignment(sourceVariable);
+        } else {
+            return false;
+        }
     }
-    if (!isAlwaysInitialized(sourceVariable)) {
-        return false;
-    }
-
-    return true;
 }
 
 } // namespace cgen
