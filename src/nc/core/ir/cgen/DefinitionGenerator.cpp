@@ -1185,6 +1185,8 @@ const Term *DefinitionGenerator::getSingleUse(const vars::Variable *variable) co
 bool DefinitionGenerator::isSingleAssignment(const vars::Variable *variable) const {
     assert(variable != NULL);
 
+    // TODO: memoization?
+
     auto definition = getSingleDefinition(variable);
     if (!definition) {
         return false;
