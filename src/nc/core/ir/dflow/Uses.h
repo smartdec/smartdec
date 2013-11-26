@@ -5,6 +5,8 @@
 
 #include <nc/config.h>
 
+#include <vector>
+
 #include <boost/unordered_map.hpp>
 
 #include <nc/common/Range.h>
@@ -37,7 +39,7 @@ public:
     Uses(const Dataflow &dataflow);
 
     /**
-     * \param[in] term Valid pointer to a read term.
+     * \param[in] term Valid pointer to a write term.
      *
      * \return List of term's uses. If it has not been set before,
      *         an empty vector is returned.
@@ -49,7 +51,7 @@ public:
     }
 
     /**
-     * \param[in] term Valid pointer to a read term.
+     * \param[in] term Valid pointer to a write term.
      *
      * \return List of term's uses. If it has not been set before,
      *         an empty vector is returned.

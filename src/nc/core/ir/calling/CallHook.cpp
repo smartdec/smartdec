@@ -74,7 +74,7 @@ CallHook::CallHook(const Call *call, const Convention *convention, const Signatu
                         std::make_unique<Constant>(SizedValue(convention->stackPointer().size(), location.addr() / CHAR_BIT)),
                         convention->stackPointer().size<SmallBitSize>()),
                     MemoryDomain::MEMORY,
-                    location.size());
+                    location.size<SmallBitSize>());
             } else {
                 arguments_[location] = std::make_unique<MemoryLocationAccess>(location);
             }
