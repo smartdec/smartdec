@@ -27,6 +27,7 @@
 #include <cstdint> /* For std::uintptr_t. */
 
 #include <nc/common/Foreach.h>
+#include <nc/common/Range.h>
 #include <nc/common/Unreachable.h>
 #include <nc/common/make_unique.h>
 
@@ -659,19 +660,25 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
         case Statement::ASSIGNMENT: {
             const Assignment *assignment = statement->asAssignment();
 
-            if (liveness().isLive(assignment->left()) && !isIntermediate(assignment->left())) {
-                std::unique_ptr<likec::Expression> left(makeExpression(assignment->left()));
-                std::unique_ptr<likec::Expression> right(makeExpression(assignment->right()));
-
-                return std::make_unique<likec::ExpressionStatement>(tree(),
-                    std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::ASSIGN,
-                        std::move(left),
-                        std::make_unique<likec::Typecast>(tree(),
-                            parent().makeType(types().getType(assignment->left())),
-                            std::move(right))));
-            } else {
+            if (!liveness().isLive(assignment->left())) {
                 return NULL;
             }
+
+            if (auto variable = variables().getVariable(assignment->left())) {
+                if (isIntermediate(variable)) {
+                    return NULL;
+                }
+            }
+
+            std::unique_ptr<likec::Expression> left(makeExpression(assignment->left()));
+            std::unique_ptr<likec::Expression> right(makeExpression(assignment->right()));
+
+            return std::make_unique<likec::ExpressionStatement>(tree(),
+                std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::ASSIGN,
+                    std::move(left),
+                    std::make_unique<likec::Typecast>(tree(),
+                        parent().makeType(types().getType(assignment->left())),
+                        std::move(right))));
         }
         case Statement::KILL: {
             return NULL;
@@ -822,8 +829,10 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
     }
 #endif
 
-    if (isIntermediate(term)) {
-        return makeExpression(getSingleDefinition(variables().getVariable(term))->source());
+    if (auto variable = variables().getVariable(term)) {
+        if (isIntermediate(variable)) {
+            return makeExpression(getSingleDefinition(variable)->source());
+        }
     }
 
     switch (term->kind()) {
@@ -1182,34 +1191,38 @@ const Term *DefinitionGenerator::getSingleUse(const vars::Variable *variable) co
     return result;
 }
 
-bool DefinitionGenerator::isSingleAssignment(const vars::Variable *variable) const {
+bool DefinitionGenerator::isSingleAssignment(const vars::Variable *variable) {
     assert(variable != NULL);
 
-    // TODO: memoization?
+    if (auto result = nc::find_optional(isSingleAssignment_, variable)) {
+        return *result;
+    } else {
+        return isSingleAssignment_[variable] = [&]() {
+            auto definition = getSingleDefinition(variable);
+            if (!definition) {
+                return false;
+            }
 
-    auto definition = getSingleDefinition(variable);
-    if (!definition) {
-        return false;
+            foreach (const Term *term, variable->terms()) {
+                if (term->isRead() && liveness().isLive(term)) {
+                    if (!isDominating(definition, term)) {
+                        return false;
+                    }
+                    if (dataflow().getMemoryLocation(term) != variable->memoryLocation()) {
+                        return false;
+                    }
+                } else if (term->isWrite()) {
+                    if (dataflow().getMemoryLocation(term) != variable->memoryLocation()) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }();
     }
-
-    foreach (const Term *term, variable->terms()) {
-        if (term->isRead() && liveness().isLive(term)) {
-            if (!isDominating(definition, term)) {
-                return false;
-            }
-            if (dataflow().getMemoryLocation(term) != variable->memoryLocation()) {
-                return false;
-            }
-        } else if (term->isWrite()) {
-            if (dataflow().getMemoryLocation(term) != variable->memoryLocation()) {
-                return false;
-            }
-        }
-    }
-    return true;
 }
 
-bool DefinitionGenerator::isMovable(const Term *term) const {
+bool DefinitionGenerator::isMovable(const Term *term) {
     if (auto variable = variables().getVariable(term)) {
         return isSingleAssignment(variable);
     } else {
@@ -1244,33 +1257,35 @@ bool DefinitionGenerator::isMovable(const Term *term) const {
     }
 }
 
-bool DefinitionGenerator::isIntermediate(const Term *term) const {
-    auto variable = variables().getVariable(term);
-    if (!variable) {
-        return false;
-    }
-    if (!isSingleAssignment(variable)) {
-        return false;
-    }
-
-    auto definition = getSingleDefinition(variable);
-    assert(definition != NULL);
-
-    if (!definition->source()) {
-        return false;
-    }
-
-    /*
-     * We do not want to substitute complex expressions multiple times.
-     */
-    if (getSingleUse(variable)) {
-        return isMovable(definition->source());
+bool DefinitionGenerator::isIntermediate(const vars::Variable *variable) {
+    if (auto result = nc::find_optional(isIntermediate_, variable)) {
+        return *result;
     } else {
-        if (auto sourceVariable = variables().getVariable(definition->source())) {
-            return isSingleAssignment(sourceVariable);
-        } else {
-            return false;
-        }
+        return isIntermediate_[variable] = [&]() {
+            if (!isSingleAssignment(variable)) {
+                return false;
+            }
+
+            auto definition = getSingleDefinition(variable);
+            assert(definition != NULL);
+
+            if (!definition->source()) {
+                return false;
+            }
+
+            /*
+             * We do not want to substitute complex expressions multiple times.
+             */
+            if (getSingleUse(variable)) {
+                return isMovable(definition->source());
+            } else {
+                if (auto sourceVariable = variables().getVariable(definition->source())) {
+                    return isSingleAssignment(sourceVariable);
+                } else {
+                    return false;
+                }
+            }
+        }();
     }
 }
 

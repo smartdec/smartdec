@@ -89,8 +89,9 @@ class DefinitionGenerator: public DeclarationGenerator {
 
     int serial_; ///< Last serial number of local variable.
     boost::unordered_map<const ir::vars::Variable *, likec::VariableDeclaration *> variableDeclarations_; ///< Local variables of current function definition.
-
     boost::unordered_map<const BasicBlock *, likec::LabelDeclaration *> labels_; ///< Labels inside the function.
+    boost::unordered_map<const vars::Variable *, bool> isSingleAssignment_; ///< Memoized results of isSingleAssignment().
+    boost::unordered_map<const vars::Variable *, bool> isIntermediate_; ///< Memoized results of isIntermediate().
 
     public:
 
@@ -382,7 +383,7 @@ class DefinitionGenerator: public DeclarationGenerator {
      * \return True if the variable is written to only once, and all its
      *         live uses are guaranteed to read initialized value.
      */
-    bool isSingleAssignment(const vars::Variable *variable) const;
+    bool isSingleAssignment(const vars::Variable *variable);
 
     /**
      * \param[in] term Valid pointer to a term.
@@ -391,15 +392,15 @@ class DefinitionGenerator: public DeclarationGenerator {
      *         moved to a different place without its value being
      *         affected, false otherwise.
      */
-    bool isMovable(const Term *term) const;
+    bool isMovable(const Term *term);
 
     /**
-     * \param[in] term Valid pointer to a term.
+     * \param[in] variable Valid pointer to a variable.
      *
-     * \return True if this term can be replaced by its definition,
-     *         false otherwise.
+     * \return True if all occurrences of this variable can be replaced
+     *         by the expression assigned to it.
      */
-    bool isIntermediate(const Term *term) const;
+    bool isIntermediate(const vars::Variable *variable);
 };
 
 } // namespace cgen
