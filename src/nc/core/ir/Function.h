@@ -133,9 +133,7 @@ public:
     const misc::CommentText &comment() const { return comment_; }
 
     /**
-     * \param function Valid pointer to a function.
-     *
-     * \return List of all Return statements in the function.
+     * \return List of all return statements in the function.
      */
     std::vector<const Return *> getReturns() const;
 };

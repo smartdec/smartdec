@@ -110,7 +110,7 @@ T bitTruncate(T value, unsigned nbits) {
 
 /**
  * \tparam T Integer type.
- * \param[in] value Integer value with bits [nbits..\inf] cleared.
+ * \param[in] value Integer value with bits [nbits..inf] cleared.
  * \param[in] nbits Number of bits.
  *
  * \return Negation of the value of the integer represented by bits [0..nbits-1] of value.
@@ -124,7 +124,7 @@ T bitNegate(T value, unsigned nbits) {
 
 /**
  * \tparam T Integer type.
- * \param[in] value Integer value with bits [nbits..\inf] cleared.
+ * \param[in] value Integer value with bits [nbits..inf] cleared.
  * \param[in] nbits Number of bits.
  *
  * \return Absolute value of the integer represented by bits [0..nbits-1] of value.
@@ -142,7 +142,7 @@ T bitAbs(T value, unsigned nbits) {
 
 /**
  * \tparam T Integer type.
- * \param[in] value Integer value with bits [nbits..\inf] cleared.
+ * \param[in] value Integer value with bits [nbits..inf] cleared.
  * \param[in] nbits Number of bits.
  *
  * \return Signed extension of the integer represented by bits [0..nbits-1] of value.

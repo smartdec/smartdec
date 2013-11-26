@@ -71,7 +71,7 @@ public:
      *
      * \param reg Valid pointer to a register.
      */
-    Argument(const core::arch::Register *location);
+    Argument(const core::arch::Register *reg);
 
     /**
      * \return Memory location of the argument.
@@ -143,7 +143,7 @@ class Convention {
     /**
      * Constructor.
      *
-     * \paran name Name of the calling convention.
+     * \param name Name of the calling convention.
      */
     Convention(QString name);
 

@@ -174,7 +174,7 @@ public:
     /**
      * Sets the assigned calling conventions.
      *
-     * \param hooks Valid pointer to the assigned calling conventions.
+     * \param conventions Valid pointer to the assigned calling conventions.
      */
     void setConventions(std::unique_ptr<ir::calling::Conventions> conventions);
 
@@ -222,13 +222,11 @@ public:
     /**
      * Sets the dataflows.
      *
-     * \param[in] dataflow Dataflows.
+     * \param[in] dataflows Dataflows.
      */
     void setDataflows(std::unique_ptr<ir::dflow::Dataflows> dataflows);
 
     /**
-     * \param[in] function Valid pointer to a function.
-     *
      * \return Pointer to the dataflows.
      */
     ir::dflow::Dataflows *dataflows() const { return dataflows_.get(); }

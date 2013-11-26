@@ -39,7 +39,7 @@ public:
     ~OperandCache();
 
     /**
-     * \param number    Register number.
+     * \param number Register number.
      *
      * \returns Valid pointer to the operand for the given register
      *          number, or NULL if no such register number exists.
@@ -47,7 +47,7 @@ public:
     RegisterOperand *getRegisterOperand(int number) const;
 
     /**
-     * \param regizter  Valid pointer to a register.
+     * \param reg Valid pointer to a register.
      *
      * \returns Valid pointer to the operand for the given register
      *          number, or NULL if no such register exists.
