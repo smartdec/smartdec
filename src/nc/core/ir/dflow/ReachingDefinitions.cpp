@@ -49,6 +49,8 @@ void ReachingDefinitions::addDefinition(const MemoryLocation &mloc, const Term *
         });
 
     chunks_.insert(i, Chunk(mloc, std::vector<const Term *>(1, term)));
+
+    selfTest();
 }
 
 void ReachingDefinitions::killDefinitions(const MemoryLocation &mloc) {
@@ -85,6 +87,8 @@ void ReachingDefinitions::killDefinitions(const MemoryLocation &mloc) {
     }
 
     chunks_ = std::move(result);
+
+    selfTest();
 }
 
 void ReachingDefinitions::project(const MemoryLocation &mloc, ReachingDefinitions &result) const {
@@ -104,6 +108,8 @@ void ReachingDefinitions::project(const MemoryLocation &mloc, ReachingDefinition
             }
         }
     }
+
+    result.selfTest();
 }
 
 std::vector<MemoryLocation> ReachingDefinitions::getDefinedMemoryLocationsWithin(Domain domain) const {
@@ -120,6 +126,8 @@ std::vector<MemoryLocation> ReachingDefinitions::getDefinedMemoryLocationsWithin
 }
 
 void ReachingDefinitions::merge(const ReachingDefinitions &those) {
+    selfTest();
+
     std::vector<Chunk> result;
     result.reserve(chunks_.size() + those.chunks_.size());
 
@@ -185,6 +193,8 @@ void ReachingDefinitions::merge(const ReachingDefinitions &those) {
     }
 
     chunks_ = std::move(result);
+
+    selfTest();
 }
 
 void ReachingDefinitions::print(QTextStream &out) const {

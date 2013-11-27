@@ -195,16 +195,34 @@ public:
      */
     template<class T>
     void filterOut(const T &pred) {
+        selfTest();
         foreach (auto &chunk, chunks_) {
             chunk.definitions().erase(
                 std::remove_if(chunk.definitions().begin(), chunk.definitions().end(),
                     [&](const Term *term) -> bool { return pred(chunk.location(), term); }),
                 chunk.definitions().end());
         }
-        std::remove_if(chunks_.begin(), chunks_.end(), [](const Chunk &chunk) -> bool { return chunk.definitions().empty(); });
+        chunks_.erase(
+            std::remove_if(chunks_.begin(), chunks_.end(),
+                [](const Chunk &chunk) -> bool { return chunk.definitions().empty(); }),
+            chunks_.end());
+        selfTest();
     }
 
     void print(QTextStream &out) const;
+
+private:
+    /**
+     * Checks if the data structure is in a valid state.
+     * Fails with an assertion if not.
+     */
+    void selfTest() const {
+#ifndef NDEBUG
+        for (std::size_t i = 1; i < chunks_.size(); ++i) {
+            assert(chunks_[i-1].location() < chunks_[i].location());
+        }
+#endif
+    }
 };
 
 } // namespace dflow
