@@ -27,7 +27,7 @@ Dominators::Dominators(const CFG &cfg) {
         changed = false;
 
         foreach (auto basicBlock, cfg.basicBlocks()) {
-            auto predecessors = cfg.getPredecessors(basicBlock);
+            const auto &predecessors = cfg.getPredecessors(basicBlock);
 
             if (!predecessors.empty()) {
                 boost::unordered_map<const BasicBlock *, std::size_t> intersection;
@@ -36,6 +36,7 @@ Dominators::Dominators(const CFG &cfg) {
                         ++intersection[predDominator];
                     }
                 }
+                intersection.erase(basicBlock);
 
                 std::vector<const BasicBlock *> newDominators;
                 foreach (const auto &pair, intersection) {
@@ -48,7 +49,8 @@ Dominators::Dominators(const CFG &cfg) {
                 auto &oldDominators = dominators_[basicBlock];
                 /* Sets grow monotonically, so we can just compare sizes. */
                 if (newDominators.size() != oldDominators.size()) {
-                    dominators_[basicBlock] = std::move(newDominators);
+                    assert(newDominators.size() > oldDominators.size());
+                    oldDominators = std::move(newDominators);
                     changed = true;
                 }
             }
