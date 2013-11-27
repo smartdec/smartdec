@@ -40,7 +40,7 @@ Argument::Argument(const core::arch::Register *reg):
     location_(reg->memoryLocation())
 {}
 
-Convention::Convention(QString name): name_(std::move(name)) {}
+Convention::Convention(QString name): name_(std::move(name)), calleeCleanup_(false) {}
 
 Convention::~Convention() {}
 
