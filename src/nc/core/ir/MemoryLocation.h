@@ -131,6 +131,27 @@ class MemoryLocation: public boost::equality_comparable1<MemoryLocation>, public
     bool overlaps(const MemoryLocation &that) const {
         return domain() == that.domain() && that.addr() < endAddr() && addr() < that.endAddr();
     }
+
+    /**
+     * \param a A memory location.
+     * \param b A memory location in the same domain.
+     *
+     * \return The smallest memory location covering a and b.
+     */
+    static MemoryLocation merge(const MemoryLocation &a, const MemoryLocation &b) {
+        if (!a) {
+            return b;
+        } else if (!b) {
+            return a;
+        } else {
+            assert(a.domain() == b.domain());
+
+            auto addr = std::min(a.addr(), b.addr());
+            auto endAddr = std::max(a.endAddr(), b.endAddr());
+
+            return MemoryLocation(a.domain(), addr, endAddr - addr);
+        }
+    }
 };
 
 /**

@@ -18,10 +18,11 @@ class Function;
 namespace dflow {
 
 /**
- * Dataflow for each function.
+ * Dataflow information for each function.
  */
 class Dataflows {
-    boost::unordered_map<const Function *, std::unique_ptr<Dataflow>> dataflows_;
+    /** Mapping from a function to its dataflow information. */
+    boost::unordered_map<const Function *, std::unique_ptr<Dataflow>> function2dataflow_;
 
 public:
     /**
@@ -32,23 +33,28 @@ public:
      */
     const Dataflow *getDataflow(const Function *function) const {
         assert(function != NULL);
-        return nc::find(dataflows_, function).get();
+        return nc::find(function2dataflow_, function).get();
     }
 
     /**
      * Sets dataflow of a function.
      *
      * \param function Valid pointer to a function.
-     * \param dataflow Pointer to the dataflow can be NULL.
+     * \param dataflow Pointer to the dataflow. Can be NULL.
      */
     void setDataflow(const Function *function, std::unique_ptr<Dataflow> dataflow) {
         assert(function != NULL);
         if (dataflow) {
-            dataflows_[function] = std::move(dataflow);
+            function2dataflow_[function] = std::move(dataflow);
         } else {
-            dataflows_.erase(function);
+            function2dataflow_.erase(function);
         }
     }
+
+    /**
+     * \return Mapping from a function to its dataflow information.
+     */
+    const boost::unordered_map<const Function *, std::unique_ptr<Dataflow>> &function2dataflow() const { return function2dataflow_; }
 };
 
 } // namespace dflow

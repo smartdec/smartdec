@@ -58,6 +58,8 @@ namespace types {
 
 class Types;
 
+// TODO: make the analysis interprocedural
+
 /**
  * Class computing the traits of terms' types.
  */

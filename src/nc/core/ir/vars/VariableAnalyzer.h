@@ -25,8 +25,13 @@
 
 #include <nc/config.h>
 
+#include <cassert>
+
 namespace nc {
 namespace core {
+namespace arch {
+    class Architecture;
+}
 namespace ir {
 
 class Function;
@@ -36,7 +41,7 @@ namespace calling {
 }
 
 namespace dflow {
-    class Dataflow;
+    class Dataflows;
 }
 
 namespace vars {
@@ -44,25 +49,27 @@ namespace vars {
 class Variables;
 
 /**
- * Class performing reconstruction of variables.
+ * Class performing reconstruction of local and global variables.
  */
 class VariableAnalyzer {
     Variables &variables_; ///< Mapping of terms to variables.
-    const dflow::Dataflow &dataflow_; ///< Dataflow information.
-    calling::Hooks *hooks_; ///< Calls data.
+    const dflow::Dataflows &dataflows_; ///< Dataflow information for each function.
+    const arch::Architecture *architecture_; ///< Architecture.
 
     public:
 
     /**
      * Class constructor.
      *
-     * \param variables Information about variables.
-     * \param dataflow Dataflow information.
-     * \param hooks Valid pointer to the calling conventions hooks.
+     * \param[out] variables Information about variables.
+     * \param[in] dataflows Dataflow information for each function.
+     * \param[in] arch Valid pointer to the architecture.
      */
-    VariableAnalyzer(Variables &variables, const dflow::Dataflow &dataflow, calling::Hooks *hooks):
-        variables_(variables), dataflow_(dataflow), hooks_(hooks)
-    {}
+    VariableAnalyzer(Variables &variables, const dflow::Dataflows &dataflows, const arch::Architecture *architecture):
+        variables_(variables), dataflows_(dataflows), architecture_(architecture)
+    {
+        assert(architecture != NULL);
+    }
 
     /**
      * Virtual destructor.
@@ -70,24 +77,24 @@ class VariableAnalyzer {
     virtual ~VariableAnalyzer() {}
 
     /**
-     * \return Mapping of terms to variables.
+     * \return Information about reconstructed variables.
      */
     Variables &variables() { return variables_; }
 
     /**
-     * \return Mapping of terms to variables.
+     * \return Information about reconstructed variables.
      */
     const Variables &variables() const { return variables_; }
 
     /**
-     * \return Dataflow information.
+     * \return Dataflow information for each function.
      */
-    const dflow::Dataflow &dataflow() const { return dataflow_; }
+    const dflow::Dataflows &dataflows() const { return dataflows_; }
 
     /**
-     * \return Pointer to the calls data. Can be NULL.
+     * \return Valid pointer to the architecture.
      */
-    calling::Hooks *hooks() const { return hooks_; }
+    const arch::Architecture *architecture() const { return architecture_; }
 
     /**
      * Computes mapping of terms to variables.

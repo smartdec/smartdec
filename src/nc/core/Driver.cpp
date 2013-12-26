@@ -139,11 +139,11 @@ void Driver::decompile(Context &context) {
             context.logToken() << tr("Running type reconstruction on %1...").arg(function->name());
             masterAnalyzer->reconstructTypes(context, function);
             context.cancellationToken().poll();
-
-            context.logToken() << tr("Running reconstruction of variables on %1...").arg(function->name());
-            masterAnalyzer->reconstructVariables(context, function);
-            context.cancellationToken().poll();
         }
+
+        context.logToken() << tr("Running reconstruction of variables...");
+        masterAnalyzer->reconstructVariables(context);
+        context.cancellationToken().poll();
 
         context.logToken() << tr("Generating AST...");
         masterAnalyzer->generateTree(context);

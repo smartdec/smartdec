@@ -117,16 +117,8 @@ const ir::types::Types *Context::getTypes(const ir::Function *function) const {
     return nc::find(types_, function).get();
 }
 
-void Context::setVariables(const ir::Function *function, std::unique_ptr<ir::vars::Variables> variables) {
-    assert(function);
-    assert(variables);
-    auto &entry = variables_[function];
-    assert(!entry);
-    entry = std::move(variables);
-}
-
-const ir::vars::Variables *Context::getVariables(const ir::Function *function) const {
-    return nc::find(variables_, function).get();
+void Context::setVariables(std::unique_ptr<ir::vars::Variables> variables) {
+    variables_ = std::move(variables);
 }
 
 void Context::setRegionGraph(const ir::Function *function, std::unique_ptr<ir::cflow::Graph> graph) {

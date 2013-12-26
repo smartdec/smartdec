@@ -186,14 +186,6 @@ void MasterAnalyzer::reconstructTypes(Context &context, const ir::Function *func
     context.setTypes(function, std::move(types));
 }
 
-void MasterAnalyzer::reconstructVariables(Context &context, const ir::Function *function) const {
-    std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
-
-    ir::vars::VariableAnalyzer(*variables, *context.dataflows()->getDataflow(function), context.hooks()).analyze();
-
-    context.setVariables(function, std::move(variables));
-}
-
 void MasterAnalyzer::doStructuralAnalysis(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::cflow::Graph> graph(new ir::cflow::Graph());
 
@@ -201,6 +193,14 @@ void MasterAnalyzer::doStructuralAnalysis(Context &context, const ir::Function *
     ir::cflow::StructureAnalyzer(*graph, *context.dataflows()->getDataflow(function)).analyze();
 
     context.setRegionGraph(function, std::move(graph));
+}
+
+void MasterAnalyzer::reconstructVariables(Context &context) const {
+    std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
+
+    ir::vars::VariableAnalyzer(*variables, *context.dataflows(), context.module()->architecture()).analyze();
+
+    context.setVariables(std::move(variables));
 }
 
 void MasterAnalyzer::generateTree(Context &context) const {

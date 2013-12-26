@@ -103,10 +103,10 @@ class Context: public QObject {
     std::unique_ptr<ir::calling::Hooks> hooks_; ///< Hooks of calling conventions.
     std::unique_ptr<ir::calling::Signatures> signatures_; ///< Signatures.
     std::unique_ptr<ir::dflow::Dataflows> dataflows_; ///< Dataflows.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::liveness::Liveness> > livenesses_; ///< Liveness information.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::types::Types> > types_; ///< Information about types.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::vars::Variables> > variables_; ///< Reconstructed variables.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::cflow::Graph> > regionGraphs_; ///< Region graphs.
+    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::liveness::Liveness>> livenesses_; ///< Liveness information.
+    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::types::Types>> types_; ///< Information about types.
+    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::cflow::Graph>> regionGraphs_; ///< Region graphs.
+    std::unique_ptr<ir::vars::Variables> variables_; ///< Reconstructed variables.
     std::unique_ptr<likec::Tree> tree_; ///< Representation of LikeC program.
     std::unique_ptr<ir::misc::TermToFunction> termToFunction_; ///< Term to function mapping.
     LogToken logToken_; ///< Log token.
@@ -262,21 +262,6 @@ public:
     const ir::types::Types *getTypes(const ir::Function *function) const;
 
     /**
-     * Sets the information about variables for a function.
-     *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] variables Valid pointer to the information about variables.
-     */
-    void setVariables(const ir::Function *function, std::unique_ptr<ir::vars::Variables> variables);
-
-    /**
-     * \param[in] function Valid pointer to a function.
-     *
-     * \return Pointer to the information about variables for a given function. Can be NULL.
-     */
-    const ir::vars::Variables *getVariables(const ir::Function *function) const;
-
-    /**
      * Sets the region graph for a function.
      *
      * \param[in] function Valid pointer to a function.
@@ -290,6 +275,20 @@ public:
      * \return Valid pointer to the region graph of the given function.
      */
     const ir::cflow::Graph *getRegionGraph(const ir::Function *function) const;
+
+    /**
+     * Sets the information about variables for a function.
+     *
+     * \param[in] variables Valid pointer to the information about reconstructed variables.
+     */
+    void setVariables(std::unique_ptr<ir::vars::Variables> variables);
+
+    /**
+     * \param[in] function Valid pointer to a function.
+     *
+     * \return Pointer to the information about variables for a given function. Can be NULL.
+     */
+    const ir::vars::Variables *variables() const { return variables_.get(); }
 
     /**
      * Sets the LikeC tree.

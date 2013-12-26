@@ -102,7 +102,7 @@ DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *
     DeclarationGenerator(parent, function),
     dataflow_(parent.context().dataflows()->getDataflow(function)),
     liveness_(parent.context().getLiveness(function)),
-    variables_(parent.context().getVariables(function)),
+    variables_(parent.context().variables()), // TODO: move to CodeGenerator
     regionGraph_(parent.context().getRegionGraph(function)),
     definition_(NULL),
     serial_(0)

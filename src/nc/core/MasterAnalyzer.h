@@ -140,20 +140,19 @@ class MasterAnalyzer {
     virtual void reconstructTypes(Context &context, const ir::Function *function) const;
 
     /**
-     * Reconstructs variables of the function.
-     *
-     * \param context Context.
-     * \param function Valid pointer to the function.
-     */
-    virtual void reconstructVariables(Context &context, const ir::Function *function) const;
-
-    /**
      * Does structural analysis of the function.
      *
      * \param context Context.
      * \param function Valid pointer to the function.
      */
     virtual void doStructuralAnalysis(Context &context, const ir::Function *function) const;
+
+    /**
+     * Reconstructs local and global variables.
+     *
+     * \param context Context.
+     */
+    virtual void reconstructVariables(Context &context) const;
 
     /**
      * Generates LikeC tree for the context.

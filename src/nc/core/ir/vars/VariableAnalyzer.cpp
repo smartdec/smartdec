@@ -30,8 +30,10 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
+#include <nc/core/arch/Architecture.h>
 #include <nc/core/ir/Term.h>
 #include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Dataflows.h>
 
 #include "Variables.h"
 
@@ -48,68 +50,97 @@ class TermSet: public DisjointSet<TermSet> {};
 } // anonymous namespace
 
 void VariableAnalyzer::analyze() {
-    boost::unordered_map<const Term *, std::unique_ptr<TermSet>> term2set;
+    std::vector<std::pair<MemoryLocation, const Term *>> globalMemoryAccesses;
 
     /*
-     * Make a set for each read or write term which has a memory location.
+     * Reconstruct local variables.
      */
-    foreach (const auto &termAndLocation, dataflow().term2location()) {
-        const auto &term = termAndLocation.first;
-        const auto &location = termAndLocation.second;
+    foreach (const auto &functionAndDataflow, dataflows().function2dataflow()) {
+        const auto &dataflow = *functionAndDataflow.second;
 
-        if ((term->isRead() || term->isWrite()) && location) {
-            term2set[term] = std::make_unique<TermSet>();
-        }
-    }
+        boost::unordered_map<const Term *, std::unique_ptr<TermSet>> term2set;
 
-    /*
-     * Join sets of definitions and uses.
-     */
-    foreach (auto &pair, term2set) {
-        auto term = pair.first;
+        /*
+         * Make a set for each read or write term which has a memory location.
+         */
+        foreach (const auto &termAndLocation, dataflow.term2location()) {
+            const auto &term = termAndLocation.first;
+            const auto &location = termAndLocation.second;
 
-        if (term->isRead()) {
-            auto termSet = pair.second.get();
-
-            foreach (const auto &chunk, dataflow().getDefinitions(term).chunks()) {
-                foreach (const Term *def, chunk.definitions()) {
-                    assert(dataflow().getMemoryLocation(term).overlaps(dataflow().getMemoryLocation(def)));
-                    termSet->unionSet(term2set[def].get());
+            if ((term->isRead() || term->isWrite()) && location) {
+                if (architecture()->isGlobalMemory(location)) {
+                    globalMemoryAccesses.emplace_back(location, term);
+                } else {
+                    term2set[term] = std::make_unique<TermSet>();
                 }
             }
         }
-    }
 
-    boost::unordered_map<TermSet *, std::vector<const Term *>> set2terms;
+        /*
+         * Join sets of definitions and uses.
+         */
+        foreach (auto &pair, term2set) {
+            auto term = pair.first;
 
-    /*
-     * Compute the terms belonging to each set.
-     */
-    foreach (auto &pair, term2set) {
-        set2terms[pair.second->findSet()].push_back(pair.first);
-    }
+            if (term->isRead()) {
+                auto termSet = pair.second.get();
 
-    /*
-     * Create variables.
-     */
-    foreach (auto &pair, set2terms) {
-        auto &terms = pair.second;
-
-        auto merge = [](const MemoryLocation &a, const MemoryLocation &b) -> MemoryLocation {
-            if (!a) {
-                return b;
-            } else {
-                assert(a.domain() == b.domain());
-                auto addr = std::min(a.addr(), b.addr());
-                auto endAddr = std::max(a.endAddr(), b.endAddr());
-                return MemoryLocation(a.domain(), addr, endAddr - addr);
+                foreach (const auto &chunk, dataflow.getDefinitions(term).chunks()) {
+                    foreach (const Term *def, chunk.definitions()) {
+                        assert(dataflow.getMemoryLocation(term).overlaps(dataflow.getMemoryLocation(def)));
+                        termSet->unionSet(term2set[def].get());
+                    }
+                }
             }
-        };
+        }
 
-        auto memoryLocation = std::accumulate(terms.begin(), terms.end(), MemoryLocation(),
-            [&](const MemoryLocation &a, const Term *term) { return merge(a, dataflow().getMemoryLocation(term)); });
+        /*
+         * Compute the terms belonging to each set.
+         */
+        boost::unordered_map<TermSet *, std::vector<const Term *>> set2terms;
+        foreach (auto &pair, term2set) {
+            set2terms[pair.second->findSet()].push_back(pair.first);
+        }
 
-        variables().addVariable(std::make_unique<Variable>(memoryLocation, std::move(terms)));
+        /*
+         * Create local variables.
+         */
+        foreach (auto &pair, set2terms) {
+            auto &terms = pair.second;
+
+            auto variableLocation = std::accumulate(terms.begin(), terms.end(), MemoryLocation(),
+                [&](const MemoryLocation &a, const Term *term) {
+                    return MemoryLocation::merge(a, dataflow.getMemoryLocation(term));
+                });
+
+            variables().addVariable(std::make_unique<Variable>(variableLocation, std::move(terms)));
+        }
+    }
+
+    /*
+     * Reconstruct global variables.
+     */
+    std::sort(globalMemoryAccesses.begin(), globalMemoryAccesses.end(),
+        [](const std::pair<MemoryLocation, const Term *> &a, const std::pair<MemoryLocation, const Term *> &b) {
+            return a.first < b.first;
+        });
+
+    MemoryLocation variableLocation;
+    std::vector<const Term *> terms;
+
+    foreach (const auto &locationAndTerm, globalMemoryAccesses) {
+        if (variableLocation && !variableLocation.overlaps(locationAndTerm.first)) {
+            variables().addVariable(std::make_unique<Variable>(variableLocation, terms));
+            variableLocation = MemoryLocation();
+            terms.clear();
+        }
+
+        terms.push_back(locationAndTerm.second);
+        variableLocation = MemoryLocation::merge(variableLocation, locationAndTerm.first);
+    }
+
+    if (variableLocation) {
+        variables().addVariable(std::make_unique<Variable>(variableLocation, std::move(terms)));
     }
 }
 
