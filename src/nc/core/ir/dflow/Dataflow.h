@@ -109,14 +109,14 @@ public:
     }
 
     /**
-     * \return Mapping from a term to its reaching definitions.
+     * \return Mapping from a term to its memory location.
      */
-    boost::unordered_map<const Term *, ReachingDefinitions> &term2definitions() { return term2definitions_; }
+    boost::unordered_map<const Term *, MemoryLocation> &term2location() { return term2location_; };
 
     /**
-     * \return Mapping from a term to its reaching definitions.
+     * \return Mapping from a term to its memory location.
      */
-    const boost::unordered_map<const Term *, ReachingDefinitions> &term2definitions() const { return term2definitions_; }
+    const boost::unordered_map<const Term *, MemoryLocation> &term2location() const { return term2location_; };
 
     /**
      * \param[in] term Valid pointer to a read term.
@@ -139,6 +139,16 @@ public:
         assert(term->isRead());
         return nc::find(term2definitions_, term);
     }
+
+    /**
+     * \return Mapping from a term to its reaching definitions.
+     */
+    boost::unordered_map<const Term *, ReachingDefinitions> &term2definitions() { return term2definitions_; }
+
+    /**
+     * \return Mapping from a term to its reaching definitions.
+     */
+    const boost::unordered_map<const Term *, ReachingDefinitions> &term2definitions() const { return term2definitions_; }
 };
 
 } // namespace dflow

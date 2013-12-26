@@ -189,8 +189,7 @@ void MasterAnalyzer::reconstructTypes(Context &context, const ir::Function *func
 void MasterAnalyzer::reconstructVariables(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
 
-    ir::vars::VariableAnalyzer analyzer(*variables, *context.dataflows()->getDataflow(function), context.hooks());
-    analyzer.analyze(function);
+    ir::vars::VariableAnalyzer(*variables, *context.dataflows()->getDataflow(function), context.hooks()).analyze();
 
     context.setVariables(function, std::move(variables));
 }

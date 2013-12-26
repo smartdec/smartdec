@@ -32,7 +32,6 @@
 
 #include <nc/core/ir/Term.h>
 #include <nc/core/ir/dflow/Dataflow.h>
-#include <nc/core/ir/misc/CensusVisitor.h>
 
 #include "Variables.h"
 
@@ -48,17 +47,17 @@ class TermSet: public DisjointSet<TermSet> {};
 
 } // anonymous namespace
 
-void VariableAnalyzer::analyze(const Function *function) {
-    ir::misc::CensusVisitor census(hooks());
-    census(function);
-
+void VariableAnalyzer::analyze() {
     boost::unordered_map<const Term *, std::unique_ptr<TermSet>> term2set;
 
     /*
      * Make a set for each read or write term which has a memory location.
      */
-    foreach (const Term *term, census.terms()) {
-        if ((term->isRead() || term->isWrite()) && dataflow().getMemoryLocation(term)) {
+    foreach (const auto &termAndLocation, dataflow().term2location()) {
+        const auto &term = termAndLocation.first;
+        const auto &location = termAndLocation.second;
+
+        if ((term->isRead() || term->isWrite()) && location) {
             term2set[term] = std::make_unique<TermSet>();
         }
     }

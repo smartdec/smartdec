@@ -90,11 +90,9 @@ class VariableAnalyzer {
     calling::Hooks *hooks() const { return hooks_; }
 
     /**
-     * Computes mapping of terms to variables for the given function.
-     *
-     * \param[in] function Function to analyze.
+     * Computes mapping of terms to variables.
      */
-    virtual void analyze(const Function *function);
+    virtual void analyze();
 };
 
 } // namespace vars
