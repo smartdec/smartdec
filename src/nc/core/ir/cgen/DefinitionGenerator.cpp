@@ -407,7 +407,7 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
                 addLabels(basicBlock, block, switchContext);
 
                 for (std::size_t i = 0, size = basicBlock->statements().size() - 1; i < size; ++i) {
-                    /* We do not care about breakBB and other: we will not create gotos. */
+                    /* We do not care about breakBB and others: we will not create gotos. */
                     if (auto likecStatement = makeStatement(basicBlock->statements()[i], NULL, NULL, NULL)) {
                         block->addStatement(std::move(likecStatement));
                     }

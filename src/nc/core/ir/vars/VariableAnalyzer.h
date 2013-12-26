@@ -58,7 +58,7 @@ class VariableAnalyzer {
      *
      * \param variables Information about variables.
      * \param dataflow Dataflow information.
-     * \param hooks Valid pointer to the calls data.
+     * \param hooks Valid pointer to the calling conventions hooks.
      */
     VariableAnalyzer(Variables &variables, const dflow::Dataflow &dataflow, calling::Hooks *hooks):
         variables_(variables), dataflow_(dataflow), hooks_(hooks)
