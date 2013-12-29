@@ -49,16 +49,14 @@ namespace core {
 namespace ir {
 namespace cgen {
 
-void CodeGenerator::makeCompilationUnit(const CancellationToken &canceled) {
-    ir::Functions *functions = context().functions();
-
-    tree().setPointerSize(context().module()->architecture()->bitness());
+void CodeGenerator::makeCompilationUnit() {
+    tree().setPointerSize(module().architecture()->bitness());
     tree().setRoot(std::make_unique<likec::CompilationUnit>(tree()));
-    tree().root()->setComment(functions->comment().text());
+    tree().root()->setComment(functions().comment().text());
 
-    foreach (const Function *function, functions->functions()) {
+    foreach (const Function *function, functions().list()) {
         makeFunctionDefinition(function);
-        canceled.poll();
+        cancellationToken().poll();
     }
 
     tree().rewriteRoot();
@@ -165,9 +163,9 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const M
 
         if (memoryLocation.domain() == MemoryDomain::MEMORY) {
             ByteAddr addr = memoryLocation.addr() / CHAR_BIT;
-            comment = context().module()->getName(addr);
+            comment = module().getName(addr);
             if (!comment.isEmpty()) {
-                name = likec::Tree::cleanName(context().module()->getName(addr));
+                name = likec::Tree::cleanName(module().getName(addr));
                 if (name == comment) {
                     comment = QString();
                 }
@@ -176,14 +174,14 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const M
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
         if (name.isEmpty()) {
-            if (const arch::Register *reg = context().module()->architecture()->registers()->getRegister(memoryLocation)) {
+            if (const arch::Register *reg = module().architecture()->registers()->getRegister(memoryLocation)) {
                 name = reg->lowercaseName();
             }
         }
 #endif
 
         if (name.isEmpty()) {
-            name = QString("g%1").arg(++serial_);
+            name = QString("g%1").arg(memoryLocation.addr() / CHAR_BIT, 0, 16);
         }
 
         auto declaration = std::make_unique<likec::VariableDeclaration>(tree(), name, makeType(type));
@@ -211,15 +209,17 @@ likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(const Functio
 }
 
 // TODO: make this function succeed even when there are no Function objects associated with the address.
-likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(ByteAddr addr) {
-    foreach (const Function *function, context().functions()->getFunctionsAtAddress(addr)) {
-        return makeFunctionDeclaration(function);
+likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(const calling::CalleeId &calleeId) {
+    if (calleeId.entryAddress()) {
+        foreach (const Function *function, functions().getFunctionsAtAddress(*calleeId.entryAddress())) {
+            return makeFunctionDeclaration(function);
+        }
     }
     return NULL;
 }
 
 likec::FunctionDefinition *CodeGenerator::makeFunctionDefinition(const Function *function) {
-    DefinitionGenerator generator(*this, function);
+    DefinitionGenerator generator(*this, function, cancellationToken());
 
     tree().root()->addDeclaration(generator.createDefinition());
     setFunctionDeclaration(function, generator.definition());

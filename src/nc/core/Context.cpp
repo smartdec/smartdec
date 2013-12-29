@@ -36,9 +36,9 @@
 #include <nc/core/ir/calling/Conventions.h>
 #include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/calling/Signatures.h>
-#include <nc/core/ir/cflow/Graph.h>
+#include <nc/core/ir/cflow/Graphs.h>
 #include <nc/core/ir/dflow/Dataflows.h>
-#include <nc/core/ir/liveness/Liveness.h>
+#include <nc/core/ir/liveness/Livenesses.h>
 #include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/ir/vars/Variables.h>
@@ -55,25 +55,19 @@ Context::Context():
 Context::~Context() {}
 
 void Context::setModule(const std::shared_ptr<Module> &module) {
-    assert(module);
     module_ = module;
 }
 
 void Context::setInstructions(const std::shared_ptr<const arch::Instructions> &instructions) {
-    assert(instructions);
     instructions_ = instructions;
     Q_EMIT instructionsChanged();
 }
 
 void Context::setProgram(std::unique_ptr<ir::Program> program) {
-    assert(program);
-    assert(!program_);
     program_ = std::move(program);
 }
 
 void Context::setFunctions(std::unique_ptr<ir::Functions> functions) {
-    assert(functions);
-    assert(!functions_);
     functions_ = std::move(functions);
 }
 
@@ -93,56 +87,28 @@ void Context::setDataflows(std::unique_ptr<ir::dflow::Dataflows> dataflows) {
     dataflows_ = std::move(dataflows);
 }
 
-void Context::setLiveness(const ir::Function *function, std::unique_ptr<ir::liveness::Liveness> liveness) {
-    assert(function);
-    assert(liveness);
-    auto &entry = livenesses_[function];
-    assert(!entry);
-    entry = std::move(liveness);
-}
-
-const ir::liveness::Liveness *Context::getLiveness(const ir::Function *function) const {
-    return nc::find(livenesses_, function).get();
-}
-
-void Context::setTypes(const ir::Function *function, std::unique_ptr<ir::types::Types> types) {
-    assert(function);
-    assert(types);
-    auto &entry = types_[function];
-    assert(!entry);
-    entry = std::move(types);
-}
-
-const ir::types::Types *Context::getTypes(const ir::Function *function) const {
-    return nc::find(types_, function).get();
-}
-
 void Context::setVariables(std::unique_ptr<ir::vars::Variables> variables) {
     variables_ = std::move(variables);
 }
 
-void Context::setRegionGraph(const ir::Function *function, std::unique_ptr<ir::cflow::Graph> graph) {
-    assert(function);
-    assert(graph);
-    auto &entry = regionGraphs_[function];
-    assert(!entry);
-    entry = std::move(graph);
+void Context::setLivenesses(std::unique_ptr<ir::liveness::Livenesses> livenesses) {
+    livenesses_ = std::move(livenesses);
 }
 
-const ir::cflow::Graph *Context::getRegionGraph(const ir::Function *function) const {
-    return nc::find(regionGraphs_, function).get();
+void Context::setGraphs(std::unique_ptr<ir::cflow::Graphs> graphs) {
+    graphs_ = std::move(graphs);
+}
+
+void Context::setTypes(std::unique_ptr<ir::types::Types> types) {
+    types_ = std::move(types);
 }
 
 void Context::setTree(std::unique_ptr<likec::Tree> tree) {
-    assert(tree);
-    assert(!tree_);
     tree_ = std::move(tree);
     Q_EMIT treeChanged();
 }
 
 void Context::setTermToFunction(std::unique_ptr<ir::misc::TermToFunction> termToFunction) {
-    assert(termToFunction);
-    assert(!termToFunction_);
     termToFunction_ = std::move(termToFunction);
 }
 

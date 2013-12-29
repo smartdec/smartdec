@@ -50,6 +50,7 @@ class Return;
 class Function: public PrintableBase<Function>, boost::noncopyable {
     BasicBlock *entry_; ///< Entry basic block.
     std::vector<std::unique_ptr<BasicBlock>> basicBlocks_; ///< All basic blocks of the function.
+    // TODO: remove from here
     QString name_; ///< Name of this function.
     misc::CommentText comment_; ///< Comment to be displayed before a definition or declaration of this function.
 

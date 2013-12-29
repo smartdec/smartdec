@@ -77,7 +77,17 @@ class CensusVisitor:
     /**
      * \return Statements visited.
      */
+    std::vector<const Statement *> &statements() { return statements_; }
+
+    /**
+     * \return Statements visited.
+     */
     const std::vector<const Statement *> &statements() const { return statements_; }
+
+    /**
+     * \return Terms visited.
+     */
+    std::vector<const Term *> &terms() { return terms_; }
 
     /**
      * \return Terms visited.

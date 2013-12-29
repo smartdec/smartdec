@@ -38,7 +38,7 @@ class IntelMasterAnalyzer: public core::MasterAnalyzer {
 
     virtual void detectCallingConvention(core::Context &context, const core::ir::calling::CalleeId &id) const override;
 
-    virtual void analyzeDataflow(core::Context &context, const core::ir::Function *function) const override;
+    virtual void dataflowAnalysis(core::Context &context, const core::ir::Function *function) const override;
 };
 
 } // namespace intel

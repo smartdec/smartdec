@@ -43,7 +43,7 @@ namespace ir {
 class Function;
 
 /**
- * Collection of functions in intermediate representation.
+ * Functions in intermediate representation.
  */
 class Functions: public PrintableBase<Functions>, boost::noncopyable {
     /** The functions. */
@@ -67,9 +67,9 @@ public:
     ~Functions();
 
     /**
-     * \return Intermediate representations of functions.
+     * \return List of functions in intermediate representation.
      */
-    const std::vector<Function *> &functions() const {
+    const std::vector<Function *> &list() const {
         return reinterpret_cast<const std::vector<Function *> &>(functions_);
     }
 

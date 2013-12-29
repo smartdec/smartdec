@@ -43,13 +43,13 @@
 #include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/calling/SignatureAnalyzer.h>
 #include <nc/core/ir/calling/Signatures.h>
-#include <nc/core/ir/cflow/Graph.h>
+#include <nc/core/ir/cflow/Graphs.h>
 #include <nc/core/ir/cflow/GraphBuilder.h>
 #include <nc/core/ir/cflow/StructureAnalyzer.h>
 #include <nc/core/ir/cgen/CodeGenerator.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
-#include <nc/core/ir/liveness/Liveness.h>
+#include <nc/core/ir/liveness/Livenesses.h>
 #include <nc/core/ir/liveness/LivenessAnalyzer.h>
 #include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/ir/types/TypeAnalyzer.h>
@@ -71,20 +71,24 @@ namespace core {
 MasterAnalyzer::~MasterAnalyzer() {}
 
 void MasterAnalyzer::createProgram(Context &context) const {
+    context.logToken() << tr("Creating intermediate representation of the program.");
+
     std::unique_ptr<ir::Program> program(new ir::Program());
 
-    core::arch::irgen::IRGenerator generator(context.module().get(), context.instructions().get(), program.get());
-    generator.generate(context.cancellationToken());
+    core::arch::irgen::IRGenerator(context.module().get(), context.instructions().get(), program.get())
+        .generate(context.cancellationToken());
 
     context.setProgram(std::move(program));
 }
 
 void MasterAnalyzer::createFunctions(Context &context) const {
-    std::unique_ptr<ir::Functions> functions(new ir::Functions);
-    ir::FunctionsGenerator generator;
-    generator.makeFunctions(*context.program(), *functions);
+    context.logToken() << tr("Creating functions.");
 
-    foreach (ir::Function *function, functions->functions()) {
+    std::unique_ptr<ir::Functions> functions(new ir::Functions);
+
+    ir::FunctionsGenerator().makeFunctions(*context.program(), *functions);
+
+    foreach (ir::Function *function, functions->list()) {
         pickFunctionName(context, function);
     }
 
@@ -93,7 +97,7 @@ void MasterAnalyzer::createFunctions(Context &context) const {
 
 void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) const {
     /* If the function has an entry, and the entry has an address... */
-    if (function->entry()&& function->entry()->address()) {
+    if (function->entry() && function->entry()->address()) {
         QString name = context.module()->getName(*function->entry()->address());
 
         if (!name.isEmpty()) {
@@ -120,7 +124,13 @@ void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) 
     }
 }
 
-void MasterAnalyzer::initializeHooks(Context &context) const {
+void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::calling::CalleeId &/*descriptor*/) const {
+    /* Nothing to do. */
+}
+
+void MasterAnalyzer::dataflowAnalysis(Context &context) const {
+    context.logToken() << tr("Dataflow analysis.");
+
     if (!context.signatures()) {
         context.setSignatures(std::make_unique<ir::calling::Signatures>());
     }
@@ -132,30 +142,29 @@ void MasterAnalyzer::initializeHooks(Context &context) const {
     context.hooks()->setConventionDetector([this, &context](const ir::calling::CalleeId &calleeId) {
         this->detectCallingConvention(context, calleeId);
     });
+
+    context.setDataflows(std::make_unique<ir::dflow::Dataflows>());
+
+    foreach (auto function, context.functions()->list()) {
+        dataflowAnalysis(context, function);
+        context.cancellationToken().poll();
+    }
 }
 
-void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::calling::CalleeId &/*descriptor*/) const {
-    /* Nothing to do. */
-}
+void MasterAnalyzer::dataflowAnalysis(Context &context, const ir::Function *function) const {
+    context.logToken() << tr("Dataflow analysis of %1.").arg(function->name());
 
-void MasterAnalyzer::computeTermToFunctionMapping(Context &context) const {
-    context.setTermToFunction(std::unique_ptr<ir::misc::TermToFunction>(
-        new ir::misc::TermToFunction(context.functions(), context.hooks())));
-}
-
-void MasterAnalyzer::analyzeDataflow(Context &context, const ir::Function *function) const {
     std::unique_ptr<ir::dflow::Dataflow> dataflow(new ir::dflow::Dataflow());
 
     ir::dflow::DataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.hooks())
         .analyze(context.cancellationToken());
 
-    if (!context.dataflows()) {
-        context.setDataflows(std::make_unique<ir::dflow::Dataflows>());
-    }
-    context.dataflows()->setDataflow(function, std::move(dataflow));
+    context.dataflows()->emplace(function, std::move(dataflow));
 }
 
 void MasterAnalyzer::reconstructSignatures(Context &context) const {
+    context.logToken() << tr("Reconstructing function signatures.");
+
     auto signatures = std::make_unique<ir::calling::Signatures>();
 
     ir::calling::SignatureAnalyzer(*signatures, *context.dataflows(), *context.hooks())
@@ -164,38 +173,9 @@ void MasterAnalyzer::reconstructSignatures(Context &context) const {
     context.setSignatures(std::move(signatures));
 }
 
-void MasterAnalyzer::computeLiveness(Context &context, const ir::Function *function) const {
-    std::unique_ptr<ir::liveness::Liveness> liveness(new ir::liveness::Liveness());
-
-    ir::liveness::LivenessAnalyzer(*liveness, function,
-        *context.dataflows()->getDataflow(function), context.module()->architecture(),
-        *context.getRegionGraph(function), *context.hooks(), *context.signatures())
-    .analyze();
-
-    context.setLiveness(function, std::move(liveness));
-}
-
-void MasterAnalyzer::reconstructTypes(Context &context, const ir::Function *function) const {
-    std::unique_ptr<ir::types::Types> types(new ir::types::Types());
-
-    ir::types::TypeAnalyzer(
-        *types, *context.dataflows()->getDataflow(function), *context.getLiveness(function),
-        *context.hooks(), *context.signatures())
-    .analyze(function, context.cancellationToken());
-
-    context.setTypes(function, std::move(types));
-}
-
-void MasterAnalyzer::doStructuralAnalysis(Context &context, const ir::Function *function) const {
-    std::unique_ptr<ir::cflow::Graph> graph(new ir::cflow::Graph());
-
-    ir::cflow::GraphBuilder()(*graph, function);
-    ir::cflow::StructureAnalyzer(*graph, *context.dataflows()->getDataflow(function)).analyze();
-
-    context.setRegionGraph(function, std::move(graph));
-}
-
 void MasterAnalyzer::reconstructVariables(Context &context) const {
+    context.logToken() << tr("Reconstructing variables.");
+
     std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
 
     ir::vars::VariableAnalyzer(*variables, *context.dataflows(), context.module()->architecture()).analyze();
@@ -203,17 +183,81 @@ void MasterAnalyzer::reconstructVariables(Context &context) const {
     context.setVariables(std::move(variables));
 }
 
+void MasterAnalyzer::livenessAnalysis(Context &context) const {
+    context.logToken() << tr("Liveness analysis.");
+
+    context.setLivenesses(std::make_unique<ir::liveness::Livenesses>());
+
+    foreach (const ir::Function *function, context.functions()->list()) {
+        livenessAnalysis(context, function);
+    }
+}
+
+void MasterAnalyzer::livenessAnalysis(Context &context, const ir::Function *function) const {
+    context.logToken() << tr("Liveness analysis of %1.").arg(function->name());
+
+    std::unique_ptr<ir::liveness::Liveness> liveness(new ir::liveness::Liveness());
+
+    ir::liveness::LivenessAnalyzer(*liveness, function,
+        *context.dataflows()->at(function), context.module()->architecture(),
+        *context.graphs()->at(function), *context.hooks(), *context.signatures())
+    .analyze();
+
+    context.livenesses()->emplace(function, std::move(liveness));
+}
+
+void MasterAnalyzer::reconstructTypes(Context &context) const {
+    context.logToken() << tr("Reconstructing types.");
+
+    std::unique_ptr<ir::types::Types> types(new ir::types::Types());
+
+    ir::types::TypeAnalyzer(
+        *types, *context.functions(), *context.dataflows(), *context.variables(),
+        *context.livenesses(), *context.hooks(), *context.signatures())
+    .analyze(context.cancellationToken());
+
+    context.setTypes(std::move(types));
+}
+
+void MasterAnalyzer::structuralAnalysis(Context &context) const {
+    context.logToken() << tr("Structural analysis.");
+
+    context.setGraphs(std::make_unique<ir::cflow::Graphs>());
+
+    foreach (auto function, context.functions()->list()) {
+        structuralAnalysis(context, function);
+        context.cancellationToken().poll();
+    }
+}
+
+void MasterAnalyzer::structuralAnalysis(Context &context, const ir::Function *function) const {
+    context.logToken() << tr("Structural analysis of %1.").arg(function->name());
+
+    std::unique_ptr<ir::cflow::Graph> graph(new ir::cflow::Graph());
+
+    ir::cflow::GraphBuilder()(*graph, function);
+    ir::cflow::StructureAnalyzer(*graph, *context.dataflows()->at(function)).analyze();
+
+    context.graphs()->emplace(function, std::move(graph));
+}
+
 void MasterAnalyzer::generateTree(Context &context) const {
+    context.logToken() << tr("Generating AST.");
+
     std::unique_ptr<nc::core::likec::Tree> tree(new nc::core::likec::Tree());
 
-    ir::cgen::CodeGenerator generator(context, *tree);
-    generator.makeCompilationUnit(context.cancellationToken());
+    ir::cgen::CodeGenerator(*tree, *context.module(), *context.functions(), *context.hooks(),
+        *context.signatures(), *context.dataflows(), *context.variables(), *context.graphs(),
+        *context.livenesses(), *context.types(), context.cancellationToken())
+        .makeCompilationUnit();
 
     context.setTree(std::move(tree));
 }
 
 #ifdef NC_TREE_CHECKS
 void MasterAnalyzer::checkTree(Context &context) const {
+    context.logToken() << tr("Checking AST.");
+
     class TreeVisitor: public Visitor<likec::TreeNode> {
         boost::unordered_set<const ir::Statement *> statements_;
         boost::unordered_set<const ir::Term *> terms_;
@@ -249,7 +293,7 @@ void MasterAnalyzer::checkTree(Context &context) const {
     };
 
     ir::misc::CensusVisitor visitor(context.hooks());
-    foreach (const ir::Function *function, context.functions()->functions()) {
+    foreach (const ir::Function *function, context.functions()->list()) {
         visitor(function);
     }
 
@@ -257,6 +301,57 @@ void MasterAnalyzer::checkTree(Context &context) const {
     checker(context.tree()->root());
 }
 #endif
+
+void MasterAnalyzer::computeTermToFunctionMapping(Context &context) const {
+    context.logToken() << tr("Computing term to function mapping.");
+
+    context.setTermToFunction(std::unique_ptr<ir::misc::TermToFunction>(
+        new ir::misc::TermToFunction(context.functions(), context.hooks())));
+}
+
+void MasterAnalyzer::decompile(Context &context) const {
+    context.logToken() << tr("Decompiling.");
+
+    createProgram(context);
+    context.cancellationToken().poll();
+
+    createFunctions(context);
+    context.cancellationToken().poll();
+
+    dataflowAnalysis(context);
+    context.cancellationToken().poll();
+
+    reconstructSignatures(context);
+    context.cancellationToken().poll();
+
+    dataflowAnalysis(context);
+    context.cancellationToken().poll();
+
+    reconstructVariables(context);
+    context.cancellationToken().poll();
+
+    structuralAnalysis(context);
+    context.cancellationToken().poll();
+
+    livenessAnalysis(context);
+    context.cancellationToken().poll();
+
+    reconstructTypes(context);
+    context.cancellationToken().poll();
+
+    generateTree(context);
+    context.cancellationToken().poll();
+
+#ifdef NC_TREE_CHECKS
+    checkTree(context);
+    context.cancellationToken().poll();
+#endif
+
+    computeTermToFunctionMapping(context);
+    context.cancellationToken().poll();
+
+    context.logToken() << tr("Decompilation completed.");
+}
 
 } // namespace core
 } // namespace nc

@@ -54,19 +54,19 @@ namespace ir {
 namespace liveness {
 
 void LivenessAnalyzer::analyze() {
-    uselessJumps_.clear();
+    deadJumps_.clear();
 
     foreach (auto node, regionGraph().nodes()) {
         if (auto region = node->as<cflow::Region>()) {
             if (auto witch = region->as<cflow::Switch>()) {
                 if (witch->boundsCheckNode()) {
-                    uselessJumps_.push_back(witch->boundsCheckNode()->basicBlock()->getJump());
+                    deadJumps_.push_back(witch->boundsCheckNode()->basicBlock()->getJump());
                 }
             }
         }
     }
 
-    std::sort(uselessJumps_.begin(), uselessJumps_.end());
+    std::sort(deadJumps_.begin(), deadJumps_.end());
 
     misc::CensusVisitor census(&hooks());
     census(function());
@@ -104,7 +104,7 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
         case Statement::JUMP: {
             const Jump *jump = statement->asJump();
 
-            if (!std::binary_search(uselessJumps_.begin(), uselessJumps_.end(), jump)) {
+            if (!std::binary_search(deadJumps_.begin(), deadJumps_.end(), jump)) {
                 if (jump->condition()) {
                     makeLive(jump->condition());
                 }

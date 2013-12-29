@@ -55,12 +55,12 @@
 #include <nc/core/ir/calling/ReturnHook.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Dfs.h>
-#include <nc/core/ir/cflow/Graph.h>
+#include <nc/core/ir/cflow/Graphs.h>
 #include <nc/core/ir/cflow/Switch.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/Uses.h>
 #include <nc/core/ir/dflow/Value.h>
-#include <nc/core/ir/liveness/Liveness.h>
+#include <nc/core/ir/liveness/Livenesses.h>
 #include <nc/core/ir/types/Type.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/ir/vars/Variables.h>
@@ -98,23 +98,16 @@ namespace core {
 namespace ir {
 namespace cgen {
 
-DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *function):
+DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *function, const CancellationToken &canceled):
     DeclarationGenerator(parent, function),
-    dataflow_(parent.context().dataflows()->getDataflow(function)),
-    liveness_(parent.context().getLiveness(function)),
-    variables_(parent.context().variables()), // TODO: move to CodeGenerator
-    regionGraph_(parent.context().getRegionGraph(function)),
+    dataflow_(*parent.dataflows().at(function)),
+    graph_(*parent.graphs().at(function)),
+    liveness_(*parent.livenesses().at(function)),
+    uses_(std::make_unique<dflow::Uses>(dataflow_)),
+    dominators_(std::make_unique<Dominators>(CFG(function->basicBlocks()), canceled)),
     definition_(NULL),
     serial_(0)
-{
-    assert(dataflow_ != NULL);
-    assert(liveness_ != NULL);
-    assert(variables_ != NULL);
-    assert(regionGraph_ != NULL);
-
-    uses_ = std::make_unique<dflow::Uses>(*dataflow_);
-    dominators_ = std::make_unique<Dominators>(CFG(function->basicBlocks()));
-}
+{}
 
 DefinitionGenerator::~DefinitionGenerator() {}
 
@@ -133,7 +126,7 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     setDefinition(functionDefinition.get());
 
     if (signature()) {
-        if (auto entryHook = context().hooks()->getEntryHook(function())) {
+        if (auto entryHook = parent().hooks().getEntryHook(function())) {
             foreach (const MemoryLocation &memoryLocation, signature()->arguments()) {
                 makeArgumentDeclaration(entryHook->getArgumentTerm(memoryLocation));
             }
@@ -142,7 +135,7 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
 
     parent().setFunctionDeclaration(function(), functionDefinition.get());
 
-    if (calling::EntryHook *entryHook = context().hooks()->getEntryHook(function())) {
+    if (calling::EntryHook *entryHook = parent().hooks().getEntryHook(function())) {
         foreach (const ir::Statement *statement, entryHook->entryStatements()) {
             if (auto likecStatement = makeStatement(statement, NULL, NULL, NULL)) {
                 definition()->block()->addStatement(std::move(likecStatement));
@@ -151,13 +144,13 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     }
 
     SwitchContext switchContext;
-    makeStatements(regionGraph().root(), definition()->block(), NULL, NULL, NULL, switchContext);
+    makeStatements(graph().root(), definition()->block(), NULL, NULL, NULL, switchContext);
 
     return functionDefinition;
 }
 
 likec::ArgumentDeclaration *DefinitionGenerator::makeArgumentDeclaration(const Term *term) {
-    likec::VariableDeclaration *&variableDeclaration = variableDeclarations_[variables().getVariable(term)];
+    likec::VariableDeclaration *&variableDeclaration = variableDeclarations_[parent().variables().getVariable(term)];
     assert(!variableDeclaration);
 
     likec::ArgumentDeclaration *result = DeclarationGenerator::makeArgumentDeclaration(term);
@@ -171,7 +164,7 @@ const likec::Type *DefinitionGenerator::makeLocalVariableType(const vars::Variab
 
     foreach (auto term, variable->terms()) {
         if (dataflow().getMemoryLocation(term) == variable->memoryLocation()) {
-            return parent().makeType(types().getType(term));
+            return parent().makeType(parent().types().getType(term));
         }
     }
 
@@ -185,7 +178,7 @@ QString DefinitionGenerator::makeLocalVariableName(const vars::Variable *variabl
     foreach (auto term, variable->terms()) {
         if (const MemoryLocationAccess *access = term->asMemoryLocationAccess()) {
             if (access->memoryLocation() == variable->memoryLocation()) {
-                if (auto reg = context().module()->architecture()->registers()->getRegister(access->memoryLocation())) {
+                if (auto reg = parent().module().architecture()->registers()->getRegister(access->memoryLocation())) {
                     basename = reg->lowercaseName();
                     if (basename.isEmpty() || basename[basename.size() - 1].isDigit()) {
                         basename.push_back('_');
@@ -664,7 +657,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                 return NULL;
             }
 
-            if (auto variable = variables().getVariable(assignment->left())) {
+            if (auto variable = parent().variables().getVariable(assignment->left())) {
                 if (isIntermediate(variable)) {
                     return NULL;
                 }
@@ -677,7 +670,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                 std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::ASSIGN,
                     std::move(left),
                     std::make_unique<likec::Typecast>(tree(),
-                        parent().makeType(types().getType(assignment->left())),
+                        parent().makeType(parent().types().getType(assignment->left())),
                         std::move(right))));
         }
         case Statement::KILL: {
@@ -709,9 +702,10 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             std::unique_ptr<likec::Expression> target;
 
-            const dflow::Value *targetValue = dataflow().getValue(call->target());
-            if (targetValue->abstractValue().isConcrete()) {
-                if (auto functionDeclaration = parent().makeFunctionDeclaration(targetValue->abstractValue().asConcrete().value())) {
+            auto calleeId = parent().hooks().getCalleeId(call);
+
+            if (calleeId) {
+                if (auto functionDeclaration = parent().makeFunctionDeclaration(calleeId)) {
                     target = std::make_unique<likec::FunctionIdentifier>(tree(), functionDeclaration);
                     target->setTerm(call->target());
                 }
@@ -723,9 +717,9 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             auto callOperator = std::make_unique<likec::CallOperator>(tree(), std::move(target));
 
-            if (auto calleeId = parent().context().hooks()->getCalleeId(call)) {
-                if (auto signature = parent().context().signatures()->getSignature(calleeId)) {
-                    if (auto callHook = context().hooks()->getCallHook(call)) {
+            if (calleeId) {
+                if (auto signature = parent().signatures().getSignature(calleeId)) {
+                    if (auto callHook = parent().hooks().getCallHook(call)) {
                         foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
                             callOperator->addArgument(makeExpression(callHook->getArgumentTerm(memoryLocation)));
                         }
@@ -738,7 +732,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                                     likec::BinaryOperator::ASSIGN,
                                     makeExpression(returnValueTerm),
                                     std::make_unique<likec::Typecast>(tree(),
-                                        parent().makeType(types().getType(returnValueTerm)),
+                                        parent().makeType(parent().types().getType(returnValueTerm)),
                                         std::move(callOperator))));
                         }
                     }
@@ -750,7 +744,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
         case Statement::RETURN: {
             if (signature()) {
                 if (signature()->returnValue()) {
-                    if (auto returnHook = context().hooks()->getReturnHook(function(), statement->asReturn())) {
+                    if (auto returnHook = parent().hooks().getReturnHook(function(), statement->asReturn())) {
                         return std::make_unique<likec::Return>(
                             tree(),
                             makeExpression(returnHook->getReturnValueTerm(signature()->returnValue())));
@@ -829,9 +823,11 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
     }
 #endif
 
-    if (auto variable = variables().getVariable(term)) {
+    if (auto variable = parent().variables().getVariable(term)) {
         if (isIntermediate(variable)) {
             return makeExpression(getSingleDefinition(variable)->source());
+        } else {
+            return makeVariableAccess(term);
         }
     }
 
@@ -846,21 +842,20 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
             return std::make_unique<likec::CallOperator>(tree(), std::make_unique<likec::String>(tree(), "undefined"));
         }
         case Term::MEMORY_LOCATION_ACCESS: {
-            auto access = term->asMemoryLocationAccess();
-            return makeVariableAccess(access, access->memoryLocation());
+            assert(!"The term must belong to a variable.");
+            return NULL;
         }
         case Term::DEREFERENCE: {
+            assert(!dataflow().getMemoryLocation(term) && "The term must belong to a variable.");
+
             auto dereference = term->asDereference();
-            if (auto &memoryLocation = dataflow().getMemoryLocation(term)) {
-                return makeVariableAccess(dereference, memoryLocation);
-            } else {
-                auto type = types().getType(dereference);
-                auto addressType = types().getType(dereference->address());
-                return std::make_unique<likec::UnaryOperator>(tree(), likec::UnaryOperator::DEREFERENCE,
-                    std::make_unique<likec::Typecast>(tree(),
-                        tree().makePointerType(addressType->size(), parent().makeType(type)),
-                        makeExpression(dereference->address())));
-            }
+            auto type = parent().types().getType(dereference);
+            auto addressType = parent().types().getType(dereference->address());
+
+            return std::make_unique<likec::UnaryOperator>(tree(), likec::UnaryOperator::DEREFERENCE,
+                std::make_unique<likec::Typecast>(tree(),
+                    tree().makePointerType(addressType->size(), parent().makeType(type)),
+                    makeExpression(dereference->address())));
         }
         case Term::UNARY_OPERATOR: {
             return doMakeExpression(term->asUnaryOperator());
@@ -888,13 +883,13 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const U
 
     switch (unary->operatorKind()) {
         case UnaryOperator::NOT: {
-            const types::Type *operandType = types().getType(unary->operand());
+            const types::Type *operandType = parent().types().getType(unary->operand());
             return std::make_unique<likec::UnaryOperator>(tree(), likec::UnaryOperator::BITWISE_NOT,
                 std::make_unique<likec::Typecast>(tree(),
                     tree().makeIntegerType(operandType->size(), operandType->isUnsigned()), std::move(operand)));
         }
         case UnaryOperator::NEGATION: {
-            const types::Type *operandType = types().getType(unary->operand());
+            const types::Type *operandType = parent().types().getType(unary->operand());
             return std::make_unique<likec::UnaryOperator>(tree(), likec::UnaryOperator::NEGATION,
                 std::make_unique<likec::Typecast>(tree(),
                     tree().makeIntegerType(operandType->size(), operandType->isUnsigned()), std::move(operand)));
@@ -912,7 +907,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const U
                     tree().makeIntegerType(unary->operand()->size(), true), std::move(operand)));
         }
         case UnaryOperator::TRUNCATE: {
-            const types::Type *type = types().getType(unary);
+            const types::Type *type = parent().types().getType(unary);
             return std::make_unique<likec::Typecast>(tree(), parent().makeType(type), std::move(operand));
         }
         default:
@@ -922,8 +917,8 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const U
 }
 
 std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const BinaryOperator *binary) {
-    const types::Type *leftType = types().getType(binary->left());
-    const types::Type *rightType = types().getType(binary->right());
+    const types::Type *leftType = parent().types().getType(binary->left());
+    const types::Type *rightType = parent().types().getType(binary->right());
 
     std::unique_ptr<likec::Expression> left(makeExpression(binary->left()));
     std::unique_ptr<likec::Expression> right(makeExpression(binary->right()));
@@ -1026,7 +1021,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const B
 }
 
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term *term, const SizedValue &value) {
-    const types::Type *type = types().getType(term);
+    const types::Type *type = parent().types().getType(term);
 
 #ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
     if (type->pointee() && type->pointee()->size() == 1) {
@@ -1039,7 +1034,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
             return true;
         };
 
-        foreach (auto section, parent().context().module()->image()->sections()) {
+        foreach (auto section, parent().module().image()->sections()) {
             if (section->isAllocated() && section->containsAddress(value.value())) {
                 QString string = image::Reader(section).readAsciizString(value.value(), 1024);
 
@@ -1074,16 +1069,18 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
         ));
 }
 
-std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const Term *term, const MemoryLocation &termLocation) {
+std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const Term *term) {
     assert(term != NULL);
-    assert(termLocation);
-    assert(termLocation == dataflow().getMemoryLocation(term));
 
-    if (context().module()->architecture()->isGlobalMemory(termLocation)) {
+    const auto &termLocation = dataflow().getMemoryLocation(term);
+    assert(termLocation);
+
+    // TODO: here should be no distinction between local and global variable case.
+    if (parent().module().architecture()->isGlobalMemory(termLocation)) {
         return std::make_unique<likec::VariableIdentifier>(tree(),
-            parent().makeGlobalVariableDeclaration(termLocation, types().getType(term)));
+            parent().makeGlobalVariableDeclaration(termLocation, parent().types().getType(term)));
     } else {
-        auto variable = variables().getVariable(term);
+        auto variable = parent().variables().getVariable(term);
         assert(variable != NULL);
 
         auto identifier = std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(variable));
@@ -1118,7 +1115,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const
             return std::make_unique<likec::UnaryOperator>(tree(),
                 likec::UnaryOperator::DEREFERENCE,
                 std::make_unique<likec::Typecast>(tree(),
-                    tree().makePointerType(parent().makeType(types().getType(term))),
+                    tree().makePointerType(parent().makeType(parent().types().getType(term))),
                     std::move(termAddress)));
         }
     }
@@ -1131,7 +1128,7 @@ bool DefinitionGenerator::isDominating(const Term *write, const Term *read) cons
     assert(read->isRead());
 
     if (!write->statement() || !write->statement()->basicBlock()) {
-        if (auto entryHook = context().hooks()->getEntryHook(function())) {
+        if (auto entryHook = parent().hooks().getEntryHook(function())) {
             /* Assignments to arguments dominate everything in the function. */
             if (write == entryHook->getArgumentTerm(dataflow().getMemoryLocation(write))) {
                 return true;
@@ -1223,7 +1220,7 @@ bool DefinitionGenerator::isSingleAssignment(const vars::Variable *variable) {
 }
 
 bool DefinitionGenerator::isMovable(const Term *term) {
-    if (auto variable = variables().getVariable(term)) {
+    if (auto variable = parent().variables().getVariable(term)) {
         return isSingleAssignment(variable);
     } else {
         switch (term->kind()) {
@@ -1279,7 +1276,7 @@ bool DefinitionGenerator::isIntermediate(const vars::Variable *variable) {
             if (getSingleUse(variable)) {
                 return isMovable(definition->source());
             } else {
-                if (auto sourceVariable = variables().getVariable(definition->source())) {
+                if (auto sourceVariable = parent().variables().getVariable(definition->source())) {
                     return isSingleAssignment(sourceVariable);
                 } else {
                     return false;

@@ -19,6 +19,9 @@ namespace core {
 namespace ir {
 namespace calling {
 
+/**
+ * Mapping from a callee id to a signature.
+ */
 class Signatures {
     /** Mapping from a callee id to a signature. */
     boost::unordered_map<CalleeId, std::unique_ptr<Signature>> id2signature_;

@@ -27,30 +27,18 @@
 
 #include <memory> /* For std::unique_ptr. */
 
-#include <boost/noncopyable.hpp>
-#include <boost/unordered_map.hpp>
-
 #include <QObject>
 
 #include <nc/common/CancellationToken.h>
 #include <nc/common/LogToken.h>
-#include <nc/common/Range.h> /* For nc::find(). */
-#include <nc/common/Types.h>
-
-QT_BEGIN_NAMESPACE
-class QString;
-QT_END_NAMESPACE
 
 namespace nc {
 namespace core {
 
+class Module;
+
 namespace arch {
     class Instructions;
-}
-
-namespace image {
-    class ByteSource;
-    class Section;
 }
 
 namespace ir {
@@ -64,7 +52,7 @@ namespace ir {
         class Signatures;
     }
     namespace cflow {
-        class Graph;
+        class Graphs;
     }
     namespace dflow {
         class Dataflows;
@@ -76,7 +64,7 @@ namespace ir {
         class Types;
     }
     namespace liveness {
-        class Liveness;
+        class Livenesses;
     }
     namespace vars {
         class Variables;
@@ -86,8 +74,6 @@ namespace ir {
 namespace likec {
     class Tree;
 }
-
-class Module;
 
 /**
  * This class stores all the information that is required and produced during decompilation.
@@ -103,11 +89,11 @@ class Context: public QObject {
     std::unique_ptr<ir::calling::Hooks> hooks_; ///< Hooks of calling conventions.
     std::unique_ptr<ir::calling::Signatures> signatures_; ///< Signatures.
     std::unique_ptr<ir::dflow::Dataflows> dataflows_; ///< Dataflows.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::liveness::Liveness>> livenesses_; ///< Liveness information.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::types::Types>> types_; ///< Information about types.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::cflow::Graph>> regionGraphs_; ///< Region graphs.
     std::unique_ptr<ir::vars::Variables> variables_; ///< Reconstructed variables.
-    std::unique_ptr<likec::Tree> tree_; ///< Representation of LikeC program.
+    std::unique_ptr<ir::cflow::Graphs> graphs_; ///< Structured graphs.
+    std::unique_ptr<ir::liveness::Livenesses> livenesses_; ///< Liveness information.
+    std::unique_ptr<ir::types::Types> types_; ///< Information about types.
+    std::unique_ptr<likec::Tree> tree_; ///< Abstract syntax tree of the LikeC program.
     std::unique_ptr<ir::misc::TermToFunction> termToFunction_; ///< Term to function mapping.
     LogToken logToken_; ///< Log token.
     CancellationToken cancellationToken_; ///< Cancellation token.
@@ -124,33 +110,33 @@ public:
     ~Context();
 
     /**
-     * \return Valid pointer to the module being decompiled.
-     */
-    std::shared_ptr<Module> module() const { return module_; }
-
-    /**
      * Sets the module.
      *
-     * \param module Valid pointer to a module.
+     * \param module Pointer to the module. Can be NULL.
      */
     void setModule(const std::shared_ptr<Module> &module);
 
     /**
-     * \returns Valid pointer to the instructions being decompiled.
+     * \return Pointer to the module being decompiled. Can be NULL.
      */
-    const std::shared_ptr<const arch::Instructions> &instructions() const { return instructions_; }
+    std::shared_ptr<Module> module() const { return module_; }
 
     /**
-     * Sets the set instructions of the executable file.
+     * Sets the set instructions being decompiled.
      *
-     * \param instructions New set of instructions.
+     * \param instructions Pointer to the new set of instructions. Can be NULL.
      */
     void setInstructions(const std::shared_ptr<const arch::Instructions> &instructions);
 
     /**
-     * Sets the control flow graph of the program.
+     * \returns Pointer to the instructions being decompiled. Can be NULL.
+     */
+    const std::shared_ptr<const arch::Instructions> &instructions() const { return instructions_; }
+
+    /**
+     * Sets the intermediate representation of the program.
      *
-     * \param program Valid pointer to the program CFG.
+     * \param program Pointer to the program IR. Can be NULL.
      */
     void setProgram(std::unique_ptr<ir::Program> program);
 
@@ -162,7 +148,7 @@ public:
     /**
      * Sets the set of functions.
      *
-     * \param functions Valid pointer to the set of functions.
+     * \param functions Pointer to the set of functions. Can be NULL.
      */
     void setFunctions(std::unique_ptr<ir::Functions> functions);
 
@@ -174,121 +160,123 @@ public:
     /**
      * Sets the assigned calling conventions.
      *
-     * \param conventions Valid pointer to the assigned calling conventions.
+     * \param conventions Pointer to the assigned calling conventions. Can be NULL.
      */
     void setConventions(std::unique_ptr<ir::calling::Conventions> conventions);
 
     /**
-     * \return Valid pointer to the information on calling conventions of functions.
+     * \return Pointer to the information on calling conventions of functions. Can be NULL.
      */
-    ir::calling::Conventions *conventions() const { return conventions_.get(); }
+    ir::calling::Conventions *conventions() { return conventions_.get(); }
+
+    /**
+     * \return Pointer to the information on calling conventions of functions. Can be NULL.
+     */
+    const ir::calling::Conventions *conventions() const { return conventions_.get(); }
 
     /**
      * Sets the calling conventions hooks.
      *
-     * \param hooks Valid pointer to the hooks information.
+     * \param hooks Pointer to the hooks information. Can be NULL.
      */
     void setHooks(std::unique_ptr<ir::calling::Hooks> hooks);
 
     /**
-     * \return Valid pointer to the information on calling conventions of functions.
+     * \return Pointer to the information on calling conventions of functions. Can be NULL.
      */
-    ir::calling::Hooks *hooks() const { return hooks_.get(); }
+    ir::calling::Hooks *hooks() { return hooks_.get(); }
+
+    /**
+     * \return Pointer to the information on calling conventions of functions. Can be NULL.
+     */
+    const ir::calling::Hooks *hooks() const { return hooks_.get(); }
 
     /**
      * Sets the reconstructed signatures.
      *
-     * \param signatures Valid pointer to the signatures.
+     * \param signatures Pointer to the signatures. Can be NULL.
      */
     void setSignatures(std::unique_ptr<ir::calling::Signatures> signatures);
 
     /**
-     * \return Pointer to the signatures of functions. Can be NULL, if not set.
+     * \return Pointer to the signatures of functions. Can be NULL.
      */
     const ir::calling::Signatures *signatures() const { return signatures_.get(); }
 
     /**
-     * Sets the term to function mapping.
+     * Sets the dataflow information for all functions.
      *
-     * \param termToFunction Valid pointer to the term to function mapping.
-     */
-    void setTermToFunction(std::unique_ptr<ir::misc::TermToFunction> termToFunction);
-
-    /**
-     * \return Valid pointer to the term to function mapping.
-     */
-    const ir::misc::TermToFunction *termToFunction() const { return termToFunction_.get(); }
-
-    /**
-     * Sets the dataflows.
-     *
-     * \param[in] dataflows Dataflows.
+     * \param[in] dataflows Pointer to the dataflow information. Can be NULL.
      */
     void setDataflows(std::unique_ptr<ir::dflow::Dataflows> dataflows);
 
     /**
-     * \return Pointer to the dataflows.
+     * \return Pointer to the dataflow information for all functions. Can be NULL.
      */
-    ir::dflow::Dataflows *dataflows() const { return dataflows_.get(); }
+    ir::dflow::Dataflows *dataflows() { return dataflows_.get(); }
 
     /**
-     * Sets the dataflow information for a function.
-     *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] liveness Valid pointer to the liveness information.
+     * \return Pointer to the dataflow information for all functions. Can be NULL.
      */
-    void setLiveness(const ir::Function *function, std::unique_ptr<ir::liveness::Liveness> liveness);
+    const ir::dflow::Dataflows *dataflows() const { return dataflows_.get(); }
 
     /**
-     * \param[in] function Valid pointer to a function.
+     * Sets the information about reconstructed variables.
      *
-     * \return Pointer to the liveness information. Can be NULL.
-     */
-    const ir::liveness::Liveness *getLiveness(const ir::Function *function) const;
-
-    /**
-     * Sets the type information for a function.
-     *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] types Valid pointer to the type information.
-     */
-    void setTypes(const ir::Function *function, std::unique_ptr<ir::types::Types> types);
-
-    /**
-     * \param[in] function Valid pointer to a function.
-     *
-     * \return Pointer to the type information for a given function. Can be NULL.
-     */
-    const ir::types::Types *getTypes(const ir::Function *function) const;
-
-    /**
-     * Sets the region graph for a function.
-     *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] graph Valid pointer to the region graph.
-     */
-    void setRegionGraph(const ir::Function *function, std::unique_ptr<ir::cflow::Graph> graph);
-
-    /**
-     * \param[in] function Valid pointer to a function.
-     *
-     * \return Valid pointer to the region graph of the given function.
-     */
-    const ir::cflow::Graph *getRegionGraph(const ir::Function *function) const;
-
-    /**
-     * Sets the information about variables for a function.
-     *
-     * \param[in] variables Valid pointer to the information about reconstructed variables.
+     * \param[in] variables Pointer to the information about reconstructed variables. Can be NULL.
      */
     void setVariables(std::unique_ptr<ir::vars::Variables> variables);
 
     /**
-     * \param[in] function Valid pointer to a function.
-     *
-     * \return Pointer to the information about variables for a given function. Can be NULL.
+     * \return Pointer to the information about reconstructed variables. Can be NULL.
      */
     const ir::vars::Variables *variables() const { return variables_.get(); }
+
+    /**
+     * Sets the structured graphs for all functions.
+     *
+     * \param[in] graph Pointer to the graphs. Can be NULL.
+     */
+    void setGraphs(std::unique_ptr<ir::cflow::Graphs> graphs);
+
+    /**
+     * \return Pointer to the structured graphs. Can be NULL.
+     */
+    ir::cflow::Graphs *graphs() { return graphs_.get(); }
+
+    /**
+     * \return Pointer to the structured graphs. Can be NULL.
+     */
+    const ir::cflow::Graphs *graphs() const { return graphs_.get(); }
+
+    /**
+     * Sets the liveness information for all functions.
+     *
+     * \param[in] liveness Pointer to the liveness information. Can be NULL.
+     */
+    void setLivenesses(std::unique_ptr<ir::liveness::Livenesses> liveness);
+
+    /**
+     * \return Pointer to the liveness information for all functions. Can be NULL.
+     */
+    ir::liveness::Livenesses *livenesses() { return livenesses_.get(); }
+
+    /**
+     * \return Pointer to the liveness information for all functions. Can be NULL.
+     */
+    const ir::liveness::Livenesses *livenesses() const { return livenesses_.get(); }
+
+    /**
+     * Sets the information about types.
+     *
+     * \param[in] types Pointer to the information about types. Can be NULL.
+     */
+    void setTypes(std::unique_ptr<ir::types::Types> types);
+
+    /**
+     * \return Pointer to the information about types. Can be NULL.
+     */
+    const ir::types::Types *types() const { return types_.get(); }
 
     /**
      * Sets the LikeC tree.
@@ -301,6 +289,18 @@ public:
      * \return The LikeC tree. Can be NULL.
      */
     likec::Tree *tree() const { return tree_.get(); }
+
+    /**
+     * Sets the term to function mapping.
+     *
+     * \param termToFunction Valid pointer to the term to function mapping.
+     */
+    void setTermToFunction(std::unique_ptr<ir::misc::TermToFunction> termToFunction);
+
+    /**
+     * \return Valid pointer to the term to function mapping.
+     */
+    const ir::misc::TermToFunction *termToFunction() const { return termToFunction_.get(); }
 
     /**
      * Sets cancellation token.
@@ -334,7 +334,7 @@ public:
     void instructionsChanged();
 
     /**
-     * Signal emitted when C tree is computed.
+     * Signal emitted when LikeC tree is computed.
      */
     void treeChanged();
 };

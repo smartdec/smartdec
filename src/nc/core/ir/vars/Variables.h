@@ -42,7 +42,7 @@ class Term;
 namespace vars {
 
 /**
- * Class containing information about reconstructed variables.
+ * Information about reconstructed variables.
  */
 class Variables {
     /** All variables. */
@@ -52,6 +52,13 @@ class Variables {
     boost::unordered_map<const Term *, Variable *> term2variable_;
 
     public:
+
+    /**
+     * \return List of all reconstructed variables.
+     */
+    const std::vector<const Variable *> &variables() const {
+        return reinterpret_cast<const std::vector<const Variable *> &>(variables_);
+    }
 
     /**
      * Adds information about reconstructed variable.

@@ -38,7 +38,7 @@ class CancellationToken;
 
 namespace core {
 
-class Context;
+class Module;
 
 namespace likec {
     class FunctionDeclaration;
@@ -52,10 +52,34 @@ namespace likec {
 namespace ir {
 
 class Function;
+class Functions;
 class Term;
+
+namespace calling {
+    class CalleeId;
+    class Hooks;
+    class Signatures;
+}
+
+namespace cflow {
+    class Graphs;
+}
+
+namespace dflow {
+    class Dataflows;
+}
+
+namespace liveness {
+    class Livenesses;
+}
 
 namespace types {
     class Type;
+    class Types;
+}
+
+namespace vars {
+    class Variables;
 }
 
 namespace cgen {
@@ -64,20 +88,44 @@ namespace cgen {
  * LikeC code generator.
  */
 class CodeGenerator: boost::noncopyable {
-    /** Context with the analyzed program. */
-    Context &context_;
-
     /** Abstract syntax tree to generate code in. */
     likec::Tree &tree_;
+
+    /** Module being decompiled. */
+    const Module &module_;
+
+    /** Intermediate representation of functions. */
+    const Functions &functions_;
+
+    /** Hooks of calling conventions. */
+    calling::Hooks &hooks_;
+
+    /** Signatures of the functions. */
+    const calling::Signatures &signatures_;
+
+    /** Dataflow information for all functions. */
+    const dflow::Dataflows &dataflows_;
+
+    /** Reconstructed variables. */
+    const vars::Variables &variables_;
+
+    /** Reduced control-flow graphs. */
+    const cflow::Graphs &graphs_;
+
+    /** Liveness information for all functions. */
+    const liveness::Livenesses &livenesses_;
+
+    /** Information about types. */
+    const types::Types &types_;
+
+    /** Cancellation token. */
+    const CancellationToken &cancellationToken_;
 
     /** Types being translated to LikeC. */
     std::vector<const ir::types::Type *> typeCreationStack_;
 
     /** Structural types generated for IR types. */
     boost::unordered_map<const ir::types::Type *, const likec::StructType *> traits2structType_;
-
-    /** Serial number for giving names to global variables. */
-    int serial_;
 
     /** Already declared global variables. */
     boost::unordered_map<MemoryLocation, likec::VariableDeclaration *> variableDeclarations_;
@@ -87,14 +135,28 @@ class CodeGenerator: boost::noncopyable {
 
 public:
 
-    /*
+    /**
      * Constructor.
      *
-     * \param context Context with the analyzed program.
-     * \param tree Abstract syntax tree to generate code in.
+     * \param[out] tree Abstract syntax tree to generate code in.
+     * \param[in] module Module being decompiled.
+     * \param[in] functions Intermediate representation of functions.
+     * \param[in] hooks Hooks of calling conventions.
+     * \param[in] signatures Signatures of functions.
+     * \param[in] dataflows Dataflow information for all functions.
+     * \param[in] graphs Reduced control-flow graphs.
+     * \param[in] liveness Liveness information for all functions.
+     * \param[in] types Information about types.
+     * \param[in] cancellationToken Cancellation token.
      */
-    CodeGenerator(Context &context, likec::Tree &tree):
-        context_(context), tree_(tree), serial_(0)
+    CodeGenerator(likec::Tree &tree, const Module &module, const Functions &functions, calling::Hooks &hooks,
+        const calling::Signatures &signatures, const dflow::Dataflows &dataflows, const vars::Variables &variables,
+        const cflow::Graphs &graphs, const liveness::Livenesses &livenesses, const types::Types &types,
+        const CancellationToken &cancellationToken
+    ):
+        tree_(tree), module_(module), functions_(functions), hooks_(hooks), signatures_(signatures),
+        dataflows_(dataflows), variables_(variables), graphs_(graphs), livenesses_(livenesses),
+        types_(types), cancellationToken_(cancellationToken)
     {}
 
     /**
@@ -103,21 +165,64 @@ public:
     virtual ~CodeGenerator() {}
 
     /**
-     * \return Context with the analyzer program.
-     */
-    Context &context() const { return context_; }
-
-    /**
      * \return Abstract syntax tree to generate code in.
      */
     likec::Tree &tree() const { return tree_; }
 
     /**
-     * Translates input program into LikeC compilation unit.
-     *
-     * \param[in] canceled Cancellation token.
+     * \return Module being decompiled.
      */
-    void makeCompilationUnit(const CancellationToken &canceled);
+    const Module &module() const { return module_; }
+
+    /**
+     * \return Intermediate representation of functions.
+     */
+    const Functions &functions() const { return functions_; }
+
+    /**
+     * \return Hooks of calling conventions.
+     */
+    calling::Hooks &hooks() const { return hooks_; }
+
+    /**
+     * \return Signatures of functions.
+     */
+    const calling::Signatures &signatures() const { return signatures_; }
+
+    /**
+     * \return Dataflow information for all functions.
+     */
+    const ir::dflow::Dataflows &dataflows() const { return dataflows_; }
+
+    /**
+     * \return Reconstructed variables.
+     */
+    const vars::Variables &variables() const { return variables_; }
+
+    /**
+     * \return Reduced control-flow graphs.
+     */
+    const cflow::Graphs &graphs() const { return graphs_; }
+
+    /**
+     * \return Liveness information for all functions.
+     */
+    const liveness::Livenesses &livenesses() const { return livenesses_; }
+
+    /**
+     * \return Information about types.
+     */
+    const types::Types &types() const { return types_; }
+
+    /**
+     * \return Cancellation token.
+     */
+    const CancellationToken &cancellationToken() const { return cancellationToken_; }
+
+    /**
+     * Translates input program into LikeC compilation unit.
+     */
+    void makeCompilationUnit();
 
     /**
      * Creates high-level type object from given type traits.
@@ -147,12 +252,11 @@ public:
     likec::VariableDeclaration *makeGlobalVariableDeclaration(const MemoryLocation &memoryLocation, const types::Type *type);
 
     /**
-     * \param[in] addr Entry address of a function.
+     * \param[in] calleeId Id of a called function.
      *
-     * \return Declaration for function with this entry address, or 0 if no functions with such entry address are known.
-     * Declaration is created when needed.
+     * \return Declaration for this function, or NULL if it was impossible to create one.
      */
-    likec::FunctionDeclaration *makeFunctionDeclaration(ByteAddr addr);
+    likec::FunctionDeclaration *makeFunctionDeclaration(const calling::CalleeId &calleeId);
 
     /**
      * Creates function's definition, if it wasn't yet, and adds it to the compilation unit.

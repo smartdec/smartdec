@@ -55,7 +55,7 @@ void VariableAnalyzer::analyze() {
     /*
      * Reconstruct local variables.
      */
-    foreach (const auto &functionAndDataflow, dataflows().function2dataflow()) {
+    foreach (const auto &functionAndDataflow, dataflows_) {
         const auto &dataflow = *functionAndDataflow.second;
 
         boost::unordered_map<const Term *, std::unique_ptr<TermSet>> term2set;
@@ -68,7 +68,7 @@ void VariableAnalyzer::analyze() {
             const auto &location = termAndLocation.second;
 
             if ((term->isRead() || term->isWrite()) && location) {
-                if (architecture()->isGlobalMemory(location)) {
+                if (architecture_->isGlobalMemory(location)) {
                     globalMemoryAccesses.emplace_back(location, term);
                 } else {
                     term2set[term] = std::make_unique<TermSet>();
@@ -113,7 +113,7 @@ void VariableAnalyzer::analyze() {
                     return MemoryLocation::merge(a, dataflow.getMemoryLocation(term));
                 });
 
-            variables().addVariable(std::make_unique<Variable>(variableLocation, std::move(terms)));
+            variables_.addVariable(std::make_unique<Variable>(variableLocation, std::move(terms)));
         }
     }
 
@@ -130,7 +130,7 @@ void VariableAnalyzer::analyze() {
 
     foreach (const auto &locationAndTerm, globalMemoryAccesses) {
         if (variableLocation && !variableLocation.overlaps(locationAndTerm.first)) {
-            variables().addVariable(std::make_unique<Variable>(variableLocation, terms));
+            variables_.addVariable(std::make_unique<Variable>(variableLocation, terms));
             variableLocation = MemoryLocation();
             terms.clear();
         }
@@ -140,7 +140,7 @@ void VariableAnalyzer::analyze() {
     }
 
     if (variableLocation) {
-        variables().addVariable(std::make_unique<Variable>(variableLocation, std::move(terms)));
+        variables_.addVariable(std::make_unique<Variable>(variableLocation, std::move(terms)));
     }
 }
 

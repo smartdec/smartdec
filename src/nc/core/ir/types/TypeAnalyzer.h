@@ -32,14 +32,8 @@ class CancellationToken;
 namespace core {
 namespace ir {
 
-class Assignment;
-class BinaryOperator;
-class Constant;
-class Dereference;
 class Function;
-class Statement;
-class Term;
-class UnaryOperator;
+class Functions;
 
 namespace calling {
     class Hooks;
@@ -47,111 +41,70 @@ namespace calling {
 }
 
 namespace dflow {
-    class Dataflow;
+    class Dataflows;
 }
 
 namespace liveness {
-    class Liveness;
+    class Livenesses;
+}
+
+namespace vars {
+    class Variables;
 }
 
 namespace types {
 
 class Types;
 
-// TODO: make the analysis interprocedural
-
 /**
- * Class computing the traits of terms' types.
+ * This class performs interprocedural reconstruction of types.
  */
 class TypeAnalyzer {
     Types &types_; ///< Information about terms' types.
-    const dflow::Dataflow &dataflow_; ///< Dataflow information.
-    const liveness::Liveness &liveness_; ///< Set of terms producing actual high-level code.
-    calling::Hooks &hooks_; ///< Calls data.
+    const Functions &functions_; ///< Intermediate representations of functions.
+    const dflow::Dataflows &dataflows_; ///< Dataflow information.
+    const vars::Variables &variables_; ///< Information about reconstructed variables.
+    const liveness::Livenesses &livenesses_; ///< Set of terms producing actual high-level code.
+    calling::Hooks &hooks_; ///< Calling conventions hooks.
     const calling::Signatures &signatures_; ///< Signatures of functions.
 
-    public:
-
+public:
     /**
-     * Class constructor.
+     * Constructor.
      *
-     * \param types Information about terms' types.
-     * \param dataflow Dataflow information.
-     * \param liveness Liveness information.
-     * \param hooks Calling conventions hooks.
-     * \param signatures Signatures of functions.
+     * \param[out] types Information about types of terms.
+     * \param[in] functions Intermediate representations of functions.
+     * \param[in] dataflows Dataflow information.
+     * \param[in] variables Information about reconstructed variables.
+     * \param[in] livenesses Liveness information.
+     * \param[in] hooks Calling conventions hooks.
+     * \param[in] signatures Signatures of functions.
      */
-    TypeAnalyzer(Types &types, const dflow::Dataflow &dataflow, const liveness::Liveness &liveness,
+    TypeAnalyzer(Types &types, const Functions &functions, const dflow::Dataflows &dataflows,
+        const vars::Variables &variables, const liveness::Livenesses &livenesses,
         calling::Hooks &hooks, const calling::Signatures &signatures
     ):
-        types_(types), dataflow_(dataflow), liveness_(liveness), hooks_(hooks), signatures_(signatures)
+        types_(types), functions_(functions), dataflows_(dataflows), variables_(variables),
+        livenesses_(livenesses), hooks_(hooks), signatures_(signatures)
     {}
 
     /**
-     * Virtual destructor.
-     */
-    virtual ~TypeAnalyzer() {}
-
-    /**
-     * \return Information about terms' types.
-     */
-    Types &types() { return types_; }
-
-    /**
-     * \return Information about terms' types.
-     */
-    const Types &types() const { return types_; }
-
-    /**
-     * \return Dataflow information.
-     */
-    const dflow::Dataflow& dataflow() const { return dataflow_; }
-
-    /**
-     * \return Liveness information.
-     */
-    const liveness::Liveness& liveness() const { return liveness_; }
-
-    /**
-     * \return Calls data.
-     */
-    calling::Hooks &hooks() const { return hooks_; }
-
-    /**
-     * \return Signatures of functions.
-     */
-    const calling::Signatures &signatures() const { return signatures_; }
-
-    /**
-     * Computes type traits for all the terms in given function.
+     * Computes type traits for all terms in all functions.
      *
-     * \param[in] function Valid pointer to a function.
      * \param[in] canceled Cancellation token.
      */
-    void analyze(const Function *function, const CancellationToken &canceled);
+    void analyze(const CancellationToken &canceled);
 
-    protected:
-
+private:
     /**
-     * Updates the information about type traits of given term and (possibly) its children.
-     *
-     * \param[in] term Term to analyze.
+     * Unites types of terms accessing the same part of the same variable.
      */
-    virtual void analyze(const Term *term);
+    void joinVariableTypes();
 
-    /**
-     * Updates the information about type traits of terms being the arguments of given statement.
-     *
-     * \param[in] statement Statement to analyze.
+    /*
+     * Unites types of terms representing matching arguments and return values.
      */
-    virtual void analyze(const Statement *statement);
-
-    private:
-
-    void analyze(const Constant *constant);
-    void analyze(const Dereference *dereference);
-    void analyze(const UnaryOperator *unary);
-    void analyze(const BinaryOperator *binary);
+    void joinArgumentTypes();
 };
 
 }}}} // namespace nc::core::ir::types

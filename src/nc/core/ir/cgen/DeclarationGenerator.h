@@ -47,10 +47,6 @@ namespace calling {
     class Signature;
 }
 
-namespace types {
-    class Types;
-}
-
 namespace cgen {
 
 /**
@@ -59,7 +55,6 @@ namespace cgen {
 class DeclarationGenerator: boost::noncopyable {
     CodeGenerator &parent_; ///< Parent code generator.
     const Function *function_; ///< Function, for which declaration is generated.
-    const types::Types *types_; ///< Reconstructed types.
     const calling::Signature *signature_; ///< Signature of the function.
     likec::FunctionDeclaration *declaration_; ///< Function's declaration.
 
@@ -92,11 +87,6 @@ public:
      * \return Function being translated.
      */
     const Function *function() const { return function_; }
-
-    /**
-     * \return Reconstructed types.
-     */
-    const types::Types &types() const { return *types_; }
 
     /**
      * \return Pointer to the signature of the function, for which

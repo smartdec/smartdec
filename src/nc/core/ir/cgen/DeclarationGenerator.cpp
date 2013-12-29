@@ -46,17 +46,16 @@ namespace core {
 namespace ir {
 namespace cgen {
 
+// TODO: make this class work for any calleeId (address?) instead of a function.
 DeclarationGenerator::DeclarationGenerator(CodeGenerator &parent, const Function *function):
     parent_(parent),
     function_(function),
-    types_(parent.context().getTypes(function)),
     declaration_(NULL)
 {
     assert(function_ != NULL);
-    assert(types_ != NULL);
 
-    if (auto calleeId = parent.context().hooks()->getCalleeId(function)) {
-        signature_ = parent.context().signatures()->getSignature(calleeId);
+    if (auto calleeId = parent.hooks().getCalleeId(function)) {
+        signature_ = parent.signatures().getSignature(calleeId);
     } else {
         signature_ = NULL;
     }
@@ -76,7 +75,7 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
     setDeclaration(functionDeclaration.get());
 
     if (signature()) {
-        if (auto entryHook = parent().context().hooks()->getEntryHook(function())) {
+        if (auto entryHook = parent().hooks().getEntryHook(function())) {
             foreach (const MemoryLocation &memoryLocation, signature()->arguments()) {
                 makeArgumentDeclaration(entryHook->getArgumentTerm(memoryLocation));
             }
@@ -90,8 +89,8 @@ const likec::Type *DeclarationGenerator::makeReturnType() {
     if (signature()) {
         if (signature()->returnValue()) {
             foreach (const Return *ret, function()->getReturns()) {
-                if (auto returnHook = parent().context().hooks()->getReturnHook(function(), ret)) {
-                    return parent().makeType(types().getType(returnHook->getReturnValueTerm(signature()->returnValue())));
+                if (auto returnHook = parent().hooks().getReturnHook(function(), ret)) {
+                    return parent().makeType(parent().types().getType(returnHook->getReturnValueTerm(signature()->returnValue())));
                 }
             }
         }
@@ -111,7 +110,7 @@ likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const 
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
     if (auto access = term->asMemoryLocationAccess()) {
-        if (auto regizter = parent().context().module()->architecture()->registers()->getRegister(access->memoryLocation())) {
+        if (auto regizter = parent().module().architecture()->registers()->getRegister(access->memoryLocation())) {
             name = regizter->lowercaseName();
         }
     }
@@ -121,7 +120,7 @@ likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const 
         name = QString("arg%1").arg(declaration()->arguments().size() + 1);
     }
 
-    auto argumentDeclaration = std::make_unique<likec::ArgumentDeclaration>(tree(), name, parent().makeType(types().getType(term)));
+    auto argumentDeclaration = std::make_unique<likec::ArgumentDeclaration>(tree(), name, parent().makeType(parent().types().getType(term)));
     auto result = argumentDeclaration.get();
 
     declaration()->addArgument(std::move(argumentDeclaration));

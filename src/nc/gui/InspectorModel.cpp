@@ -179,9 +179,9 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
     item->addChild(tr("size = %1").arg(term->size()));
 
     if (const core::ir::Function *function = context->termToFunction()->getFunction(term)) {
-        auto dataflow = context->dataflows()->getDataflow(function);
+        auto &dataflow = *context->dataflows()->at(function);
 
-        if (const core::ir::dflow::Value *value = dataflow->getValue(term)) {
+        if (const core::ir::dflow::Value *value = dataflow.getValue(term)) {
             InspectorItem *valueItem = item->addChild(tr("value properties"));
             if (value->abstractValue().isConcrete()) {
                 valueItem->addChild(tr("constant value = %1").arg(value->abstractValue().asConcrete().value()));
@@ -204,30 +204,20 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
             }
         }
 
-        if (auto &memoryLocation = dataflow->getMemoryLocation(term)) {
+        if (auto &memoryLocation = dataflow.getMemoryLocation(term)) {
             item->addChild(tr("computed memory location = %1").arg(memoryLocation.toString()));
         }
 
         if (term->isRead()) {
             InspectorItem *definitionsItem = item->addChild(tr("definitions"));
 
-            foreach (auto &chunk, dataflow->getDefinitions(term).chunks()) {
+            foreach (auto &chunk, dataflow.getDefinitions(term).chunks()) {
                 auto chunkItem = definitionsItem->addChild(chunk.location().toString());
                 foreach (auto definition, chunk.definitions()) {
                     chunkItem->addChild("", definition);
                 }
             }
         }
-
-    // TODO: fix or remove.
-#if 0
-        if (term->isWrite()) {
-            InspectorItem *usesItem = item->addChild(tr("uses"));
-            foreach (const core::ir::Term *use, dataflow->getUses(term)) {
-                usesItem->addChild("", use);
-            }
-        }
-#endif
     } else {
         item->addChild("function = NULL");
     }

@@ -95,70 +95,7 @@ void Driver::disassemble(Context &context, const image::ByteSource *source, Byte
 
 void Driver::decompile(Context &context) {
     try {
-        auto masterAnalyzer = context.module()->architecture()->masterAnalyzer();
-
-        context.logToken() << tr("Creating the program IR...");
-        masterAnalyzer->createProgram(context);
-        context.cancellationToken().poll();
-
-        context.logToken() << tr("Creating functions...");
-        masterAnalyzer->createFunctions(context);
-        context.cancellationToken().poll();
-
-        masterAnalyzer->initializeHooks(context);
-        context.cancellationToken().poll();
-
-        foreach (auto function, context.functions()->functions()) {
-            context.logToken() << tr("Running dataflow analysis on %1...").arg(function->name());
-            masterAnalyzer->analyzeDataflow(context, function);
-            context.cancellationToken().poll();
-        }
-
-        context.logToken() << tr("Reconstructing signatures of functions...");
-        masterAnalyzer->reconstructSignatures(context);
-        context.cancellationToken().poll();
-
-        masterAnalyzer->initializeHooks(context);
-        context.cancellationToken().poll();
-
-        foreach (auto function, context.functions()->functions()) {
-            context.logToken() << tr("Running dataflow analysis on %1...").arg(function->name());
-            masterAnalyzer->analyzeDataflow(context, function);
-            context.cancellationToken().poll();
-        }
-
-        foreach (auto function, context.functions()->functions()) {
-            context.logToken() << tr("Running structural analysis on %1...").arg(function->name());
-            masterAnalyzer->doStructuralAnalysis(context, function);
-            context.cancellationToken().poll();
-
-            context.logToken() << tr("Running liveness analysis on %1...").arg(function->name());
-            masterAnalyzer->computeLiveness(context, function);
-            context.cancellationToken().poll();
-
-            context.logToken() << tr("Running type reconstruction on %1...").arg(function->name());
-            masterAnalyzer->reconstructTypes(context, function);
-            context.cancellationToken().poll();
-        }
-
-        context.logToken() << tr("Running reconstruction of variables...");
-        masterAnalyzer->reconstructVariables(context);
-        context.cancellationToken().poll();
-
-        context.logToken() << tr("Generating AST...");
-        masterAnalyzer->generateTree(context);
-        context.cancellationToken().poll();
-
-#ifdef NC_TREE_CHECKS
-        context.logToken() << tr("Checking AST...");
-        masterAnalyzer->checkTree(context);
-#endif
-
-        context.logToken() << tr("Computing term to function mapping...");
-        masterAnalyzer->computeTermToFunctionMapping(context);
-        context.cancellationToken().poll();
-
-        context.logToken() << tr("Decompilation completed.");
+        context.module()->architecture()->masterAnalyzer()->decompile(context);
     } catch (const CancellationException &) {
         context.logToken() << tr("Decompilation canceled.");
         throw;

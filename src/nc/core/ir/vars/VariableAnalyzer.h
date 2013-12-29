@@ -56,14 +56,13 @@ class VariableAnalyzer {
     const dflow::Dataflows &dataflows_; ///< Dataflow information for each function.
     const arch::Architecture *architecture_; ///< Architecture.
 
-    public:
-
+public:
     /**
-     * Class constructor.
+     * Constructor.
      *
      * \param[out] variables Information about variables.
      * \param[in] dataflows Dataflow information for each function.
-     * \param[in] arch Valid pointer to the architecture.
+     * \param[in] architecture Valid pointer to the architecture.
      */
     VariableAnalyzer(Variables &variables, const dflow::Dataflows &dataflows, const arch::Architecture *architecture):
         variables_(variables), dataflows_(dataflows), architecture_(architecture)
@@ -72,34 +71,9 @@ class VariableAnalyzer {
     }
 
     /**
-     * Virtual destructor.
-     */
-    virtual ~VariableAnalyzer() {}
-
-    /**
-     * \return Information about reconstructed variables.
-     */
-    Variables &variables() { return variables_; }
-
-    /**
-     * \return Information about reconstructed variables.
-     */
-    const Variables &variables() const { return variables_; }
-
-    /**
-     * \return Dataflow information for each function.
-     */
-    const dflow::Dataflows &dataflows() const { return dataflows_; }
-
-    /**
-     * \return Valid pointer to the architecture.
-     */
-    const arch::Architecture *architecture() const { return architecture_; }
-
-    /**
      * Computes mapping of terms to variables.
      */
-    virtual void analyze();
+    void analyze();
 };
 
 } // namespace vars

@@ -7,7 +7,7 @@
 
 #include <boost/unordered_map.hpp>
 
-#include "Dataflow.h"
+#include "Graph.h"
 
 namespace nc {
 namespace core {
@@ -15,14 +15,14 @@ namespace ir {
 
 class Function;
 
-namespace dflow {
+namespace cflow {
 
 /**
- * Mapping from a function to its dataflow information.
+ * Mapping from a function to its structural graph.
  */
-class Dataflows: public boost::unordered_map<const Function *, std::unique_ptr<const Dataflow>> {};
+class Graphs: public boost::unordered_map<const Function *, std::unique_ptr<const Graph>> {};
 
-} // namespace dflow
+} // namespace cflow
 } // namespace ir
 } // namespace core
 } // namespace nc

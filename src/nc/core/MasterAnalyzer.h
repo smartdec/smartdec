@@ -25,13 +25,10 @@
 
 #include <nc/config.h>
 
+#include <QCoreApplication> /* For Q_DECLARE_TR_FUNCTIONS. */
+
 namespace nc {
 namespace core {
-
-namespace arch {
-    class Architecture;
-    class Instructions;
-}
 
 namespace ir {
     class Function;
@@ -41,7 +38,6 @@ namespace ir {
     }
 }
 
-class Module;
 class Context;
 
 /**
@@ -56,6 +52,8 @@ class Context;
  * Therefore, they all are const.
  */
 class MasterAnalyzer {
+    Q_DECLARE_TR_FUNCTIONS(MasterAnalyzer)
+
     public:
 
     /**
@@ -86,14 +84,6 @@ class MasterAnalyzer {
     virtual void pickFunctionName(Context &context, ir::Function *function) const;
 
     /**
-     * Initializes calling convention hooks using detectCallingConvention
-     * method of this class for the detection of calling conventions.
-     *
-     * \param context Context.
-     */
-    virtual void initializeHooks(Context &context) const;
-
-    /**
      * Detects and sets the calling convention of a function.
      *
      * \param context Context.
@@ -102,19 +92,19 @@ class MasterAnalyzer {
     virtual void detectCallingConvention(Context &context, const ir::calling::CalleeId &descriptor) const;
 
     /**
-     * Constructs term to function mapping.
+     * Performs dataflow analysis of all functions.
      *
      * \param context Context.
      */
-    virtual void computeTermToFunctionMapping(Context &context) const;
+    virtual void dataflowAnalysis(Context &context) const;
 
     /**
-     * Analyzes the dataflow of a function.
+     * Performs dataflow analysis of the given function.
      *
      * \param context Context.
      * \param function Valid pointer to the function.
      */
-    virtual void analyzeDataflow(Context &context, const ir::Function *function) const;
+    virtual void dataflowAnalysis(Context &context, const ir::Function *function) const;
 
     /**
      * Reconstructs signatures of functions.
@@ -124,35 +114,48 @@ class MasterAnalyzer {
     virtual void reconstructSignatures(Context &context) const;
 
     /**
-     * Analyzes the liveness of function's terms.
-     *
-     * \param context Context.
-     * \param function Valid pointer to the function.
-     */
-    virtual void computeLiveness(Context &context, const ir::Function *function) const;
-
-    /**
-     * Computes types of function's terms.
-     *
-     * \param context Context.
-     * \param function Valid pointer to the function.
-     */
-    virtual void reconstructTypes(Context &context, const ir::Function *function) const;
-
-    /**
-     * Does structural analysis of the function.
-     *
-     * \param context Context.
-     * \param function Valid pointer to the function.
-     */
-    virtual void doStructuralAnalysis(Context &context, const ir::Function *function) const;
-
-    /**
      * Reconstructs local and global variables.
      *
      * \param context Context.
      */
     virtual void reconstructVariables(Context &context) const;
+
+    /**
+     * Performs liveness analysis on all functions.
+     *
+     * \param context Context.
+     */
+    virtual void livenessAnalysis(Context &context) const;
+
+    /**
+     * Performs liveness analysis on the given function.
+     *
+     * \param context Context.
+     * \param function Valid pointer to the function.
+     */
+    virtual void livenessAnalysis(Context &context, const ir::Function *function) const;
+
+    /**
+     * Performs structural analysis of all functions.
+     *
+     * \param context Context.
+     */
+    virtual void structuralAnalysis(Context &context) const;
+
+    /**
+     * Performs structural analysis of a function.
+     *
+     * \param context Context.
+     * \param function Valid pointer to the function.
+     */
+    virtual void structuralAnalysis(Context &context, const ir::Function *function) const;
+
+    /**
+     * Computes information about types.
+     *
+     * \param context Context.
+     */
+    virtual void reconstructTypes(Context &context) const;
 
     /**
      * Generates LikeC tree for the context.
@@ -169,6 +172,20 @@ class MasterAnalyzer {
      */
     virtual void checkTree(Context &context) const;
 #endif
+
+    /**
+     * Constructs term to function mapping.
+     *
+     * \param context Context.
+     */
+    virtual void computeTermToFunctionMapping(Context &context) const;
+
+    /**
+     * Decompiles the assembler program.
+     *
+     * \param context Context.
+     */
+    virtual void decompile(Context &context) const;
 };
 
 } // namespace core

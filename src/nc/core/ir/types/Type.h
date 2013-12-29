@@ -41,7 +41,7 @@ namespace types {
 class Type;
 
 /**
- * Traits of term's type.
+ * Information about a type of a term.
  */
 class Type: public DisjointSet<Type>, public PrintableBase<Type> {
     SmallBitSize size_; ///< Type size in bits.

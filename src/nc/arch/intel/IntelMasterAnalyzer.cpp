@@ -30,6 +30,7 @@
 
 #include <nc/core/Module.h>
 #include <nc/core/Context.h>
+#include <nc/core/ir/Function.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
@@ -120,16 +121,15 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
     }
 }
 
-void IntelMasterAnalyzer::analyzeDataflow(core::Context &context, const core::ir::Function *function) const {
+void IntelMasterAnalyzer::dataflowAnalysis(core::Context &context, const core::ir::Function *function) const {
+    context.logToken() << tr("Dataflow analysis of %1.").arg(function->name());
+
     std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
 
     IntelDataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.hooks())
         .analyze(context.cancellationToken());
 
-    if (!context.dataflows()) {
-        context.setDataflows(std::make_unique<core::ir::dflow::Dataflows>());
-    }
-    context.dataflows()->setDataflow(function, std::move(dataflow));
+    context.dataflows()->emplace(function, std::move(dataflow));
 }
 
 } // namespace intel

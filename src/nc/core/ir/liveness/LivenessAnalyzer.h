@@ -76,7 +76,7 @@ class LivenessAnalyzer {
     const cflow::Graph &regionGraph_; ///< Reduced control-flow graph.
     calling::Hooks &hooks_; ///< Calls data.
     const calling::Signatures &signatures_; ///< Signatures of functions.
-    std::vector<const Jump *> uselessJumps_; ///< Useless jumps.
+    std::vector<const Jump *> deadJumps_; ///< Useless jumps.
 
 public:
     /**

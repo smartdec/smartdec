@@ -182,7 +182,7 @@ public:
     /**
      * \return Mapping from a callee id to its hooks.
      */
-    const boost::unordered_map<CalleeId, CalleeHooks> &calleeHooks() const { return calleeHooks_; }
+    const boost::unordered_map<CalleeId, CalleeHooks> &map() const { return calleeHooks_; }
 };
 
 } // namespace calling

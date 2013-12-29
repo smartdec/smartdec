@@ -30,8 +30,7 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
         assert(function != NULL);
         assert(convention != NULL);
 
-        auto dataflow = dataflows_.getDataflow(function);
-        assert(dataflow);
+        auto &dataflow = *dataflows_.at(function);
 
         misc::CensusVisitor census(NULL);
         census(function);
@@ -46,9 +45,9 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
 
         foreach (const Term *term, census.terms()) {
             if (term->isRead()) {
-                if (const auto &memoryLocation = dataflow->getMemoryLocation(term)) {
+                if (const auto &memoryLocation = dataflow.getMemoryLocation(term)) {
                     if (convention->isArgumentLocation(memoryLocation)) {
-                        if (dataflow->getDefinitions(term).empty()) {
+                        if (dataflow.getDefinitions(term).empty()) {
                             result.push_back(memoryLocation);
                         }
                     }
@@ -92,7 +91,7 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
         return signature;
     };
 
-    foreach (const auto &pair, hooks_.calleeHooks()) {
+    foreach (const auto &pair, hooks_.map()) {
         signatures_.setSignature(pair.first, getSignature(pair.first, pair.second));
         canceled.poll();
     }

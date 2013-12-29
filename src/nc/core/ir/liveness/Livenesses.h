@@ -7,7 +7,7 @@
 
 #include <boost/unordered_map.hpp>
 
-#include "Dataflow.h"
+#include "Liveness.h"
 
 namespace nc {
 namespace core {
@@ -15,14 +15,14 @@ namespace ir {
 
 class Function;
 
-namespace dflow {
+namespace liveness {
 
 /**
- * Mapping from a function to its dataflow information.
+ * Mapping from a function to its liveness.
  */
-class Dataflows: public boost::unordered_map<const Function *, std::unique_ptr<const Dataflow>> {};
+class Livenesses: public boost::unordered_map<const Function *, std::unique_ptr<const Liveness>> {};
 
-} // namespace dflow
+} // namespace liveness
 } // namespace ir
 } // namespace core
 } // namespace nc

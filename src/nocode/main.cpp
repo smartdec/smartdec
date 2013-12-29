@@ -46,7 +46,7 @@
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/cflow/Graph.h>
+#include <nc/core/ir/cflow/Graphs.h>
 #include <nc/core/likec/Tree.h>
 
 #include <QCoreApplication>
@@ -104,8 +104,8 @@ void printSections(nc::core::Context &context, QTextStream &out) {
 
 void printRegionGraphs(nc::core::Context &context, QTextStream &out) {
     out << "digraph Functions" << " { compound=true; " << endl;
-    foreach (const auto *function, context.functions()->functions()) {
-        context.getRegionGraph(function)->print(out);
+    foreach (const auto *function, context.functions()->list()) {
+        context.graphs()->at(function)->print(out);
     }
     out << "}" << endl;
 }

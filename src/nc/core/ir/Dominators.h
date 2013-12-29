@@ -12,6 +12,9 @@
 #include <nc/common/Range.h>
 
 namespace nc {
+
+class CancellationToken;
+
 namespace core {
 namespace ir {
 
@@ -31,8 +34,9 @@ public:
      * Uses classic iterative algorithm for that.
      *
      * \param cfg Control flow graph.
+     * \param canceled Cancellation token.
      */
-    Dominators(const CFG &cfg);
+    Dominators(const CFG &cfg, const CancellationToken &canceled);
 
     /**
      * \param basicBlock Valid pointer to a basic block.

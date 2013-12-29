@@ -43,7 +43,7 @@ class Return;
 class Statement;
 
 /**
- * Basic block of a function.
+ * Basic block.
  */
 class BasicBlock: public PrintableBase<BasicBlock>, boost::noncopyable {
     boost::optional<ByteAddr> address_; ///< Address of basic block.

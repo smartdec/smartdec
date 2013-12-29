@@ -45,7 +45,7 @@ namespace misc {
 void CensusVisitor::operator()(const Functions *functions) {
     assert(functions != NULL);
 
-    foreach (auto function, functions->functions()) {
+    foreach (auto function, functions->list()) {
         (*this)(function);
     }
 }

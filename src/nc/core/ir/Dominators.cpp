@@ -3,6 +3,7 @@
 
 #include "Dominators.h"
 
+#include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
 
 #include "CFG.h"
@@ -11,7 +12,7 @@ namespace nc {
 namespace core {
 namespace ir {
 
-Dominators::Dominators(const CFG &cfg) {
+Dominators::Dominators(const CFG &cfg, const CancellationToken &canceled) {
     /*
      * Each node dominates itself.
      */
@@ -55,6 +56,8 @@ Dominators::Dominators(const CFG &cfg) {
                 }
             }
         }
+
+        canceled.poll();
     } while (changed);
 
     foreach (auto &pair, dominators_) {
