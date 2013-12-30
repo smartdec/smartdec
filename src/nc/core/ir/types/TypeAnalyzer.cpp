@@ -77,7 +77,7 @@ void TypeAnalyzer::analyze(const CancellationToken &canceled) {
 
 namespace {
 
-void unionTypes(Type *&a, Type *b) {
+void uniteTypes(Type *&a, Type *b) {
     if (a == NULL) {
         a = b;
     } else {
@@ -88,20 +88,11 @@ void unionTypes(Type *&a, Type *b) {
 } // anonymous namespace
 
 void TypeAnalyzer::joinVariableTypes() {
-    boost::unordered_map<std::pair<const vars::Variable *, MemoryLocation>, Type *> variableTypes;
+    foreach (const vars::Variable *variable, variables_.list()) {
+        boost::unordered_map<MemoryLocation, Type *> location2type;
 
-    // TODO: rewrite when/if Variable will know terms' memory locations.
-    foreach (const auto &functionAndDataflow, dataflows_) {
-        auto &dataflow = *functionAndDataflow.second;
-
-        foreach (const auto &termAndLocation, dataflow.term2location()) {
-            auto term = termAndLocation.first;
-            auto &memoryLocation = termAndLocation.second;
-            auto termType = types_.getType(term);
-            auto variable = variables_.getVariable(term);
-            auto &variableType = variableTypes[std::make_pair(variable, memoryLocation)];
-
-            unionTypes(variableType, termType);
+        foreach (const auto &termAndLocation, variable->termsAndLocations()) {
+            uniteTypes(location2type[termAndLocation.location], types_.getType(termAndLocation.term));
         }
     }
 }
@@ -117,13 +108,13 @@ void TypeAnalyzer::joinArgumentTypes() {
 
                 foreach (const auto &functionAndHook, calleeHooks.entryHooks) {
                     if (auto term = functionAndHook.second->getArgumentTerm(argument)) {
-                        unionTypes(commonType, types_.getType(term));
+                        uniteTypes(commonType, types_.getType(term));
                     }
                 }
 
                 foreach (const auto &callAndHook, calleeHooks.callHooks) {
                     if (auto term = callAndHook.second->getArgumentTerm(argument)) {
-                        unionTypes(commonType, types_.getType(term));
+                        uniteTypes(commonType, types_.getType(term));
                     }
                 }
             }
@@ -133,13 +124,13 @@ void TypeAnalyzer::joinArgumentTypes() {
 
                 foreach (const auto &functionAndHook, calleeHooks.returnHooks) {
                     if (auto term = functionAndHook.second->getReturnValueTerm(signature->returnValue())) {
-                        unionTypes(commonType, types_.getType(term));
+                        uniteTypes(commonType, types_.getType(term));
                     }
                 }
 
                 foreach (const auto &callAndHook, calleeHooks.callHooks) {
                     if (auto term = callAndHook.second->getReturnValueTerm(signature->returnValue())) {
-                        unionTypes(commonType, types_.getType(term));
+                        uniteTypes(commonType, types_.getType(term));
                     }
                 }
             }

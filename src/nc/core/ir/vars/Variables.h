@@ -55,7 +55,7 @@ public:
     /**
      * \return List of all reconstructed variables.
      */
-    const std::vector<const Variable *> &variables() const {
+    const std::vector<const Variable *> &list() const {
         return reinterpret_cast<const std::vector<const Variable *> &>(variables_);
     }
 
