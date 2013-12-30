@@ -51,8 +51,7 @@ class Variables {
     /** Mapping of terms to variables. */
     boost::unordered_map<const Term *, Variable *> term2variable_;
 
-    public:
-
+public:
     /**
      * \return List of all reconstructed variables.
      */

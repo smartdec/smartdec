@@ -159,33 +159,14 @@ likec::ArgumentDeclaration *DefinitionGenerator::makeArgumentDeclaration(const T
     return result;
 }
 
-const likec::Type *DefinitionGenerator::makeLocalVariableType(const vars::Variable *variable) {
-    assert(variable != NULL);
-
-    foreach (auto term, variable->terms()) {
-        if (dataflow().getMemoryLocation(term) == variable->memoryLocation()) {
-            return parent().makeType(parent().types().getType(term));
-        }
-    }
-
-    return tree().makeIntegerType(variable->memoryLocation().size(), true);
-}
-
 QString DefinitionGenerator::makeLocalVariableName(const vars::Variable *variable) {
     QString basename(QLatin1String("v"));
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
-    foreach (auto term, variable->terms()) {
-        if (const MemoryLocationAccess *access = term->asMemoryLocationAccess()) {
-            if (access->memoryLocation() == variable->memoryLocation()) {
-                if (auto reg = parent().module().architecture()->registers()->getRegister(access->memoryLocation())) {
-                    basename = reg->lowercaseName();
-                    if (basename.isEmpty() || basename[basename.size() - 1].isDigit()) {
-                        basename.push_back('_');
-                    }
-                    break;
-                }
-            }
+    if (auto reg = parent().module().architecture()->registers()->getRegister(variable->memoryLocation())) {
+        basename = reg->lowercaseName();
+        if (basename.isEmpty() || basename[basename.size() - 1].isDigit()) {
+            basename.push_back('_');
         }
     }
 #endif
@@ -195,16 +176,27 @@ QString DefinitionGenerator::makeLocalVariableName(const vars::Variable *variabl
 
 likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(const vars::Variable *variable) {
     assert(variable != NULL);
+    assert(variable->isLocal());
 
     likec::VariableDeclaration *&result = variableDeclarations_[variable];
     if (!result) {
         auto variableDeclaration = std::make_unique<likec::VariableDeclaration>(tree(),
-            makeLocalVariableName(variable), makeLocalVariableType(variable));
+            makeLocalVariableName(variable), parent().makeVariableType(variable));
 
         result = variableDeclaration.get();
         definition()->block()->addDeclaration(std::move(variableDeclaration));
     }
     return result;
+}
+
+likec::VariableDeclaration *DefinitionGenerator::makeVariableDeclaration(const vars::Variable *variable) {
+    assert(variable != NULL);
+
+    if (variable->isGlobal()) {
+        return parent().makeGlobalVariableDeclaration(variable);
+    } else {
+        return makeLocalVariableDeclaration(variable);
+    }
 }
 
 likec::LabelDeclaration *DefinitionGenerator::makeLabel(const BasicBlock *basicBlock) {
@@ -1075,49 +1067,43 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const
     const auto &termLocation = dataflow().getMemoryLocation(term);
     assert(termLocation);
 
-    // TODO: here should be no distinction between local and global variable case.
-    if (parent().module().architecture()->isGlobalMemory(termLocation)) {
-        return std::make_unique<likec::VariableIdentifier>(tree(),
-            parent().makeGlobalVariableDeclaration(termLocation, parent().types().getType(term)));
+    auto variable = parent().variables().getVariable(term);
+    assert(variable != NULL);
+
+    auto identifier = std::make_unique<likec::VariableIdentifier>(tree(), makeVariableDeclaration(variable));
+
+    if (termLocation == variable->memoryLocation()) {
+        return std::move(identifier);
     } else {
-        auto variable = parent().variables().getVariable(term);
-        assert(variable != NULL);
+        /*
+         * Generate pointer arithmetics to get to the right part of the variable.
+         *
+         * Note: this does not handle the case of non-byte-aligned locations.
+         * However, I am not sure whether they can be reliably handled in C at all.
+         */
+        auto variableAddress = std::make_unique<likec::Typecast>(tree(),
+            tree().makeIntegerType(tree().pointerSize(), false),
+            std::make_unique<likec::UnaryOperator>(tree(),
+                likec::UnaryOperator::REFERENCE,
+                std::move(identifier)));
 
-        auto identifier = std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(variable));
-
-        if (termLocation == variable->memoryLocation()) {
-            return std::move(identifier);
+        std::unique_ptr<likec::Expression> termAddress;
+        if (termLocation.addr() == variable->memoryLocation().addr()) {
+            termAddress = std::move(variableAddress);
         } else {
-            /*
-             * Generate pointer arithmetics to get to the right part of the variable.
-             *
-             * Note: this does not handle the case of non-byte-aligned locations.
-             * However, I am not sure whether they can be reliably handled in C at all.
-             */
-            auto variableAddress = std::make_unique<likec::Typecast>(tree(),
-                tree().makeIntegerType(tree().pointerSize(), false),
-                std::make_unique<likec::UnaryOperator>(tree(),
-                    likec::UnaryOperator::REFERENCE,
-                    std::move(identifier)));
-
-            std::unique_ptr<likec::Expression> termAddress;
-            if (termLocation.addr() == variable->memoryLocation().addr()) {
-                termAddress = std::move(variableAddress);
-            } else {
-                termAddress = std::make_unique<likec::BinaryOperator>(tree(),
-                    likec::BinaryOperator::ADD,
-                    std::move(variableAddress),
-                    std::make_unique<likec::IntegerConstant>(tree(),
-                        (termLocation.addr() - variable->memoryLocation().addr()) / CHAR_BIT,
-                        tree().makeIntegerType(tree().pointerSize(), false)));
-            }
-
-            return std::make_unique<likec::UnaryOperator>(tree(),
-                likec::UnaryOperator::DEREFERENCE,
-                std::make_unique<likec::Typecast>(tree(),
-                    tree().makePointerType(parent().makeType(parent().types().getType(term))),
-                    std::move(termAddress)));
+            termAddress = std::make_unique<likec::BinaryOperator>(tree(),
+                likec::BinaryOperator::ADD,
+                std::move(variableAddress),
+                std::make_unique<likec::IntegerConstant>(tree(),
+                    (termLocation.addr() - variable->memoryLocation().addr()) / CHAR_BIT,
+                    tree().makeIntegerType(tree().pointerSize(), false)));
         }
+
+        return std::make_unique<likec::UnaryOperator>(tree(),
+            likec::UnaryOperator::DEREFERENCE,
+            std::make_unique<likec::Typecast>(tree(),
+                tree().makePointerType(parent().makeType(parent().types().getType(term))),
+                std::move(termAddress)));
     }
 }
 
@@ -1160,10 +1146,10 @@ const Term *DefinitionGenerator::getSingleDefinition(const vars::Variable *varia
     assert(variable != NULL);
 
     const Term *result = NULL;
-    foreach (const Term *term, variable->terms()) {
-        if (term->isWrite()) {
+    foreach (const auto &termAndLocation, variable->termsAndLocations()) {
+        if (termAndLocation.term->isWrite()) {
             if (result == NULL) {
-                result = term;
+                result = termAndLocation.term;
             } else {
                 return NULL;
             }
@@ -1176,10 +1162,10 @@ const Term *DefinitionGenerator::getSingleUse(const vars::Variable *variable) co
     assert(variable != NULL);
 
     const Term *result = NULL;
-    foreach (const Term *term, variable->terms()) {
-        if (term->isRead() && liveness().isLive(term)) {
+    foreach (const auto &termAndLocation, variable->termsAndLocations()) {
+        if (termAndLocation.term->isRead() && liveness().isLive(termAndLocation.term)) {
             if (result == NULL) {
-                result = term;
+                result = termAndLocation.term;
             } else {
                 return NULL;
             }
@@ -1200,16 +1186,19 @@ bool DefinitionGenerator::isSingleAssignment(const vars::Variable *variable) {
                 return false;
             }
 
-            foreach (const Term *term, variable->terms()) {
+            foreach (const auto &termAndLocation, variable->termsAndLocations()) {
+                auto term = termAndLocation.term;
+                auto &location = termAndLocation.location;
+
                 if (term->isRead() && liveness().isLive(term)) {
                     if (!isDominating(definition, term)) {
                         return false;
                     }
-                    if (dataflow().getMemoryLocation(term) != variable->memoryLocation()) {
+                    if (location != variable->memoryLocation()) {
                         return false;
                     }
                 } else if (term->isWrite()) {
-                    if (dataflow().getMemoryLocation(term) != variable->memoryLocation()) {
+                    if (location != variable->memoryLocation()) {
                         return false;
                     }
                 }
@@ -1259,6 +1248,10 @@ bool DefinitionGenerator::isIntermediate(const vars::Variable *variable) {
         return *result;
     } else {
         return isIntermediate_[variable] = [&]() {
+            if (variable->isGlobal()) {
+                return false;
+            }
+
             if (!isSingleAssignment(variable)) {
                 return false;
             }

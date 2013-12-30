@@ -157,6 +157,7 @@ set(SOURCES
     ir/liveness/Liveness.h
     ir/liveness/LivenessAnalyzer.cpp
     ir/liveness/LivenessAnalyzer.h
+    ir/vars/Variable.cpp
     ir/vars/Variable.h
     ir/vars/VariableAnalyzer.cpp
     ir/vars/VariableAnalyzer.h

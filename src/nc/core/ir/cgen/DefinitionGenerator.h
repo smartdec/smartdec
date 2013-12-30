@@ -92,8 +92,7 @@ class DefinitionGenerator: public DeclarationGenerator {
     boost::unordered_map<const vars::Variable *, bool> isSingleAssignment_; ///< Memoized results of isSingleAssignment().
     boost::unordered_map<const vars::Variable *, bool> isIntermediate_; ///< Memoized results of isIntermediate().
 
-    public:
-
+public:
     /**
      * \param[in] parent Parent code generator.
      * \param[in] function Valid pointer to the function being translated.
@@ -140,8 +139,7 @@ class DefinitionGenerator: public DeclarationGenerator {
      */
     std::unique_ptr<likec::FunctionDefinition> createDefinition();
 
-    protected:
-
+protected:
     /**
      * Creates a declaration of function argument for given term.
      * Declaration is automatically added to the list of formal arguments
@@ -154,15 +152,6 @@ class DefinitionGenerator: public DeclarationGenerator {
     likec::ArgumentDeclaration *makeArgumentDeclaration(const Term *term);
 
     /**
-     * Computes a LikeC type for a given local variable.
-     *
-     * \param variable Valid pointer to a variable.
-     *
-     * \return Valid pointer to the suitable LikeC type for this variable.
-     */
-    const likec::Type *makeLocalVariableType(const vars::Variable *variable);
-
-    /**
      * Invents a name for the given local variable.
      *
      * \param variable Valid pointer to a variable.
@@ -172,14 +161,18 @@ class DefinitionGenerator: public DeclarationGenerator {
     QString makeLocalVariableName(const vars::Variable *variable);
 
     /**
-     * Returns a declaration of a given variable.
-     * If necessary, the declaration is created and added to current function's code.
-     *
-     * \param[in] variable Valid pointer to the variable.
+     * \param[in] variable Valid pointer to a local variable.
      *
      * \return Valid pointer to the local variable declaration.
      */
     likec::VariableDeclaration *makeLocalVariableDeclaration(const vars::Variable *variable);
+
+    /**
+     * \param[in] variable Valid pointer to a variable.
+     *
+     * \return Valid pointer to the declaration of this variable.
+     */
+    likec::VariableDeclaration *makeVariableDeclaration(const vars::Variable *variable);
 
     /**
      * \param[in] basicBlock Valid pointer to a basic block.
@@ -262,7 +255,7 @@ class DefinitionGenerator: public DeclarationGenerator {
      *
      * \return Valid pointer to created LikeC statement.
      */
-    virtual std::unique_ptr<likec::Statement> doMakeStatement(const Statement *statement, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB);
+    std::unique_ptr<likec::Statement> doMakeStatement(const Statement *statement, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB);
 
     /**
      * Creates a goto statement to the given target.
@@ -307,7 +300,7 @@ class DefinitionGenerator: public DeclarationGenerator {
      *
      * \return Valid pointer to created LikeC expression.
      */
-    virtual std::unique_ptr<likec::Expression> doMakeExpression(const Term *term);
+    std::unique_ptr<likec::Expression> doMakeExpression(const Term *term);
 
     /**
      * Actually creates a LikeC expression for given UnaryOperator.
@@ -316,7 +309,7 @@ class DefinitionGenerator: public DeclarationGenerator {
      *
      * \return Valid pointer to created LikeC expression.
      */
-    virtual std::unique_ptr<likec::Expression> doMakeExpression(const UnaryOperator *unary);
+    std::unique_ptr<likec::Expression> doMakeExpression(const UnaryOperator *unary);
 
     /**
      * Actually creates a LikeC expression for given BinaryOperator.
@@ -325,7 +318,7 @@ class DefinitionGenerator: public DeclarationGenerator {
      *
      * \return Valid pointer to created LikeC expression.
      */
-    virtual std::unique_ptr<likec::Expression> doMakeExpression(const BinaryOperator *binary);
+    std::unique_ptr<likec::Expression> doMakeExpression(const BinaryOperator *binary);
 
     /**
      * Creates an integer constant with given value from given term.
@@ -333,14 +326,14 @@ class DefinitionGenerator: public DeclarationGenerator {
      * \param[in] term Valid pointer to a term.
      * \param[in] value Value of the constant.
      */
-    virtual std::unique_ptr<likec::Expression> makeConstant(const Term *term, const SizedValue &value);
+    std::unique_ptr<likec::Expression> makeConstant(const Term *term, const SizedValue &value);
 
     /**
      * Creates an access to a variable associated with a term.
      *
      * \param term Valid pointer to the term.
      */
-    virtual std::unique_ptr<likec::Expression> makeVariableAccess(const Term *term);
+    std::unique_ptr<likec::Expression> makeVariableAccess(const Term *term);
 
     /**
      * \param[in] write Valid pointer to a write term.

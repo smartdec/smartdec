@@ -36,6 +36,8 @@
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/types/Type.h>
+#include <nc/core/ir/types/Types.h>
+#include <nc/core/ir/vars/Variable.h>
 
 #include <nc/core/likec/FunctionDefinition.h>
 #include <nc/core/likec/StructType.h>
@@ -154,15 +156,31 @@ const likec::StructType *CodeGenerator::makeStructuralType(const types::Type *ty
 }
 #endif
 
-likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const MemoryLocation &memoryLocation, const types::Type *type) {
-    if (likec::VariableDeclaration *result = nc::find(variableDeclarations_, memoryLocation)) {
+const likec::Type *CodeGenerator::makeVariableType(const vars::Variable *variable) {
+    assert(variable != NULL);
+
+    foreach (auto termAndLocation, variable->termsAndLocations()) {
+        if (termAndLocation.location == variable->memoryLocation()) {
+            return makeType(types().getType(termAndLocation.term));
+        }
+    }
+
+    return tree().makeIntegerType(variable->memoryLocation().size(), true);
+}
+
+likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const vars::Variable *variable) {
+    assert(variable != NULL);
+    assert(variable->isGlobal());
+
+    if (likec::VariableDeclaration *result = nc::find(variableDeclarations_, variable)) {
         return result;
     } else {
+        // TODO: refactor
         QString name;
         QString comment;
 
-        if (memoryLocation.domain() == MemoryDomain::MEMORY) {
-            ByteAddr addr = memoryLocation.addr() / CHAR_BIT;
+        if (variable->memoryLocation().domain() == MemoryDomain::MEMORY) {
+            ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
             comment = module().getName(addr);
             if (!comment.isEmpty()) {
                 name = likec::Tree::cleanName(module().getName(addr));
@@ -174,22 +192,22 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const M
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
         if (name.isEmpty()) {
-            if (const arch::Register *reg = module().architecture()->registers()->getRegister(memoryLocation)) {
+            if (const arch::Register *reg = module().architecture()->registers()->getRegister(variable->memoryLocation())) {
                 name = reg->lowercaseName();
             }
         }
 #endif
 
         if (name.isEmpty()) {
-            name = QString("g%1").arg(memoryLocation.addr() / CHAR_BIT, 0, 16);
+            name = QString("g%1").arg(variable->memoryLocation().addr() / CHAR_BIT, 0, 16);
         }
 
-        auto declaration = std::make_unique<likec::VariableDeclaration>(tree(), name, makeType(type));
+        auto declaration = std::make_unique<likec::VariableDeclaration>(tree(), name, makeVariableType(variable));
         declaration->setComment(comment);
         result = declaration.get();
 
         tree().root()->addDeclaration(std::move(declaration));
-        variableDeclarations_[memoryLocation] = result;
+        variableDeclarations_[variable] = result;
 
         return result;
     }

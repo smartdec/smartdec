@@ -13,9 +13,9 @@ namespace vars {
 void Variables::addVariable(std::unique_ptr<Variable> variable) {
     assert(variable != NULL);
 
-    foreach (auto term, variable->terms()) {
-        assert(nc::find(term2variable_, term) == NULL);
-        term2variable_[term] = variable.get();
+    foreach (const auto &termAndLocation, variable->termsAndLocations()) {
+        assert(nc::find(term2variable_, termAndLocation.term) == NULL);
+        term2variable_[termAndLocation.term] = variable.get();
     }
 
     variables_.push_back(std::move(variable));

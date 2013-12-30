@@ -79,6 +79,7 @@ namespace types {
 }
 
 namespace vars {
+    class Variable;
     class Variables;
 }
 
@@ -128,7 +129,7 @@ class CodeGenerator: boost::noncopyable {
     boost::unordered_map<const ir::types::Type *, const likec::StructType *> traits2structType_;
 
     /** Already declared global variables. */
-    boost::unordered_map<MemoryLocation, likec::VariableDeclaration *> variableDeclarations_;
+    boost::unordered_map<const vars::Variable *, likec::VariableDeclaration *> variableDeclarations_;
 
     /** Mapping of functions to their declarations. */
     boost::unordered_map<const Function *, likec::FunctionDeclaration *> function2declaration_;
@@ -241,15 +242,18 @@ public:
 #endif
 
     /**
-     * Returns a declaration of global variable for given term.
-     * If necessary, the declaration is created and added to the code of current compilation unit.
+     * \param variable Valid pointer to a variable.
      *
-     * \param[in] memoryLocation Memory location of the global variable.
-     * \param[in] type Valid pointer to the type traits of the global variable.
-     *
-     * \return Valid pointer to the global variable declaration.
+     * \return Valid pointer to the LikeC type of this variable.
      */
-    likec::VariableDeclaration *makeGlobalVariableDeclaration(const MemoryLocation &memoryLocation, const types::Type *type);
+    const likec::Type *makeVariableType(const vars::Variable *variable);
+
+    /**
+     * \param[in] variable Valid pointer to a global variable.
+     *
+     * \return Valid pointer to corresponding global variable declaration.
+     */
+    likec::VariableDeclaration *makeGlobalVariableDeclaration(const vars::Variable *variable);
 
     /**
      * \param[in] calleeId Id of a called function.

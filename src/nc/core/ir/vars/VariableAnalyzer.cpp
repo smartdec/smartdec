@@ -24,7 +24,7 @@
 
 #include "VariableAnalyzer.h"
 
-#include <numeric> /* std::accumulate */
+#include <boost/range/adaptor/map.hpp>
 
 #include <nc/common/DisjointSet.h>
 #include <nc/common/Foreach.h>
@@ -50,7 +50,7 @@ class TermSet: public DisjointSet<TermSet> {};
 } // anonymous namespace
 
 void VariableAnalyzer::analyze() {
-    std::vector<std::pair<MemoryLocation, const Term *>> globalMemoryAccesses;
+    std::vector<Variable::TermAndLocation> globalMemoryAccesses;
 
     /*
      * Reconstruct local variables.
@@ -69,7 +69,7 @@ void VariableAnalyzer::analyze() {
 
             if ((term->isRead() || term->isWrite()) && location) {
                 if (architecture_->isGlobalMemory(location)) {
-                    globalMemoryAccesses.emplace_back(location, term);
+                    globalMemoryAccesses.emplace_back(term, location);
                 } else {
                     term2set[term] = std::make_unique<TermSet>();
                 }
@@ -97,50 +97,49 @@ void VariableAnalyzer::analyze() {
         /*
          * Compute the terms belonging to each set.
          */
-        boost::unordered_map<TermSet *, std::vector<const Term *>> set2terms;
-        foreach (auto &pair, term2set) {
-            set2terms[pair.second->findSet()].push_back(pair.first);
+        boost::unordered_map<TermSet *, std::vector<Variable::TermAndLocation>> set2termsAndLocations;
+        foreach (auto &termAndSet, term2set) {
+            const Term *term = termAndSet.first;
+            TermSet *set = termAndSet.second->findSet();
+
+            set2termsAndLocations[set].emplace_back(term, dataflow.getMemoryLocation(term));
         }
 
         /*
          * Create local variables.
          */
-        foreach (auto &pair, set2terms) {
-            auto &terms = pair.second;
-
-            auto variableLocation = std::accumulate(terms.begin(), terms.end(), MemoryLocation(),
-                [&](const MemoryLocation &a, const Term *term) {
-                    return MemoryLocation::merge(a, dataflow.getMemoryLocation(term));
-                });
-
-            variables_.addVariable(std::make_unique<Variable>(variableLocation, std::move(terms)));
+        foreach (auto &termsAndLocations, set2termsAndLocations | boost::adaptors::map_values) {
+            variables_.addVariable(std::make_unique<Variable>(Variable::LOCAL, std::move(termsAndLocations)));
         }
     }
 
     /*
      * Reconstruct global variables.
      */
-    std::sort(globalMemoryAccesses.begin(), globalMemoryAccesses.end(),
-        [](const std::pair<MemoryLocation, const Term *> &a, const std::pair<MemoryLocation, const Term *> &b) {
-            return a.first < b.first;
-        });
+    if (!globalMemoryAccesses.empty()) {
+        std::sort(globalMemoryAccesses.begin(), globalMemoryAccesses.end(),
+            [](const Variable::TermAndLocation &a, const Variable::TermAndLocation &b) {
+                return a.location < b.location;
+            });
 
-    MemoryLocation variableLocation;
-    std::vector<const Term *> terms;
+        auto begin = globalMemoryAccesses.begin();
+        auto end = globalMemoryAccesses.end();
 
-    foreach (const auto &locationAndTerm, globalMemoryAccesses) {
-        if (variableLocation && !variableLocation.overlaps(locationAndTerm.first)) {
-            variables_.addVariable(std::make_unique<Variable>(variableLocation, terms));
-            variableLocation = MemoryLocation();
-            terms.clear();
+        MemoryLocation variableLocation = begin->location;
+
+        for (auto i = std::next(begin); i != end; ++i) {
+            if (!variableLocation.overlaps(i->location)) {
+                variables_.addVariable(std::make_unique<Variable>(Variable::GLOBAL,
+                    std::vector<Variable::TermAndLocation>(begin, i), variableLocation));
+                begin = i;
+                variableLocation = i->location;
+            } else {
+                variableLocation = MemoryLocation::merge(variableLocation, i->location);
+            }
         }
 
-        terms.push_back(locationAndTerm.second);
-        variableLocation = MemoryLocation::merge(variableLocation, locationAndTerm.first);
-    }
-
-    if (variableLocation) {
-        variables_.addVariable(std::make_unique<Variable>(variableLocation, std::move(terms)));
+        variables_.addVariable(std::make_unique<Variable>(Variable::GLOBAL,
+            std::vector<Variable::TermAndLocation>(begin, end), variableLocation));
     }
 }
 
