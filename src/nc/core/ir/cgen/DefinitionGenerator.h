@@ -96,7 +96,7 @@ public:
     /**
      * \param[in] parent Parent code generator.
      * \param[in] function Valid pointer to the function being translated.
-     * \param[in] cancelled Cancellation token.
+     * \param[in] canceled Cancellation token.
      */
     DefinitionGenerator(CodeGenerator &parent, const Function *function, const CancellationToken &canceled);
 

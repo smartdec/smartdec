@@ -235,7 +235,7 @@ public:
     /**
      * Sets the structured graphs for all functions.
      *
-     * \param[in] graph Pointer to the graphs. Can be NULL.
+     * \param[in] graphs Pointer to the graphs. Can be NULL.
      */
     void setGraphs(std::unique_ptr<ir::cflow::Graphs> graphs);
 

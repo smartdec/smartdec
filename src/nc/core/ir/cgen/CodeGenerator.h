@@ -145,8 +145,9 @@ public:
      * \param[in] hooks Hooks of calling conventions.
      * \param[in] signatures Signatures of functions.
      * \param[in] dataflows Dataflow information for all functions.
+     * \param[in] variables Information about reconstructed variables.
      * \param[in] graphs Reduced control-flow graphs.
-     * \param[in] liveness Liveness information for all functions.
+     * \param[in] livenesses Liveness information for all functions.
      * \param[in] types Information about types.
      * \param[in] cancellationToken Cancellation token.
      */
