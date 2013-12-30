@@ -66,8 +66,8 @@ bool FunctionAnalyzer::analyze() {
     }
 
     bool changed = false;
-    foreach (auto &termAndType, types_.map()) {
-        if (termAndType.second->changed()) {
+    foreach (const Term *term, terms_) {
+        if (types_.getType(term)->changed()) {
             changed = true;
         }
     }
