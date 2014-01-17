@@ -44,12 +44,13 @@
 #include <nc/common/GitSHA1.h>
 #include <nc/common/SignalLogger.h>
 #include <nc/common/make_unique.h>
+
 #include <nc/core/Context.h>
 #include <nc/core/Driver.h>
-#include <nc/core/Module.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Sections.h>
 #include <nc/core/ir/Program.h>
 
 #include "Command.h"
@@ -332,7 +333,7 @@ void MainWindow::open(const QStringList &filenames) {
     auto project = std::make_unique<gui::Project>();
     project->setName(QFileInfo(filenames.front()).fileName());
     project->setContext(context);
-    project->setModule(context->module());
+    project->setImage(context->image());
     project->setInstructions(context->instructions());
 
     open(std::move(project));
@@ -351,8 +352,8 @@ void MainWindow::open(std::unique_ptr<Project> project) {
 
     project_ = std::move(project);
 
-    sectionsView_->model()->setModule();
-    disassemblyDialog_->setModule();
+    sectionsView_->model()->setImage();
+    disassemblyDialog_->setImage();
     instructionsView_->model()->setInstructions();
     cxxView_->document()->setContext();
     inspectorView_->model()->setContext();
@@ -362,7 +363,7 @@ void MainWindow::open(std::unique_ptr<Project> project) {
 
     /* Connect the project to the slots for updating views. */
     connect(project_.get(), SIGNAL(nameChanged()), this, SLOT(updateGuiState()));
-    connect(project_.get(), SIGNAL(moduleChanged()), this, SLOT(moduleChanged()));
+    connect(project_.get(), SIGNAL(imageChanged()), this, SLOT(imageChanged()));
     connect(project_.get(), SIGNAL(instructionsChanged()), this, SLOT(instructionsChanged()));
     connect(project_.get(), SIGNAL(treeChanged()), this, SLOT(treeChanged()));
 
@@ -376,14 +377,14 @@ void MainWindow::open(std::unique_ptr<Project> project) {
 
     updateGuiState();
 
-    moduleChanged();
+    imageChanged();
     instructionsChanged();
     treeChanged();
 }
 
-void MainWindow::moduleChanged() {
-    sectionsView_->model()->setModule(project()->module());
-    disassemblyDialog_->setModule(project()->module());
+void MainWindow::imageChanged() {
+    sectionsView_->model()->setImage(project()->image());
+    disassemblyDialog_->setImage(project()->image());
 }
 
 void MainWindow::instructionsChanged() {
@@ -446,7 +447,7 @@ void MainWindow::disassemble() {
     if (!project()) {
         return;
     }
-    if (project()->module()->image()->sections().empty()) {
+    if (project()->image()->sections()->all().empty()) {
         QMessageBox::critical(this, tr("Error"), tr("Sorry, the file you are currently working on does not contain any information about sections. There is nothing I could disassemble."));
         return;
     }

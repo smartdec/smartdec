@@ -47,8 +47,7 @@ namespace gui {
 class InstructionsModel: public QAbstractItemModel {
     Q_OBJECT
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -57,7 +56,7 @@ class InstructionsModel: public QAbstractItemModel {
     InstructionsModel(QObject *parent = NULL);
 
     /**
-     * Sets the associated module.
+     * Sets the set of instructions.
      *
      * \param instructions Pointer to a set of instructions. Can be NULL.
      */
@@ -88,8 +87,7 @@ class InstructionsModel: public QAbstractItemModel {
     virtual QModelIndex parent(const QModelIndex &index) const override;
     virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
 
-    private:
-
+private:
     /** Associated set of instructions. */
     std::shared_ptr<const core::arch::Instructions> instructions_;
 

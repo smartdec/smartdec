@@ -32,9 +32,9 @@
 namespace nc {
 
 namespace core {
-    class Module;
     namespace image {
         class Section;
+        class Image;
     }
 }
 
@@ -46,8 +46,7 @@ namespace gui {
 class SectionsModel: public QAbstractItemModel {
     Q_OBJECT
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -56,16 +55,16 @@ class SectionsModel: public QAbstractItemModel {
     SectionsModel(QObject *parent = NULL);
 
     /**
-     * Sets the associated module.
+     * Sets the associated executable image.
      *
-     * \param module Pointer to a module. Can be NULL.
+     * \param image Pointer to the executable image. Can be NULL.
      */
-    void setModule(const std::shared_ptr<const core::Module> &module = std::shared_ptr<const core::Module>());
+    void setImage(const std::shared_ptr<const core::image::Image> &image = std::shared_ptr<const core::image::Image>());
 
     /**
-     * \return Pointer to the associated module. Can be NULL.
+     * \return Pointer to the associated executable image. Can be NULL.
      */
-    const std::shared_ptr<const core::Module> &module() const { return module_; }
+    const std::shared_ptr<const core::image::Image> &image() const { return image_; }
 
     /**
      * \param index Model index.
@@ -81,10 +80,9 @@ class SectionsModel: public QAbstractItemModel {
     virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
-    private:
-
-    /** Associated module. */
-    std::shared_ptr<const core::Module> module_;
+private:
+    /** Associated executable image. */
+    std::shared_ptr<const core::image::Image> image_;
 
     /**
      * Updates the contents of the model.

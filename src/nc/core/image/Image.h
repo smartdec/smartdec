@@ -25,31 +25,33 @@
 
 #include <nc/config.h>
 
-#include <QtGlobal>
-
 #include <memory>
-#include <vector>
 
-#include "ByteSource.h"
+#include <QString>
 
-QT_BEGIN_NAMESPACE
-class QString;
-QT_END_NAMESPACE
+namespace nc { namespace core {
 
-namespace nc {
-namespace core {
+namespace arch {
+    class Architecture;
+}
+
+namespace mangling {
+    class Demangler;
+}
+
 namespace image {
 
-class Section;
+class Sections;
 class Symbols;
 
 /**
- * Binary file image.
+ * An executable image.
  */
-class Image: public ByteSource {
-    std::vector<std::unique_ptr<Section>> sections_; ///< Sections of the executable file.
-    std::unique_ptr<ByteSource> externalByteSource_; ///< External source of this image's bytes.
-    std::unique_ptr<Symbols> symbols_; ///< Symbols of the image.
+class Image {
+    const arch::Architecture *architecture_; ///< Architecture.
+    std::unique_ptr<Sections> sections_; ///< Sections.
+    std::unique_ptr<Symbols> symbols_; ///< Symbols.
+    std::unique_ptr<mangling::Demangler> demangler_; ///< Demangler.
 
 public:
     /**
@@ -63,58 +65,66 @@ public:
     ~Image();
 
     /**
-     * Adds a new section.
+     * \return Pointer to the architecture. Can be NULL.
+     */
+    const arch::Architecture *architecture() const { return architecture_; }
+
+    /**
+     * Sets the architecture of this executable image.
+     * The architecture must not have been set before.
      *
-     * \param section Valid pointer to a section.
+     * \param architecture Valid pointer to the architecture.
      */
-    void addSection(std::unique_ptr<Section> section);
+    void setArchitecture(const arch::Architecture *architecture);
 
     /**
-     * \return Sections of the executable file.
-     */
-    const std::vector<Section *> &sections() const { return reinterpret_cast<const std::vector<Section *> &>(sections_); }
-
-    /**
-     * \param[in] addr  Linear address.
+     * Sets the architecture of this executable image.
+     * The architecture must not have been set before.
      *
-     * \return Section containing given virtual address, or NULL if there is no such section.
+     * \param name Name of the architecture.
      */
-    const Section *getSectionContainingAddress(ByteAddr addr) const;
-    
-    /**
-     * \param[in] name Section name.
-     * 
-     * \return Section with the given name, or NULL if there is no such section.
-     */
-    const Section *getSectionByName(const QString &name) const;
+    void setArchitecture(const QString &name);
 
     /**
-     * \return Pointer to the external byte source. Can be NULL.
+     * \return Valid pointer to the sections of the executable file.
      */
-    ByteSource *externalByteSource() const { return externalByteSource_.get(); }
+    Sections *sections() { return sections_.get(); }
 
     /**
-     * Sets the external byte source.
+     * \return Valid pointer to the sections of the executable file.
+     */
+    const Sections *sections() const { return sections_.get(); }
+
+    /**
+     * \return Valid pointer to the symbols of the image.
+     */
+    Symbols *symbols() { return symbols_.get(); }
+
+    /**
+     * \return Valid pointer to the symbols of the image.
+     */
+    const Symbols *symbols() const { return symbols_.get(); }
+
+    /**
+     * \return Valid pointer to a demangler.
+     */
+    const mangling::Demangler *demangler() const { return demangler_.get(); }
+
+    /**
+     * Sets the demangler.
      *
-     * \param byteSource Pointer to the new external byte source. Can be NULL.
+     * \param demangler Valid pointer to the new demangler.
      */
-    void setExternalByteSource(std::unique_ptr<ByteSource> byteSource) { externalByteSource_ = std::move(byteSource); }
-
-    virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
+    void setDemangler(std::unique_ptr<mangling::Demangler> demangler);
 
     /**
-     * \return Symbols of the image.
+     * Sets the demangler.
+     *
+     * \param name Name of the demangler.
      */
-    Symbols &symbols() { return *symbols_; }
-
-    /**
-     * \return Symbols of the image.
-     */
-    const Symbols &symbols() const { return *symbols_; }
+    void setDemangler(const QString &name);
 };
 
-} // namespace image
-} // namespace core
-} // namespace nc
+}}} // namespace nc::core::image
 
 /* vim:set et sts=4 sw=4: */

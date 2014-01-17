@@ -41,10 +41,9 @@ QT_END_NAMESPACE
 namespace nc {
 
 namespace core {
-    class Module;
-
     namespace image {
         class Section;
+        class Image;
     }
 }
 
@@ -56,8 +55,7 @@ namespace gui {
 class DisassemblyDialog: public QDialog {
     Q_OBJECT
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -66,19 +64,19 @@ class DisassemblyDialog: public QDialog {
     DisassemblyDialog(QWidget *parent = NULL);
 
     /**
-     * Sets the associated module.
+     * Sets the associated executable image.
      *
-     * \param module Pointer to a module. Can be NULL.
+     * \param image Pointer to the image. Can be NULL.
      */
-    void setModule(const std::shared_ptr<const core::Module> &module = std::shared_ptr<const core::Module>());
+    void setImage(const std::shared_ptr<const core::image::Image> &image = std::shared_ptr<const core::image::Image>());
 
     /**
-     * \return Pointer to the associated module. Can be NULL.
+     * \return Pointer to the executable image. Can be NULL.
      */
-    const std::shared_ptr<const core::Module> &module() const { return module_; }
+    const std::shared_ptr<const core::image::Image> &image() const { return image_; }
 
     /**
-     * \return Pointer to the currently selected section.
+     * \return Pointer to the currently selected section. Can be NULL.
      */
     const core::image::Section *selectedSection() const;
 
@@ -113,10 +111,9 @@ class DisassemblyDialog: public QDialog {
 
     void accept() override;
 
-    private:
-
-    /** Associated module. */
-    std::shared_ptr<const core::Module> module_;
+private:
+    /** Associated executable image. */
+    std::shared_ptr<const core::image::Image> image_;
 
     /** Combo box for choosing the section. */
     QComboBox *sectionComboBox_;

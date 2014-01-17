@@ -30,7 +30,6 @@
 #include <nc/common/StreamLogger.h>
 #include <nc/common/Unreachable.h>
 
-#include <nc/core/Module.h>
 #include <nc/core/Context.h> 
 #include <nc/core/Driver.h>
 #include <nc/core/arch/Architecture.h>
@@ -39,6 +38,7 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Sections.h>
 #include <nc/core/image/Symbols.h>
 #include <nc/core/input/Parser.h>
 #include <nc/core/input/ParserRepository.h>
@@ -79,7 +79,7 @@ void openFileForWritingAndCall(const QString &filename, T functor) {
 }
 
 void printSections(nc::core::Context &context, QTextStream &out) {
-    foreach (const auto *section, context.module()->image()->sections()) {
+    foreach (auto section, context.image()->sections()->all()) {
         QString flags;
         if (section->isReadable()) {
             flags += QLatin1String("r");
@@ -105,7 +105,7 @@ void printSections(nc::core::Context &context, QTextStream &out) {
 }
 
 void printSymbols(nc::core::Context &context, QTextStream &out) {
-    foreach (const auto *symbol, context.module()->image()->symbols().all()) {
+    foreach (const auto *symbol, context.image()->symbols()->all()) {
         using nc::core::image::Symbol;
 
         QString type;

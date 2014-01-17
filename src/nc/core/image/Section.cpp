@@ -24,7 +24,7 @@
 
 #include "Section.h"
 
-#include "Image.h"
+#include "Sections.h"
 
 namespace nc {
 namespace core {
@@ -40,8 +40,8 @@ Section::Section(const QString &name, ByteAddr addr, ByteSize size):
 ByteSize Section::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
     if (externalByteSource()) {
         return externalByteSource()->readBytes(addr - addr_, buf, size);
-    } else if (image()) {
-        return image()->readBytes(addr, buf, size);
+    } else if (sections_) {
+        return sections_->readBytes(addr, buf, size);
     } else {
         return 0;
     }

@@ -38,7 +38,9 @@ class CancellationToken;
 
 namespace core {
 
-class Module;
+namespace image {
+    class Image;
+}
 
 namespace likec {
     class FunctionDeclaration;
@@ -92,8 +94,8 @@ class CodeGenerator: boost::noncopyable {
     /** Abstract syntax tree to generate code in. */
     likec::Tree &tree_;
 
-    /** Module being decompiled. */
-    const Module &module_;
+    /** Executable image being decompiled. */
+    const image::Image &image_;
 
     /** Intermediate representation of functions. */
     const Functions &functions_;
@@ -140,7 +142,7 @@ public:
      * Constructor.
      *
      * \param[out] tree Abstract syntax tree to generate code in.
-     * \param[in] module Module being decompiled.
+     * \param[in] image Executable image being decompiled.
      * \param[in] functions Intermediate representation of functions.
      * \param[in] hooks Hooks of calling conventions.
      * \param[in] signatures Signatures of functions.
@@ -151,12 +153,12 @@ public:
      * \param[in] types Information about types.
      * \param[in] cancellationToken Cancellation token.
      */
-    CodeGenerator(likec::Tree &tree, const Module &module, const Functions &functions, calling::Hooks &hooks,
+    CodeGenerator(likec::Tree &tree, const image::Image &image, const Functions &functions, calling::Hooks &hooks,
         const calling::Signatures &signatures, const dflow::Dataflows &dataflows, const vars::Variables &variables,
         const cflow::Graphs &graphs, const liveness::Livenesses &livenesses, const types::Types &types,
         const CancellationToken &cancellationToken
     ):
-        tree_(tree), module_(module), functions_(functions), hooks_(hooks), signatures_(signatures),
+        tree_(tree), image_(image), functions_(functions), hooks_(hooks), signatures_(signatures),
         dataflows_(dataflows), variables_(variables), graphs_(graphs), livenesses_(livenesses),
         types_(types), cancellationToken_(cancellationToken)
     {}
@@ -172,9 +174,9 @@ public:
     likec::Tree &tree() const { return tree_; }
 
     /**
-     * \return Module being decompiled.
+     * \return Executable image being decompiled.
      */
-    const Module &module() const { return module_; }
+    const image::Image &image() const { return image_; }
 
     /**
      * \return Intermediate representation of functions.

@@ -13,6 +13,7 @@
 #include <nc/core/arch/disasm/Disassembler.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Sections.h>
 #include <nc/core/input/Parser.h>
 #include <nc/core/input/ParserRepository.h>
 #include <nc/core/ir/Function.h>
@@ -20,7 +21,6 @@
 
 #include "Context.h"
 #include "MasterAnalyzer.h"
-#include "Module.h"
 
 namespace nc {
 namespace core {
@@ -51,7 +51,7 @@ void Driver::parse(Context &context, const QString &filename) {
 
     context.logToken() << tr("Parsing using %1 parser...").arg(suitableParser->name());
 
-    suitableParser->parse(&source, context.module().get());
+    suitableParser->parse(&source, context.image().get());
 
     context.logToken() << tr("Parsing completed.");
 }
@@ -59,7 +59,7 @@ void Driver::parse(Context &context, const QString &filename) {
 void Driver::disassemble(Context &context) {
     context.logToken() << tr("Disassembling code sections...");
 
-    foreach (auto section, context.module()->image()->sections()) {
+    foreach (auto section, context.image()->sections()->all()) {
         if (section->isCode()) {
             disassemble(context, section);
         }
@@ -82,7 +82,7 @@ void Driver::disassemble(Context &context, const image::ByteSource *source, Byte
     try {
         auto newInstructions = std::make_shared<arch::Instructions>(*context.instructions());
 
-        arch::disasm::Disassembler disassembler(context.module()->architecture(), newInstructions.get());
+        arch::disasm::Disassembler disassembler(context.image()->architecture(), newInstructions.get());
         disassembler.disassemble(source, begin, end, context.cancellationToken());
 
         context.setInstructions(newInstructions);
@@ -95,7 +95,7 @@ void Driver::disassemble(Context &context, const image::ByteSource *source, Byte
 
 void Driver::decompile(Context &context) {
     try {
-        context.module()->architecture()->masterAnalyzer()->decompile(context);
+        context.image()->architecture()->masterAnalyzer()->decompile(context);
     } catch (const CancellationException &) {
         context.logToken() << tr("Decompilation canceled.");
         throw;

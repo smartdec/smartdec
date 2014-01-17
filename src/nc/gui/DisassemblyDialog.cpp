@@ -33,9 +33,9 @@
 #include <nc/common/Conversions.h>
 #include <nc/common/Foreach.h>
 
-#include <nc/core/Module.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Sections.h>
 
 Q_DECLARE_METATYPE(const nc::core::image::Section *)
 
@@ -75,9 +75,9 @@ DisassemblyDialog::DisassemblyDialog(QWidget *parent):
     updateSectionsList();
 }
 
-void DisassemblyDialog::setModule(const std::shared_ptr<const core::Module> &module) {
-    if (module != module_) {
-        module_ = module;
+void DisassemblyDialog::setImage(const std::shared_ptr<const core::image::Image> &image) {
+    if (image != image_) {
+        image_ = image;
         updateSectionsList();
         updateAddresses();
     }
@@ -86,8 +86,8 @@ void DisassemblyDialog::setModule(const std::shared_ptr<const core::Module> &mod
 void DisassemblyDialog::updateSectionsList() {
     sectionComboBox_->clear();
 
-    if (module()) {
-        foreach (const core::image::Section *section, module()->image()->sections()) {
+    if (image()) {
+        foreach (auto section, image()->sections()->all()) {
             sectionComboBox_->addItem(section->name(), QVariant::fromValue(section));
         }
     }

@@ -32,7 +32,6 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/core/Context.h>
-#include <nc/core/Module.h>
 #include <nc/core/arch/irgen/IRGenerator.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Symbols.h>
@@ -77,7 +76,7 @@ void MasterAnalyzer::createProgram(Context &context) const {
 
     std::unique_ptr<ir::Program> program(new ir::Program());
 
-    core::arch::irgen::IRGenerator(context.module().get(), context.instructions().get(), program.get())
+    core::arch::irgen::IRGenerator(context.image().get(), context.instructions().get(), program.get())
         .generate(context.cancellationToken());
 
     context.setProgram(std::move(program));
@@ -103,7 +102,7 @@ void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) 
         QString name;
 
         /* Take the name of the corresponding symbol, if possible. */
-        if (auto symbol = context.module()->image()->symbols().find(image::Symbol::Function, *function->entry()->address())) {
+        if (auto symbol = context.image()->symbols()->find(image::Symbol::Function, *function->entry()->address())) {
             name = symbol->name();
 
             QString cleanName = likec::Tree::cleanName(name);
@@ -113,7 +112,7 @@ void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) 
                 function->comment().append(name);
             }
 
-            QString demangledName = context.module()->demangler()->demangle(name);
+            QString demangledName = context.image()->demangler()->demangle(name);
             if (demangledName.contains('(')) {
                 /* What we demangled has really something to do with a function. */
                 function->comment().append(demangledName);
@@ -162,7 +161,7 @@ void MasterAnalyzer::dataflowAnalysis(Context &context, const ir::Function *func
 
     std::unique_ptr<ir::dflow::Dataflow> dataflow(new ir::dflow::Dataflow());
 
-    ir::dflow::DataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.hooks())
+    ir::dflow::DataflowAnalyzer(*dataflow, context.image()->architecture(), function, context.hooks())
         .analyze(context.cancellationToken());
 
     context.dataflows()->emplace(function, std::move(dataflow));
@@ -184,7 +183,7 @@ void MasterAnalyzer::reconstructVariables(Context &context) const {
 
     std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
 
-    ir::vars::VariableAnalyzer(*variables, *context.dataflows(), context.module()->architecture()).analyze();
+    ir::vars::VariableAnalyzer(*variables, *context.dataflows(), context.image()->architecture()).analyze();
 
     context.setVariables(std::move(variables));
 }
@@ -205,7 +204,7 @@ void MasterAnalyzer::livenessAnalysis(Context &context, const ir::Function *func
     std::unique_ptr<ir::liveness::Liveness> liveness(new ir::liveness::Liveness());
 
     ir::liveness::LivenessAnalyzer(*liveness, function,
-        *context.dataflows()->at(function), context.module()->architecture(),
+        *context.dataflows()->at(function), context.image()->architecture(),
         *context.graphs()->at(function), *context.hooks(), *context.signatures())
     .analyze();
 
@@ -252,7 +251,7 @@ void MasterAnalyzer::generateTree(Context &context) const {
 
     std::unique_ptr<nc::core::likec::Tree> tree(new nc::core::likec::Tree());
 
-    ir::cgen::CodeGenerator(*tree, *context.module(), *context.functions(), *context.hooks(),
+    ir::cgen::CodeGenerator(*tree, *context.image(), *context.functions(), *context.hooks(),
         *context.signatures(), *context.dataflows(), *context.variables(), *context.graphs(),
         *context.livenesses(), *context.types(), context.cancellationToken())
         .makeCompilationUnit();

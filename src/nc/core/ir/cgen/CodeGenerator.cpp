@@ -24,21 +24,19 @@
 
 #include "CodeGenerator.h"
 
-#include <nc/core/Module.h>
-#include <nc/core/Context.h>
-#include <nc/core/arch/Architecture.h>
-#include <nc/core/arch/Registers.h>
-
 #include <nc/common/CancellationToken.h>
+#include <nc/common/Range.h>
 #include <nc/common/make_unique.h>
 
+#include <nc/core/arch/Architecture.h>
+#include <nc/core/arch/Registers.h>
+#include <nc/core/image/Image.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/types/Type.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/ir/vars/Variable.h>
-
 #include <nc/core/likec/FunctionDefinition.h>
 #include <nc/core/likec/StructType.h>
 #include <nc/core/likec/StructTypeDeclaration.h>
@@ -52,7 +50,7 @@ namespace ir {
 namespace cgen {
 
 void CodeGenerator::makeCompilationUnit() {
-    tree().setPointerSize(module().architecture()->bitness());
+    tree().setPointerSize(image().architecture()->bitness());
     tree().setRoot(std::make_unique<likec::CompilationUnit>(tree()));
     tree().root()->setComment(functions().comment().text());
 
@@ -195,7 +193,7 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
         if (name.isEmpty()) {
-            if (const arch::Register *reg = module().architecture()->registers()->getRegister(variable->memoryLocation())) {
+            if (const arch::Register *reg = image().architecture()->registers()->getRegister(variable->memoryLocation())) {
                 name = reg->lowercaseName();
             }
         }

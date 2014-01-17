@@ -26,7 +26,6 @@
 
 #include <nc/core/Context.h>
 #include <nc/core/Driver.h>
-#include <nc/core/Module.h>
 
 #include <cassert>
 

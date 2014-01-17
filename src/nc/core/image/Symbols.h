@@ -15,6 +15,8 @@ namespace nc {
 namespace core {
 namespace image {
 
+class Symbol;
+
 /**
  * Symbols in an executable file.
  */

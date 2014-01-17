@@ -30,11 +30,11 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/Module.h>
 #include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Sections.h>
 #include <nc/core/image/Symbols.h>
 #include <nc/core/input/ParseError.h>
 
@@ -51,12 +51,12 @@ class ElfParserPrivate {
     Q_DECLARE_TR_FUNCTIONS(ElfParserPrivate)
 
     QIODevice *source_;
-    core::Module *module_;
+    core::image::Image *image_;
 
     public:
 
-    ElfParserPrivate(QIODevice *source, core::Module *module):
-        source_(source), module_(module)
+    ElfParserPrivate(QIODevice *source, core::image::Image *image):
+        source_(source), image_(image)
     {}
 
     void parse() {
@@ -96,10 +96,10 @@ private:
     void parseHeaders(const Ehdr &ehdr) {
         switch (ehdr.e_machine) {
             case EM_386:
-                module_->setArchitecture(QLatin1String("i386"));
+                image_->setArchitecture(QLatin1String("i386"));
                 break;
             case EM_X86_64:
-                module_->setArchitecture(QLatin1String("x86-64"));
+                image_->setArchitecture(QLatin1String("x86-64"));
                 break;
             default:
                 throw core::input::ParseError(tr("Unknown machine id: %1.").arg(ehdr.e_machine));
@@ -112,7 +112,7 @@ private:
             throw core::input::ParseError(tr("Cannot read section headers."));
         }
 
-        std::size_t initialSectionsCount = module_->image()->sections().size();
+        std::size_t initialSectionsCount = image_->sections()->all().size();
 
         foreach (const Shdr &shdr, shdrs) {
             auto section = std::make_unique<core::image::Section>(QString(), shdr.sh_addr, shdr.sh_size);
@@ -130,21 +130,21 @@ private:
                 section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(source_->read(shdr.sh_size)));
             }
 
-            module_->image()->addSection(std::move(section));
+            image_->sections()->add(std::move(section));
         }
 
         if (ehdr.e_shstrndx < shdrs.size()) {
-            auto shstrtab = module_->image()->sections()[initialSectionsCount + ehdr.e_shstrndx];
+            auto shstrtab = image_->sections()->all()[initialSectionsCount + ehdr.e_shstrndx];
             core::image::Reader reader(shstrtab);
 
             for (std::size_t i = 0; i < shdrs.size(); ++i) {
-                module_->image()->sections()[initialSectionsCount + i]->setName(
+                image_->sections()->all()[initialSectionsCount + i]->setName(
                     reader.readAsciizString(shdrs[i].sh_name, shstrtab->size()));
             }
         }
 
-        if (const core::image::Section *symtab = module_->image()->getSectionByName(".symtab")) {
-            if (const core::image::Section *strtab = module_->image()->getSectionByName(".strtab")) {
+        if (const core::image::Section *symtab = image_->sections()->getSectionByName(".symtab")) {
+            if (const core::image::Section *strtab = image_->sections()->getSectionByName(".strtab")) {
                 core::image::Reader strtabReader(strtab);
 
                 Sym sym;
@@ -174,7 +174,7 @@ private:
 
                     auto name = strtabReader.readAsciizString(sym.st_name, strtab->size());
 
-                    module_->image()->symbols().add(std::make_unique<Symbol>(type, std::move(name), sym.st_value));
+                    image_->symbols()->add(std::make_unique<Symbol>(type, std::move(name), sym.st_value));
                 }
             }
         }
@@ -195,10 +195,10 @@ bool ElfParser::doCanParse(QIODevice *source) const {
     return IS_ELF(ehdr);
 }
 
-void ElfParser::doParse(QIODevice *source, core::Module *module) const {
-    ElfParserPrivate parser(source, module);
+void ElfParser::doParse(QIODevice *source, core::image::Image *image) const {
+    ElfParserPrivate parser(source, image);
     parser.parse();
-    module->setDemangler("gnu-v3");
+    image->setDemangler("gnu-v3");
 }
 
 } // namespace elf

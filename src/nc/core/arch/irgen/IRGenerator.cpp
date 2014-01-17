@@ -29,11 +29,11 @@
 #include <nc/common/Warnings.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/Module.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
+#include <nc/core/image/Sections.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
@@ -54,9 +54,9 @@ namespace irgen {
 
 void IRGenerator::generate(const CancellationToken &canceled) {
     /* Generate statements. */
-    foreach (const auto &instr, instructions()->all()) {
+    foreach (const auto &instr, instructions_->all()) {
         try {
-            module()->architecture()->instructionAnalyzer()->createStatements(instr.get(), program());
+            image_->architecture()->instructionAnalyzer()->createStatements(instr.get(), program_);
         } catch (const InvalidInstructionException &e) {
             /* Note: this is an AntiIdiom: http://c2.com/cgi/wiki?LoggingDiscussion */
             ncWarning(e.unicodeWhat());
@@ -65,14 +65,14 @@ void IRGenerator::generate(const CancellationToken &canceled) {
     }
 
     /* Compute jump targets. */
-    for (std::size_t i = 0; i < program()->basicBlocks().size(); ++i) {
-        computeJumpTargets(program()->basicBlocks()[i]);
+    for (std::size_t i = 0; i < program_->basicBlocks().size(); ++i) {
+        computeJumpTargets(program_->basicBlocks()[i]);
         canceled.poll();
     }
 
     /* Add jumps to direct successors where necessary. */
-    for (std::size_t i = 0; i < program()->basicBlocks().size(); ++i) {
-        addJumpToDirectSuccessor(program()->basicBlocks()[i]);
+    for (std::size_t i = 0; i < program_->basicBlocks().size(); ++i) {
+        addJumpToDirectSuccessor(program_->basicBlocks()[i]);
         canceled.poll();
     }
 }
@@ -82,7 +82,7 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
 
     /* Prepare context for quick and dirty dataflow analysis. */
     ir::dflow::Dataflow dataflow;
-    ir::dflow::DataflowAnalyzer analyzer(dataflow, module()->architecture(), NULL);
+    ir::dflow::DataflowAnalyzer analyzer(dataflow, image_->architecture(), NULL);
     ir::dflow::ExecutionContext context(analyzer);
 
     for (std::size_t i = 0; i < basicBlock->statements().size(); ++i) {
@@ -105,12 +105,12 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
             if (addressValue->abstractValue().isConcrete()) {
                 ByteAddr address = addressValue->abstractValue().asConcrete().value();
 
-                program()->addCalledAddress(address);
-                program()->createBasicBlock(address);
+                program_->addCalledAddress(address);
+                program_->createBasicBlock(address);
             } else {
                 foreach (ByteAddr address, getJumpTableEntries(call->target(), dataflow)) {
-                    program()->addCalledAddress(address);
-                    program()->createBasicBlock(address);
+                    program_->addCalledAddress(address);
+                    program_->createBasicBlock(address);
                 }
             }
 
@@ -128,12 +128,12 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
 
             /* Current basic block ends here. */
             if (jump->basicBlock()->address() && jump->instruction()) {
-                program()->createBasicBlock(jump->instruction()->endAddr());
+                program_->createBasicBlock(jump->instruction()->endAddr());
             }
         } else if (statement->isReturn()) {
             /* Current basic block ends here. */
             if (statement->basicBlock()->address()) {
-                program()->createBasicBlock(statement->instruction()->endAddr());
+                program_->createBasicBlock(statement->instruction()->endAddr());
             }
         }
     }
@@ -144,7 +144,7 @@ void IRGenerator::computeJumpTarget(ir::JumpTarget &target, const ir::dflow::Dat
         const ir::dflow::Value *addressValue = dataflow.getValue(target.address());
 
         if (addressValue->abstractValue().isConcrete()) {
-            target.setBasicBlock(program()->createBasicBlock(addressValue->abstractValue().asConcrete().value()));
+            target.setBasicBlock(program_->createBasicBlock(addressValue->abstractValue().asConcrete().value()));
         } else {
             auto entries = getJumpTableEntries(target.address(), dataflow);
 
@@ -152,7 +152,7 @@ void IRGenerator::computeJumpTarget(ir::JumpTarget &target, const ir::dflow::Dat
                 auto table = std::make_unique<ir::JumpTable>();
 
                 foreach (ByteAddr targetAddress, entries) {
-                    table->push_back(ir::JumpTableEntry(targetAddress, program()->createBasicBlock(targetAddress)));
+                    table->push_back(ir::JumpTableEntry(targetAddress, program_->createBasicBlock(targetAddress)));
                 }
                 target.setTable(std::move(table));
             }
@@ -172,11 +172,11 @@ std::vector<ByteAddr> IRGenerator::getJumpTableEntries(const ir::Term *target, c
     const std::size_t maxTableEntries = 65536;
     const ByteSize entrySize = target->size() / CHAR_BIT;
 
-    image::Reader reader(module()->image());
+    image::Reader reader(image_->sections());
 
     ByteAddr address = arrayAccess.base();
-    while (auto entry = reader.readInt<ByteAddr>(address, entrySize, module()->architecture()->byteOrder())) {
-        if (!instructions()->get(*entry)) {
+    while (auto entry = reader.readInt<ByteAddr>(address, entrySize, image_->architecture()->byteOrder())) {
+        if (!instructions_->get(*entry)) {
             break;
         }
         result.push_back(*entry);
@@ -200,7 +200,7 @@ void IRGenerator::addJumpToDirectSuccessor(ir::BasicBlock *basicBlock) {
      */
     if (!basicBlock->getTerminator()) {
         if (basicBlock->successorAddress() && basicBlock->successorAddress() != basicBlock->address()) {
-            if (ir::BasicBlock *directSuccessor = program()->getBasicBlockStartingAt(*basicBlock->successorAddress())) {
+            if (ir::BasicBlock *directSuccessor = program_->getBasicBlockStartingAt(*basicBlock->successorAddress())) {
                 basicBlock->addStatement(std::make_unique<ir::Jump>(ir::JumpTarget(directSuccessor)));
             }
         }

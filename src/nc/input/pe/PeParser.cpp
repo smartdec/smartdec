@@ -31,10 +31,10 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/Module.h>
 #include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Sections.h>
 #include <nc/core/image/Symbols.h>
 #include <nc/core/input/ParseError.h>
 
@@ -77,14 +77,14 @@ class PeParserPrivate {
     Q_DECLARE_TR_FUNCTIONS(PeParserPrivate)
 
     QIODevice *source_;
-    core::Module *module_;
+    core::image::Image *image_;
 
     std::unique_ptr<char[]> stringTable_;
     uint32_t stringTableSize_;
 
 public:
-    PeParserPrivate(QIODevice *source, core::Module *module):
-        source_(source), module_(module), stringTableSize_(0)
+    PeParserPrivate(QIODevice *source, core::image::Image *image):
+        source_(source), image_(image), stringTableSize_(0)
     {}
 
     void parse() {
@@ -99,11 +99,11 @@ public:
 
         switch (fileHeader.Machine) {
             case IMAGE_FILE_MACHINE_I386:
-                module_->setArchitecture(QLatin1String("i386"));
+                image_->setArchitecture(QLatin1String("i386"));
                 parseHeaders<IMAGE_OPTIONAL_HEADER32, IMAGE_NT_OPTIONAL_HDR32_MAGIC>(fileHeader);
                 break;
             case IMAGE_FILE_MACHINE_AMD64:
-                module_->setArchitecture(QLatin1String("x86-64"));
+                image_->setArchitecture(QLatin1String("x86-64"));
                 parseHeaders<IMAGE_OPTIONAL_HEADER64, IMAGE_NT_OPTIONAL_HDR64_MAGIC>(fileHeader);
                 break;
             default:
@@ -157,10 +157,10 @@ public:
                     name = getStringFromTable(symbol.N.Name.Long);
                 }
 
-                module_->image()->symbols().add(std::make_unique<Symbol>(type, name, symbol.Value));
+                image_->symbols()->add(std::make_unique<Symbol>(type, name, symbol.Value));
             }
 
-            foreach (core::image::Section *section, module_->image()->sections()) {
+            foreach (auto section, image_->sections()->all()) {
                 if (section->name().startsWith('/')) {
                     uint32_t offset;
                     if (stringToInt(section->name().mid(1), &offset)) {
@@ -209,7 +209,7 @@ public:
             }
             source_->seek(pos);
 
-            module_->image()->addSection(std::move(section));
+            image_->sections()->add(std::move(section));
         }
     }
 
@@ -238,10 +238,10 @@ bool PeParser::doCanParse(QIODevice *source) const {
     return seekFileHeader(source);
 }
 
-void PeParser::doParse(QIODevice *source, core::Module *module) const {
-    PeParserPrivate parser(source, module);
+void PeParser::doParse(QIODevice *source, core::image::Image *image) const {
+    PeParserPrivate parser(source, image);
     parser.parse();
-    module->setDemangler("msvc");
+    image->setDemangler("msvc");
 }
 
 } // namespace pe

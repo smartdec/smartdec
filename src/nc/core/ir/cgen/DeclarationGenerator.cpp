@@ -26,9 +26,9 @@
 
 #include <nc/common/make_unique.h>
 
-#include <nc/core/Module.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Registers.h>
+#include <nc/core/image/Image.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/calling/CallHook.h>
@@ -110,7 +110,7 @@ likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const 
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
     if (auto access = term->asMemoryLocationAccess()) {
-        if (auto regizter = parent().module().architecture()->registers()->getRegister(access->memoryLocation())) {
+        if (auto regizter = parent().image().architecture()->registers()->getRegister(access->memoryLocation())) {
             name = regizter->lowercaseName();
         }
     }

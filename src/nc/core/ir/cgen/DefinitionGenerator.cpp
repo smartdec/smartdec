@@ -32,12 +32,12 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/core/Context.h>
-#include <nc/core/Module.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/arch/Registers.h>
-#ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Sections.h>
+#ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
 #include <nc/core/image/Reader.h>
 #include <nc/core/image/Section.h>
 #endif
@@ -163,7 +163,7 @@ QString DefinitionGenerator::makeLocalVariableName(const vars::Variable *variabl
     QString basename(QLatin1String("v"));
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
-    if (auto reg = parent().module().architecture()->registers()->getRegister(variable->memoryLocation())) {
+    if (auto reg = parent().image().architecture()->registers()->getRegister(variable->memoryLocation())) {
         basename = reg->lowercaseName();
         if (basename.isEmpty() || basename[basename.size() - 1].isDigit()) {
             basename.push_back('_');
@@ -1026,7 +1026,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
             return true;
         };
 
-        foreach (auto section, parent().module().image()->sections()) {
+        foreach (auto section, parent().image().sections()->all()) {
             if (section->isAllocated() && section->containsAddress(value.value())) {
                 QString string = image::Reader(section).readAsciizString(value.value(), 1024);
 

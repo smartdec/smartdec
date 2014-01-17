@@ -35,18 +35,15 @@ namespace elf {
  * Parser for ELF32 and ELF64 formats.
  */
 class ElfParser: public core::input::Parser {
-    public:
-
+public:
     /**
      * Constructor.
      */
     ElfParser();
 
-    protected:
-
+protected:
     virtual bool doCanParse(QIODevice *source) const override;
-
-    virtual void doParse(QIODevice *source, core::Module *module) const override;
+    virtual void doParse(QIODevice *source, core::image::Image *image) const override;
 };
 
 } // namespace elf

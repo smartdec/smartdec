@@ -38,18 +38,15 @@ namespace pe {
  * http://en.wikibooks.org/wiki/X86_Disassembly/Windows_Executable_Files
  */
 class PeParser: public core::input::Parser {
-    public:
-
+public:
     /**
      * Constructor.
      */
     PeParser();
 
-    protected:
-
+protected:
     virtual bool doCanParse(QIODevice *source) const override;
-
-    virtual void doParse(QIODevice *source, core::Module *module) const override;
+    virtual void doParse(QIODevice *source, core::image::Image *image) const override;
 };
 
 } // namespace pe

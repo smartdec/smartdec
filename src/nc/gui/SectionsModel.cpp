@@ -28,9 +28,9 @@
 
 #include <nc/common/Unreachable.h>
 
-#include <nc/core/Module.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Sections.h>
 
 namespace nc { namespace gui {
 
@@ -49,9 +49,9 @@ SectionsModel::SectionsModel(QObject *parent):
     updateContents();
 }
 
-void SectionsModel::setModule(const std::shared_ptr<const core::Module> &module) {
-    if (module != module_) {
-        module_ = module;
+void SectionsModel::setImage(const std::shared_ptr<const core::image::Image> &image) {
+    if (image != image_) {
+        image_ = image;
         updateContents();
     }
 }
@@ -66,11 +66,11 @@ const core::image::Section *SectionsModel::getSection(const QModelIndex &index) 
 }
 
 int SectionsModel::rowCount(const QModelIndex &parent) const {
-    if (!module()) {
+    if (!image()) {
         return 0;
     }
     if (parent == QModelIndex()) {
-        return static_cast<int>(module()->image()->sections().size());
+        return static_cast<int>(image()->sections()->all().size());
     } else {
         return 0;
     }
@@ -81,11 +81,11 @@ int SectionsModel::columnCount(const QModelIndex & /*parent*/) const {
 }
 
 QModelIndex SectionsModel::index(int row, int column, const QModelIndex &parent) const {
-    if (!module()) {
+    if (!image()) {
         return QModelIndex();
     }
     if (row < rowCount(parent)) {
-        return createIndex(row, column, module()->image()->sections()[row]);
+        return createIndex(row, column, (void *)image()->sections()->all()[row]);
     } else {
         return QModelIndex();
     }

@@ -34,6 +34,10 @@
 namespace nc {
 namespace core {
 
+namespace image {
+    class Image;
+}
+
 namespace ir {
     class BasicBlock;
     class JumpTarget;
@@ -45,8 +49,6 @@ namespace ir {
     }
 }
 
-class Module;
-
 namespace arch {
 
 class Instructions;
@@ -57,60 +59,39 @@ namespace irgen {
  * Class for translating assembler programs into intermediate representation.
  */
 class IRGenerator {
-    const Module *module_; ///< Module.
-    const Instructions *instructions_; ///< Module.
+    const image::Image *image_; ///< Executable image.
+    const Instructions *instructions_; ///< Instructions.
     ir::Program *program_; ///< Program.
 
 public:
-
     /**
      * Constructor.
      *
-     * \param[in] module Valid pointer to the module.
+     * \param[in] image Valid pointer to the executable image.
      * \param[in] instructions Valid pointer to the set of instructions.
      * \param[out] program Valid pointer to the program.
      */
-    IRGenerator(const Module *module, const Instructions *instructions, ir::Program *program):
-        module_(module), instructions_(instructions), program_(program)
+    IRGenerator(const image::Image *image, const Instructions *instructions, ir::Program *program):
+        image_(image), instructions_(instructions), program_(program)
     {
-        assert(module);
+        assert(image);
         assert(instructions);
         assert(program);
     }
 
     /**
-     * Virtual destructor.
+     * Builds a program control flow graph from the instructions
+     * given to the constructor.
      */
-    virtual ~IRGenerator() {}
+    void generate(const CancellationToken &canceled);
 
-    /**
-     * \return Valid pointer to the module.
-     */
-    const Module *module() const { return module_; }
-
-    /**
-     * \return Valid pointer to the instructions.
-     */
-    const Instructions *instructions() const { return instructions_; }
-
-    /**
-     * \return Output control flow graph.
-     */
-    ir::Program *program() const { return program_; }
-
-    /**
-     * Builds a control flow graph from the set of instructions given in the constructor.
-     */
-    virtual void generate(const CancellationToken &canceled);
-
-protected:
-
+private:
     /**
      * Computes jump targets in the basic block.
      *
      * \param basicBlock Valid pointer to a basic block.
      */
-    virtual void computeJumpTargets(ir::BasicBlock *basicBlock);
+    void computeJumpTargets(ir::BasicBlock *basicBlock);
 
     /**
      * Sets the basic block or jump table fields in the jump target,
@@ -119,7 +100,7 @@ protected:
      * \param[in,out] target   Jump target.
      * \param[in]     dataflow Dataflow information collected up to the point where jump has been met.
      */
-    virtual void computeJumpTarget(ir::JumpTarget &target, const ir::dflow::Dataflow &dataflow);
+    void computeJumpTarget(ir::JumpTarget &target, const ir::dflow::Dataflow &dataflow);
 
     /**
      * Determines jump table address and recovers its entries in a form of a vector of addresses.
@@ -129,7 +110,7 @@ protected:
      *
      * \returns The entries of the jump table.
      */
-    virtual std::vector<ByteAddr> getJumpTableEntries(const ir::Term *target, const ir::dflow::Dataflow &dataflow);
+    std::vector<ByteAddr> getJumpTableEntries(const ir::Term *target, const ir::dflow::Dataflow &dataflow);
 
     /**
      * Adds a jump to direct successor to given basic block if the latter
@@ -137,7 +118,7 @@ protected:
      *
      * \param basicBlock Valid pointer to a basic block.
      */
-    virtual void addJumpToDirectSuccessor(ir::BasicBlock *basicBlock);
+    void addJumpToDirectSuccessor(ir::BasicBlock *basicBlock);
 };
 
 } // namespace irgen

@@ -8,8 +8,6 @@ set(SOURCES
     Driver.h
     MasterAnalyzer.cpp
     MasterAnalyzer.h
-    Module.cpp
-    Module.h
     arch/Architecture.cpp
     arch/Architecture.h
     arch/ArchitectureRepository.cpp
@@ -46,6 +44,8 @@ set(SOURCES
     image/Reader.h
     image/Section.cpp
     image/Section.h
+    image/Sections.cpp
+    image/Sections.h
     image/Symbol.h
     image/Symbols.cpp
     image/Symbols.h

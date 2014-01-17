@@ -38,7 +38,6 @@ namespace nc {
 
 namespace core {
     class Context;
-    class Module;
 
     namespace arch {
         class Instruction;
@@ -47,6 +46,7 @@ namespace core {
 
     namespace image {
         class ByteSource;
+        class Image;
     }
 }
 
@@ -64,10 +64,10 @@ class Project: public QObject {
     /** Name of the project. */
     QString name_;
 
-    /** Module being decompiled. */
-    std::shared_ptr<core::Module> module_;
+    /** Executable image being decompiled. */
+    std::shared_ptr<core::image::Image> image_;
 
-    /** All instructions of the module. */
+    /** Disassembled instructions. */
     std::shared_ptr<const core::arch::Instructions> instructions_;
 
     /** Current context. */
@@ -106,16 +106,16 @@ class Project: public QObject {
     void setName(const QString &name);
 
     /**
-     * \return Valid pointer to the module being decompiled.
+     * \return Valid pointer to the executable image being decompiled.
      */
-    std::shared_ptr<core::Module> module() const { return module_; }
+    std::shared_ptr<core::image::Image> image() const { return image_; }
 
     /**
-     * Sets the module.
+     * Sets the executable image being decompiled.
      *
-     * \param module Valid pointer to a module.
+     * \param image Valid pointer to the image.
      */
-    void setModule(const std::shared_ptr<core::Module> &module);
+    void setImage(const std::shared_ptr<core::image::Image> &image);
 
     /**
      * \returns Valid pointer to the instructions of the executable file.
@@ -177,7 +177,7 @@ class Project: public QObject {
     /**
      * Schedules decompilation of the given set of instructions.
      *
-     * \param instructions Subset of module instructions.
+     * \param instructions Instructions to be decompiled.
      */
     void decompile(const std::vector<const core::arch::Instruction *> &instructions);
 
@@ -213,9 +213,9 @@ class Project: public QObject {
     void nameChanged();
 
     /**
-     * Signal emitted when a new module has been set.
+     * Signal emitted when a new image has been set.
      */
-    void moduleChanged();
+    void imageChanged();
 
     /**
      * Signal emitted when the set of instructions is changed.

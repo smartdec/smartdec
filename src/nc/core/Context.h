@@ -35,10 +35,12 @@
 namespace nc {
 namespace core {
 
-class Module;
-
 namespace arch {
     class Instructions;
+}
+
+namespace image {
+    class Image;
 }
 
 namespace ir {
@@ -81,7 +83,7 @@ namespace likec {
 class Context: public QObject {
     Q_OBJECT
 
-    std::shared_ptr<Module> module_; ///< Module being decompiled.
+    std::shared_ptr<image::Image> image_; ///< Executable image being decompiled.
     std::shared_ptr<const arch::Instructions> instructions_; ///< Instructions being decompiled.
     std::unique_ptr<ir::Program> program_; ///< Program.
     std::unique_ptr<ir::Functions> functions_; ///< Functions.
@@ -110,16 +112,16 @@ public:
     ~Context();
 
     /**
-     * Sets the module.
+     * Sets the executable image being decompiled.
      *
-     * \param module Pointer to the module. Can be NULL.
+     * \param image Pointer to the image. Can be NULL.
      */
-    void setModule(const std::shared_ptr<Module> &module);
+    void setImage(const std::shared_ptr<image::Image> &image);
 
     /**
-     * \return Pointer to the module being decompiled. Can be NULL.
+     * \return Pointer to the executable image being decompiled. Can be NULL.
      */
-    std::shared_ptr<Module> module() const { return module_; }
+    std::shared_ptr<image::Image> image() const { return image_; }
 
     /**
      * Sets the set instructions being decompiled.

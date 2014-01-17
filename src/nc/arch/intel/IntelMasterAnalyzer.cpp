@@ -28,8 +28,8 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/Module.h>
 #include <nc/core/Context.h>
+#include <nc/core/image/Image.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
@@ -52,7 +52,7 @@ void IntelMasterAnalyzer::createProgram(core::Context &context) const {
     /*
      * Patch the IR to implement x86-64 implicit zero extend.
      */
-    if (context.module()->architecture()->bitness() == 64) {
+    if (context.image()->architecture()->bitness() == 64) {
         auto minDomain = IntelRegisters::rax()->memoryLocation().domain();
         auto maxDomain = IntelRegisters::r15()->memoryLocation().domain();
 
@@ -87,7 +87,7 @@ void IntelMasterAnalyzer::createProgram(core::Context &context) const {
 }
 
 void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::calling::CalleeId &calleeId) const {
-    auto architecture = context.module()->architecture();
+    auto architecture = context.image()->architecture();
 
     auto setConvention = [&](const char *name) {
         context.conventions()->setConvention(calleeId, architecture->getCallingConvention(QLatin1String(name)));
@@ -129,7 +129,7 @@ void IntelMasterAnalyzer::dataflowAnalysis(core::Context &context, const core::i
 
     std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
 
-    IntelDataflowAnalyzer(*dataflow, context.module()->architecture(), function, context.hooks())
+    IntelDataflowAnalyzer(*dataflow, context.image()->architecture(), function, context.hooks())
         .analyze(context.cancellationToken());
 
     context.dataflows()->emplace(function, std::move(dataflow));

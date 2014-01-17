@@ -24,59 +24,72 @@
 
 #include "Image.h"
 
-#include <cassert>
+#include <nc/common/make_unique.h>
 
-#include <nc/common/Foreach.h>
+#include <nc/core/arch/ArchitectureRepository.h>
+#include <nc/core/image/Image.h>
+#include <nc/core/mangling/Demangler.h>
+#include <nc/core/mangling/CxxFiltDemangler.h>
 
-#include "Section.h"
+#include "Sections.h"
 #include "Symbols.h"
 
-namespace nc {
-namespace core {
-namespace image {
+#ifdef NC_WITH_LIBIBERTY
+    #include <nc/core/mangling/GnuDemangler.h>
+#endif
+
+#ifdef NC_WITH_UNDNAME
+    #include <nc/core/mangling/MsvcDemangler.h>
+#endif
+
+namespace nc { namespace core { namespace image {
 
 Image::Image():
-    symbols_(new Symbols())
+    architecture_(NULL),
+    sections_(new Sections()),
+    symbols_(new Symbols()),
+    demangler_(new mangling::Demangler())
 {}
 
 Image::~Image() {}
 
-void Image::addSection(std::unique_ptr<Section> section) {
-    assert(section != NULL);
-    section->setImage(this);
-    sections_.push_back(std::move(section));
+void Image::setArchitecture(const arch::Architecture *architecture) {
+    assert(architecture != NULL);
+    assert(architecture_ == NULL && "Can't set the architecture twice.");
+
+    architecture_ = architecture;
 }
 
-const Section *Image::getSectionContainingAddress(ByteAddr addr) const {
-    foreach (auto section, sections()) {
-        if (section->containsAddress(addr)) {
-            return section;
-        }
+void Image::setArchitecture(const QString &name) {
+    setArchitecture(arch::ArchitectureRepository::instance()->getArchitecture(name));
+}
+
+void Image::setDemangler(std::unique_ptr<mangling::Demangler> demangler) {
+    assert(demangler != NULL);
+
+    demangler_ = std::move(demangler);
+}
+
+void Image::setDemangler(const QString &format) {
+    // TODO: ideally, there should be a DemanglerRepository.
+
+#ifdef NC_WITH_LIBIBERTY
+    if (format == QLatin1String("gnu-v3")) {
+        setDemangler(std::make_unique<mangling::GnuDemangler>());
+        return;
     }
-    return NULL;
-}
+#endif
 
-const Section *Image::getSectionByName(const QString &name) const {
-    foreach (auto section, sections()) {
-        if (section->name() == name) {
-            return section;
-        }
+#ifdef NC_WITH_UNDNAME
+    if (format == QLatin1String("msvc")) {
+        setDemangler(std::make_unique<mangling::MsvcDemangler>());
+        return;
     }
-    return NULL;
+#endif
+
+    setDemangler(std::make_unique<mangling::CxxFiltDemangler>(format));
 }
 
-ByteSize Image::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
-    if (externalByteSource()) {
-        return externalByteSource()->readBytes(addr, buf, size);
-    } else if (const Section *section = getSectionContainingAddress(addr)) {
-        return section->readBytes(addr, buf, size);
-    } else {
-        return 0;
-    }
-}
-
-} // namespace image
-} // namespace core
-} // namespace nc
+}}} // namespace nc::core::image
 
 /* vim:set et sts=4 sw=4: */

@@ -47,7 +47,7 @@ DecompileAll::DecompileAll(Project *project):
 
 void DecompileAll::work() {
     auto context = std::make_shared<core::Context>();
-    context->setModule(project_->module());
+    context->setImage(project_->image());
     context->setInstructions(project_->instructions());
     context->setCancellationToken(cancellationToken());
     context->setLogToken(project_->logToken());

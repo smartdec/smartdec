@@ -30,10 +30,10 @@
 #include <nc/common/Foreach.h>
 
 #include <nc/core/Context.h>
-#include <nc/core/Module.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Sections.h>
 
 #include "CommandQueue.h"
 #include "Decompile.h"
@@ -46,7 +46,7 @@ namespace gui {
 
 Project::Project(QObject *parent):
     QObject(parent),
-    module_(std::make_shared<core::Module>()),
+    image_(std::make_shared<core::image::Image>()),
     instructions_(std::make_shared<const core::arch::Instructions>()),
     context_(std::make_shared<core::Context>()),
     commandQueue_(new CommandQueue(this))
@@ -62,12 +62,12 @@ void Project::setName(const QString &name) {
     }
 }
 
-void Project::setModule(const std::shared_ptr<core::Module> &module) {
-    assert(module);
+void Project::setImage(const std::shared_ptr<core::image::Image> &image) {
+    assert(image);
 
-    if (module_ != module) {
-        module_ = module;
-        Q_EMIT moduleChanged();
+    if (image_ != image) {
+        image_ = image;
+        Q_EMIT imageChanged();
     }
 }
 
@@ -101,7 +101,7 @@ void Project::deleteInstructions(const std::vector<const core::arch::Instruction
 }
 
 void Project::disassemble() {
-    foreach (const core::image::Section *section, module()->image()->sections()) {
+    foreach (const core::image::Section *section, image()->sections()->all()) {
         if (section->isCode()) {
             disassemble(section, section->addr(), section->endAddr());
         }

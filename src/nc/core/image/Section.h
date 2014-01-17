@@ -37,7 +37,7 @@ namespace nc {
 namespace core {
 namespace image {
 
-class Image;
+class Sections;
 
 /**
  * Section of an executable file.
@@ -60,7 +60,7 @@ class Section: public ByteSource {
 
     std::unique_ptr<ByteSource> externalByteSource_; ///< External source of this section's bytes.
 
-    const Image *image_; ///< Image this section belongs to.
+    const Sections *sections_; ///< List of sections.
 
 public:
 
@@ -214,16 +214,11 @@ public:
     void setExternalByteSource(std::unique_ptr<ByteSource> byteSource) { externalByteSource_ = std::move(byteSource); }
 
     /**
-     * Sets the image this section belongs to.
+     * Sets the list of sections this section belongs to.
      *
-     * \param image Pointer to the image. Can be NULL.
+     * \param sections Pointer to the sections. Can be NULL.
      */
-    void setImage(const Image *image) { image_ = image; }
-
-    /**
-     * \return Pointer to the image this section belongs to. Can be NULL.
-     */
-    const Image *image() const { return image_; }
+    void setSections(const Sections *sections) { sections_ = sections; }
 
     virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 };

@@ -28,9 +28,9 @@
 
 #include <nc/common/Foreach.h>
 
-#include <nc/core/Module.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instructions.h>
+#include <nc/core/image/Image.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/calling/Conventions.h>
@@ -48,14 +48,14 @@ namespace nc {
 namespace core {
 
 Context::Context():
-    module_(std::make_shared<Module>()),
+    image_(std::make_shared<image::Image>()),
     instructions_(std::make_shared<const arch::Instructions>())
 {}
 
 Context::~Context() {}
 
-void Context::setModule(const std::shared_ptr<Module> &module) {
-    module_ = module;
+void Context::setImage(const std::shared_ptr<image::Image> &image) {
+    image_ = image;
 }
 
 void Context::setInstructions(const std::shared_ptr<const arch::Instructions> &instructions) {

@@ -94,8 +94,7 @@ class MainWindow: public QMainWindow {
 
     LogToken logToken_; ///< Log token.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -139,8 +138,7 @@ class MainWindow: public QMainWindow {
      */
     bool decompileAutomatically() const;
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Sets whether decompilation must be performed when a user changes the project.
      *
@@ -160,8 +158,7 @@ class MainWindow: public QMainWindow {
      */
     void open(const QStringList &filenames);
 
-    public:
-
+public: 
     /**
      * Opens a project.
      *
@@ -169,8 +166,7 @@ class MainWindow: public QMainWindow {
      */
     void open(std::unique_ptr<Project> project);
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Sets window title. And emits windowTitleChanged signal.
      *
@@ -178,8 +174,7 @@ class MainWindow: public QMainWindow {
      */
     void setWindowTitle(const QString &title);
 
-    Q_SIGNALS:
-
+Q_SIGNALS:
     /**
      * This signal is emitted when the window changes its title.
      *
@@ -187,8 +182,7 @@ class MainWindow: public QMainWindow {
      */
     void windowTitleChanged(const QString &title);
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Finds the instruction covering the given address and highlights it
      * in the instructions view.
@@ -206,12 +200,10 @@ class MainWindow: public QMainWindow {
      */
     void setStatusText(const QString &text = QString());
 
-    protected:
-
+protected:
     virtual void closeEvent(QCloseEvent *event) override;
 
-    private:
-
+private:
     /**
      * Creates window widgets.
      */
@@ -237,8 +229,7 @@ class MainWindow: public QMainWindow {
      */
     void saveSettings();
 
-    private Q_SLOTS:
-
+private Q_SLOTS:
     /**
      * Disable or enable actions depending on current state.
      * Also, shows or hides progress dialog, depending on the command being currently executed.
@@ -246,9 +237,9 @@ class MainWindow: public QMainWindow {
     void updateGuiState();
 
     /**
-     * This slot handles the event of setting a new module.
+     * This slot handles the event of setting a new image.
      */
-    void moduleChanged();
+    void imageChanged();
 
     /**
      * This slot handles the changes in the set of instructions.
