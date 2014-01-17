@@ -35,6 +35,7 @@
 #include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Symbols.h>
 #include <nc/core/input/ParseError.h>
 
 #include "pe.h"
@@ -81,8 +82,7 @@ class PeParserPrivate {
     std::unique_ptr<char[]> stringTable_;
     uint32_t stringTableSize_;
 
-    public:
-
+public:
     PeParserPrivate(QIODevice *source, core::Module *module):
         source_(source), module_(module), stringTableSize_(0)
     {}
@@ -137,13 +137,27 @@ class PeParserPrivate {
             }
 
             foreach (const IMAGE_SYMBOL &symbol, symbols) {
+                using core::image::Symbol;
+
+                Symbol::Type type;
+                /*
+                 * Microsoft tools set this field to 0x20 (function) or 0x0 (not a function).
+                 * -- http://www.kishorekumar.net/pecoff_v8.1.htm
+                 */
+                if (symbol.Type == 0x20) {
+                    type = Symbol::Function;
+                } else {
+                    type = Symbol::None;
+                }
+
                 QString name;
                 if (symbol.N.Name.Short) {
                     name = getString(symbol.N.ShortName);
                 } else {
                     name = getStringFromTable(symbol.N.Name.Long);
                 }
-                module_->addName(symbol.Value, name);
+
+                module_->image()->symbols().add(std::make_unique<Symbol>(type, name, symbol.Value));
             }
 
             foreach (core::image::Section *section, module_->image()->sections()) {
@@ -199,8 +213,7 @@ class PeParserPrivate {
         }
     }
 
-    private:
-
+private:
     template<std::size_t size>
     QString getString(const char (&buffer)[size]) const {
         return QString::fromLatin1(buffer, qstrnlen(buffer, size));

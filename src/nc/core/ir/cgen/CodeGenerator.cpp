@@ -179,6 +179,8 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
         QString name;
         QString comment;
 
+        // FIXME
+#if 0
         if (variable->memoryLocation().domain() == MemoryDomain::MEMORY) {
             ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
             comment = module().getName(addr);
@@ -189,6 +191,7 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
                 }
             }
         }
+#endif
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
         if (name.isEmpty()) {

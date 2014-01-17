@@ -27,6 +27,7 @@
 #include <cassert>
 
 #include <nc/common/Foreach.h>
+#include <nc/common/Range.h>
 #include <nc/common/Warnings.h>
 
 #include <nc/core/arch/Architecture.h>
@@ -36,9 +37,10 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/calling/CallHook.h>
+#include <nc/core/ir/calling/EntryHook.h>
 #include <nc/core/ir/calling/Hooks.h>
-#include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/calling/ReturnHook.h>
+#include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/Switch.h>
@@ -81,10 +83,8 @@ void LivenessAnalyzer::analyze() {
     if (auto calleeId = hooks().getCalleeId(function())) {
         if (auto signature = signatures().getSignature(calleeId)) {
             if (signature->returnValue()) {
-                foreach (const Return *ret, function()->getReturns()) {
-                    if (auto returnHook = hooks().getReturnHook(function(), ret)) {
-                        makeLive(returnHook->getReturnValueTerm(signature->returnValue()));
-                    }
+                foreach (const auto &returnAndHook, nc::find(hooks().map(), calleeId).returnHooks) {
+                    makeLive(returnAndHook.second->getReturnValueTerm(signature->returnValue()));
                 }
             }
         }

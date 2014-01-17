@@ -29,12 +29,15 @@
 #include <nc/common/Foreach.h>
 
 #include "Section.h"
+#include "Symbols.h"
 
 namespace nc {
 namespace core {
 namespace image {
 
-Image::Image() {}
+Image::Image():
+    symbols_(new Symbols())
+{}
 
 Image::~Image() {}
 

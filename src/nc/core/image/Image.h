@@ -41,6 +41,7 @@ namespace core {
 namespace image {
 
 class Section;
+class Symbols;
 
 /**
  * Binary file image.
@@ -48,6 +49,7 @@ class Section;
 class Image: public ByteSource {
     std::vector<std::unique_ptr<Section>> sections_; ///< Sections of the executable file.
     std::unique_ptr<ByteSource> externalByteSource_; ///< External source of this image's bytes.
+    std::unique_ptr<Symbols> symbols_; ///< Symbols of the image.
 
 public:
     /**
@@ -73,18 +75,16 @@ public:
     const std::vector<Section *> &sections() const { return reinterpret_cast<const std::vector<Section *> &>(sections_); }
 
     /**
-     * \param[in] addr                 Linear address.
+     * \param[in] addr  Linear address.
      *
-     * \return                         Section containing given virtual address, 
-     *                                 or 0 if there is no such section.
+     * \return Section containing given virtual address, or NULL if there is no such section.
      */
     const Section *getSectionContainingAddress(ByteAddr addr) const;
     
     /**
-     * \param[in] name                 Section name.
+     * \param[in] name Section name.
      * 
-     * \return                         Section with the given name, 
-     *                                 or NULL if there is no such section.
+     * \return Section with the given name, or NULL if there is no such section.
      */
     const Section *getSectionByName(const QString &name) const;
 
@@ -101,6 +101,16 @@ public:
     void setExternalByteSource(std::unique_ptr<ByteSource> byteSource) { externalByteSource_ = std::move(byteSource); }
 
     virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
+
+    /**
+     * \return Symbols of the image.
+     */
+    Symbols &symbols() { return *symbols_; }
+
+    /**
+     * \return Symbols of the image.
+     */
+    const Symbols &symbols() const { return *symbols_; }
 };
 
 } // namespace image

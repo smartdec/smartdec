@@ -28,6 +28,7 @@
 #include <nc/common/Exception.h>
 #include <nc/common/Foreach.h>
 #include <nc/common/StreamLogger.h>
+#include <nc/common/Unreachable.h>
 
 #include <nc/core/Module.h>
 #include <nc/core/Context.h> 
@@ -38,6 +39,7 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Symbols.h>
 #include <nc/core/input/Parser.h>
 #include <nc/core/input/ParserRepository.h>
 #include <nc/core/ir/BasicBlock.h>
@@ -80,25 +82,48 @@ void printSections(nc::core::Context &context, QTextStream &out) {
     foreach (const auto *section, context.module()->image()->sections()) {
         QString flags;
         if (section->isReadable()) {
-            flags += "r";
+            flags += QLatin1String("r");
         }
         if (section->isWritable()) {
-            flags += "w";
+            flags += QLatin1String("w");
         }
         if (section->isExecutable()) {
-            flags += "x";
+            flags += QLatin1String("x");
         }
         if (section->isCode()) {
-            flags += ",code";
+            flags += QLatin1String(",code");
         }
         if (section->isData()) {
-            flags += ",data";
+            flags += QLatin1String(",data");
         }
         if (section->isBss()) {
-            flags += ",bss";
+            flags += QLatin1String(",bss");
         }
-        out << QString("section name = '%1', start = 0x%2, size = 0x%3, flags = %4")
+        out << QString(QLatin1String("section name = '%1', start = 0x%2, size = 0x%3, flags = %4"))
             .arg(section->name()).arg(section->addr(), 0, 16).arg(section->size(), 0, 16).arg(flags) << endl;
+    }
+}
+
+void printSymbols(nc::core::Context &context, QTextStream &out) {
+    foreach (const auto *symbol, context.module()->image()->symbols().all()) {
+        using nc::core::image::Symbol;
+
+        QString type;
+        switch (symbol->type()) {
+            case Symbol::None:
+                type = QLatin1String("none");
+                break;
+            case Symbol::Function:
+                type = QLatin1String("function");
+                break;
+            case Symbol::Data:
+                type = QLatin1String("data");
+                break;
+            default:
+                unreachable();
+        }
+
+        out << QString("symbol name = '%1', type = %2, value = 0x%3").arg(symbol->name()).arg(type).arg(symbol->value(), 0, 16) << endl;
     }
 }
 
@@ -116,10 +141,12 @@ void help() {
     qout << "Options:" << endl;
     qout << "  --help, -h                  Produce this help message and quit." << endl;
     qout << "  --verbose, -v               Print progress information to stderr." << endl;
-    qout << "  --print-instructions[=FILE] Dump parsed instructions to the file." << endl;
-    qout << "  --print-cfg[=FILE]          Dump control flow graph in DOT language to the file." << endl;
-    qout << "  --print-ir[=FILE]           Dump intermediate representation in DOT language to the file." << endl;
-    qout << "  --print-regions[=FILE]      Dump results of structural analysis in DOT language to the file." << endl;
+    qout << "  --print-sections[=FILE]     Print information about sections of the executable file." << endl;
+    qout << "  --print-symbols[=FILE]      Print the symbols from the executable file." << endl;
+    qout << "  --print-instructions[=FILE] Print parsed instructions to the file." << endl;
+    qout << "  --print-cfg[=FILE]          Print control flow graph in DOT language to the file." << endl;
+    qout << "  --print-ir[=FILE]           Print intermediate representation in DOT language to the file." << endl;
+    qout << "  --print-regions[=FILE]      Print results of structural analysis in DOT language to the file." << endl;
     qout << "  --print-cxx[=FILE]          Print reconstructed program into given file." << endl;
     qout << endl;
     qout << "The program parses given files, decompiles them, and prints the requested" << endl;
@@ -145,6 +172,7 @@ int main(int argc, char *argv[]) {
 
     try {
         QString sectionsFile;
+        QString symbolsFile;
         QString instructionsFile;
         QString cfgFile;
         QString irFile;
@@ -178,6 +206,7 @@ int main(int argc, char *argv[]) {
                 autoDefault = false;
 
             FILE_OPTION("--print-sections", sectionsFile)
+            FILE_OPTION("--print-symbols", symbolsFile)
             FILE_OPTION("--print-instructions", instructionsFile)
             FILE_OPTION("--print-cfg", cfgFile)
             FILE_OPTION("--print-ir", irFile)
@@ -222,6 +251,7 @@ int main(int argc, char *argv[]) {
         }
 
         openFileForWritingAndCall(sectionsFile, [&](QTextStream &out) { printSections(context, out); });
+        openFileForWritingAndCall(symbolsFile, [&](QTextStream &out) { printSymbols(context, out); });
 
         if (!instructionsFile.isEmpty() || !cfgFile.isEmpty() || !irFile.isEmpty() || !regionsFile.isEmpty() || !cxxFile.isEmpty()) {
             nc::core::Driver::disassemble(context);

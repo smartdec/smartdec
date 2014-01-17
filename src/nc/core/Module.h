@@ -49,11 +49,16 @@ namespace mangling {
     class Demangler;
 }
 
+// TODO: merge with Image?
+
 /**
- * An executable module: architecture, image, symbols.
+ * An executable module: architecture, image, demangler.
  */
 class Module {
 public:
+    /**
+     * Constructor.
+     */
     Module();
 
     /**
@@ -93,27 +98,6 @@ public:
     const image::Image *image() const { return mImage.get(); }
 
     /**
-     * Sets the name of an address. The name can be taken, for example,
-     * from the symbols table of the executable.
-     *
-     * \param[in] address              Address.
-     * \param[in] name                 Name for the given address.
-     */
-    void addName(ByteAddr address, const QString &name) { mAddress2name[address] = name; }
-
-    /**
-     * \param[in] addr Address.
-     *
-     * \return Name for the given address, if any, and QString() otherwise.
-     */
-    const QString &getName(ByteAddr addr) const { return nc::find(mAddress2name, addr); }
-
-    /**
-     * \return All known pairs of addresses and its names.
-     */
-    const boost::unordered_map<ByteAddr, QString> &names() const { return mAddress2name; }
-
-    /**
      * \return Valid pointer to a demangler.
      */
     const mangling::Demangler *demangler() const { return mDemangler.get(); }
@@ -138,9 +122,6 @@ private:
 
     /** Image of the executable file. */
     std::unique_ptr<image::Image> mImage;
-
-    /** Mapping of an address to its name. */
-    boost::unordered_map<ByteAddr, QString> mAddress2name;
 
     /** Demangler. */
     std::unique_ptr<mangling::Demangler> mDemangler;

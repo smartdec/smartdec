@@ -145,6 +145,7 @@ public:
      */
     const Statement *statement() const { return statement_; }
 
+protected:
     /**
      * Sets the statement this term belongs to.
      *
@@ -159,10 +160,11 @@ public:
         statement_ = statement;
     }
 
+public:
     /**
      * Sets the statement that this term and child terms belong to.
      *
-     * \param[in] statement            Statement this term and child terms belong to.
+     * \param[in] statement Valid pointer to the statement.
      */
     void setStatementRecursively(const Statement *statement);
 
@@ -205,7 +207,6 @@ public:
     inline const Choice *asChoice() const;
 
 protected:
-
     /**
      * Actually clones the term.
      *

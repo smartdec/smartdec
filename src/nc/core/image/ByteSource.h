@@ -35,8 +35,7 @@ namespace image {
  * Source of bytes of an image or its section.
  */
 class ByteSource {
-    public:
-
+public:
     /**
      * Virtual destructor.
      */

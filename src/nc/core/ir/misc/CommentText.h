@@ -32,6 +32,8 @@ namespace core {
 namespace ir {
 namespace misc {
 
+// TODO: remove?
+
 /**
  * Class representing a comment text.
  */

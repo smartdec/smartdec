@@ -35,6 +35,7 @@
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Symbols.h>
 #include <nc/core/input/ParseError.h>
 
 #include "elf32.h"
@@ -90,8 +91,7 @@ class ElfParserPrivate {
         }
     }
 
-    private:
-
+private:
     template<class Ehdr, class Shdr, class Sym>
     void parseHeaders(const Ehdr &ehdr) {
         switch (ehdr.e_machine) {
@@ -152,7 +152,29 @@ class ElfParserPrivate {
                     if (symtab->readBytes(addr, &sym, sizeof(sym)) != sizeof(sym)) {
                         break;
                     }
-                    module_->addName(sym.st_value, strtabReader.readAsciizString(sym.st_name, strtab->size()));
+
+                    using core::image::Symbol;
+
+                    Symbol::Type type;
+                    /*
+                     * Type information is the lower 4 bits.
+                     * The higher 4 bits is the binding information.
+                     */
+                    switch (sym.st_info & 0xf) {
+                        case STT_OBJECT:
+                            type = Symbol::Data;
+                            break;
+                        case STT_FUNC:
+                            type = Symbol::Function;
+                            break;
+                        default:
+                            type = Symbol::None;
+                            break;
+                    }
+
+                    auto name = strtabReader.readAsciizString(sym.st_name, strtab->size());
+
+                    module_->image()->symbols().add(std::make_unique<Symbol>(type, std::move(name), sym.st_value));
                 }
             }
         }

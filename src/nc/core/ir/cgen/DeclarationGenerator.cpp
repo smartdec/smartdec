@@ -26,20 +26,20 @@
 
 #include <nc/common/make_unique.h>
 
-#include <nc/core/Context.h>
 #include <nc/core/Module.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Registers.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/CallHook.h>
 #include <nc/core/ir/calling/EntryHook.h>
-#include <nc/core/ir/calling/Signature.h>
+#include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/calling/ReturnHook.h>
+#include <nc/core/ir/calling/Signature.h>
 #include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/types/Types.h>
-#include <nc/core/likec/Tree.h>
 #include <nc/core/likec/FunctionDeclaration.h>
+#include <nc/core/likec/Tree.h>
 
 namespace nc {
 namespace core {
@@ -86,11 +86,11 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 }
 
 const likec::Type *DeclarationGenerator::makeReturnType() {
-    if (signature()) {
-        if (signature()->returnValue()) {
-            foreach (const Return *ret, function()->getReturns()) {
-                if (auto returnHook = parent().hooks().getReturnHook(function(), ret)) {
-                    return parent().makeType(parent().types().getType(returnHook->getReturnValueTerm(signature()->returnValue())));
+    if (auto calleeId = parent().hooks().getCalleeId(function())) {
+        if (signature()) {
+            if (signature()->returnValue()) {
+                foreach (const auto &returnAndHook, nc::find(parent().hooks().map(), calleeId).returnHooks) {
+                    return parent().makeType(parent().types().getType(returnAndHook.second->getReturnValueTerm(signature()->returnValue())));
                 }
             }
         }

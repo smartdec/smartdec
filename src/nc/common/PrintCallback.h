@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <nc/config.h>
+
 namespace nc {
 
 /**

@@ -132,11 +132,6 @@ public:
      * \return Comment for this function.
      */
     const misc::CommentText &comment() const { return comment_; }
-
-    /**
-     * \return List of all return statements in the function.
-     */
-    std::vector<const Return *> getReturns() const;
 };
 
 } // namespace ir

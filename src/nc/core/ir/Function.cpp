@@ -60,20 +60,6 @@ void Function::print(QTextStream &out) const {
     out << '}' << endl;
 }
 
-std::vector<const Return *> Function::getReturns() const {
-    std::vector<const Return *> result;
-
-    foreach (auto basicBlock, basicBlocks()) {
-        foreach (auto statement, basicBlock->statements()) {
-            if (auto ret = statement->as<Return>()) {
-                result.push_back(ret);
-            }
-        }
-    }
-
-    return result;
-}
-
 } // namespace ir
 } // namespace core
 } // namespace nc

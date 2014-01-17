@@ -48,6 +48,8 @@ class SignalLogger: public QObject, public nc::Logger {
 
     /**
      * Signal emitted when there is a message to be logged.
+     *
+     * \param text Message contents.
      */
     void message(const QString &text);
 };

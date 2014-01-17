@@ -34,6 +34,8 @@
 #include <nc/core/Context.h>
 #include <nc/core/Module.h>
 #include <nc/core/arch/irgen/IRGenerator.h>
+#include <nc/core/image/Image.h>
+#include <nc/core/image/Symbols.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
@@ -98,10 +100,12 @@ void MasterAnalyzer::createFunctions(Context &context) const {
 void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) const {
     /* If the function has an entry, and the entry has an address... */
     if (function->entry() && function->entry()->address()) {
-        QString name = context.module()->getName(*function->entry()->address());
+        QString name;
 
-        if (!name.isEmpty()) {
-            /* Take the name of the corresponding symbol, if possible. */
+        /* Take the name of the corresponding symbol, if possible. */
+        if (auto symbol = context.module()->image()->symbols().find(image::Symbol::Function, *function->entry()->address())) {
+            name = symbol->name();
+
             QString cleanName = likec::Tree::cleanName(name);
             function->setName(cleanName);
 
@@ -114,7 +118,9 @@ void MasterAnalyzer::pickFunctionName(Context &context, ir::Function *function) 
                 /* What we demangled has really something to do with a function. */
                 function->comment().append(demangledName);
             }
-        } else {
+        }
+
+        if (name.isEmpty()) {
             /* Invent a name based on the entry address. */
             function->setName(QString("func_%1").arg(*function->entry()->address(), 0, 16));
         }

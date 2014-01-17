@@ -46,6 +46,9 @@ set(SOURCES
     image/Reader.h
     image/Section.cpp
     image/Section.h
+    image/Symbol.h
+    image/Symbols.cpp
+    image/Symbols.h
     input/ParseError.cpp
     input/ParseError.h
     input/Parser.cpp

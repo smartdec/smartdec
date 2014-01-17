@@ -94,6 +94,8 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
     };
 
     if (architecture->bitness() == 32) {
+        // FIXME
+#if 0
         if (auto addr = calleeId.entryAddress()) {
             const QString &symbol = context.module()->getName(*addr);
             int index = symbol.lastIndexOf(QChar('@'));
@@ -106,6 +108,7 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
                 }
             }
         }
+#endif
     }
 
     switch (architecture->bitness()) {

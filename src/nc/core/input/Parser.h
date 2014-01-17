@@ -91,7 +91,6 @@ public:
     void parse(QIODevice *source, Module *module) const;
 
 protected:
-
     /**
      * \param[in] source               Data source.
      * \returns                        Whether the data at source looks like
@@ -108,7 +107,6 @@ protected:
     virtual void doParse(QIODevice *source, Module *module) const = 0;
 
 private:
-
     QString mName; ///< Name of this parser.
 };
 
