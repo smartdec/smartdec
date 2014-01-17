@@ -159,29 +159,27 @@ likec::ArgumentDeclaration *DefinitionGenerator::makeArgumentDeclaration(const T
     return result;
 }
 
-QString DefinitionGenerator::makeLocalVariableName(const vars::Variable *variable) {
-    QString basename(QLatin1String("v"));
-
-#ifdef NC_REGISTER_VARIABLE_NAMES
-    if (auto reg = parent().image().architecture()->registers()->getRegister(variable->memoryLocation())) {
-        basename = reg->lowercaseName();
-        if (basename.isEmpty() || basename[basename.size() - 1].isDigit()) {
-            basename.push_back('_');
-        }
-    }
-#endif
-
-    return QString("%1%2").arg(basename).arg(++serial_);
-}
-
 likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(const vars::Variable *variable) {
     assert(variable != NULL);
     assert(variable->isLocal());
 
     likec::VariableDeclaration *&result = variableDeclarations_[variable];
     if (!result) {
+        QString name(QLatin1String("v"));
+
+#ifdef NC_REGISTER_VARIABLE_NAMES
+        if (auto reg = parent().image().architecture()->registers()->getRegister(variable->memoryLocation())) {
+            name = reg->lowercaseName();
+            if (name.isEmpty() || name[name.size() - 1].isDigit()) {
+                name.push_back('_');
+            }
+        }
+#endif
+
+        name = QString(QLatin1String("%1%2")).arg(name).arg(++serial_);
+
         auto variableDeclaration = std::make_unique<likec::VariableDeclaration>(tree(),
-            makeLocalVariableName(variable), parent().makeVariableType(variable));
+            name, parent().makeVariableType(variable));
 
         result = variableDeclaration.get();
         definition()->block()->addDeclaration(std::move(variableDeclaration));

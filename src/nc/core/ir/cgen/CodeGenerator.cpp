@@ -31,6 +31,7 @@
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Registers.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Symbols.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/calling/Hooks.h>
@@ -173,27 +174,22 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
     if (likec::VariableDeclaration *result = nc::find(variableDeclarations_, variable)) {
         return result;
     } else {
-        // TODO: refactor
         QString name;
         QString comment;
 
-        // FIXME
-#if 0
         if (variable->memoryLocation().domain() == MemoryDomain::MEMORY) {
             ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
-            comment = module().getName(addr);
-            if (!comment.isEmpty()) {
-                name = likec::Tree::cleanName(module().getName(addr));
-                if (name == comment) {
-                    comment = QString();
+            if (auto symbol = image().symbols()->find(image::Symbol::Function, addr)) {
+                name = likec::Tree::cleanName(symbol->name());
+                if (name != symbol->name()) {
+                    comment = symbol->name();
                 }
             }
         }
-#endif
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
         if (name.isEmpty()) {
-            if (const arch::Register *reg = image().architecture()->registers()->getRegister(variable->memoryLocation())) {
+            if (auto reg = image().architecture()->registers()->getRegister(variable->memoryLocation())) {
                 name = reg->lowercaseName();
             }
         }

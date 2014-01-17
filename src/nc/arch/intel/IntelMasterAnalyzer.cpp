@@ -30,6 +30,7 @@
 
 #include <nc/core/Context.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Symbols.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
@@ -94,21 +95,19 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
     };
 
     if (architecture->bitness() == 32) {
-        // FIXME
-#if 0
         if (auto addr = calleeId.entryAddress()) {
-            const QString &symbol = context.module()->getName(*addr);
-            int index = symbol.lastIndexOf(QChar('@'));
-            if (index != -1) {
-                ByteSize argumentsSize;
-                if (stringToInt(symbol.mid(index + 1), &argumentsSize)) {
-                    setConvention("stdcall32");
-                    context.conventions()->setStackArgumentsSize(calleeId, argumentsSize);
-                    return;
+            if (auto symbol = context.image()->symbols()->find(core::image::Symbol::Function, *addr)) {
+                int index = symbol->name().lastIndexOf(QChar('@'));
+                if (index != -1) {
+                    ByteSize argumentsSize;
+                    if (stringToInt(symbol->name().mid(index + 1), &argumentsSize)) {
+                        setConvention("stdcall32");
+                        context.conventions()->setStackArgumentsSize(calleeId, argumentsSize);
+                        return;
+                    }
                 }
             }
         }
-#endif
     }
 
     switch (architecture->bitness()) {

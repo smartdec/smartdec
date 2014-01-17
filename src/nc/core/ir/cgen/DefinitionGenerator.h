@@ -152,15 +152,6 @@ protected:
     likec::ArgumentDeclaration *makeArgumentDeclaration(const Term *term);
 
     /**
-     * Invents a name for the given local variable.
-     *
-     * \param variable Valid pointer to a variable.
-     *
-     * \return Suitable name for this variable.
-     */
-    QString makeLocalVariableName(const vars::Variable *variable);
-
-    /**
      * \param[in] variable Valid pointer to a local variable.
      *
      * \return Valid pointer to the local variable declaration.

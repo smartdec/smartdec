@@ -110,14 +110,14 @@ likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const 
 
 #ifdef NC_REGISTER_VARIABLE_NAMES
     if (auto access = term->asMemoryLocationAccess()) {
-        if (auto regizter = parent().image().architecture()->registers()->getRegister(access->memoryLocation())) {
-            name = regizter->lowercaseName();
+        if (auto reg = parent().image().architecture()->registers()->getRegister(access->memoryLocation())) {
+            name = reg->lowercaseName();
         }
     }
 #endif
 
     if (name.isEmpty()) {
-        name = QString("arg%1").arg(declaration()->arguments().size() + 1);
+        name = QString("a%1").arg(declaration()->arguments().size() + 1);
     }
 
     auto argumentDeclaration = std::make_unique<likec::ArgumentDeclaration>(tree(), name, parent().makeType(parent().types().getType(term)));
