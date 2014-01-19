@@ -78,6 +78,7 @@ class SwitchContext;
  * Generator of function definitions.
  */
 class DefinitionGenerator: public DeclarationGenerator {
+    const Function *function_; ///< Function, whose code is being generated.
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const cflow::Graph &graph_; ///< Reduced control-flow graph.
     const liveness::Liveness &liveness_; ///< Liveness information.
@@ -86,7 +87,6 @@ class DefinitionGenerator: public DeclarationGenerator {
 
     likec::FunctionDefinition *definition_; ///< Function's definition.
 
-    int serial_; ///< Last serial number of local variable.
     boost::unordered_map<const ir::vars::Variable *, likec::VariableDeclaration *> variableDeclarations_; ///< Local variables of current function definition.
     boost::unordered_map<const BasicBlock *, likec::LabelDeclaration *> labels_; ///< Labels inside the function.
     boost::unordered_map<const vars::Variable *, bool> isSingleAssignment_; ///< Memoized results of isSingleAssignment().
@@ -104,21 +104,6 @@ public:
      * Destructor.
      */
     ~DefinitionGenerator();
-
-    /**
-     * \return Dataflow information about the function.
-     */
-    const dflow::Dataflow &dataflow() const { return dataflow_; }
-
-    /**
-     * \return Liveness information.
-     */
-    const liveness::Liveness &liveness() const { return liveness_; }
-
-    /**
-     * \return Reduced control-flow graph.
-     */
-    const cflow::Graph &graph() const { return graph_; }
 
     /**
      * \return Generated function's definition.

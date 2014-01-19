@@ -33,13 +33,13 @@ namespace nc {
 namespace core {
 namespace likec {
 
-FunctionDeclaration::FunctionDeclaration(Tree &tree, const QString &identifier, const Type *returnType, bool variadic):
-    Declaration(tree, FUNCTION_DECLARATION, identifier),
+FunctionDeclaration::FunctionDeclaration(Tree &tree, QString identifier, const Type *returnType, bool variadic):
+    Declaration(tree, FUNCTION_DECLARATION, std::move(identifier)),
     type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic))
 {}
 
-FunctionDeclaration::FunctionDeclaration(Tree &tree, int declarationKind, const QString &identifier, const Type *returnType, bool variadic):
-    Declaration(tree, declarationKind, identifier),
+FunctionDeclaration::FunctionDeclaration(Tree &tree, int declarationKind, QString identifier, const Type *returnType, bool variadic):
+    Declaration(tree, declarationKind, std::move(identifier)),
     type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic))
 {}
 

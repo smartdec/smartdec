@@ -60,6 +60,7 @@ class Term;
 namespace calling {
     class CalleeId;
     class Hooks;
+    class Signature;
     class Signatures;
 }
 
@@ -134,7 +135,7 @@ class CodeGenerator: boost::noncopyable {
     boost::unordered_map<const vars::Variable *, likec::VariableDeclaration *> variableDeclarations_;
 
     /** Mapping of functions to their declarations. */
-    boost::unordered_map<const Function *, likec::FunctionDeclaration *> function2declaration_;
+    boost::unordered_map<const calling::Signature *, likec::FunctionDeclaration *> signature2declaration_;
 
 public:
 
@@ -162,11 +163,6 @@ public:
         dataflows_(dataflows), variables_(variables), graphs_(graphs), livenesses_(livenesses),
         types_(types), cancellationToken_(cancellationToken)
     {}
-
-    /**
-     * Virtual destructor.
-     */
-    virtual ~CodeGenerator() {}
 
     /**
      * \return Abstract syntax tree to generate code in.
@@ -259,20 +255,13 @@ public:
     likec::VariableDeclaration *makeGlobalVariableDeclaration(const vars::Variable *variable);
 
     /**
+     * Creates function's declaration, if it was not yet, and adds it to the compilation unit.
+     *
      * \param[in] calleeId Id of a called function.
      *
      * \return Declaration for this function, or NULL if it was impossible to create one.
      */
     likec::FunctionDeclaration *makeFunctionDeclaration(const calling::CalleeId &calleeId);
-
-    /**
-     * Creates function's definition, if it wasn't yet, and adds it to the compilation unit.
-     *
-     * \param[in] function Function.
-     *
-     * \return Declaration for this function.
-     */
-    virtual likec::FunctionDeclaration *makeFunctionDeclaration(const Function *function);
 
     /**
      * Creates function's definition and adds it to the compilation unit.
@@ -281,15 +270,20 @@ public:
      *
      * \return Created function definition.
      */
-    virtual likec::FunctionDefinition *makeFunctionDefinition(const Function *function);
+    likec::FunctionDefinition *makeFunctionDefinition(const Function *function);
 
     /**
      * Registers a declaration of a function.
      *
-     * \param[in] function Function.
-     * \param[in] declaration Function declaration.
+     * \param[in] signature Valid pointer to the signature of this function.
+     * \param[in] declaration Valid pointer to the function's declaration.
+     *
+     * This function is called from DeclarationGenerator and DefinitionGenerator
+     * immediately after they have created the declaration or definition.
+     * Thus, when a function, whose body is being generated, is looking for
+     * its own declaration, CodeGenerator already knows about it.
      */
-    void setFunctionDeclaration(const Function *function, likec::FunctionDeclaration *declaration);
+    void setFunctionDeclaration(const calling::Signature *signature, likec::FunctionDeclaration *declaration);
 };
 
 } // namespace cgen

@@ -35,6 +35,7 @@
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/types/Type.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/ir/vars/Variable.h>
@@ -53,9 +54,8 @@ namespace cgen {
 void CodeGenerator::makeCompilationUnit() {
     tree().setPointerSize(image().architecture()->bitness());
     tree().setRoot(std::make_unique<likec::CompilationUnit>(tree()));
-    tree().root()->setComment(functions().comment().text());
 
-    foreach (const Function *function, functions().list()) {
+    foreach (const Function *function, functions().all()) {
         makeFunctionDefinition(function);
         cancellationToken().poll();
     }
@@ -210,24 +210,15 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
     }
 }
 
-likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(const Function *function) {
-    if (likec::FunctionDeclaration *result = nc::find(function2declaration_, function)) {
-        return result;
-    } else {
-        DeclarationGenerator generator(*this, function);
-
-        tree().root()->addDeclaration(generator.createDeclaration());
-        setFunctionDeclaration(function, generator.declaration());
-
-        return generator.declaration();
-    }
-}
-
-// TODO: make this function succeed even when there are no Function objects associated with the address.
 likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(const calling::CalleeId &calleeId) {
-    if (calleeId.entryAddress()) {
-        foreach (const Function *function, functions().getFunctionsAtAddress(*calleeId.entryAddress())) {
-            return makeFunctionDeclaration(function);
+    if (auto signature = signatures().getSignature(calleeId)) {
+        if (auto declaration = nc::find(signature2declaration_, signature)) {
+            return declaration;
+        }
+        if (!signature->name().isEmpty()) {
+            DeclarationGenerator generator(*this, signature);
+            tree().root()->addDeclaration(generator.createDeclaration());
+            return generator.declaration();
         }
     }
     return NULL;
@@ -235,15 +226,15 @@ likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(const calling
 
 likec::FunctionDefinition *CodeGenerator::makeFunctionDefinition(const Function *function) {
     DefinitionGenerator generator(*this, function, cancellationToken());
-
     tree().root()->addDeclaration(generator.createDefinition());
-    setFunctionDeclaration(function, generator.definition());
-
     return generator.definition();
 }
 
-void CodeGenerator::setFunctionDeclaration(const Function *function, likec::FunctionDeclaration *declaration) {
-    function2declaration_[function] = declaration;
+void CodeGenerator::setFunctionDeclaration(const calling::Signature *signature, likec::FunctionDeclaration *declaration) {
+    assert(signature != NULL);
+    assert(declaration != NULL);
+
+    signature2declaration_[signature] = declaration;
 }
 
 } // namespace cgen

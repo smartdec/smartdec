@@ -52,9 +52,9 @@ void TypeAnalyzer::analyze(const CancellationToken &canceled) {
     joinArgumentTypes();
 
     std::vector<FunctionAnalyzer> analyzers;
-    analyzers.reserve(functions_.list().size());
+    analyzers.reserve(functions_.all().size());
 
-    foreach (auto function, functions_.list()) {
+    foreach (auto function, functions_.all()) {
         analyzers.emplace_back(types_, function, *dataflows_.at(function), *livenesses_.at(function), hooks_);
     }
 
@@ -103,34 +103,34 @@ void TypeAnalyzer::joinArgumentTypes() {
         auto &calleeHooks = calleeIdAndHooks.second;
 
         if (auto signature = signatures_.getSignature(calleeId)) {
-            foreach (const auto &argument, signature->arguments()) {
-                Type *commonType = NULL;
+            foreach (const Term *argument, signature->arguments()) {
+                Type *commonType = types_.getType(argument);
 
                 foreach (const auto &functionAndHook, calleeHooks.entryHooks) {
                     if (auto term = functionAndHook.second->getArgumentTerm(argument)) {
-                        uniteTypes(commonType, types_.getType(term));
+                        commonType->unionSet(types_.getType(term));
                     }
                 }
 
                 foreach (const auto &callAndHook, calleeHooks.callHooks) {
                     if (auto term = callAndHook.second->getArgumentTerm(argument)) {
-                        uniteTypes(commonType, types_.getType(term));
+                        commonType->unionSet(types_.getType(term));
                     }
                 }
             }
 
             if (signature->returnValue()) {
-                Type *commonType = NULL;
+                Type *commonType = types_.getType(signature->returnValue());
 
                 foreach (const auto &functionAndHook, calleeHooks.returnHooks) {
                     if (auto term = functionAndHook.second->getReturnValueTerm(signature->returnValue())) {
-                        uniteTypes(commonType, types_.getType(term));
+                        commonType->unionSet(types_.getType(term));
                     }
                 }
 
                 foreach (const auto &callAndHook, calleeHooks.callHooks) {
                     if (auto term = callAndHook.second->getReturnValueTerm(signature->returnValue())) {
-                        uniteTypes(commonType, types_.getType(term));
+                        commonType->unionSet(types_.getType(term));
                     }
                 }
             }

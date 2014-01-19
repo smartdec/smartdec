@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
 #include <nc/common/Visitor.h>
 
@@ -42,7 +43,10 @@ class EntryHook {
     std::vector<std::unique_ptr<const Statement>> entryStatements_;
 
     /** Mapping of argument memory locations to corresponding terms. */
-    boost::unordered_map<MemoryLocation, std::unique_ptr<Term>> arguments_;
+    boost::unordered_map<const Term *, std::unique_ptr<Term>> arguments_;
+
+    /** Set of the values in arguments_. */
+    boost::unordered_set<const Term *> argumentsSet_;
 
 public:
     /**
@@ -76,13 +80,21 @@ public:
     void execute(dflow::ExecutionContext &context);
 
     /**
-     * \param memoryLocation Memory location.
+     * \param term Valid pointer to a term representing an argument
+     *             in a signature.
      *
-     * \return Pointer to the term representing the argument at given memory
-     *         location. Will be NULL, if signature does not include such an
-     *         argument.
+     * \return Pointer to the term representing this argument in the hook.
+     *         Will be NULL, if signature does not include such an argument.
      */
-    const Term *getArgumentTerm(const MemoryLocation &memoryLocation) const;
+    const Term *getArgumentTerm(const Term *term) const;
+
+    /**
+     * \param term Valid pointer to a term.
+     *
+     * \return True if the term is an argument term belonging to this hook,
+     *         false otherwise.
+     */
+    bool isArgumentTerm(const Term *term) const;
 
     /**
      * Calls visitor for child statements.

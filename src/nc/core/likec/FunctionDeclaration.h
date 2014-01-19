@@ -26,7 +26,7 @@
 #include <nc/config.h>
 
 #include <vector>
-#include <memory> /* unique_ptr */
+#include <memory>
 
 #include "Commentable.h"
 #include "Declaration.h"
@@ -53,7 +53,7 @@ public:
      * \param[in] returnType Function return type.
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    FunctionDeclaration(Tree &tree, const QString &identifier, const Type *returnType = 0, bool variadic = false);
+    FunctionDeclaration(Tree &tree, QString identifier, const Type *returnType = 0, bool variadic = false);
 
     protected:
 
@@ -66,10 +66,9 @@ public:
      * \param[in] returnType Function return type.
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    FunctionDeclaration(Tree &tree, int declarationKind, const QString &identifier, const Type *returnType = 0, bool variadic = false);
+    FunctionDeclaration(Tree &tree, int declarationKind, QString identifier, const Type *returnType = 0, bool variadic = false);
 
-    public:
-
+public:
     /**
      * \return Type of pointer to this function.
      */

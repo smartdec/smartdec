@@ -28,10 +28,14 @@
 #include <cassert>
 
 #include <nc/common/Types.h>
+#include <nc/common/Unreachable.h>
 
 namespace nc {
 namespace core {
 namespace ir {
+
+class Function;
+
 namespace calling {
 
 /**
@@ -39,39 +43,77 @@ namespace calling {
  * being called, even when their addresses are not known.
  */
 class CalleeId {
-    public:
+    /**
+     * Helper enum to disambiguate constructors.
+     */
+    enum Entry {};
+
+    /**
+     * Helper enum to disambiguate constructors.
+     */
+    enum Call {};
+
+public:
+    static const auto entryAddr = static_cast<Entry>(0);
+    static const auto callAddr = static_cast<Call>(0);
 
     /**
      * Kind of the id.
      */
     enum Kind {
-        INVALID,       ///< Invalid, identifies nothing.
-        ENTRY_ADDRESS, ///< Identifies a function by its entry address.
-        CALL_ADDRESS   ///< Identifies a function by the address of a call to it.
+        INVALID,    ///< Invalid, identifies nothing.
+        ENTRY_ADDR, ///< Identifies a function by its entry address.
+        CALL_ADDR,  ///< Identifies a function by the address of a call to it.
+        FUNCTION    ///< Identifies a function by a pointer to it.
     };
 
-    private:
+private:
+    union {
+        ByteAddr entryAddress;     ///< Function's entry address.
+        ByteAddr callAddress;      ///< Address of the call calling the function.
+        const Function *function;  ///< Pointer to the function.
+    } data_;
 
     Kind kind_; ///< Kind of this id.
-    ByteAddr address_; ///< Address of callee's entry or call instruction.
 
-    public:
-
+public:
     /**
      * Constructs an invalid id.
      */
-    CalleeId(): kind_(INVALID), address_() {}
+    CalleeId(): kind_(INVALID) {}
 
     /**
-     * Constructs a valid id.
+     * Constructs a valid id from a function's entry address.
      *
-     * \param kind Kind of the id.
-     * \param address Function's entry or call instruction address (depends on the kind).
+     * \param address Function's entry address.
      */
-    CalleeId(Kind kind, ByteAddr address):
-        kind_(kind), address_(address)
+    CalleeId(ByteAddr address, Entry):
+        kind_(ENTRY_ADDR)
     {
-        assert(kind == ENTRY_ADDRESS || kind == CALL_ADDRESS);
+        data_.entryAddress = address;
+    }
+
+    /**
+     * Constructs a valid id from a call address.
+     *
+     * \param address Function's entry address.
+     */
+    CalleeId(ByteAddr address, Call):
+        kind_(CALL_ADDR)
+    {
+        data_.callAddress = address;
+    }
+
+    /**
+     * Constructs a valid id from a function's pointer.
+     *
+     * \param function Pointer to a function's intermediate representation.
+     */
+    explicit CalleeId(const Function *function):
+        kind_(FUNCTION)
+    {
+        assert(function != NULL);
+        data_.function = function;
     }
 
     /**
@@ -80,20 +122,37 @@ class CalleeId {
     Kind kind() const { return kind_; }
 
     /**
-     * \return Valid pointer to the address being called, if kind is ENTRY_ADDRESS, or NULL otherwise.
+     * \return Valid pointer to the address being called, if kind is ENTRY_ADDR, or NULL otherwise.
      */
-    const ByteAddr *entryAddress() const { return kind_ == ENTRY_ADDRESS ? &address_ : NULL; }
+    const ByteAddr *entryAddress() const { return kind_ == ENTRY_ADDR ? &data_.entryAddress : NULL; }
 
     /**
-     * \return Valid pointer to the address of the call instruction, if kind is CALL_ADDRESS, or NULL otherwise.
+     * \return Valid pointer to the address of the call instruction, if kind is CALL_ADDR, or NULL otherwise.
      */
-    const ByteAddr *callAddress() const { return kind_ == CALL_ADDRESS ? &address_ : NULL; }
+    const ByteAddr *callAddress() const { return kind_ == CALL_ADDR ? &data_.callAddress : NULL; }
+
+    /**
+     * \return Valid pointer to the function being called, if kind is FUNCTION, or NULL otherwise.
+     */
+    const Function *function() const { return kind_ == FUNCTION ? data_.function : NULL; }
 
     /**
      * \return True if this is equal to that, false otherwise.
      */
     bool operator==(const CalleeId &that) const {
-        return kind_ == that.kind_ && address_ == that.address_;
+        if (kind_ != that.kind_) {
+            return false;
+        }
+        switch (kind_) {
+            case ENTRY_ADDR:
+                return data_.entryAddress == that.data_.entryAddress;
+            case CALL_ADDR:
+                return data_.callAddress == that.data_.callAddress;
+            case FUNCTION:
+                return data_.function == that.data_.function;
+            default:
+                unreachable();
+        }
     }
 
     /**
@@ -127,7 +186,18 @@ template<>
 struct hash<nc::core::ir::calling::CalleeId>: public unary_function<nc::core::ir::calling::CalleeId, size_t> {
 public:
     result_type operator()(const argument_type &value) const {
-        return hash_value(static_cast<int>(value.kind_)) ^ hash_value(value.address_);
+        using nc::core::ir::calling::CalleeId;
+
+        switch (value.kind_) {
+            case CalleeId::ENTRY_ADDR:
+                return hash_value(value.data_.entryAddress);
+            case CalleeId::CALL_ADDR:
+                return hash_value(value.data_.callAddress);
+            case CalleeId::FUNCTION:
+                return hash_value(value.data_.function);
+            default:
+                unreachable();
+        }
     }
 
 protected:

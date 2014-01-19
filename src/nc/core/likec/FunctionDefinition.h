@@ -41,7 +41,7 @@ namespace likec {
  */
 class FunctionDefinition: public FunctionDeclaration {
     std::unique_ptr<Block> block_; ///< Block of the function.
-    std::vector<std::unique_ptr<LabelDeclaration> > labels_; ///< Label declarations.
+    std::vector<std::unique_ptr<LabelDeclaration>> labels_; ///< Label declarations.
 
 public:
     /**
@@ -52,8 +52,8 @@ public:
      * \param[in] returnType Function return type.
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    FunctionDefinition(Tree &tree, const QString &identifier, const Type *returnType = 0, bool variadic = false):
-        FunctionDeclaration(tree, FUNCTION_DEFINITION, identifier, returnType, variadic),
+    FunctionDefinition(Tree &tree, QString identifier, const Type *returnType = 0, bool variadic = false):
+        FunctionDeclaration(tree, FUNCTION_DEFINITION, std::move(identifier), returnType, variadic),
         block_(new Block(tree))
     {}
 

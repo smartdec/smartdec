@@ -40,7 +40,6 @@ namespace likec {
 
 namespace ir {
 
-class Function;
 class Term;
 
 namespace calling {
@@ -54,7 +53,6 @@ namespace cgen {
  */
 class DeclarationGenerator: boost::noncopyable {
     CodeGenerator &parent_; ///< Parent code generator.
-    const Function *function_; ///< Function, for which declaration is generated.
     const calling::Signature *signature_; ///< Signature of the function.
     likec::FunctionDeclaration *declaration_; ///< Function's declaration.
 
@@ -63,10 +61,9 @@ public:
      * Constructor.
      *
      * \param parent Parent code generator.
-     * \param function Valid pointer to the function,
-     *                 for which declaration is generated.
+     * \param signature Valid pointer to the function's signature.
      */
-    DeclarationGenerator(CodeGenerator &parent, const Function *function);
+    DeclarationGenerator(CodeGenerator &parent, const calling::Signature *signature);
 
     /**
      * Virtual destructor.
@@ -82,11 +79,6 @@ public:
      * \return LikeC tree.
      */
     likec::Tree &tree() const { return parent().tree(); }
-
-    /**
-     * \return Function being translated.
-     */
-    const Function *function() const { return function_; }
 
     /**
      * \return Pointer to the signature of the function, for which
@@ -125,13 +117,13 @@ protected:
     bool variadic() const;
 
     /**
-     * Creates a declaration of function argument for given term.
+     * Creates the declaration of a function's argument.
      * Declaration is automatically added to the list of formal arguments
      * of current function's declaration.
      *
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to the term representing the argument.
      *
-     * \return Created declaration of function's formal argument.
+     * \return Created declaration of function's argument.
      */
     likec::ArgumentDeclaration *makeArgumentDeclaration(const Term *term);
 };

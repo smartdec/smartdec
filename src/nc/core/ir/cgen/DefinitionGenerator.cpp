@@ -99,15 +99,17 @@ namespace ir {
 namespace cgen {
 
 DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *function, const CancellationToken &canceled):
-    DeclarationGenerator(parent, function),
+    DeclarationGenerator(parent, parent.signatures().getSignature(parent.hooks().getCalleeId(function))),
+    function_(function),
     dataflow_(*parent.dataflows().at(function)),
     graph_(*parent.graphs().at(function)),
     liveness_(*parent.livenesses().at(function)),
     uses_(std::make_unique<dflow::Uses>(dataflow_)),
     dominators_(std::make_unique<Dominators>(CFG(function->basicBlocks()), canceled)),
-    definition_(NULL),
-    serial_(0)
-{}
+    definition_(NULL)
+{
+    assert(function != NULL);
+}
 
 DefinitionGenerator::~DefinitionGenerator() {}
 
@@ -119,24 +121,18 @@ void DefinitionGenerator::setDefinition(likec::FunctionDefinition *definition) {
 
 std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition() {
     auto functionDefinition = std::make_unique<likec::FunctionDefinition>(tree(),
-        function()->name(), makeReturnType(), variadic());
+        signature()->name(), makeReturnType(), signature()->variadic());
 
-    functionDefinition->setComment(function()->comment().text());
+    functionDefinition->setComment(signature()->comment());
 
     setDefinition(functionDefinition.get());
 
-    if (signature()) {
-        if (auto entryHook = parent().hooks().getEntryHook(function())) {
-            foreach (const MemoryLocation &memoryLocation, signature()->arguments()) {
-                makeArgumentDeclaration(entryHook->getArgumentTerm(memoryLocation));
-            }
+    if (auto entryHook = parent().hooks().getEntryHook(function_)) {
+        foreach (const Term *argument, signature()->arguments()) {
+            makeArgumentDeclaration(entryHook->getArgumentTerm(argument));
         }
-    }
 
-    parent().setFunctionDeclaration(function(), functionDefinition.get());
-
-    if (calling::EntryHook *entryHook = parent().hooks().getEntryHook(function())) {
-        foreach (const ir::Statement *statement, entryHook->entryStatements()) {
+        foreach (const Statement *statement, entryHook->entryStatements()) {
             if (auto likecStatement = makeStatement(statement, NULL, NULL, NULL)) {
                 definition()->block()->addStatement(std::move(likecStatement));
             }
@@ -144,7 +140,7 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     }
 
     SwitchContext switchContext;
-    makeStatements(graph().root(), definition()->block(), NULL, NULL, NULL, switchContext);
+    makeStatements(graph_.root(), definition()->block(), NULL, NULL, NULL, switchContext);
 
     return functionDefinition;
 }
@@ -176,7 +172,7 @@ likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(co
         }
 #endif
 
-        name = QString(QLatin1String("%1%2")).arg(name).arg(++serial_);
+        name = QString(QLatin1String("%1%2")).arg(name).arg(variableDeclarations_.size());
 
         auto variableDeclaration = std::make_unique<likec::VariableDeclaration>(tree(),
             name, parent().makeVariableType(variable));
@@ -643,7 +639,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
         case Statement::ASSIGNMENT: {
             const Assignment *assignment = statement->asAssignment();
 
-            if (!liveness().isLive(assignment->left())) {
+            if (!liveness_.isLive(assignment->left())) {
                 return NULL;
             }
 
@@ -694,11 +690,9 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             auto calleeId = parent().hooks().getCalleeId(call);
 
-            if (calleeId) {
-                if (auto functionDeclaration = parent().makeFunctionDeclaration(calleeId)) {
-                    target = std::make_unique<likec::FunctionIdentifier>(tree(), functionDeclaration);
-                    target->setTerm(call->target());
-                }
+            if (auto functionDeclaration = parent().makeFunctionDeclaration(calleeId)) {
+                target = std::make_unique<likec::FunctionIdentifier>(tree(), functionDeclaration);
+                target->setTerm(call->target());
             }
 
             if (!target) {
@@ -710,8 +704,8 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
             if (calleeId) {
                 if (auto signature = parent().signatures().getSignature(calleeId)) {
                     if (auto callHook = parent().hooks().getCallHook(call)) {
-                        foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
-                            callOperator->addArgument(makeExpression(callHook->getArgumentTerm(memoryLocation)));
+                        foreach (const Term *argument, signature->arguments()) {
+                            callOperator->addArgument(makeExpression(callHook->getArgumentTerm(argument)));
                         }
 
                         if (signature->returnValue()) {
@@ -732,13 +726,11 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
             return std::make_unique<likec::ExpressionStatement>(tree(), std::move(callOperator));
         }
         case Statement::RETURN: {
-            if (signature()) {
-                if (signature()->returnValue()) {
-                    if (auto returnHook = parent().hooks().getReturnHook(function(), statement->asReturn())) {
-                        return std::make_unique<likec::Return>(
-                            tree(),
-                            makeExpression(returnHook->getReturnValueTerm(signature()->returnValue())));
-                    }
+            if (signature()->returnValue()) {
+                if (auto returnHook = parent().hooks().getReturnHook(function_, statement->asReturn())) {
+                    return std::make_unique<likec::Return>(
+                        tree(),
+                        makeExpression(returnHook->getReturnValueTerm(signature()->returnValue())));
                 }
             }
             return std::make_unique<likec::Return>(tree());
@@ -805,7 +797,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const Ter
 std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const Term *term) {
 #ifdef NC_PREFER_CONSTANTS_TO_EXPRESSIONS
     if (term->isRead()) {
-        const dflow::Value *value = dataflow().getValue(term);
+        const dflow::Value *value = dataflow_.getValue(term);
 
         if (value->abstractValue().isConcrete()) {
             return makeConstant(term, value->abstractValue().asConcrete());
@@ -836,7 +828,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
             return NULL;
         }
         case Term::DEREFERENCE: {
-            assert(!dataflow().getMemoryLocation(term) && "The term must belong to a variable.");
+            assert(!dataflow_.getMemoryLocation(term) && "The term must belong to a variable.");
 
             auto dereference = term->asDereference();
             auto type = parent().types().getType(dereference);
@@ -855,7 +847,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
         }
         case Term::CHOICE: {
             const Choice *choice = term->asChoice();
-            if (!dataflow().getDefinitions(choice->preferredTerm()).empty()) {
+            if (!dataflow_.getDefinitions(choice->preferredTerm()).empty()) {
                 return makeExpression(choice->preferredTerm());
             } else {
                 return makeExpression(choice->defaultTerm());
@@ -1062,7 +1054,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const Term *term) {
     assert(term != NULL);
 
-    const auto &termLocation = dataflow().getMemoryLocation(term);
+    const auto &termLocation = dataflow_.getMemoryLocation(term);
     assert(termLocation);
 
     auto variable = parent().variables().getVariable(term);
@@ -1112,9 +1104,9 @@ bool DefinitionGenerator::isDominating(const Term *write, const Term *read) cons
     assert(read->isRead());
 
     if (!write->statement() || !write->statement()->basicBlock()) {
-        if (auto entryHook = parent().hooks().getEntryHook(function())) {
+        if (auto entryHook = parent().hooks().getEntryHook(function_)) {
             /* Assignments to arguments dominate everything in the function. */
-            if (write == entryHook->getArgumentTerm(dataflow().getMemoryLocation(write))) {
+            if (entryHook->isArgumentTerm(write)) {
                 return true;
             }
         }
@@ -1161,7 +1153,7 @@ const Term *DefinitionGenerator::getSingleUse(const vars::Variable *variable) co
 
     const Term *result = NULL;
     foreach (const auto &termAndLocation, variable->termsAndLocations()) {
-        if (termAndLocation.term->isRead() && liveness().isLive(termAndLocation.term)) {
+        if (termAndLocation.term->isRead() && liveness_.isLive(termAndLocation.term)) {
             if (result == NULL) {
                 result = termAndLocation.term;
             } else {
@@ -1188,7 +1180,7 @@ bool DefinitionGenerator::isSingleAssignment(const vars::Variable *variable) {
                 auto term = termAndLocation.term;
                 auto &location = termAndLocation.location;
 
-                if (term->isRead() && liveness().isLive(term)) {
+                if (term->isRead() && liveness_.isLive(term)) {
                     if (!isDominating(definition, term)) {
                         return false;
                     }
@@ -1229,7 +1221,7 @@ bool DefinitionGenerator::isMovable(const Term *term) {
             }
             case Term::CHOICE: {
                 auto choice = term->asChoice();
-                if (!dataflow().getDefinitions(choice->preferredTerm()).empty()) {
+                if (!dataflow_.getDefinitions(choice->preferredTerm()).empty()) {
                     return isMovable(choice->preferredTerm());
                 } else {
                     return isMovable(choice->defaultTerm());

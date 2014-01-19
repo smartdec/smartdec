@@ -46,63 +46,40 @@ namespace core {
 namespace ir {
 namespace cgen {
 
-// TODO: make this class work for any calleeId (address?) instead of a function.
-DeclarationGenerator::DeclarationGenerator(CodeGenerator &parent, const Function *function):
+DeclarationGenerator::DeclarationGenerator(CodeGenerator &parent, const calling::Signature *signature):
     parent_(parent),
-    function_(function),
+    signature_(signature),
     declaration_(NULL)
 {
-    assert(function_ != NULL);
-
-    if (auto calleeId = parent.hooks().getCalleeId(function)) {
-        signature_ = parent.signatures().getSignature(calleeId);
-    } else {
-        signature_ = NULL;
-    }
+    assert(signature != NULL);
 }
 
 void DeclarationGenerator::setDeclaration(likec::FunctionDeclaration *declaration) {
     assert(!declaration_); 
     declaration_ = declaration;
+    parent().setFunctionDeclaration(signature_, declaration);
 }
 
 std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclaration() {
     auto functionDeclaration = std::make_unique<likec::FunctionDeclaration>(tree(),
-        function()->name(), makeReturnType(), variadic());
+        signature()->name(), makeReturnType(), signature()->variadic());
 
-    functionDeclaration->setComment(function()->comment().text());
+    functionDeclaration->setComment(signature()->comment());
 
     setDeclaration(functionDeclaration.get());
 
-    if (signature()) {
-        if (auto entryHook = parent().hooks().getEntryHook(function())) {
-            foreach (const MemoryLocation &memoryLocation, signature()->arguments()) {
-                makeArgumentDeclaration(entryHook->getArgumentTerm(memoryLocation));
-            }
-        }
+    foreach (const Term *argument, signature()->arguments()) {
+        makeArgumentDeclaration(argument);
     }
 
     return functionDeclaration;
 }
 
 const likec::Type *DeclarationGenerator::makeReturnType() {
-    if (auto calleeId = parent().hooks().getCalleeId(function())) {
-        if (signature()) {
-            if (signature()->returnValue()) {
-                foreach (const auto &returnAndHook, nc::find(parent().hooks().map(), calleeId).returnHooks) {
-                    return parent().makeType(parent().types().getType(returnAndHook.second->getReturnValueTerm(signature()->returnValue())));
-                }
-            }
-        }
+    if (signature()->returnValue()) {
+        return parent().makeType(parent().types().getType(signature()->returnValue()));
     }
     return tree().makeVoidType();
-}
-
-bool DeclarationGenerator::variadic() const {
-    if (signature()) {
-        return signature()->variadic();
-    }
-    return false;
 }
 
 likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const Term *term) {
@@ -120,7 +97,8 @@ likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const 
         name = QString("a%1").arg(declaration()->arguments().size() + 1);
     }
 
-    auto argumentDeclaration = std::make_unique<likec::ArgumentDeclaration>(tree(), name, parent().makeType(parent().types().getType(term)));
+    auto argumentDeclaration = std::make_unique<likec::ArgumentDeclaration>(tree(),
+        name, parent().makeType(parent().types().getType(term)));
     auto result = argumentDeclaration.get();
 
     declaration()->addArgument(std::move(argumentDeclaration));

@@ -26,23 +26,18 @@
 #include <nc/config.h>
 
 #include <cassert>
-#include <memory> /* For std::unique_ptr. */
+#include <memory>
 #include <vector>
-
-#include <QString>
 
 #include <boost/noncopyable.hpp>
 
 #include <nc/common/Printable.h>
-
-#include "nc/core/ir/misc/CommentText.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 
 class BasicBlock;
-class Return;
 
 /**
  * Intermediate representation of a function.
@@ -50,9 +45,6 @@ class Return;
 class Function: public PrintableBase<Function>, boost::noncopyable {
     BasicBlock *entry_; ///< Entry basic block.
     std::vector<std::unique_ptr<BasicBlock>> basicBlocks_; ///< All basic blocks of the function.
-    // TODO: remove from here
-    QString name_; ///< Name of this function.
-    misc::CommentText comment_; ///< Comment to be displayed before a definition or declaration of this function.
 
 public:
     /**
@@ -112,26 +104,6 @@ public:
      * \param[in] out Output stream.
      */
     void print(QTextStream &out) const;
-
-    /**
-     * \return Name for this function.
-     */
-    const QString &name() const { return name_; }
-
-    /**
-     * \param[in] name                 Name for this function.
-     */
-    void setName(const QString &name) { name_ = name; }
-
-    /**
-     * \return Comment for this function.
-     */
-    misc::CommentText &comment() { return comment_; }
-
-    /**
-     * \return Comment for this function.
-     */
-    const misc::CommentText &comment() const { return comment_; }
 };
 
 } // namespace ir

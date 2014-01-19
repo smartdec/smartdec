@@ -54,8 +54,7 @@ class Context;
 class MasterAnalyzer {
     Q_DECLARE_TR_FUNCTIONS(MasterAnalyzer)
 
-    public:
-
+public:
     /**
      * Virtual destructor.
      */
@@ -74,14 +73,6 @@ class MasterAnalyzer {
      * \param context Context.
      */
     virtual void createFunctions(Context &context) const;
-
-    /**
-     * Picks and sets the name for a function.
-     *
-     * \param context Context.
-     * \param function Valid pointer to the function.
-     */
-    virtual void pickFunctionName(Context &context, ir::Function *function) const;
 
     /**
      * Detects and sets the calling convention of a function.

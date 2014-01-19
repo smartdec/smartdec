@@ -69,14 +69,19 @@ void FunctionsGenerator::makeFunctions(const Program &program, Functions &functi
 
     CFG cfg(program.basicBlocks());
 
-    /* Generate all functions being called. Create even empty ones. */
+    /* Generate all functions being called. */
     foreach (const BasicBlock *basicBlock, program.basicBlocks()) {
         if (basicBlock->address() && program.isCalledAddress(*basicBlock->address())) {
             boost::unordered_set<const BasicBlock *> visited;
             std::vector<const BasicBlock *> trace;
 
             dfs(cfg, basicBlock, visited, trace);
-            functions.addFunction(makeFunction(trace, basicBlock));
+
+            auto function = makeFunction(trace, basicBlock);
+            if (!function->isEmpty()) {
+                functions.addFunction(std::move(function));
+            }
+
             processed.insert(trace.begin(), trace.end());
         }
     }

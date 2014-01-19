@@ -65,19 +65,8 @@ CallHook::CallHook(const Call *call, const Convention *convention, const Signatu
     assert(convention != NULL);
 
     if (signature) {
-        foreach (const auto &location, signature->arguments()) {
-            if (location.domain() == MemoryDomain::STACK) {
-                assert(location.addr() % CHAR_BIT == 0);
-                arguments_[location] = std::make_unique<Dereference>(
-                    std::make_unique<BinaryOperator>(BinaryOperator::ADD,
-                        std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
-                        std::make_unique<Constant>(SizedValue(convention->stackPointer().size(), location.addr() / CHAR_BIT)),
-                        convention->stackPointer().size<SmallBitSize>()),
-                    MemoryDomain::MEMORY,
-                    location.size<SmallBitSize>());
-            } else {
-                arguments_[location] = std::make_unique<MemoryLocationAccess>(location);
-            }
+        foreach (const Term *argument, signature->arguments()) {
+            arguments_[argument] = argument->clone();
         }
         if (signature->returnValue()) {
             returnValues_[signature->returnValue()] = signature->returnValue()->clone();
@@ -246,8 +235,8 @@ void CallHook::execute(dflow::ExecutionContext &context) {
 #endif
 }
 
-const Term *CallHook::getArgumentTerm(const MemoryLocation &memoryLocation) const {
-    return nc::find(arguments_, memoryLocation).get();
+const Term *CallHook::getArgumentTerm(const Term *term) const {
+    return nc::find(arguments_, term).get();
 
 // TODO: remove
 #if 0

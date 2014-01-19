@@ -48,16 +48,31 @@ EntryHook::EntryHook(const Convention *convention, const Signature *signature) {
     stackPointer_ = std::make_unique<MemoryLocationAccess>(convention->stackPointer());
     stackPointer_->setAccessType(Term::WRITE);
 
-    entryStatements_.reserve(convention->entryStatements().size());
+    entryStatements_.reserve(convention->entryStatements().size() + 1);
+
+    if (convention->firstArgumentOffset()) {
+        /* Decrement the stack pointer, as if a call has happened. */
+        entryStatements_.push_back(std::make_unique<Assignment>(
+            std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
+            std::make_unique<BinaryOperator>(BinaryOperator::SUB,
+                std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
+                std::make_unique<Constant>(
+                    SizedValue(convention->stackPointer().size(), convention->firstArgumentOffset() / CHAR_BIT)),
+                convention->stackPointer().size()
+            )
+        ));
+    }
+
     foreach (const Statement *statement, convention->entryStatements()) {
         entryStatements_.push_back(statement->clone());
     }
 
     if (signature) {
-        foreach (const auto &location, signature->arguments()) {
-            auto argument = std::make_unique<MemoryLocationAccess>(location);
-            argument->setAccessType(Term::WRITE);
-            arguments_[location] = std::move(argument);
+        foreach (const Term *argument, signature->arguments()) {
+            auto term = argument->clone();
+            term->setAccessType(Term::WRITE);
+            argumentsSet_.insert(term.get());
+            arguments_[argument] = std::move(term);
         }
     }
 }
@@ -74,22 +89,26 @@ void EntryHook::execute(dflow::ExecutionContext &context) {
     context.analyzer().execute(stackPointer_.get(), context);
 
     /*
-     * Execute entry statements.
-     */
-    foreach (auto &statement, entryStatements_) {
-        context.analyzer().execute(statement.get(), context);
-    }
-
-    /*
      * Execute all arguments terms.
      */
     foreach (const auto &argument, arguments_) {
         context.analyzer().execute(argument.second.get(), context);
     }
+
+    /*
+     * Execute entry statements.
+     */
+    foreach (auto &statement, entryStatements_) {
+        context.analyzer().execute(statement.get(), context);
+    }
 }
 
-const Term *EntryHook::getArgumentTerm(const MemoryLocation &memoryLocation) const {
-    return nc::find(arguments_, memoryLocation).get();
+const Term *EntryHook::getArgumentTerm(const Term *term) const {
+    return nc::find(arguments_, term).get();
+}
+
+bool EntryHook::isArgumentTerm(const Term *term) const {
+    return nc::contains(argumentsSet_, term);
 }
 
 void EntryHook::visitChildStatements(Visitor<const Statement> &visitor) const {

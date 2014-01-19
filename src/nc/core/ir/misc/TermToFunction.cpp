@@ -40,7 +40,7 @@ namespace misc {
 TermToFunction::TermToFunction(const Functions *functions, calling::Hooks *hooks) {
     assert(functions != NULL);
 
-    foreach (const ir::Function *function, functions->list()) {
+    foreach (const ir::Function *function, functions->all()) {
         ir::misc::CensusVisitor visitor(hooks);
         visitor(function);
 

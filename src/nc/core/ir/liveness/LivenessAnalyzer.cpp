@@ -125,8 +125,8 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
             if (auto calleeId = hooks().getCalleeId(call)) {
                 if (auto signature = signatures().getSignature(calleeId)) {
                     if (auto callHook = hooks().getCallHook(call)) {
-                        foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
-                            makeLive(callHook->getArgumentTerm(memoryLocation));
+                        foreach (const Term *argument, signature->arguments()) {
+                            makeLive(callHook->getArgumentTerm(argument));
                         }
                     }
                 }

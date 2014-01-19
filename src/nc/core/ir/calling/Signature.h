@@ -25,7 +25,10 @@
 
 #include <nc/config.h>
 
-#include <nc/core/ir/MemoryLocation.h>
+#include <cassert>
+#include <memory>
+
+#include <QString>
 
 namespace nc {
 namespace core {
@@ -36,33 +39,51 @@ class Term;
 namespace calling {
 
 /**
- * Signature of a function: a list of its arguments, and a return value.
+ * Signature of a function: name, arguments, return value.
  */
 class Signature {
-    std::vector<MemoryLocation> arguments_; ///< Function's arguments.
+    QString name_; ///< Name of the function.
+    std::vector<std::unique_ptr<Term>> arguments_; ///< Function's arguments.
     bool variadic_; ///< True if a function is variadic.
-    const Term *returnValue_; ///< Term containing the return value.
+    std::unique_ptr<Term> returnValue_; ///< Term containing the return value.
+    QString comment_; ///< Comment to generate before the function's declaration.
 
-    public:
-
-    Signature(): variadic_(false), returnValue_(NULL) {}
-
+public:
     /**
-     * \return List of function's arguments.
+     * Constructs an empty signature.
      */
-    std::vector<MemoryLocation> &arguments() { return arguments_; }
+    Signature();
 
     /**
-     * \return List of function's arguments.
+     * Destructor.
      */
-    const std::vector<MemoryLocation> &arguments() const { return arguments_; }
+    ~Signature();
 
     /**
-     * Adds a memory location to the list of function's arguments.
+     * \return Name of the function.
+     */
+    const QString &name() const { return name_; }
+
+    /**
+     * Sets the function name.
      *
-     * \param memoryLocation Memory location to add.
+     * \param name New name.
      */
-    void addArgument(const MemoryLocation &memoryLocation) { arguments_.push_back(memoryLocation); }
+    void setName(QString name) { name_ = std::move(name); }
+
+    /**
+     * \return List of function's arguments.
+     */
+    const std::vector<const Term *> &arguments() const {
+        return reinterpret_cast<const std::vector<const Term *> &>(arguments_);
+    }
+
+    /**
+     * Adds a term representing function's argument.
+     *
+     * \param term Valid pointer to a term.
+     */
+    void addArgument(std::unique_ptr<Term> term);
 
     /**
      * \return True if the function is variadic.
@@ -79,14 +100,27 @@ class Signature {
     /**
      * \return Pointer to the term containing the return value. Can be NULL.
      */
-    const Term *returnValue() const { return returnValue_; }
+    const Term *returnValue() const { return returnValue_.get(); }
 
     /**
      * Sets the pointer to the term containing the return value.
      *
-     * \param term Pointer to the term. Can be NULL.
+     * \param term Valid pointer to the term.
      */
-    void setReturnValue(const Term *term) { returnValue_ = term; }
+    void setReturnValue(std::unique_ptr<Term> term);
+
+    /**
+     * \return Comment to generate before the function's declaration.
+     */
+    const QString &comment() const { return comment_; }
+
+    /**
+     * Appends some text to the comment which will be generated before
+     * the function's declaration.
+     *
+     * \param text Text to append.
+     */
+    void addComment(QString text);
 };
 
 } // namespace calling

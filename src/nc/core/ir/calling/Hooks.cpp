@@ -57,9 +57,9 @@ CalleeId Hooks::getCalleeId(const Function *function) const {
     assert(function != NULL);
 
     if (function->entry() && function->entry()->address()) {
-        return CalleeId(CalleeId::ENTRY_ADDRESS, *function->entry()->address());
+        return CalleeId(*function->entry()->address(), CalleeId::entryAddr);
     } else {
-        return CalleeId();
+        return CalleeId(function);
     }
 }
 
@@ -67,9 +67,9 @@ CalleeId Hooks::getCalleeId(const Call *call) const {
     assert(call != NULL);
 
     if (auto addr = getCalledAddress(call)) {
-        return CalleeId(CalleeId::ENTRY_ADDRESS, *addr);
+        return CalleeId(*addr, CalleeId::entryAddr);
     } else if (call->instruction()) {
-        return CalleeId(CalleeId::CALL_ADDRESS, call->instruction()->addr());
+        return CalleeId(call->instruction()->addr(), CalleeId::callAddr);
     } else {
         return CalleeId();
     }

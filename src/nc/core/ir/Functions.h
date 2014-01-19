@@ -34,8 +34,6 @@
 #include <nc/common/Printable.h>
 #include <nc/common/Types.h>
 
-#include "nc/core/ir/misc/CommentText.h"
-
 namespace nc {
 namespace core {
 namespace ir {
@@ -52,9 +50,6 @@ class Functions: public PrintableBase<Functions>, boost::noncopyable {
     /** Mapping from an entry address to the list of functions with this address. */
     boost::unordered_map<ByteAddr, std::vector<Function *>> entry2functions_;
 
-    /** Comment for the whole set of functions. */
-    misc::CommentText comment_;
-
 public:
     /**
      * Constructor.
@@ -69,7 +64,7 @@ public:
     /**
      * \return List of functions in intermediate representation.
      */
-    const std::vector<Function *> &list() const {
+    const std::vector<Function *> &all() const {
         return reinterpret_cast<const std::vector<Function *> &>(functions_);
     }
 
@@ -93,16 +88,6 @@ public:
      * \param[in] out Output stream.
      */
     void print(QTextStream &out) const;
-
-    /**
-     * \return Comment for this set of functions.
-     */
-    misc::CommentText &comment() { return comment_; }
-
-    /**
-     * \return Comment for this set of functions.
-     */
-    const misc::CommentText &comment() const { return comment_; }
 };
 
 } // namespace ir

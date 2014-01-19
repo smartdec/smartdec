@@ -3,13 +3,20 @@
 
 #include "SignatureAnalyzer.h"
 
+#include <boost/range/adaptor/map.hpp>
+
 #include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
+#include <nc/core/image/Image.h>
+#include <nc/core/image/Symbols.h>
+#include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
+#include <nc/core/likec/Tree.h>
+#include <nc/core/mangling/Demangler.h>
 
 #include "CallHook.h"
 #include "Convention.h"
@@ -22,7 +29,19 @@ namespace core {
 namespace ir {
 namespace calling {
 
-void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
+void SignatureAnalyzer::analyze(const CancellationToken & canceled) {
+    foreach (auto function, functions_.all()) {
+        analyze(hooks_.getCalleeId(function));
+        canceled.poll();
+    }
+
+    foreach (const auto &calleeId, hooks_.map() | boost::adaptors::map_keys) {
+        analyze(calleeId);
+        canceled.poll();
+    }
+
+// TODO
+#if 0
     /*
      * Gets the argument locations read but not defined in a function.
      */
@@ -90,11 +109,49 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
 
         return signature;
     };
+#endif
+}
 
-    foreach (const auto &pair, hooks_.map()) {
-        signatures_.setSignature(pair.first, getSignature(pair.first, pair.second));
-        canceled.poll();
+void SignatureAnalyzer::analyze(const CalleeId &calleeId) {
+    assert(calleeId);
+
+    if (signatures_.getSignature(calleeId)) {
+        return;
     }
+
+    auto signature = std::make_unique<Signature>();
+
+    /*
+     * Pick up a name for the function.
+     */
+    if (calleeId.entryAddress()) {
+        /* Take the name of the corresponding symbol, if possible. */
+        if (auto symbol = image_.symbols()->find(image::Symbol::Function, *calleeId.entryAddress())) {
+            signature->setName(likec::Tree::cleanName(symbol->name()));
+
+            if (signature->name() != symbol->name()) {
+                signature->addComment(symbol->name());
+            }
+
+            QString demangledName = image_.demangler()->demangle(symbol->name());
+            if (demangledName != symbol->name()) {
+                signature->addComment(demangledName);
+            }
+        }
+
+        if (signature->name().isEmpty()) {
+            /* Invent a name based on the entry address. */
+            signature->setName(QString(QLatin1String("func_%1"))
+                .arg(*calleeId.entryAddress(), 0, 16));
+        }
+    } else if (calleeId.function()) {
+        signature->setName(QString(QLatin1String("func_noentry_%1"))
+            .arg(reinterpret_cast<std::uintptr_t>(calleeId.function()), 0, 16));
+    } else {
+        /* Function is unknown, leave the name empty. */
+    }
+
+    signatures_.setSignature(calleeId, std::move(signature));
 }
 
 } // namespace calling

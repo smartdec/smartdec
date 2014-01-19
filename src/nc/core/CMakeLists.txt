@@ -95,6 +95,7 @@ set(SOURCES
     ir/calling/Hooks.h
     ir/calling/ReturnHook.cpp
     ir/calling/ReturnHook.h
+    ir/calling/Signature.cpp
     ir/calling/Signature.h
     ir/calling/SignatureAnalyzer.cpp
     ir/calling/SignatureAnalyzer.h
@@ -143,8 +144,6 @@ set(SOURCES
     ir/misc/BoundsCheck.h
     ir/misc/CensusVisitor.cpp
     ir/misc/CensusVisitor.h
-    ir/misc/CommentText.cpp
-    ir/misc/CommentText.h
     ir/misc/PatternRecognition.cpp
     ir/misc/PatternRecognition.h
     ir/misc/TermToFunction.cpp
