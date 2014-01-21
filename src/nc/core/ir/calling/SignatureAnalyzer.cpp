@@ -3,6 +3,8 @@
 
 #include "SignatureAnalyzer.h"
 
+#include <cstdint> /* uintptr_t */
+
 #include <boost/range/adaptor/map.hpp>
 
 #include <nc/common/CancellationToken.h>

@@ -58,7 +58,7 @@ EntryHook::EntryHook(const Convention *convention, const Signature *signature) {
                 std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
                 std::make_unique<Constant>(
                     SizedValue(convention->stackPointer().size(), convention->firstArgumentOffset() / CHAR_BIT)),
-                convention->stackPointer().size()
+                convention->stackPointer().size<SmallBitSize>()
             )
         ));
     }
