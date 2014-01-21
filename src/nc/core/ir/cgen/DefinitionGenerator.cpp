@@ -1241,8 +1241,10 @@ bool DefinitionGenerator::isMovable(const Term *term) {
     }
 }
 
-// TODO: does not work on the 5th example.
 bool DefinitionGenerator::isIntermediate(const vars::Variable *variable) {
+// TODO: does not work on the 5th example. Makes decompiler crash on pbmtext.exe
+    return false;
+
     if (auto result = nc::find_optional(isIntermediate_, variable)) {
         return *result;
     } else {

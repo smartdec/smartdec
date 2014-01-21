@@ -903,13 +903,13 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
 
             switch (instr->mnemonic()->number()) {
                 case LOOP:
-                    _[jump(cx, operand(0), directSuccessor())];
+                    _[jump(~(cx == constant(0)), operand(0), directSuccessor())];
                     break;
                 case LOOPE:
-                    _[jump(cx & zf(), operand(0), directSuccessor())];
+                    _[jump(~(cx == constant(0)) & zf(), operand(0), directSuccessor())];
                     break;
                 case LOOPNE:
-                    _[jump(cx & ~zf(), operand(0), directSuccessor())];
+                    _[jump(~(cx == constant(0)) & ~zf(), operand(0), directSuccessor())];
                     break;
                 default:
                     unreachable();
