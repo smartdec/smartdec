@@ -168,6 +168,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
         case CALL:
         case DEC:
         case DIV:
+        case IDIV:
         case INC:
         case INT:
         case JA:
@@ -289,7 +290,6 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
                 throw core::arch::irgen::InvalidInstructionException("instruction takes exactly two operands");
             }
             break;
-        case IDIV: /* Sometimes disassemblers put eax as the first operand. */
         case SAL:
         case SAR:
         case SHL:
@@ -628,14 +628,23 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case IDIV: {
-            /* `idiv ebx' or `idiv eax,ebx' */
+            auto size = std::max(instr->operand(0)->size(), 16);
+            auto ax = resizedRegister(IntelRegisters::ax(), size);
+            auto dx = resizedRegister(IntelRegisters::dx(), size);
 
-            auto ax = resizedRegister(IntelRegisters::ax(), std::max(instr->operand(0)->size(), 16));
-            auto dx = resizedRegister(IntelRegisters::dx(), std::max(instr->operand(0)->size(), 16));
+            if (instr->operand(0)->size() >= 16) {
+                _[
+                    dx = signed_(ax) % operand(0),
+                    ax = signed_(ax) / operand(0)
+                ];
+            } else {
+                _[
+                    dx = signed_(ax) % sign_extend(operand(0)),
+                    ax = signed_(ax) / sign_extend(operand(0))
+                ];
+            }
 
             _[
-                dx = signed_(ax) % operand(instr->operands().back()),
-                ax = signed_(ax) / operand(instr->operands().back()),
                 cf() = undefined(),
                 of() = undefined(),
                 sf() = undefined(),
