@@ -1175,6 +1175,10 @@ bool DefinitionGenerator::isSingleAssignment(const vars::Variable *variable) {
         return *result;
     } else {
         return isSingleAssignment_[variable] = [&]() {
+            if (variable->isGlobal()) {
+                return false;
+            }
+
             auto definition = getSingleDefinition(variable);
             if (!definition) {
                 return false;
