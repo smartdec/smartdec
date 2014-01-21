@@ -27,6 +27,7 @@
 
 #include <cassert>
 #include <memory>
+#include <vector>
 
 #include <QString>
 
