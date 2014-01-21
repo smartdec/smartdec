@@ -36,12 +36,16 @@ namespace likec {
 FunctionDeclaration::FunctionDeclaration(Tree &tree, QString identifier, const Type *returnType, bool variadic):
     Declaration(tree, FUNCTION_DECLARATION, std::move(identifier)),
     type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic))
-{}
+{
+    assert(returnType != NULL);
+}
 
 FunctionDeclaration::FunctionDeclaration(Tree &tree, int declarationKind, QString identifier, const Type *returnType, bool variadic):
     Declaration(tree, declarationKind, std::move(identifier)),
     type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic))
-{}
+{
+    assert(returnType != NULL);
+}
 
 void FunctionDeclaration::addArgument(std::unique_ptr<ArgumentDeclaration> argument) {
     type_->addArgumentType(argument->type());

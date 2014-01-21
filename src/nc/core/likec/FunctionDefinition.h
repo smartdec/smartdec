@@ -52,7 +52,7 @@ public:
      * \param[in] returnType Function return type.
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    FunctionDefinition(Tree &tree, QString identifier, const Type *returnType = 0, bool variadic = false):
+    FunctionDefinition(Tree &tree, QString identifier, const Type *returnType, bool variadic = false):
         FunctionDeclaration(tree, FUNCTION_DEFINITION, std::move(identifier), returnType, variadic),
         block_(new Block(tree))
     {}

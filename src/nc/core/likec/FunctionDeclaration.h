@@ -53,10 +53,9 @@ public:
      * \param[in] returnType Function return type.
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    FunctionDeclaration(Tree &tree, QString identifier, const Type *returnType = 0, bool variadic = false);
+    FunctionDeclaration(Tree &tree, QString identifier, const Type *returnType, bool variadic = false);
 
-    protected:
-
+protected:
     /**
      * Class constructor having declaration kind argument used by FunctionDefinition.
      *
@@ -66,7 +65,7 @@ public:
      * \param[in] returnType Function return type.
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    FunctionDeclaration(Tree &tree, int declarationKind, QString identifier, const Type *returnType = 0, bool variadic = false);
+    FunctionDeclaration(Tree &tree, int declarationKind, QString identifier, const Type *returnType, bool variadic = false);
 
 public:
     /**

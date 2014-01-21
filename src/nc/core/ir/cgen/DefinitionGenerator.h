@@ -126,17 +126,6 @@ public:
 
 protected:
     /**
-     * Creates a declaration of function argument for given term.
-     * Declaration is automatically added to the list of formal arguments
-     * of function's declaration and to the list of its variables.
-     *
-     * \param[in] term Valid pointer to a term.
-     *
-     * \return Created declaration of function's formal argument.
-     */
-    likec::ArgumentDeclaration *makeArgumentDeclaration(const Term *term);
-
-    /**
      * \param[in] variable Valid pointer to a local variable.
      *
      * \return Valid pointer to the local variable declaration.

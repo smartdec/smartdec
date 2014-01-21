@@ -129,7 +129,21 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
 
     if (auto entryHook = parent().hooks().getEntryHook(function_)) {
         foreach (const Term *argument, signature()->arguments()) {
-            makeArgumentDeclaration(entryHook->getArgumentTerm(argument));
+            auto term = entryHook->getArgumentTerm(argument);
+            auto variable = parent().variables().getVariable(term);
+
+            if (variable->memoryLocation() == dataflow_.getMemoryLocation(term)) {
+                auto &variableDeclaration = variableDeclarations_[variable];
+                assert(!variableDeclaration);
+                variableDeclaration = makeArgumentDeclaration(term);
+            } else {
+                auto variableDeclaration = makeArgumentDeclaration(term);
+                definition()->block()->addStatement(std::make_unique<likec::ExpressionStatement>(tree(),
+                    std::make_unique<likec::BinaryOperator>(tree(),
+                        likec::BinaryOperator::ASSIGN,
+                        makeVariableAccess(term),
+                        std::make_unique<likec::VariableIdentifier>(tree(), variableDeclaration))));
+            }
         }
 
         foreach (const Statement *statement, entryHook->entryStatements()) {
@@ -143,16 +157,6 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     makeStatements(graph_.root(), definition()->block(), NULL, NULL, NULL, switchContext);
 
     return functionDefinition;
-}
-
-likec::ArgumentDeclaration *DefinitionGenerator::makeArgumentDeclaration(const Term *term) {
-    likec::VariableDeclaration *&variableDeclaration = variableDeclarations_[parent().variables().getVariable(term)];
-    assert(!variableDeclaration);
-
-    likec::ArgumentDeclaration *result = DeclarationGenerator::makeArgumentDeclaration(term);
-    variableDeclaration = result;
-
-    return result;
 }
 
 likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(const vars::Variable *variable) {
@@ -1233,6 +1237,7 @@ bool DefinitionGenerator::isMovable(const Term *term) {
     }
 }
 
+// TODO: does not work on the 5th example.
 bool DefinitionGenerator::isIntermediate(const vars::Variable *variable) {
     if (auto result = nc::find_optional(isIntermediate_, variable)) {
         return *result;
