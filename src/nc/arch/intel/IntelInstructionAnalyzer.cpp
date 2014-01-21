@@ -612,19 +612,21 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case DIV: {
-            auto ax = resizedRegister(IntelRegisters::ax(), std::max(instr->operand(0)->size(), 16));
-            auto dx = resizedRegister(IntelRegisters::dx(), std::max(instr->operand(0)->size(), 16));
+            auto size = std::max(instr->operand(0)->size(), 16);
+            auto ax = resizedRegister(IntelRegisters::ax(), size);
+            auto dx = resizedRegister(IntelRegisters::dx(), size);
 
-            _[
-                dx = unsigned_(ax) % operand(0),
-                ax = unsigned_(ax) / operand(0),
-                cf() = undefined(),
-                of() = undefined(),
-                sf() = undefined(),
-                zf() = undefined(),
-                af() = undefined(),
-                pf() = undefined()
-            ];
+            if (instr->operand(0)->size() >= 16) {
+                _[
+                    dx = unsigned_(ax) % operand(0),
+                    ax = unsigned_(ax) / operand(0)
+                ];
+            } else {
+                _[
+                    dx = unsigned_(ax) % sign_extend(operand(0)),
+                    ax = unsigned_(ax) / sign_extend(operand(0))
+                ];
+            }
             break;
         }
         case IDIV: {
