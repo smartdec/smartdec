@@ -148,7 +148,7 @@ void SignatureAnalyzer::analyze(const CalleeId &calleeId) {
         }
     } else if (calleeId.function()) {
         signature->setName(QString(QLatin1String("func_noentry_%1"))
-            .arg(reinterpret_cast<std::uintptr_t>(calleeId.function()), 0, 16));
+            .arg(reinterpret_cast<uintptr_t>(calleeId.function()), 0, 16));
     } else {
         /* Function is unknown, leave the name empty. */
     }

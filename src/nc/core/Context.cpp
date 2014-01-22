@@ -24,8 +24,6 @@
 
 #include "Context.h"
 
-#include <cstdint> /* For std::uintptr_t. */
-
 #include <nc/common/Foreach.h>
 
 #include <nc/core/arch/Architecture.h>

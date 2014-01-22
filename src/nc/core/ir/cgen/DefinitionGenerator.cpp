@@ -24,8 +24,6 @@
 
 #include "DefinitionGenerator.h"
 
-#include <cstdint> /* For std::uintptr_t. */
-
 #include <nc/common/Foreach.h>
 #include <nc/common/Range.h>
 #include <nc/common/Unreachable.h>
