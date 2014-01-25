@@ -5,6 +5,12 @@
 
 #include <nc/config.h>
 
+#include <boost/unordered_map.hpp>
+
+#include <nc/core/ir/MemoryLocation.h>
+
+#include "CalleeId.h"
+
 namespace nc {
 
 class CancellationToken;
@@ -37,7 +43,13 @@ class SignatureAnalyzer {
     const image::Image &image_;
     const Functions &functions_;
     const dflow::Dataflows &dataflows_;
-    const Hooks &hooks_;
+    Hooks &hooks_;
+
+    /** Flag whether arguments were changed since last time. */
+    bool changed_;
+
+    /** Mapping from a callee id to the locations of the arguments. */
+    boost::unordered_map<CalleeId, std::vector<MemoryLocation>> id2arguments_;
 
 public:
     /**
@@ -50,7 +62,7 @@ public:
      * \param hooks Calls data.
      */
     SignatureAnalyzer(Signatures &signatures, const image::Image &image, const Functions &functions,
-        const dflow::Dataflows &dataflows, const Hooks &hooks
+        const dflow::Dataflows &dataflows, Hooks &hooks
     ):
         signatures_(signatures),
         image_(image),
@@ -68,11 +80,41 @@ public:
 
 private:
     /**
+     * Computes locations of arguments for all functions.
+     *
+     * \param[in] canceled Cancellation token.
+     */
+    void computeArguments(const CancellationToken &canceled);
+
+    /**
+     * Computes locations of arguments for a given function.
+     *
+     * \param[in] canceled Cancellation token.
+     */
+    void computeArguments(const Function *function);
+
+    /**
+     * Adds given memory locations to the list of locations of arguments
+     * of the given callee.
+     *
+     * \param calleeId Valid callee id.
+     * \param arguments Argument locations to be added.
+     */
+    void addArguments(const CalleeId &calleeId, std::vector<MemoryLocation> arguments);
+
+    /**
+     * Computes and sets signatures for all callee ids.
+     *
+     * \param[in] canceled Cancellation token.
+     */
+    void computeSignatures(const CancellationToken &canceled);
+
+    /**
      * Reconstructs the signature of a function identified by a given callee id.
      *
      * \param calleeId Valid callee id.
      */
-    void analyze(const CalleeId &calleeId);
+    void computeSignature(const CalleeId &calleeId);
 };
 
 } // namespace calling

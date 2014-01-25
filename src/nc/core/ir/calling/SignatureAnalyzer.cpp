@@ -15,6 +15,7 @@
 #include <nc/core/image/Symbols.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Statements.h>
+#include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
 #include <nc/core/likec/Tree.h>
@@ -31,90 +32,102 @@ namespace core {
 namespace ir {
 namespace calling {
 
-void SignatureAnalyzer::analyze(const CancellationToken & canceled) {
+namespace {
+
+void mergeOverlapping(std::vector<MemoryLocation> &locations) {
+    if (locations.empty()) {
+        return;
+    }
+
+    auto begin = locations.begin();
+    auto end = locations.end();
+
+    std::sort(begin, end);
+
+    for (auto i = std::next(begin); i != end; ++i) {
+        if (begin->overlaps(*i)) {
+            *begin = MemoryLocation::merge(*begin, *i);
+        } else {
+            *++begin = *i;
+        }
+    }
+
+    locations.erase(std::next(begin), end);
+}
+
+} // anonymous namespace
+
+void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
+    computeArguments(canceled);
+    computeSignatures(canceled);
+}
+
+void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
+    do {
+        changed_ = false;
+
+        foreach (auto function, functions_.all()) {
+            computeArguments(function);
+            canceled.poll();
+        }
+    } while (changed_);
+}
+
+void SignatureAnalyzer::computeArguments(const Function *function) {
+    auto calleeId = hooks_.getCalleeId(function);
+    assert(calleeId);
+
+    auto convention = hooks_.conventions().getConvention(calleeId);
+    if (!convention) {
+        return;
+    }
+
+    auto &dataflow = *dataflows_.at(function);
+
+    misc::CensusVisitor visitor(&hooks_);
+    visitor(function);
+
+    std::vector<MemoryLocation> arguments;
+
+    foreach (auto term, visitor.terms()) {
+        if (term->isRead() && dataflow.getDefinitions(term).empty()) {
+            if (const auto &memoryLocation = dataflow.getMemoryLocation(term)) {
+                if (convention->isArgumentLocation(memoryLocation)) {
+                    arguments.push_back(memoryLocation);
+                }
+            }
+        }
+    }
+
+    addArguments(calleeId, arguments);
+}
+
+void SignatureAnalyzer::addArguments(const CalleeId &calleeId, std::vector<MemoryLocation> arguments) {
+    assert(calleeId);
+
+    auto &oldArguments = id2arguments_[calleeId];
+    arguments.insert(arguments.end(), oldArguments.begin(), oldArguments.end());
+    mergeOverlapping(arguments);
+
+    if (arguments != id2arguments_[calleeId]) {
+        id2arguments_[calleeId] = std::move(arguments);
+        changed_ = true;
+    }
+}
+
+void SignatureAnalyzer::computeSignatures(const CancellationToken &canceled) {
     foreach (auto function, functions_.all()) {
-        analyze(hooks_.getCalleeId(function));
+        computeSignature(hooks_.getCalleeId(function));
         canceled.poll();
     }
 
     foreach (const auto &calleeId, hooks_.map() | boost::adaptors::map_keys) {
-        analyze(calleeId);
+        computeSignature(calleeId);
         canceled.poll();
     }
-
-// TODO
-#if 0
-    /*
-     * Gets the argument locations read but not defined in a function.
-     */
-    auto getUsedArguments = [&](const Function *function, const Convention *convention) {
-        assert(function != NULL);
-        assert(convention != NULL);
-
-        auto &dataflow = *dataflows_.at(function);
-
-        misc::CensusVisitor census(NULL);
-        census(function);
-
-        /*
-         * If one reads a register or a stack location that can be used
-         * for passing arguments, and there are no definitions of this
-         * memory location in the function itself, then this location is
-         * likely used for passing an argument.
-         */
-        std::vector<MemoryLocation> result;
-
-        foreach (const Term *term, census.terms()) {
-            if (term->isRead()) {
-                if (const auto &memoryLocation = dataflow.getMemoryLocation(term)) {
-                    if (convention->isArgumentLocation(memoryLocation)) {
-                        if (dataflow.getDefinitions(term).empty()) {
-                            result.push_back(memoryLocation);
-                        }
-                    }
-                }
-            }
-        }
-
-        std::sort(result.begin(), result.end());
-        result.erase(std::unique(result.begin(), result.end()), result.end());
-
-        return result;
-    };
-
-    auto getDefinedArguments = [](CallHook *callHook, const Convention *convention) {
-        assert(callHook);
-        assert(convention);
-
-        std::vector<MemoryLocation> result;
-        foreach (const auto &group, convention->argumentGroups()) {
-            foreach (const auto &argument, group.arguments()) {
-                if (callHook->reachingDefinitions().projected(argument.location()).empty()) {
-                    result.push_back(argument.location());
-                }
-            }
-        }
-        return result;
-    };
-
-    auto getSignature = [&](const CalleeId &calleeId, const Hooks::CalleeHooks &calleeHooks) {
-        auto signature = std::make_unique<Signature>();
-
-        auto convention = hooks_.conventions().getConvention(calleeId);
-        assert(convention);
-
-        foreach (const auto &pair, calleeHooks.entryHooks) {
-            foreach (const auto &location, getUsedArguments(pair.first, convention)) {
-                signature->addArgument(location);
-            }
-        }
-
-        return signature;
-    };
-#endif
 }
 
-void SignatureAnalyzer::analyze(const CalleeId &calleeId) {
+void SignatureAnalyzer::computeSignature(const CalleeId &calleeId) {
     assert(calleeId);
 
     if (signatures_.getSignature(calleeId)) {
@@ -151,6 +164,29 @@ void SignatureAnalyzer::analyze(const CalleeId &calleeId) {
             .arg(reinterpret_cast<uintptr_t>(calleeId.function()), 0, 16));
     } else {
         /* Function is unknown, leave the name empty. */
+    }
+
+    /*
+     * Set arguments.
+     */
+    if (auto convention = hooks_.conventions().getConvention(calleeId)) {
+        foreach (const auto &memoryLocation, nc::find(id2arguments_, calleeId)) {
+            if (memoryLocation.domain() == MemoryDomain::STACK) {
+                signature->addArgument(std::make_unique<Dereference>(
+                    std::make_unique<BinaryOperator>(
+                        BinaryOperator::ADD,
+                        std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
+                        std::make_unique<Constant>(SizedValue(
+                            convention->stackPointer().size<SmallBitSize>(),
+                            memoryLocation.addr() / CHAR_BIT)),
+                        convention->stackPointer().size()),
+                    MemoryDomain::MEMORY,
+                    memoryLocation.size<SmallBitSize>()
+                ));
+            } else {
+                signature->addArgument(std::make_unique<MemoryLocationAccess>(memoryLocation));
+            }
+        }
     }
 
     signatures_.setSignature(calleeId, std::move(signature));

@@ -45,6 +45,9 @@ Convention::Convention(QString name): name_(std::move(name)), calleeCleanup_(fal
 Convention::~Convention() {}
 
 bool Convention::isArgumentLocation(const MemoryLocation &memoryLocation) const {
+    assert(memoryLocation);
+
+    /* Note: this assumes stack growing down. */
     if (memoryLocation.domain() == MemoryDomain::STACK &&
         memoryLocation.addr() >= firstArgumentOffset()
     ) {

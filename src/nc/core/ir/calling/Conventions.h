@@ -8,6 +8,8 @@
 #include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
 
+#include <nc/common/Range.h>
+
 #include "CalleeId.h"
 
 namespace nc {
