@@ -49,10 +49,6 @@ ReturnHook::ReturnHook(const Return *ret, const Convention *convention, const Si
         if (signature->returnValue()) {
             returnValues_[signature->returnValue()] = signature->returnValue()->clone();
         }
-    } else {
-        foreach (auto term, convention->returnValues()) {
-            returnValues_[term] = term->clone();
-        }
     }
 
     foreach (const auto &pair, returnValues_) {
@@ -67,27 +63,6 @@ void ReturnHook::execute(dflow::ExecutionContext &context) {
     foreach (const auto &pair, returnValues_) {
         context.analyzer().execute(pair.second.get(), context);
     }
-    
-    // TODO: move
-#if 0
-    /* 
-     * Compute the candidate terms containing return value.
-     *
-     * If a reaching definition comes, and it comes not from a call (which
-     * isn't sure himself, how he returns values), it is the candidate.
-     */
-    returnValueLocations_.clear();
-
-    // FIXME: adapt to new dflow
-    foreach (const auto &pair, returnValues_) {
-        foreach (const Term *definition, context.analyzer().dataflow().getDefinitions(pair.second.get())) {
-            if (definition->statement() && !definition->statement()->isCall()) {
-                returnValueLocations_.push_back(pair.first);
-                break;
-            }
-        }
-    }
-#endif
 }
 
 const Term *ReturnHook::getReturnValueTerm(const Term *term) const {
