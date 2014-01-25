@@ -11,6 +11,7 @@
 
 #include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
+#include <nc/common/Warnings.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/image/Image.h>
@@ -19,6 +20,7 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflows.h>
+#include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/misc/CensusVisitor.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/mangling/Demangler.h>
@@ -66,12 +68,18 @@ void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
 }
 
 void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
+    int niterations = 0;
+
     do {
         changed_ = false;
 
         foreach (auto function, functions_.all()) {
             computeArguments(function);
             canceled.poll();
+        }
+
+        if (++niterations > 10) {
+            ncWarning("Didn't reach a fixpoint after %1 iterations while reconstructing arguments. Giving up.", niterations);
         }
     } while (changed_);
 }
@@ -97,6 +105,41 @@ void SignatureAnalyzer::computeArguments(const Function *function) {
             if (const auto &memoryLocation = dataflow.getMemoryLocation(term)) {
                 if (convention->isArgumentLocation(memoryLocation)) {
                     arguments.push_back(memoryLocation);
+                }
+            }
+        }
+    }
+
+    foreach (auto statement, visitor.statements()) {
+        if (auto call = statement->asCall()) {
+            const auto &callArguments = nc::find(id2arguments_, hooks_.getCalleeId(call));
+            if (callArguments.empty()) {
+                continue;
+            }
+
+            auto callHook = hooks_.getCallHook(call);
+
+            boost::optional<BitSize> stackOffset;
+            if (callHook) {
+                auto value = dataflow.getValue(callHook->stackPointer());
+                if (value->isStackOffset()) {
+                    stackOffset = value->stackOffset() * CHAR_BIT;
+                }
+            }
+
+            foreach (auto argument, callArguments) {
+                if (argument.domain() == MemoryDomain::STACK) {
+                    if (stackOffset) {
+                        argument = argument.shifted(*stackOffset);
+                    } else {
+                        continue;
+                    }
+                }
+
+                if (callHook->reachingDefinitions().projected(argument).empty() &&
+                    convention->isArgumentLocation(argument))
+                {
+                    arguments.push_back(argument);
                 }
             }
         }

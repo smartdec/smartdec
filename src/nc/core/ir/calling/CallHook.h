@@ -118,6 +118,11 @@ public:
     const Term *getReturnValueTerm(const Term *term) const;
 
     /**
+     * \return Valid pointer to the stack pointer term.
+     */
+    const Term *stackPointer() const { return stackPointer_.get(); }
+
+    /**
      * Calls visitor for child statements.
      *
      * \param[in] visitor Visitor.

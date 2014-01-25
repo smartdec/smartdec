@@ -43,21 +43,6 @@ namespace core {
 namespace ir {
 namespace calling {
 
-// TODO: remove
-#if 0
-namespace {
-
-class CompareAddress {
-    public:
-
-    bool operator()(const MemoryLocation &a, const MemoryLocation &b) {
-        return a.addr() < b.addr();
-    }
-};
-
-} // anonymous namespace
-#endif
-
 CallHook::CallHook(const Call *call, const Convention *convention, const Signature *signature,
     boost::optional<ByteSize> stackArgumentsSize)
 {
@@ -95,6 +80,9 @@ CallHook::CallHook(const Call *call, const Convention *convention, const Signatu
                 std::make_unique<Constant>(SizedValue(convention->stackPointer().size(), *stackArgumentsSize)),
                 convention->stackPointer().size<SmallBitSize>()));
     }
+
+    stackPointer_ = std::make_unique<MemoryLocationAccess>(convention->stackPointer());
+    stackPointer_->setAccessType(Term::READ);
 }
 
 CallHook::~CallHook() {}
@@ -106,6 +94,11 @@ void CallHook::execute(dflow::ExecutionContext &context) {
     /* Execute all argument terms. */
     foreach (const auto &pair, arguments_) {
         context.analyzer().execute(pair.second.get(), context);
+    }
+
+    /* Execute the stack pointer. */
+    if (stackPointer_) {
+        context.analyzer().execute(stackPointer_.get(), context);
     }
 
     /* Execute the cleanup statement. */
@@ -121,136 +114,10 @@ void CallHook::execute(dflow::ExecutionContext &context) {
 
         context.analyzer().execute(pair.second.get(), context);
     }
-
-    // FIXME
-#if 0
-    argumentLocations_.clear();
-
-    /*
-     * Estimate which registers are used for passing arguments.
-     */
-    bool someGroupIsFull = convention()->argumentGroups().empty();
-
-    foreach (const ArgumentGroup &group, convention()->argumentGroups()) {
-        bool groupIsFull = true;
-
-        foreach (const Argument &argument, group.arguments()) {
-            bool argumentFound = false;
-
-            foreach (const MemoryLocation &location, argument.locations()) {
-                foreach (const Term *definition, context.definitions().getDefinitions(location)) {
-                    if (definition->statement() && !definition->statement()->isCall()) {
-                        getArgumentTerm(location);
-                        argumentLocations_.push_back(location);
-                        argumentFound = true;
-                        break;
-                    }
-                }
-                if (argumentFound) {
-                    break;
-                }
-            }
-            if (!argumentFound) {
-                groupIsFull = false;
-                break;
-            }
-        }
-        someGroupIsFull = someGroupIsFull || groupIsFull;
-    }
-
-    /*
-     * Estimate which stack memory locations are used for passing arguments.
-     */
-    if (someGroupIsFull && convention()->stackPointer()) {
-        /*
-         * Detect the value of the stack pointer.
-         */
-        if (!stackPointer_) {
-            stackPointer_.reset(new MemoryLocationAccess(convention()->stackPointer()));
-            stackPointer_->setAccessType(Term::READ);
-            stackPointer_->setStatementRecursively(call());
-        }
-        context.analyzer().execute(stackPointer_.get(), context);
-
-        const dflow::Value *stackPointerValue = context.analyzer().dataflow().getValue(stackPointer_.get());
-
-        /*
-         * If the stack pointer is valid, guess the arguments passed on the stack.
-         */
-        if (stackPointerValue->isStackOffset()) {
-            stackTop_ = stackPointerValue->stackOffset() * CHAR_BIT;
-
-            /* Let's examine reaching definition of stack memory locations... */
-            std::vector<MemoryLocation> stackLocations = context.definitions().getDefinedMemoryLocationsWithin(MemoryDomain::STACK);
-            std::sort(stackLocations.begin(), stackLocations.end(), CompareAddress());
-
-            auto i = stackLocations.begin();
-            auto iend = stackLocations.end();
-
-            /* Position of the first stack argument. */
-            BitAddr nextArgumentOffset = stackTop_ + convention()->firstArgumentOffset();
-
-            /* First argument must be located exactly at the computed position. */
-            for (; i != iend && i->addr() != nextArgumentOffset; ++i);
-
-            /* Each next argument must go not too far from the previous. */
-            for (; i != iend && i->addr() <= nextArgumentOffset; ++i) {
-                /*
-                 * We use shifted() in order to make so that the same arguments have
-                 * matching locations when found by CallHook and by EntryHook.
-                 */
-                MemoryLocation argumentLocation = i->shifted(-stackTop_);
-                getArgumentTerm(argumentLocation);
-                argumentLocations_.push_back(argumentLocation);
-                nextArgumentOffset = i->addr() + i->size() + convention()->argumentAlignment() - 1;
-            }
-        }
-    }
-#endif
-
-    // TODO: remove
-#if 0
-    /* If return values can overlap, they kill each other and the following hack is necessary. */
-    foreach (const auto &pair, returnValues_) {
-        if (const MemoryLocation &memoryLocation = context.analyzer().dataflow().getMemoryLocation(pair.second.get())) {
-            dflow::ReachingDefinitions definitions;
-            definitions.addDefinition(memoryLocation, pair.second.get());
-            context.definitions().join(definitions);
-        }
-    }
-#endif
-
-    // FIXME
-#if 0
-    /* Remember possible return values being used. */
-    returnValueLocations_.clear();
-    foreach (const auto &pair, returnValues_) {
-        foreach (const Term *use, context.analyzer().dataflow().getUses(pair.second.get())) {
-            if (use->statement() && !use->statement()->isCall() && !use->statement()->isReturn()) {
-                returnValueLocations_.push_back(pair.first);
-                break;
-            }
-        }
-    }
-#endif
 }
 
 const Term *CallHook::getArgumentTerm(const Term *term) const {
     return nc::find(arguments_, term).get();
-
-// TODO: remove
-#if 0
-    auto &result = arguments_[memoryLocation];
-    if (!result) {
-        result.reset(new MemoryLocationAccess(
-            memoryLocation.domain() == MemoryDomain::STACK ?
-                memoryLocation.shifted(stackTop_) :
-                memoryLocation));
-        result->setAccessType(Term::READ);
-        result->setStatementRecursively(call());
-    }
-    return result.get();
-#endif
 }
 
 const Term *CallHook::getReturnValueTerm(const Term *term) const {

@@ -189,6 +189,8 @@ public:
         using nc::core::ir::calling::CalleeId;
 
         switch (value.kind_) {
+            case CalleeId::INVALID:
+                return 0;
             case CalleeId::ENTRY_ADDR:
                 return hash_value(value.data_.entryAddress);
             case CalleeId::CALL_ADDR:
