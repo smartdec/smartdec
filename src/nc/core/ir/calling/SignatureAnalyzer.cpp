@@ -100,6 +100,11 @@ void SignatureAnalyzer::computeArguments(const Function *function) {
 
     std::vector<MemoryLocation> arguments;
 
+    /*
+     * If a term reads a memory location through which an argument
+     * can be passed, and nobody defines this memory location, this
+     * location is likely to be actually used for passing an argument.
+     */
     foreach (auto term, visitor.terms()) {
         if (term->isRead() && dataflow.getDefinitions(term).empty()) {
             if (const auto &memoryLocation = dataflow.getMemoryLocation(term)) {
@@ -110,6 +115,12 @@ void SignatureAnalyzer::computeArguments(const Function *function) {
         }
     }
 
+    /*
+     * If a call has an argument whose memory location can be used
+     * for passing arguments to this function, and this memory location
+     * is not defined in the function, this memory location is likely
+     * to be used for passing an argument.
+     */
     foreach (auto statement, visitor.statements()) {
         if (auto call = statement->asCall()) {
             const auto &callArguments = nc::find(id2arguments_, hooks_.getCalleeId(call));
