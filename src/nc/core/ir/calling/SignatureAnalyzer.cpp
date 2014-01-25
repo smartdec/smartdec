@@ -80,6 +80,7 @@ void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
 
         if (++niterations > 10) {
             ncWarning("Didn't reach a fixpoint after %1 iterations while reconstructing arguments. Giving up.", niterations);
+            break;
         }
     } while (changed_);
 }
@@ -233,7 +234,7 @@ void SignatureAnalyzer::computeSignature(const CalleeId &calleeId) {
             }
 
             QString demangledName = image_.demangler()->demangle(symbol->name());
-            if (demangledName != symbol->name()) {
+            if (demangledName.contains('(') && demangledName != symbol->name()) {
                 signature->addComment(demangledName);
             }
         }
