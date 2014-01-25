@@ -33,9 +33,10 @@
 #include <nc/common/GitSHA1.h>
 #include <nc/common/make_unique.h>
 #include <nc/core/Context.h>
-#include <nc/core/Module.h>
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Sections.h>
+#include <nc/core/image/Symbols.h>
 #include <nc/gui/MainWindow.h>
 #include <nc/gui/Project.h>
 
@@ -128,7 +129,7 @@ void SmartDecPlugin::decompileFunction() {
     window->project()->setName(IdaFrontend::functionName(functionAddress));
 
     foreach (const AddressRange &range, functionRanges) {
-        window->project()->disassemble(window->project()->module()->image(), range.start(), range.end());
+        window->project()->disassemble(window->project()->image()->sections(), range.start(), range.end());
     }
 
     if (window->decompileAutomatically()) {
@@ -207,33 +208,35 @@ void SmartDecPlugin::windowDestroyed(QObject *object) {
 
 std::unique_ptr<gui::Project> SmartDecPlugin::createIdaProject() const {
     auto project = std::make_unique<gui::Project>();
-    auto module = project->module().get();
+    auto image = project->image().get();
 
     /* Set architecture. */
-    module->setArchitecture(IdaFrontend::architecture());
+    image->setArchitecture(IdaFrontend::architecture());
 
     /* Set demangler. */
-    module->setDemangler(std::make_unique<IdaDemangler>());
+    image->setDemangler(std::make_unique<IdaDemangler>());
 
     /* Set image byte source. */
-    module->image()->setExternalByteSource(std::make_unique<IdaByteSource>());
+    image->sections()->setExternalByteSource(std::make_unique<IdaByteSource>());
 
     /* Create sections. */
-    IdaFrontend::createSections(module);
+    IdaFrontend::createSections(image);
+
+    using core::image::Symbol;
 
     /* Add function names. */
     foreach(ByteAddr address, IdaFrontend::functionStarts()) {
         QString name = IdaFrontend::functionName(address);
 
         if (!name.isEmpty()) {
-            module->addName(address, name);
+            image->symbols()->add(std::make_unique<Symbol>(Symbol::Function, name, address));
         }
     }
 
     /* Add imported function names. */
     typedef std::pair<ByteAddr, QString> Import;
     foreach(const Import &import, IdaFrontend::importedFunctions()) {
-        module->addName(import.first, import.second);
+        image->symbols()->add(std::make_unique<Symbol>(Symbol::Function, import.second, import.first));
     }
 
     return project;

@@ -43,7 +43,9 @@ QT_USE_NAMESPACE
 namespace nc {
 
 namespace core {
-    class Module;
+    namespace image {
+        class Image;
+    }
 }
 
 namespace ida {
@@ -101,9 +103,9 @@ public:
     /**
      * Converts the current image file to nc's internal representation.
      *
-     * \param[in, out] module          Module.
+     * \param[in, out] image Valid pointer to the executable file image.
      */
-    static void createSections(core::Module *module);
+    static void createSections(core::image::Image *image);
 
     /**
      * \param[in] address              Any address in a function.

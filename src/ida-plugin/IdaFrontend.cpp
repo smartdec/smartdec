@@ -38,9 +38,9 @@
 
 #include <nc/common/CheckedCast.h>
 #include <nc/common/make_unique.h>
-#include <nc/core/Module.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Sections.h>
 
 namespace nc { namespace ida {
  
@@ -103,7 +103,7 @@ std::vector<ByteAddr> IdaFrontend::functionStarts() {
     return result;
 }
 
-void IdaFrontend::createSections(core::Module *module) {
+void IdaFrontend::createSections(core::image::Image *image) {
     for (int i = 0; i < get_segm_qty(); i++) {
         segment_t *idaSegment = getnseg(i);
 
@@ -130,7 +130,7 @@ void IdaFrontend::createSections(core::Module *module) {
         section->setData(idaSegment->type == SEG_DATA);
         section->setBss(idaSegment->type == SEG_BSS);
 
-        module->image()->addSection(std::move(section));
+        image->sections()->add(std::move(section));
     }
 }
 
