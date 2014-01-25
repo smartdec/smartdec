@@ -3,7 +3,9 @@
 
 #include "SignatureAnalyzer.h"
 
+#include <algorithm>
 #include <cstdint> /* uintptr_t */
+#include <iterator> /* std::back_inserter */
 
 #include <boost/range/adaptor/map.hpp>
 
@@ -59,6 +61,7 @@ void mergeOverlapping(std::vector<MemoryLocation> &locations) {
 
 void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
     computeArguments(canceled);
+    sortArguments();
     computeSignatures(canceled);
 }
 
@@ -112,6 +115,33 @@ void SignatureAnalyzer::addArguments(const CalleeId &calleeId, std::vector<Memor
     if (arguments != id2arguments_[calleeId]) {
         id2arguments_[calleeId] = std::move(arguments);
         changed_ = true;
+    }
+}
+
+void SignatureAnalyzer::sortArguments() {
+    foreach (auto &idAndArguments, id2arguments_) {
+        const auto &id = idAndArguments.first;
+        auto &arguments = idAndArguments.second;
+
+        auto convention = hooks_.conventions().getConvention(id);
+        if (!convention) {
+            continue;
+        }
+
+        std::vector<MemoryLocation> newArguments;
+        newArguments.reserve(arguments.size());
+
+        foreach (const auto &group, convention->argumentGroups()) {
+            foreach (const auto &argument, group.arguments()) {
+                auto predicate = [&argument](const MemoryLocation &location) { return argument.location().covers(location); };
+
+                std::copy_if(arguments.begin(), arguments.end(), std::back_inserter(newArguments), predicate);
+                arguments.erase(std::remove_if(arguments.begin(), arguments.end(), predicate), arguments.end());
+            }
+        }
+
+        newArguments.insert(newArguments.end(), arguments.begin(), arguments.end());
+        arguments = std::move(newArguments);
     }
 }
 

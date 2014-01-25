@@ -5,6 +5,8 @@
 
 #include <nc/config.h>
 
+#include <vector>
+
 #include <boost/unordered_map.hpp>
 
 #include <nc/core/ir/MemoryLocation.h>
@@ -101,6 +103,12 @@ private:
      * \param arguments Argument locations to be added.
      */
     void addArguments(const CalleeId &calleeId, std::vector<MemoryLocation> arguments);
+
+    /**
+     * Sorts computed argument locations, so that they follow in the order
+     * in which they are described in the calling convention.
+     */
+    void sortArguments();
 
     /**
      * Computes and sets signatures for all callee ids.
