@@ -47,21 +47,24 @@ Notes on Building IDA Pro Plug-In
 
     * IDA Pro SDK >= 6.1 <http://www.hex-rays.com/products/ida/>
 
-2. You must use the same compiler as the one used by IDA Pro.
-   For IDA Pro 6.1, this is MSVC 2010.
+2. You must use the same compiler as the one used by IDA Pro and the
+   same version of Qt (although different patch levels of the same
+   major.minor version should be binary compatible):
 
-3. You must build the same (up to patch level) version of Qt as the
-   one used by IDA Pro. For IDA Pro 6.1, this is Qt 4.7.X.
+   * IDA Pro 6.1 — MSVC 2010 — Qt 4.7.2.
+   * IDA Pro 6.3 — MSVC 2010 — Qt 4.8.1.
+   * IDA Pro 6.4 — MSVC 2010 — Qt 4.8.1.
+   * IDA Pro 6.5 — MSVC 2010 — Qt 4.8.4.
 
-4. Qt must be built in namespace `QT', e.g.:
+3. Qt must be built in namespace `QT', e.g.:
 
     * `configure.exe -qtnamespace QT -platform win32-msvc2010
        -debug-and-release -opensource -no-qt3support -no-multimedia
        -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools
        -nomake demos -nomake examples && nmake'
 
-5. You must use the same build mode as the one used by IDA Pro.
-   For IDA Pro 6.1, this is Release.
+4. You must use the same build mode as the one used by IDA Pro, i.e.
+   Release.
 
 Building the Easy Way (UNIX only)
 =================================
