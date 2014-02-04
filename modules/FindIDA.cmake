@@ -46,10 +46,18 @@ if(MSVC)
     set(compiler "vc")
 endif()
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(library_dir "lib/x64_${platform}_${compiler}_64")
+set(IDA_64_BIT_EA_T OFF CACHE BOOL "Use 64-bit ea_t. Set this to build 64-bit code capable IDA plugins.")
+
+if(IDA_64_BIT_EA_T)
+    set(suffix "64")
 else()
-    set(library_dir "lib/x86_${platform}_${compiler}_32")
+    set(suffix "32")
+endif()
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(library_dir "lib/x64_${platform}_${compiler}_${suffix}")
+else()
+    set(library_dir "lib/x86_${platform}_${compiler}_${suffix}")
 endif()
 
 #
@@ -83,10 +91,13 @@ if(IDA_SDK_PATH)
         set(IDA_DEFINITIONS ${IDA_DEFINITIONS} -D__MAC__)
     endif()
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(IDA_DEFINITIONS ${IDA_DEFINITIONS} -D__EA64__ -D__X64__)
+        set(IDA_DEFINITIONS ${IDA_DEFINITIONS} -D__X64__)
+    endif()
+    if(IDA_64_BIT_EA_T)
+        set(IDA_DEFINITIONS ${IDA_DEFINITIONS} -D__EA64__)
     endif()
 
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    if(IDA_64_BIT_EA_T)
         set(IDA_PLUGIN_EXT ".p64")
     else()
         set(IDA_PLUGIN_EXT ".plw")
@@ -99,6 +110,7 @@ endif()
 
 unset(platform)
 unset(compiler)
+unset(suffix)
 unset(library_dir)
 
 # vim:set et sts=4 sw=4 nospell:
