@@ -16,19 +16,23 @@
 
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Symbols.h>
+#include <nc/core/ir/BasicBlock.h>
+#include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflows.h>
+#include <nc/core/ir/dflow/Uses.h>
 #include <nc/core/ir/dflow/Value.h>
-#include <nc/core/ir/misc/CensusVisitor.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/mangling/Demangler.h>
 
 #include "CallHook.h"
 #include "Convention.h"
 #include "Conventions.h"
+#include "EntryHook.h"
 #include "Hooks.h"
+#include "ReturnHook.h"
 #include "Signatures.h"
 
 namespace nc {
@@ -61,57 +65,110 @@ void mergeOverlapping(std::vector<MemoryLocation> &locations) {
 
 } // anonymous namespace
 
+SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image &image, const Functions &functions,
+    const dflow::Dataflows &dataflows, Hooks &hooks
+):
+    signatures_(signatures),
+    image_(image),
+    dataflows_(dataflows),
+    hooks_(hooks)
+{
+    foreach (auto function, functions.all()) {
+        foreach (auto basicBlock, function->basicBlocks()) {
+            foreach (auto statement, basicBlock->statements()) {
+                if (auto call = statement->asCall()) {
+                    call2function_[call] = function;
+                    function2calls_[function].push_back(call);
+                }
+            }
+        }
+    }
+
+    foreach (const auto &functionAndDataflow, dataflows_) {
+        function2uses_[functionAndDataflow.first] = std::make_unique<dflow::Uses>(*functionAndDataflow.second);
+    }
+}
+
+SignatureAnalyzer::~SignatureAnalyzer() {}
+
 void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
     computeArguments(canceled);
-    sortArguments();
     computeSignatures(canceled);
 }
 
 void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
     int niterations = 0;
 
+    bool changed;
     do {
-        changed_ = false;
+        changed = false;
 
-        foreach (auto function, functions_.all()) {
-            computeArguments(function);
+        foreach (const CalleeId &calleeId, hooks_.map() | boost::adaptors::map_keys) {
+            auto arguments = computeArguments(calleeId);
+            auto &oldArguments = id2arguments_[calleeId];
+
+            if (arguments != oldArguments) {
+                oldArguments = std::move(arguments);
+                changed = true;
+            }
+
             canceled.poll();
         }
 
-        if (++niterations > 10) {
+        if (++niterations > 5) {
             ncWarning("Didn't reach a fixpoint after %1 iterations while reconstructing arguments. Giving up.", niterations);
             break;
         }
-    } while (changed_);
+    } while (changed);
 }
 
-void SignatureAnalyzer::computeArguments(const Function *function) {
-    auto calleeId = hooks_.getCalleeId(function);
+std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &calleeId) {
     assert(calleeId);
+
+    std::vector<MemoryLocation> result;
 
     auto convention = hooks_.conventions().getConvention(calleeId);
     if (!convention) {
-        return;
+        return result;
     }
+
+    const auto &calleeHooks = nc::find(hooks_.map(), calleeId);
+
+    foreach (const auto &functionAndHook, calleeHooks.entryHooks) {
+        auto arguments = computeArguments(functionAndHook.first, convention);
+        result.insert(result.end(), arguments.begin(), arguments.end());
+    }
+
+    foreach (const auto &callAndHook, calleeHooks.callHooks) {
+        auto arguments = computeArguments(callAndHook.first, convention, callAndHook.second.get());
+        result.insert(result.end(), arguments.begin(), arguments.end());
+    }
+
+    mergeOverlapping(result);
+
+    return result;
+}
+
+std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Function *function, const Convention *convention) {
+    assert(function != NULL);
+    assert(convention != NULL);
 
     auto &dataflow = *dataflows_.at(function);
 
-    misc::CensusVisitor visitor(&hooks_);
-    visitor(function);
-
-    std::vector<MemoryLocation> arguments;
+    std::vector<MemoryLocation> result;
 
     /*
      * If a term reads a memory location through which an argument
      * can be passed, and nobody defines this memory location, this
      * location is likely to be actually used for passing an argument.
      */
-    foreach (auto term, visitor.terms()) {
+    foreach (const auto &termAndLocation, dataflow.term2location()) {
+        auto term = termAndLocation.first;
+        const auto &memoryLocation = termAndLocation.second;
+
         if (term->isRead() && dataflow.getDefinitions(term).empty()) {
-            if (const auto &memoryLocation = dataflow.getMemoryLocation(term)) {
-                if (convention->isArgumentLocation(memoryLocation)) {
-                    arguments.push_back(memoryLocation);
-                }
+            if (convention->isArgumentLocation(memoryLocation)) {
+                result.push_back(memoryLocation);
             }
         }
     }
@@ -122,90 +179,89 @@ void SignatureAnalyzer::computeArguments(const Function *function) {
      * is not defined in the function, this memory location is likely
      * to be used for passing an argument.
      */
-    foreach (auto statement, visitor.statements()) {
-        if (auto call = statement->asCall()) {
-            const auto &callArguments = nc::find(id2arguments_, hooks_.getCalleeId(call));
-            if (callArguments.empty()) {
-                continue;
-            }
-
-            auto callHook = hooks_.getCallHook(call);
-
-            boost::optional<BitSize> stackOffset;
-            if (callHook) {
-                auto value = dataflow.getValue(callHook->stackPointer());
-                if (value->isStackOffset()) {
-                    stackOffset = value->stackOffset() * CHAR_BIT;
-                }
-            }
-
-            foreach (auto argument, callArguments) {
-                if (argument.domain() == MemoryDomain::STACK) {
-                    if (stackOffset) {
-                        argument = argument.shifted(*stackOffset);
-                    } else {
-                        continue;
-                    }
-                }
-
-                if (callHook->reachingDefinitions().projected(argument).empty() &&
-                    convention->isArgumentLocation(argument))
-                {
-                    arguments.push_back(argument);
-                }
-            }
-        }
-    }
-
-    addArguments(calleeId, arguments);
-}
-
-void SignatureAnalyzer::addArguments(const CalleeId &calleeId, std::vector<MemoryLocation> arguments) {
-    assert(calleeId);
-
-    auto &oldArguments = id2arguments_[calleeId];
-    arguments.insert(arguments.end(), oldArguments.begin(), oldArguments.end());
-    mergeOverlapping(arguments);
-
-    if (arguments != id2arguments_[calleeId]) {
-        id2arguments_[calleeId] = std::move(arguments);
-        changed_ = true;
-    }
-}
-
-void SignatureAnalyzer::sortArguments() {
-    foreach (auto &idAndArguments, id2arguments_) {
-        const auto &id = idAndArguments.first;
-        auto &arguments = idAndArguments.second;
-
-        auto convention = hooks_.conventions().getConvention(id);
-        if (!convention) {
+    foreach (auto call, nc::find(function2calls_, function)) {
+        const auto &callArguments = nc::find(id2arguments_, hooks_.getCalleeId(call));
+        if (callArguments.empty()) {
             continue;
         }
 
-        std::vector<MemoryLocation> newArguments;
-        newArguments.reserve(arguments.size());
+        auto callHook = hooks_.getCallHook(call);
+        auto stackPointerValue = dataflow.getValue(callHook->stackPointer());
 
-        foreach (const auto &group, convention->argumentGroups()) {
-            foreach (const auto &argument, group.arguments()) {
-                auto predicate = [&argument](const MemoryLocation &location) { return argument.location().covers(location); };
+        auto fixup = [&](const MemoryLocation &memoryLocation) -> MemoryLocation {
+            if (memoryLocation.domain() == MemoryDomain::STACK) {
+                if (stackPointerValue->isStackOffset()) {
+                    return memoryLocation.shifted(stackPointerValue->stackOffset() * CHAR_BIT);
+                } else {
+                    return MemoryLocation();
+                }
+            } else {
+                return memoryLocation;
+            }
+        };
 
-                std::copy_if(arguments.begin(), arguments.end(), std::back_inserter(newArguments), predicate);
-                arguments.erase(std::remove_if(arguments.begin(), arguments.end(), predicate), arguments.end());
+        foreach (auto argument, callArguments) {
+            argument = fixup(argument);
+
+            if (argument &&
+                callHook->reachingDefinitions().projected(argument).empty() &&
+                convention->isArgumentLocation(argument))
+            {
+                result.push_back(argument);
             }
         }
-
-        newArguments.insert(newArguments.end(), arguments.begin(), arguments.end());
-        arguments = std::move(newArguments);
     }
+
+    return result;
+}
+
+std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Call *call, const Convention *convention, const CallHook *callHook) {
+    assert(call != NULL);
+    assert(convention != NULL);
+    assert(callHook != NULL);
+
+    std::vector<MemoryLocation> result;
+
+    auto function = nc::find(call2function_, call);
+    assert(function != NULL);
+
+    auto &dataflow = *dataflows_.at(function);
+    auto &uses = *function2uses_.at(function);
+    auto stackPointerValue = dataflow.getValue(callHook->stackPointer());
+
+    auto fixup = [&](const MemoryLocation &memoryLocation) -> MemoryLocation {
+        if (memoryLocation.domain() == MemoryDomain::STACK) {
+            if (stackPointerValue->isStackOffset()) {
+                return memoryLocation.shifted(-stackPointerValue->stackOffset() * CHAR_BIT);
+            } else {
+                return MemoryLocation();
+            }
+        } else {
+            return memoryLocation;
+        }
+    };
+
+    /*
+     * Count as an argument everything that reaches the call, can be used to
+     * pass an argument, and not used somewhere else.
+     */
+    foreach (const auto &chunk, callHook->reachingDefinitions().chunks()) {
+        if (auto memoryLocation = fixup(chunk.location())) {
+            if (convention->isArgumentLocation(memoryLocation)) {
+                foreach (const Term *term, chunk.definitions()) {
+                    if (uses.getUses(term).empty()) {
+                        result.push_back(memoryLocation);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
 }
 
 void SignatureAnalyzer::computeSignatures(const CancellationToken &canceled) {
-    foreach (auto function, functions_.all()) {
-        computeSignature(hooks_.getCalleeId(function));
-        canceled.poll();
-    }
-
     foreach (const auto &calleeId, hooks_.map() | boost::adaptors::map_keys) {
         computeSignature(calleeId);
         canceled.poll();
@@ -255,7 +311,7 @@ void SignatureAnalyzer::computeSignature(const CalleeId &calleeId) {
      * Set arguments.
      */
     if (auto convention = hooks_.conventions().getConvention(calleeId)) {
-        foreach (const auto &memoryLocation, nc::find(id2arguments_, calleeId)) {
+        foreach (const auto &memoryLocation, convention->sortArguments(nc::find(id2arguments_, calleeId))) {
             if (memoryLocation.domain() == MemoryDomain::STACK) {
                 signature->addArgument(std::make_unique<Dereference>(
                     std::make_unique<BinaryOperator>(

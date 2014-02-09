@@ -138,8 +138,7 @@ class Convention {
 
     std::vector<std::unique_ptr<const Statement>> entryStatements_; ///< Statements executed when a function is entered.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -207,6 +206,15 @@ class Convention {
     const std::vector<const Statement *> &entryStatements() const {
         return reinterpret_cast<const std::vector<const Statement *> &>(entryStatements_);
     }
+
+    /**
+     * Sorts the argument locations in the way they are described in the convention.
+     *
+     * \param arguments List of memory locations.
+     *
+     * \return Sorted list of memory locations.
+     */
+    std::vector<MemoryLocation> sortArguments(std::vector<MemoryLocation> arguments) const;
 
 protected:
 

@@ -45,7 +45,9 @@ Convention::Convention(QString name): name_(std::move(name)), calleeCleanup_(fal
 Convention::~Convention() {}
 
 bool Convention::isArgumentLocation(const MemoryLocation &memoryLocation) const {
-    assert(memoryLocation);
+    if (!memoryLocation) {
+        return false;
+    }
 
     /* Note: this assumes stack growing down. */
     if (memoryLocation.domain() == MemoryDomain::STACK &&
@@ -64,6 +66,28 @@ bool Convention::isArgumentLocation(const MemoryLocation &memoryLocation) const 
 
     return false;
 }
+
+std::vector<MemoryLocation> Convention::sortArguments(std::vector<MemoryLocation> arguments) const {
+    std::vector<MemoryLocation> result;
+    result.reserve(arguments.size());
+
+    /* Copy non-stack arguments in the order. */
+    foreach (const auto &group, argumentGroups()) {
+        foreach (const auto &argument, group.arguments()) {
+            auto predicate = [&argument](const MemoryLocation &location) { return argument.location().covers(location); };
+
+            std::copy_if(arguments.begin(), arguments.end(), std::back_inserter(result), predicate);
+            arguments.erase(std::remove_if(arguments.begin(), arguments.end(), predicate), arguments.end());
+        }
+    }
+
+    /* What is left are stack arguments. Sort them. */
+    std::sort(arguments.begin(), arguments.end());
+
+    result.insert(result.end(), arguments.begin(), arguments.end());
+    return result;
+}
+
 
 void Convention::addReturnValue(std::unique_ptr<Term> term) {
     assert(term != NULL);

@@ -25,15 +25,19 @@ namespace image {
 
 namespace ir {
 
+class Call;
 class Functions;
 
 namespace dflow {
     class Dataflows;
+    class Uses;
 }
 
 namespace calling {
 
+class CallHook;
 class CalleeId;
+class Convention;
 class Hooks;
 class Signatures;
 
@@ -43,14 +47,11 @@ class Signatures;
 class SignatureAnalyzer {
     Signatures &signatures_;
     const image::Image &image_;
-    const Functions &functions_;
     const dflow::Dataflows &dataflows_;
     Hooks &hooks_;
-
-    /** Flag whether arguments were changed since last time. */
-    bool changed_;
-
-    /** Mapping from a callee id to the locations of the arguments. */
+    boost::unordered_map<const Call *, const Function *> call2function_;
+    boost::unordered_map<const Function *, std::vector<const Call *>> function2calls_;
+    boost::unordered_map<const Function *, std::unique_ptr<dflow::Uses>> function2uses_;
     boost::unordered_map<CalleeId, std::vector<MemoryLocation>> id2arguments_;
 
 public:
@@ -64,14 +65,12 @@ public:
      * \param hooks Calls data.
      */
     SignatureAnalyzer(Signatures &signatures, const image::Image &image, const Functions &functions,
-        const dflow::Dataflows &dataflows, Hooks &hooks
-    ):
-        signatures_(signatures),
-        image_(image),
-        functions_(functions),
-        dataflows_(dataflows),
-        hooks_(hooks)
-    {}
+        const dflow::Dataflows &dataflows, Hooks &hooks);
+
+    /**
+     * Destructor.
+     */
+    ~SignatureAnalyzer();
 
     /**
      * Reconstructs signatures of all functions and all called functions.
@@ -89,26 +88,36 @@ private:
     void computeArguments(const CancellationToken &canceled);
 
     /**
-     * Computes locations of arguments for a given function.
+     * Computes arguments of the function with the given callee id
+     * by looking at the function's body and calls to it.
      *
-     * \param[in] canceled Cancellation token.
+     * \param[in] calleeId Valid callee id.
+     *
+     * \return Computed locations of arguments.
      */
-    void computeArguments(const Function *function);
+    std::vector<MemoryLocation> computeArguments(const CalleeId &calleeId);
 
     /**
-     * Adds given memory locations to the list of locations of arguments
-     * of the given callee.
+     * Computes arguments of the given function by looking at its body.
      *
-     * \param calleeId Valid callee id.
-     * \param arguments Argument locations to be added.
+     * \param[in] function Valid pointer to a function.
+     * \param[in] convention Valid pointer to its calling convention.
+     *
+     * \return Computed locations of arguments.
      */
-    void addArguments(const CalleeId &calleeId, std::vector<MemoryLocation> arguments);
+    std::vector<MemoryLocation> computeArguments(const Function *function, const Convention *convention);
 
     /**
-     * Sorts computed argument locations, so that they follow in the order
-     * in which they are described in the calling convention.
+     * Computes arguments of the functions being by looking at
+     * the call site.
+     *
+     * \param[in] call Valid pointer to a call statement.
+     * \param[in] convention Valid pointer to its calling convention.
+     * \param[in] callHook Valid pointer to its call hook.
+     *
+     * \return Computed locations of arguments.
      */
-    void sortArguments();
+    std::vector<MemoryLocation> computeArguments(const Call *call, const Convention *convention, const CallHook *callHook);
 
     /**
      * Computes and sets signatures for all callee ids.
