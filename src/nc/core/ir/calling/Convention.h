@@ -25,100 +25,21 @@
 
 #include <nc/config.h>
 
+#include <memory>
 #include <vector>
 
 #include <QString>
 
 #include <nc/core/ir/MemoryLocation.h>
 
-#include <memory>
-
 namespace nc {
 namespace core {
-
-namespace arch {
-    class Register;
-}
-
 namespace ir {
 
 class Statement;
 class Term;
 
 namespace calling {
-
-/**
- * Description of an argument location.
- */
-class Argument {
-    /** Memory location of the argument. */
-    MemoryLocation location_;
-
-public:
-    /**
-     * Constructs an argument located withing given memory location.
-     *
-     * \param location Valid memory location.
-     */
-    Argument(const MemoryLocation &location):
-        location_(location)
-    {
-        assert(location);
-    }
-
-    /**
-     * Constructs an argument located in a given register.
-     *
-     * \param reg Valid pointer to a register.
-     */
-    Argument(const core::arch::Register *reg);
-
-    /**
-     * \return Memory location of the argument.
-     */
-    const MemoryLocation &location() const { return location_; }
-};
-
-/**
- * A group of arguments.
- *
- * For example, the AMD64 calling convention has two groups: integer/pointer arguments and floating-point arguments.
- */
-class ArgumentGroup {
-    QString name_; ///< Name of the group.
-    std::vector<Argument> arguments_; ///< Arguments in the group.
-
-    public:
-
-    /**
-     * Constructor.
-     *
-     * \param name                      Name of the group.
-     */
-    ArgumentGroup(const QString &name): name_(name) {}
-
-    /**
-     * \return Name of the group.
-     */
-    const QString &name() const { return name_; }
-
-    /**
-     * \return Arguments in the group.
-     */
-    const std::vector<Argument> &arguments() const { return arguments_; }
-
-    /**
-     * Adds an argument to the group.
-     *
-     * \param argument                  Argument to add.
-     *
-     * \return                          *this.
-     */
-    ArgumentGroup &operator<<(const Argument &argument) {
-        arguments_.push_back(argument);
-        return *this;
-    }
-};
 
 /**
  * Description of a calling convention.
@@ -131,8 +52,8 @@ class Convention {
     BitSize firstArgumentOffset_; ///< Offset of the first argument in a function's stack frame.
     BitSize argumentAlignment_; ///< Alignment of stack arguments in bits.
 
-    std::vector<ArgumentGroup> argumentGroups_; ///< Argument groups.
-    std::vector<std::unique_ptr<const Term>> returnValues_; ///< Terms where return values may be kept.
+    std::vector<MemoryLocation> argumentLocations_; ///< Possible locations of arguments.
+    std::vector<std::unique_ptr<const Term>> returnValueTerms_; ///< Terms denoting where return values may be kept.
 
     bool calleeCleanup_; ///< Callee cleans up arguments.
 
@@ -167,28 +88,44 @@ public:
     BitSize firstArgumentOffset() const { return firstArgumentOffset_; }
 
     /**
-     * \return Alignment of stack arguments in bits.
+     * Sets the offset of the first argument in a function's stack frame.
+     *
+     * \param firstArgumentOffset The offset.
      */
-    BitSize argumentAlignment() const { return argumentAlignment_; };
+    void setFirstArgumentOffset(BitSize firstArgumentOffset) { firstArgumentOffset_ = firstArgumentOffset; }
 
     /**
-     * \return List of argument groups.
+     * \return Alignment of stack arguments in bits.
      */
-    const std::vector<ArgumentGroup> &argumentGroups() const { return argumentGroups_; }
+    BitSize argumentAlignment() const { return argumentAlignment_; }
+
+    /**
+     * \return List of possible argument locations.
+     */
+    const std::vector<MemoryLocation> &argumentLocations() const { return argumentLocations_; }
 
     /**
      * \param memoryLocation A memory location.
      *
-     * \return True if the given memory location can be used for passing
-     *         arguments, false otherwise.
+     * \return Possible argument location covering given memory location.
+     *         If none is found, an invalid memory location is returned.
      */
-    bool isArgumentLocation(const MemoryLocation &memoryLocation) const;
+    MemoryLocation getArgumentLocationCovering(const MemoryLocation &memoryLocation) const;
 
     /**
-     * \return Factories for terms where return values may be kept.
+     * Sorts the argument locations in the way they are described in the convention.
+     *
+     * \param arguments List of memory locations.
+     *
+     * \return Sorted list of memory locations.
      */
-    const std::vector<const Term *> &returnValues() const {
-        return reinterpret_cast<const std::vector<const Term *> &>(returnValues_);
+    std::vector<MemoryLocation> sortArguments(std::vector<MemoryLocation> arguments) const;
+
+    /**
+     * \return List of terms where return values can be kept.
+     */
+    const std::vector<const Term *> &returnValueTerms() const {
+        return reinterpret_cast<const std::vector<const Term *> &>(returnValueTerms_);
     }
 
     /**
@@ -207,30 +144,13 @@ public:
         return reinterpret_cast<const std::vector<const Statement *> &>(entryStatements_);
     }
 
-    /**
-     * Sorts the argument locations in the way they are described in the convention.
-     *
-     * \param arguments List of memory locations.
-     *
-     * \return Sorted list of memory locations.
-     */
-    std::vector<MemoryLocation> sortArguments(std::vector<MemoryLocation> arguments) const;
-
 protected:
-
     /**
      * Sets MemoryLocation of stack pointer register.
      *
      * \param[in] location MemoryLocation.
      */
     void setStackPointer(const MemoryLocation &location) { stackPointer_ = location; }
-
-    /**
-     * Sets the offset of the first argument in a function's stack frame.
-     *
-     * \param firstArgumentOffset The offset.
-     */
-    void setFirstArgumentOffset(BitSize firstArgumentOffset) { firstArgumentOffset_ = firstArgumentOffset; }
 
     /**
      * Sets alignment of stack arguments.
@@ -240,18 +160,18 @@ protected:
     void setArgumentAlignment(BitSize argumentAlignment) { argumentAlignment_ = argumentAlignment; };
 
     /**
-     * Adds memory location to the list of possible locations for last added argument position.
+     * Adds a possible argument location.
      *
-     * \param[in] argumentGroup Memory location.
+     * \param[in] memoryLocation Valid memory location.
      */
-    void addArgumentGroup(const ArgumentGroup &argumentGroup) { argumentGroups_.push_back(argumentGroup); }
+    void addArgumentLocation(const MemoryLocation &memoryLocation);
 
     /**
      * Adds a term in which return values may be kept.
      *
-     * \param term Valid pointer to a term.
+     * \param term Valid pointer to the term.
      */
-    void addReturnValue(std::unique_ptr<Term> term);
+    void addReturnValueTerm(std::unique_ptr<Term> term);
 
     /**
      * Sets whether callee cleans up arguments.

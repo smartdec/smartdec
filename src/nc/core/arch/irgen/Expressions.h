@@ -627,14 +627,14 @@ operator-(const ExpressionBase<E> &expression) {
 
 template<class E>
 inline UnaryExpression<ir::UnaryOperator::SIGN_EXTEND, E>
-sign_extend(const ExpressionBase<E> &expression) {
-    return UnaryExpression<ir::UnaryOperator::SIGN_EXTEND, E>(expression.derived());
+sign_extend(const ExpressionBase<E> &expression, BitSize size = 0) {
+    return UnaryExpression<ir::UnaryOperator::SIGN_EXTEND, E>(expression.derived(), size);
 }
 
 template<class E>
 inline UnaryExpression<ir::UnaryOperator::ZERO_EXTEND, E>
-zero_extend(const ExpressionBase<E> &expression) {
-    return UnaryExpression<ir::UnaryOperator::ZERO_EXTEND, E>(expression.derived());
+zero_extend(const ExpressionBase<E> &expression, BitSize size = 0) {
+    return UnaryExpression<ir::UnaryOperator::ZERO_EXTEND, E>(expression.derived(), size);
 }
 
 template<class E>

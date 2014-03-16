@@ -41,39 +41,35 @@ namespace intel {
 AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architecture):
     Convention(QLatin1String("amd64"))
 {
-    setStackPointer(IntelRegisters::rsp()->memoryLocation());
+    setStackPointer(architecture->stackPointer()->memoryLocation());
 
     setFirstArgumentOffset(64);
     setArgumentAlignment(64);
 
-    addArgumentGroup(
-        core::ir::calling::ArgumentGroup(QLatin1String("Integer Arguments"))
-        << IntelRegisters::rdi()
-        << IntelRegisters::rsi()
-        << IntelRegisters::rdx()
-        << IntelRegisters::rcx()
-        << IntelRegisters::r8()
-        << IntelRegisters::r9()
-    );
+    /* Used for integer and pointer arguments. */
+    addArgumentLocation(IntelRegisters::rdi()->memoryLocation());
+    addArgumentLocation(IntelRegisters::rsi()->memoryLocation());
+    addArgumentLocation(IntelRegisters::rdx()->memoryLocation());
+    addArgumentLocation(IntelRegisters::rcx()->memoryLocation());
+    addArgumentLocation(IntelRegisters::r8()->memoryLocation());
+    addArgumentLocation(IntelRegisters::r9()->memoryLocation());
 
-    addArgumentGroup(
-        core::ir::calling::ArgumentGroup(QLatin1String("Floating-point Arguments"))
-        << IntelRegisters::xmm0()
-        << IntelRegisters::xmm1()
-        << IntelRegisters::xmm2()
-        << IntelRegisters::xmm3()
-        << IntelRegisters::xmm4()
-        << IntelRegisters::xmm5()
-        << IntelRegisters::xmm6()
-        << IntelRegisters::xmm7()
-    );
+    /* Used for floating-point arguments. */
+    addArgumentLocation(IntelRegisters::xmm0()->memoryLocation());
+    addArgumentLocation(IntelRegisters::xmm1()->memoryLocation());
+    addArgumentLocation(IntelRegisters::xmm2()->memoryLocation());
+    addArgumentLocation(IntelRegisters::xmm3()->memoryLocation());
+    addArgumentLocation(IntelRegisters::xmm4()->memoryLocation());
+    addArgumentLocation(IntelRegisters::xmm5()->memoryLocation());
+    addArgumentLocation(IntelRegisters::xmm6()->memoryLocation());
+    addArgumentLocation(IntelRegisters::xmm7()->memoryLocation());
 
     auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
-    addReturnValue(analyzer->createTerm(IntelRegisters::rax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::eax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::ax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::al()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::xmm0()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::rax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::eax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::ax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::al()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::xmm0()));
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         analyzer->createTerm(IntelRegisters::df()),
@@ -84,33 +80,29 @@ AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architec
 Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitecture *architecture):
     Convention(QLatin1String("microsoft64"))
 {
-    setStackPointer(IntelRegisters::rsp()->memoryLocation());
+    setStackPointer(architecture->stackPointer()->memoryLocation());
 
     setFirstArgumentOffset(64);
     setArgumentAlignment(64);
 
-    addArgumentGroup(
-        core::ir::calling::ArgumentGroup("Integer Arguments")
-        << IntelRegisters::rcx()
-        << IntelRegisters::rdx()
-        << IntelRegisters::r8()
-        << IntelRegisters::r9()
-    );
+    /* Used for integer and pointer arguments. */
+    addArgumentLocation(IntelRegisters::rcx()->memoryLocation());
+    addArgumentLocation(IntelRegisters::rdx()->memoryLocation());
+    addArgumentLocation(IntelRegisters::r8()->memoryLocation());
+    addArgumentLocation(IntelRegisters::r9()->memoryLocation());
 
-    addArgumentGroup(
-        core::ir::calling::ArgumentGroup("Floating-point Arguments")
-        << IntelRegisters::xmm0()
-        << IntelRegisters::xmm1()
-        << IntelRegisters::xmm2()
-        << IntelRegisters::xmm3()
-    );
+    /* Used for floating-point arguments. */
+    addArgumentLocation(IntelRegisters::xmm0()->memoryLocation());
+    addArgumentLocation(IntelRegisters::xmm1()->memoryLocation());
+    addArgumentLocation(IntelRegisters::xmm2()->memoryLocation());
+    addArgumentLocation(IntelRegisters::xmm3()->memoryLocation());
 
     auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
-    addReturnValue(analyzer->createTerm(IntelRegisters::rax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::eax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::ax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::al()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::xmm0()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::rax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::eax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::ax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::al()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::xmm0()));
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         analyzer->createTerm(IntelRegisters::df()),
@@ -121,16 +113,16 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitectu
 Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *architecture):
     Convention(QLatin1String("cdecl32"))
 {
-    setStackPointer(IntelRegisters::esp()->memoryLocation());
+    setStackPointer(architecture->stackPointer()->memoryLocation());
 
     setFirstArgumentOffset(32);
     setArgumentAlignment(32);
 
     auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
-    addReturnValue(analyzer->createTerm(IntelRegisters::eax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::ax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::al()));
-    addReturnValue(analyzer->createFpuTerm(0));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::eax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::ax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::al()));
+    addReturnValueTerm(analyzer->createFpuTerm(0));
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         analyzer->createTerm(IntelRegisters::df()),
@@ -141,15 +133,15 @@ Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *arch
 Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *architecture):
     Convention(QLatin1String("cdecl16"))
 {
-    setStackPointer(IntelRegisters::sp()->memoryLocation());
+    setStackPointer(architecture->stackPointer()->memoryLocation());
 
     setFirstArgumentOffset(16);
     setArgumentAlignment(16);
 
     auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
-    addReturnValue(analyzer->createTerm(IntelRegisters::ax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::al()));
-    addReturnValue(analyzer->createFpuTerm(0));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::ax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::al()));
+    addReturnValueTerm(analyzer->createFpuTerm(0));
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         analyzer->createTerm(IntelRegisters::df()),
@@ -160,17 +152,17 @@ Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *arch
 Stdcall32CallingConvention::Stdcall32CallingConvention(const IntelArchitecture *architecture):
     Convention(QLatin1String("stdcall32"))
 {
-    setStackPointer(IntelRegisters::esp()->memoryLocation());
+    setStackPointer(architecture->stackPointer()->memoryLocation());
 
     setFirstArgumentOffset(32);
     setArgumentAlignment(32);
     setCalleeCleanup(true);
 
     auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
-    addReturnValue(analyzer->createTerm(IntelRegisters::eax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::ax()));
-    addReturnValue(analyzer->createTerm(IntelRegisters::al()));
-    addReturnValue(analyzer->createFpuTerm(0));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::eax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::ax()));
+    addReturnValueTerm(analyzer->createTerm(IntelRegisters::al()));
+    addReturnValueTerm(analyzer->createFpuTerm(0));
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         analyzer->createTerm(IntelRegisters::df()),

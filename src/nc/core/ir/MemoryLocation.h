@@ -46,8 +46,7 @@ class MemoryLocation: public boost::equality_comparable1<MemoryLocation>, public
     BitAddr addr_; ///< Address of the memory region in bits.
     BitSize size_; ///< Size of the memory region in bits.
 
-    public:
-
+public:
     /**
      * Class default constructor.
      */
@@ -151,6 +150,10 @@ class MemoryLocation: public boost::equality_comparable1<MemoryLocation>, public
 
             return MemoryLocation(a.domain(), addr, endAddr - addr);
         }
+    }
+
+    void merge(const MemoryLocation &that) {
+        *this = merge(*this, that);
     }
 };
 

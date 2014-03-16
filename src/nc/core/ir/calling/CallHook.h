@@ -25,7 +25,7 @@
 
 #include <nc/config.h>
 
-#include <memory> /* unique_ptr */
+#include <memory>
 
 #include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
@@ -53,14 +53,14 @@ class Convention;
 class Signature;
 
 /**
- * Hook being executed after a return is executed after a call is executed.
+ * Hook being executed after a call is executed.
  */
 class CallHook {
-    /** Mapping of argument memory locations to corresponding terms. */
-    boost::unordered_map<const Term *, std::unique_ptr<Term>> arguments_;
+    /** Mapping from an argument term to its clone. */
+    boost::unordered_map<const Term *, std::unique_ptr<Term>> argumentTerms_;
 
-    /** Mapping of terms where return values may be kept to their clones. */
-    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValues_;
+    /** Mapping from a return value term to its clone. */
+    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValueTerms_;
 
     /** Term for tracking stack pointer. */
     std::unique_ptr<Term> stackPointer_;
@@ -113,12 +113,13 @@ public:
      *             in the signature.
      *
      * \return Pointer to the term representing the return value in the hook.
-     *         Will be NULL, if signature does not include such an argument.
+     *         Will be NULL, if the signature does not include such an argument.
      */
     const Term *getReturnValueTerm(const Term *term) const;
 
     /**
-     * \return Valid pointer to the stack pointer term.
+     * \return Pointer to the stack pointer term. Can be NULL if the corresponding
+     *         calling convention defines no stack pointer.
      */
     const Term *stackPointer() const { return stackPointer_.get(); }
 

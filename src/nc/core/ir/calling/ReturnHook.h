@@ -53,7 +53,7 @@ class Signature;
  */
 class ReturnHook {
     /** Mapping of terms where return values may be kept to their clones. */
-    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValues_;
+    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValueTerms_;
 
 public:
     /**
@@ -78,11 +78,11 @@ public:
     void execute(dflow::ExecutionContext &context);
 
     /**
-     * \param term Valid pointer to a term.
+     * \param term Valid pointer to a term representing the return value
+     *             in the signature.
      *
-     * \return Pointer to the term representing the argument identified by
-     *         the given term. Will be NULL, if signature does not include
-     *         such an argument.
+     * \return Pointer to the term representing the return value in the hook.
+     *         Will be NULL, if the signature does not include such an argument.
      */
     const Term *getReturnValueTerm(const Term *term) const;
 

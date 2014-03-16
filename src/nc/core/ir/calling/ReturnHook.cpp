@@ -47,11 +47,11 @@ ReturnHook::ReturnHook(const Return *ret, const Convention *convention, const Si
 
     if (signature) {
         if (signature->returnValue()) {
-            returnValues_[signature->returnValue()] = signature->returnValue()->clone();
+            returnValueTerms_[signature->returnValue()] = signature->returnValue()->clone();
         }
     }
 
-    foreach (const auto &pair, returnValues_) {
+    foreach (const auto &pair, returnValueTerms_) {
         pair.second->setAccessType(Term::READ);
         pair.second->setStatementRecursively(ret);
     }
@@ -60,14 +60,14 @@ ReturnHook::ReturnHook(const Return *ret, const Convention *convention, const Si
 ReturnHook::~ReturnHook() {}
 
 void ReturnHook::execute(dflow::ExecutionContext &context) {
-    foreach (const auto &pair, returnValues_) {
+    foreach (const auto &pair, returnValueTerms_) {
         context.analyzer().execute(pair.second.get(), context);
     }
 }
 
 const Term *ReturnHook::getReturnValueTerm(const Term *term) const {
     assert(term != NULL);
-    return nc::find(returnValues_, term).get();
+    return nc::find(returnValueTerms_, term).get();
 }
 
 void ReturnHook::visitChildStatements(Visitor<const Statement> & /*visitor*/) const {
@@ -75,7 +75,7 @@ void ReturnHook::visitChildStatements(Visitor<const Statement> & /*visitor*/) co
 }
 
 void ReturnHook::visitChildTerms(Visitor<const Term> &visitor) const {
-    foreach (const auto &returnValue, returnValues_) {
+    foreach (const auto &returnValue, returnValueTerms_) {
         visitor(returnValue.second.get());
     }
 }

@@ -3,9 +3,7 @@
 
 #include "SignatureAnalyzer.h"
 
-#include <algorithm>
 #include <cstdint> /* uintptr_t */
-#include <iterator> /* std::back_inserter */
 
 #include <boost/range/adaptor/map.hpp>
 
@@ -39,31 +37,6 @@ namespace nc {
 namespace core {
 namespace ir {
 namespace calling {
-
-namespace {
-
-void mergeOverlapping(std::vector<MemoryLocation> &locations) {
-    if (locations.empty()) {
-        return;
-    }
-
-    auto begin = locations.begin();
-    auto end = locations.end();
-
-    std::sort(begin, end);
-
-    for (auto i = std::next(begin); i != end; ++i) {
-        if (begin->overlaps(*i)) {
-            *begin = MemoryLocation::merge(*begin, *i);
-        } else {
-            *++begin = *i;
-        }
-    }
-
-    locations.erase(std::next(begin), end);
-}
-
-} // anonymous namespace
 
 SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image &image, const Functions &functions,
     const dflow::Dataflows &dataflows, Hooks &hooks
@@ -122,6 +95,26 @@ void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
     } while (changed);
 }
 
+namespace {
+
+template<class Container>
+bool isHomogeneous(const Container &container) {
+    if (container.empty()) {
+        return true;
+    }
+
+    const auto &first = *container.begin();
+    foreach (const auto &value, container) {
+        if (value != first) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+} // anonymous namespace
+
 std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &calleeId) {
     assert(calleeId);
 
@@ -134,19 +127,44 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &
 
     const auto &calleeHooks = nc::find(hooks_.map(), calleeId);
 
+    struct Placement {
+        MemoryLocation inFunctions;
+        boost::unordered_map<const Call *, MemoryLocation> inCalls;
+    };
+
+    boost::unordered_map<MemoryLocation, Placement> placements;
+
     foreach (const auto &functionAndHook, calleeHooks.entryHooks) {
-        auto arguments = computeArguments(functionAndHook.first, convention);
-        result.insert(result.end(), arguments.begin(), arguments.end());
+        foreach (const auto &memoryLocation, computeArguments(functionAndHook.first, convention)) {
+            placements[convention->getArgumentLocationCovering(memoryLocation)].inFunctions.merge(memoryLocation);
+        }
     }
 
     foreach (const auto &callAndHook, calleeHooks.callHooks) {
-        auto arguments = computeArguments(callAndHook.first, convention, callAndHook.second.get());
-        result.insert(result.end(), arguments.begin(), arguments.end());
+        foreach (const auto &memoryLocation, computeArguments(callAndHook.first, convention, callAndHook.second.get())) {
+            placements[convention->getArgumentLocationCovering(memoryLocation)].inCalls[callAndHook.first].merge(memoryLocation);
+        }
     }
 
-    mergeOverlapping(result);
+    auto getArgumentLocation = [](const Placement &placement) {
+        if (placement.inFunctions) {
+            return placement.inFunctions;
+        } else if (!placement.inCalls.empty() && isHomogeneous(placement.inCalls | boost::adaptors::map_values)) {
+            return placement.inCalls.begin()->second;
+        } else {
+            return MemoryLocation();
+        }
+    };
 
-    return result;
+    foreach (auto &locationAndPlacement, placements) {
+        if (auto location = getArgumentLocation(locationAndPlacement.second)) {
+            if (location.addr() == locationAndPlacement.first.addr()) {
+                result.push_back(location);
+            }
+        }
+    }
+
+    return convention->sortArguments(result);
 }
 
 std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Function *function, const Convention *convention) {
@@ -167,7 +185,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Function *
         const auto &memoryLocation = termAndLocation.second;
 
         if (term->isRead() && dataflow.getDefinitions(term).empty()) {
-            if (convention->isArgumentLocation(memoryLocation)) {
+            if (convention->getArgumentLocationCovering(memoryLocation)) {
                 result.push_back(memoryLocation);
             }
         }
@@ -200,14 +218,13 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Function *
             }
         };
 
-        foreach (auto argument, callArguments) {
-            argument = fixup(argument);
+        foreach (auto memoryLocation, callArguments) {
+            memoryLocation = fixup(memoryLocation);
 
-            if (argument &&
-                callHook->reachingDefinitions().projected(argument).empty() &&
-                convention->isArgumentLocation(argument))
-            {
-                result.push_back(argument);
+            if (memoryLocation && callHook->reachingDefinitions().projected(memoryLocation).empty()) {
+                if (convention->getArgumentLocationCovering(memoryLocation)) {
+                    result.push_back(memoryLocation);
+                }
             }
         }
     }
@@ -247,7 +264,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Call *call
      */
     foreach (const auto &chunk, callHook->reachingDefinitions().chunks()) {
         if (auto memoryLocation = fixup(chunk.location())) {
-            if (convention->isArgumentLocation(memoryLocation)) {
+            if (convention->getArgumentLocationCovering(memoryLocation)) {
                 foreach (const Term *term, chunk.definitions()) {
                     if (uses.getUses(term).empty()) {
                         result.push_back(memoryLocation);
@@ -311,7 +328,7 @@ void SignatureAnalyzer::computeSignature(const CalleeId &calleeId) {
      * Set arguments.
      */
     if (auto convention = hooks_.conventions().getConvention(calleeId)) {
-        foreach (const auto &memoryLocation, convention->sortArguments(nc::find(id2arguments_, calleeId))) {
+        foreach (const auto &memoryLocation, nc::find(id2arguments_, calleeId)) {
             if (memoryLocation.domain() == MemoryDomain::STACK) {
                 signature->addArgument(std::make_unique<Dereference>(
                     std::make_unique<BinaryOperator>(

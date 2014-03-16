@@ -630,6 +630,21 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case IDIV: {
+#if 0
+            /* A correct implementation, however, generating complicated code. */
+
+            auto size = std::max(instr->operand(0)->size(), 16);
+            auto ax = resizedRegister(IntelRegisters::ax(), size);
+            auto dx = resizedRegister(IntelRegisters::dx(), size);
+            auto tmp = temporary(size * 2);
+
+            _[
+                tmp = (zero_extend(dx, size * 2) << constant(size)) | zero_extend(ax, size * 2),
+                dx = truncate(signed_(tmp) % sign_extend(operand(0))),
+                ax = truncate(signed_(tmp) / sign_extend(operand(0)))
+            ];
+#endif
+
             auto size = std::max(instr->operand(0)->size(), 16);
             auto ax = resizedRegister(IntelRegisters::ax(), size);
             auto dx = resizedRegister(IntelRegisters::dx(), size);

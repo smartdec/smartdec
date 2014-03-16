@@ -51,27 +51,29 @@ CallHook::CallHook(const Call *call, const Convention *convention, const Signatu
 
     if (signature) {
         foreach (const Term *argument, signature->arguments()) {
-            arguments_[argument] = argument->clone();
+            argumentTerms_[argument] = argument->clone();
         }
         if (signature->returnValue()) {
-            returnValues_[signature->returnValue()] = signature->returnValue()->clone();
+            returnValueTerms_[signature->returnValue()] = signature->returnValue()->clone();
         }
     } else {
-        foreach (auto term, convention->returnValues()) {
-            returnValues_[term] = term->clone();
+        foreach (auto term, convention->returnValueTerms()) {
+            returnValueTerms_[term] = term->clone();
         }
     }
 
-    foreach (const auto &pair, arguments_) {
+    foreach (const auto &pair, argumentTerms_) {
         pair.second->setAccessType(Term::READ);
         pair.second->setStatementRecursively(call);
     }
-    foreach (const auto &pair, returnValues_) {
+    foreach (const auto &pair, returnValueTerms_) {
         pair.second->setAccessType(Term::WRITE);
         pair.second->setStatementRecursively(call);
     }
 
     if (convention->calleeCleanup() && stackArgumentsSize) {
+        assert(convention->stackPointer());
+
         cleanupStatement_ = std::make_unique<Assignment>(
             std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
             std::make_unique<BinaryOperator>(
@@ -81,8 +83,10 @@ CallHook::CallHook(const Call *call, const Convention *convention, const Signatu
                 convention->stackPointer().size<SmallBitSize>()));
     }
 
-    stackPointer_ = std::make_unique<MemoryLocationAccess>(convention->stackPointer());
-    stackPointer_->setAccessType(Term::READ);
+    if (convention->stackPointer()) {
+        stackPointer_ = std::make_unique<MemoryLocationAccess>(convention->stackPointer());
+        stackPointer_->setAccessType(Term::READ);
+    }
 }
 
 CallHook::~CallHook() {}
@@ -92,7 +96,7 @@ void CallHook::execute(dflow::ExecutionContext &context) {
     reachingDefinitions_ = context.definitions();
 
     /* Execute all argument terms. */
-    foreach (const auto &pair, arguments_) {
+    foreach (const auto &pair, argumentTerms_) {
         context.analyzer().execute(pair.second.get(), context);
     }
 
@@ -107,7 +111,7 @@ void CallHook::execute(dflow::ExecutionContext &context) {
     }
 
     /* Execute all return value terms. */
-    foreach (const auto &pair, returnValues_) {
+    foreach (const auto &pair, returnValueTerms_) {
         auto value = context.analyzer().dataflow().getValue(pair.second.get());
         value->setAbstractValue(dflow::AbstractValue(pair.second->size(), -1, -1));
         value->makeNotStackOffset();
@@ -117,12 +121,13 @@ void CallHook::execute(dflow::ExecutionContext &context) {
 }
 
 const Term *CallHook::getArgumentTerm(const Term *term) const {
-    return nc::find(arguments_, term).get();
+    assert(term != NULL);
+    return nc::find(argumentTerms_, term).get();
 }
 
 const Term *CallHook::getReturnValueTerm(const Term *term) const {
     assert(term != NULL);
-    return nc::find(returnValues_, term).get();
+    return nc::find(returnValueTerms_, term).get();
 }
 
 void CallHook::visitChildStatements(Visitor<const Statement> &visitor) const {
@@ -132,10 +137,10 @@ void CallHook::visitChildStatements(Visitor<const Statement> &visitor) const {
 }
 
 void CallHook::visitChildTerms(Visitor<const Term> &visitor) const {
-    foreach (const auto &pair, arguments_) {
+    foreach (const auto &pair, argumentTerms_) {
         visitor(pair.second.get());
     }
-    foreach (const auto &pair, returnValues_) {
+    foreach (const auto &pair, returnValueTerms_) {
         visitor(pair.second.get());
     }
     if (stackPointer_) {
