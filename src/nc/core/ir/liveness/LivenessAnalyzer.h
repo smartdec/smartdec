@@ -74,7 +74,7 @@ class LivenessAnalyzer {
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Architecture.
     const cflow::Graph &regionGraph_; ///< Reduced control-flow graph.
-    calling::Hooks &hooks_; ///< Calls data.
+    calling::Hooks &hooks_; ///< Call hooks.
     const calling::Signatures &signatures_; ///< Signatures of functions.
     std::vector<const Jump *> deadJumps_; ///< Useless jumps.
 
@@ -157,13 +157,6 @@ protected:
      * \param[in] statement Statement.
      */
     virtual void computeLiveness(const Statement *statement);
-
-    /**
-     * Computes liveness of a term based on the term's kind.
-     *
-     * \param[in] term Term to consider.
-     */
-    virtual void computeLiveness(const Term *term);
 
     /**
      * Marks as used all the terms, used by given term in order to generate code.

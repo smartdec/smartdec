@@ -46,7 +46,6 @@
 #include <nc/core/ir/cflow/Switch.h>
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/Value.h>
-#include <nc/core/ir/misc/CensusVisitor.h>
 
 #include "Liveness.h"
 
@@ -70,14 +69,10 @@ void LivenessAnalyzer::analyze() {
 
     std::sort(deadJumps_.begin(), deadJumps_.end());
 
-    misc::CensusVisitor census(&hooks());
-    census(function());
-
-    foreach (const Statement *statement, census.statements()) {
-        computeLiveness(statement);
-    }
-    foreach (const Term *term, census.terms()) {
-        computeLiveness(term);
+    foreach (const BasicBlock *basicBlock, function()->basicBlocks()) {
+        foreach (const Statement *statement, basicBlock->statements()) {
+            computeLiveness(statement);
+        }
     }
 
     if (auto calleeId = hooks().getCalleeId(function())) {
@@ -97,8 +92,15 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
             break;
         case Statement::INLINE_ASSEMBLY:
             break;
-        case Statement::ASSIGNMENT:
+        case Statement::ASSIGNMENT: {
+            auto assignment = statement->asAssignment();
+            auto memoryLocation = dataflow().getMemoryLocation(assignment->left());
+
+            if (!memoryLocation || architecture()->isGlobalMemory(memoryLocation)) {
+                makeLive(assignment->left());
+            }
             break;
+        }
         case Statement::KILL:
             break;
         case Statement::JUMP: {
@@ -138,44 +140,6 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
             break;
         default:
             ncWarning("Was called for unsupported kind of statement.");
-            break;
-    }
-}
-
-void LivenessAnalyzer::computeLiveness(const Term *term) {
-    switch (term->kind()) {
-        case Term::INT_CONST:
-            break;
-        case Term::INTRINSIC:
-            break;
-        case Term::UNDEFINED:
-            break;
-        case Term::MEMORY_LOCATION_ACCESS: {
-            if (term->isWrite()) {
-                const MemoryLocationAccess *access = term->asMemoryLocationAccess();
-                if (architecture()->isGlobalMemory(access->memoryLocation())) {
-                    makeLive(access);
-                }
-            }
-            break;
-        }
-        case Term::DEREFERENCE: {
-            if (term->isWrite()) {
-                const MemoryLocation &memoryLocation = dataflow().getMemoryLocation(term);
-                if (!memoryLocation || architecture()->isGlobalMemory(memoryLocation)) {
-                    makeLive(term);
-                }
-            }
-            break;
-        }
-        case Term::UNARY_OPERATOR:
-            break;
-        case Term::BINARY_OPERATOR:
-            break;
-        case Term::CHOICE:
-            break;
-        default:
-            ncWarning("Was called for unsupported kind of term.");
             break;
     }
 }
