@@ -7,6 +7,8 @@
 
 #include <boost/unordered_set.hpp>
 
+#include <nc/common/Range.h>
+
 namespace nc {
 namespace core {
 namespace ir {
@@ -19,23 +21,40 @@ namespace liveness {
  * Set of terms producing actual high-level code.
  */
 class Liveness {
-    boost::unordered_set<const Term *> liveTerms_; ///< Set of live terms.
+    boost::unordered_set<const Term *> liveTermSet_; ///< The set of live terms.
+    std::vector<const Term *> liveTermList_; ///< The list of live terms.
 
-    public:
-
+public:
     /**
      * \param[in] term Term.
      *
      * \return True if term is live.
      */
-    bool isLive(const Term *term) const { return liveTerms_.find(term) != liveTerms_.end(); }
+    bool isLive(const Term *term) const {
+        assert(term != NULL);
+        return nc::contains(liveTermSet_, term);
+    }
 
     /**
      * Marks a term as live.
      *
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to a term.
      */
-    void makeLive(const Term *term) { liveTerms_.insert(term); }
+    void makeLive(const Term *term) {
+        assert(term != NULL);
+
+        if (liveTermSet_.insert(term).second) {
+            liveTermList_.push_back(term);
+        };
+    }
+
+    /**
+     * \return The list of live terms, sorted by the order of adding.
+     *
+     * \note The ordering is important: type reconstruction completes
+     *       much faster if the terms are processed in the natural order.
+     */
+    const std::vector<const Term *> &liveTerms() const { return liveTermList_; }
 };
 
 } // namespace liveness

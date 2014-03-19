@@ -12,7 +12,6 @@
 #include <nc/core/ir/dflow/Dataflow.h>
 #include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/liveness/Liveness.h>
-#include <nc/core/ir/misc/CensusVisitor.h>
 
 #include "Type.h"
 #include "Types.h"
@@ -23,34 +22,21 @@ namespace ir {
 namespace types {
 
 FunctionAnalyzer::FunctionAnalyzer(Types &types, const Function *function, const dflow::Dataflow &dataflow,
-    const liveness::Liveness &liveness, calling::Hooks &hooks
+    const liveness::Liveness &liveness
 ):
-    types_(types), dataflow_(dataflow)
+    types_(types), dataflow_(dataflow), liveness_(liveness)
 {
     assert(function != NULL);
 
     /*
-     * We want to keep the natural ordering of terms in function's code.
-     * Iterative process converges much faster then.
-     * This is why we don't just take liveness().liveTerms_.
-     */
-    ir::misc::CensusVisitor census(&hooks);
-    census(function);
-
-    terms_.swap(census.terms());
-
-    terms_.erase(
-        std::remove_if(terms_.begin(), terms_.end(), [&](const Term *term) { return !liveness.isLive(term); }),
-        terms_.end());
-
-    /*
      * Unite types of arguments of left and right hand sides of assignments.
      */
-    foreach (const Term *term, terms_) {
+    foreach (const Term *term, liveness_.liveTerms()) {
         if (term->source()) {
             types_.getType(term)->unionSet(types_.getType(term->source()));
         }
     }
+
 }
 
 bool FunctionAnalyzer::analyze() {
@@ -58,15 +44,15 @@ bool FunctionAnalyzer::analyze() {
      * Going in both directions makes the process
      * converge much faster on some examples.
      */
-    foreach (const Term *term, terms_) {
+    foreach (const Term *term, liveness_.liveTerms()) {
         analyze(term);
     }
-    reverse_foreach (const Term *term, terms_) {
+    reverse_foreach (const Term *term, liveness_.liveTerms()) {
         analyze(term);
     }
 
     bool changed = false;
-    foreach (const Term *term, terms_) {
+    foreach (const Term *term, liveness_.liveTerms()) {
         if (types_.getType(term)->changed()) {
             changed = true;
         }

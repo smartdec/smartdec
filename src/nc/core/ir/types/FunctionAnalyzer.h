@@ -38,7 +38,7 @@ class Types;
 class FunctionAnalyzer {
     Types &types_; ///< Information about terms' types.
     const dflow::Dataflow &dataflow_; ///< Dataflow information for the function.
-    std::vector<const Term *> terms_; ///< Live terms of the function.
+    const liveness::Liveness &liveness_; ///< Liveness information for the function.
 
 public:
     /**
@@ -48,10 +48,9 @@ public:
      * \param[in] function Valid pointer to the function being analyzed.
      * \param[in] dataflow Dataflow information for this function.
      * \param[in] liveness Liveness information for this function.
-     * \param[in] hooks Calling conventions hooks.
      */
     FunctionAnalyzer(Types &types, const Function *function, const dflow::Dataflow &dataflow,
-        const liveness::Liveness &liveness, calling::Hooks &hooks);
+        const liveness::Liveness &liveness);
 
     /**
      * Recomputes types of terms in the function being analyzed.

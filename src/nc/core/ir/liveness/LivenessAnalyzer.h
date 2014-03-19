@@ -74,7 +74,7 @@ class LivenessAnalyzer {
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Architecture.
     const cflow::Graph &regionGraph_; ///< Reduced control-flow graph.
-    calling::Hooks &hooks_; ///< Call hooks.
+    calling::Hooks &hooks_; ///< Calling convention hooks.
     const calling::Signatures &signatures_; ///< Signatures of functions.
     std::vector<const Jump *> deadJumps_; ///< Useless jumps.
 
