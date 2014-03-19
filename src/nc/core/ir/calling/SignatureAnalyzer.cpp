@@ -135,18 +135,22 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &
     boost::unordered_map<MemoryLocation, Placement> placements;
 
     foreach (const auto &functionAndHook, calleeHooks.entryHooks) {
-        foreach (const auto &memoryLocation, computeArguments(functionAndHook.first, convention)) {
-            placements[convention->getArgumentLocationCovering(memoryLocation)].inFunctions.merge(memoryLocation);
+        foreach (const auto &memoryLocation, getUndefinedUses(functionAndHook.first)) {
+            if (auto argumentLocation = convention->getArgumentLocationCovering(memoryLocation)) {
+                placements[argumentLocation].inFunctions.merge(memoryLocation);
+            }
         }
     }
 
     foreach (const auto &callAndHook, calleeHooks.callHooks) {
-        foreach (const auto &memoryLocation, computeArguments(callAndHook.first, convention, callAndHook.second.get())) {
-            placements[convention->getArgumentLocationCovering(memoryLocation)].inCalls[callAndHook.first].merge(memoryLocation);
+        foreach (const auto &memoryLocation, getUnusedDefines(callAndHook.first, callAndHook.second.get())) {
+            if (auto argumentLocation = convention->getArgumentLocationCovering(memoryLocation)) {
+                placements[argumentLocation].inCalls[callAndHook.first].merge(memoryLocation);
+            }
         }
     }
 
-    auto getArgumentLocation = [](const Placement &placement) {
+    auto getArgumentLocation = [](const Placement &placement) -> MemoryLocation {
         if (placement.inFunctions) {
             return placement.inFunctions;
         } else if (!placement.inCalls.empty() && isHomogeneous(placement.inCalls | boost::adaptors::map_values)) {
@@ -167,9 +171,8 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &
     return convention->sortArguments(result);
 }
 
-std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Function *function, const Convention *convention) {
+std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *function) {
     assert(function != NULL);
-    assert(convention != NULL);
 
     auto &dataflow = *dataflows_.at(function);
 
@@ -185,9 +188,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Function *
         const auto &memoryLocation = termAndLocation.second;
 
         if (term->isRead() && dataflow.getDefinitions(term).empty()) {
-            if (convention->getArgumentLocationCovering(memoryLocation)) {
-                result.push_back(memoryLocation);
-            }
+            result.push_back(memoryLocation);
         }
     }
 
@@ -222,9 +223,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Function *
             memoryLocation = fixup(memoryLocation);
 
             if (memoryLocation && callHook->reachingDefinitions().projected(memoryLocation).empty()) {
-                if (convention->getArgumentLocationCovering(memoryLocation)) {
-                    result.push_back(memoryLocation);
-                }
+                result.push_back(memoryLocation);
             }
         }
     }
@@ -232,9 +231,8 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Function *
     return result;
 }
 
-std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Call *call, const Convention *convention, const CallHook *callHook) {
+std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call, const CallHook *callHook) {
     assert(call != NULL);
-    assert(convention != NULL);
     assert(callHook != NULL);
 
     std::vector<MemoryLocation> result;
@@ -264,12 +262,10 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const Call *call
      */
     foreach (const auto &chunk, callHook->reachingDefinitions().chunks()) {
         if (auto memoryLocation = fixup(chunk.location())) {
-            if (convention->getArgumentLocationCovering(memoryLocation)) {
-                foreach (const Term *term, chunk.definitions()) {
-                    if (uses.getUses(term).empty()) {
-                        result.push_back(memoryLocation);
-                        break;
-                    }
+            foreach (const Term *term, chunk.definitions()) {
+                if (uses.getUses(term).empty()) {
+                    result.push_back(memoryLocation);
+                    break;
                 }
             }
         }

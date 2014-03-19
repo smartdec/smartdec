@@ -37,7 +37,6 @@ namespace calling {
 
 class CallHook;
 class CalleeId;
-class Convention;
 class Hooks;
 class Signatures;
 
@@ -98,26 +97,21 @@ private:
     std::vector<MemoryLocation> computeArguments(const CalleeId &calleeId);
 
     /**
-     * Computes arguments of the given function by looking at its body.
-     *
      * \param[in] function Valid pointer to a function.
-     * \param[in] convention Valid pointer to its calling convention.
      *
-     * \return Computed locations of arguments.
+     * \return Memory locations in the function that are read in the function,
+     *         but whose value is not defined before it is read.
      */
-    std::vector<MemoryLocation> computeArguments(const Function *function, const Convention *convention);
+    std::vector<MemoryLocation> getUndefinedUses(const Function *function);
 
     /**
-     * Computes arguments of the functions being by looking at
-     * the call site.
-     *
      * \param[in] call Valid pointer to a call statement.
-     * \param[in] convention Valid pointer to its calling convention.
      * \param[in] callHook Valid pointer to its call hook.
      *
-     * \return Computed locations of arguments.
+     * \return Memory locations that are defined before the call, but never used.
+     *         Stack offsets are fixed up in accordance to the reaching stack pointer value.
      */
-    std::vector<MemoryLocation> computeArguments(const Call *call, const Convention *convention, const CallHook *callHook);
+    std::vector<MemoryLocation> getUnusedDefines(const Call *call, const CallHook *callHook);
 
     /**
      * Computes and sets signatures for all callee ids.
