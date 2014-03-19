@@ -59,9 +59,6 @@ namespace ir {
     namespace dflow {
         class Dataflows;
     }
-    namespace misc {
-        class TermToFunction;
-    }
     namespace types {
         class Types;
     }
@@ -96,7 +93,6 @@ class Context: public QObject {
     std::unique_ptr<ir::liveness::Livenesses> livenesses_; ///< Liveness information.
     std::unique_ptr<ir::types::Types> types_; ///< Information about types.
     std::unique_ptr<likec::Tree> tree_; ///< Abstract syntax tree of the LikeC program.
-    std::unique_ptr<ir::misc::TermToFunction> termToFunction_; ///< Term to function mapping.
     LogToken logToken_; ///< Log token.
     CancellationToken cancellationToken_; ///< Cancellation token.
 
@@ -291,18 +287,6 @@ public:
      * \return The LikeC tree. Can be NULL.
      */
     likec::Tree *tree() const { return tree_.get(); }
-
-    /**
-     * Sets the term to function mapping.
-     *
-     * \param termToFunction Valid pointer to the term to function mapping.
-     */
-    void setTermToFunction(std::unique_ptr<ir::misc::TermToFunction> termToFunction);
-
-    /**
-     * \return Valid pointer to the term to function mapping.
-     */
-    const ir::misc::TermToFunction *termToFunction() const { return termToFunction_.get(); }
 
     /**
      * Sets cancellation token.

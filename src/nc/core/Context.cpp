@@ -37,7 +37,6 @@
 #include <nc/core/ir/cflow/Graphs.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/liveness/Livenesses.h>
-#include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/ir/vars/Variables.h>
 #include <nc/core/likec/Tree.h>
@@ -104,10 +103,6 @@ void Context::setTypes(std::unique_ptr<ir::types::Types> types) {
 void Context::setTree(std::unique_ptr<likec::Tree> tree) {
     tree_ = std::move(tree);
     Q_EMIT treeChanged();
-}
-
-void Context::setTermToFunction(std::unique_ptr<ir::misc::TermToFunction> termToFunction) {
-    termToFunction_ = std::move(termToFunction);
 }
 
 } // namespace core

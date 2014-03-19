@@ -52,7 +52,6 @@
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
 #include <nc/core/ir/liveness/Livenesses.h>
 #include <nc/core/ir/liveness/LivenessAnalyzer.h>
-#include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/ir/types/TypeAnalyzer.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/ir/vars/VariableAnalyzer.h>
@@ -271,13 +270,6 @@ void MasterAnalyzer::checkTree(Context &context) const {
 }
 #endif
 
-void MasterAnalyzer::computeTermToFunctionMapping(Context &context) const {
-    context.logToken() << tr("Computing term to function mapping.");
-
-    context.setTermToFunction(std::unique_ptr<ir::misc::TermToFunction>(
-        new ir::misc::TermToFunction(context.functions(), context.hooks())));
-}
-
 void MasterAnalyzer::decompile(Context &context) const {
     context.logToken() << tr("Decompiling.");
 
@@ -315,9 +307,6 @@ void MasterAnalyzer::decompile(Context &context) const {
     checkTree(context);
     context.cancellationToken().poll();
 #endif
-
-    computeTermToFunctionMapping(context);
-    context.cancellationToken().poll();
 
     context.logToken() << tr("Decompilation completed.");
 }

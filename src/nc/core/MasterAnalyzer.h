@@ -165,13 +165,6 @@ public:
 #endif
 
     /**
-     * Constructs term to function mapping.
-     *
-     * \param context Context.
-     */
-    virtual void computeTermToFunctionMapping(Context &context) const;
-
-    /**
      * Decompiles the assembler program.
      *
      * \param context Context.

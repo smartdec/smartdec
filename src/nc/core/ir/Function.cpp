@@ -42,6 +42,7 @@ Function::Function(): entry_(NULL) {}
 Function::~Function() {}
 
 void Function::addBasicBlock(std::unique_ptr<BasicBlock> basicBlock) {
+    basicBlock->setFunction(this);
     basicBlocks_.push_back(std::move(basicBlock));
 }
 

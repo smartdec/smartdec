@@ -28,12 +28,12 @@
 
 #include <nc/core/Context.h>
 #include <nc/core/arch/Instruction.h>
+#include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/Value.h>
-#include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/likec/BinaryOperator.h>
 #include <nc/core/likec/CallOperator.h>
 #include <nc/core/likec/DoWhile.h>
@@ -178,8 +178,8 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
     }
     item->addChild(tr("size = %1").arg(term->size()));
 
-    if (const core::ir::Function *function = context->termToFunction()->getFunction(term)) {
-        auto &dataflow = *context->dataflows()->at(function);
+    if (term->statement() && term->statement()->basicBlock() && term->statement()->basicBlock()->function()) {
+        auto &dataflow = *context->dataflows()->at(term->statement()->basicBlock()->function());
 
         if (const core::ir::dflow::Value *value = dataflow.getValue(term)) {
             InspectorItem *valueItem = item->addChild(tr("value properties"));

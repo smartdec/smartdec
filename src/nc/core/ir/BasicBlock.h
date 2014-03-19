@@ -38,6 +38,7 @@ namespace nc {
 namespace core {
 namespace ir {
 
+class Function;
 class Jump;
 class Return;
 class Statement;
@@ -49,9 +50,9 @@ class BasicBlock: public PrintableBase<BasicBlock>, boost::noncopyable {
     boost::optional<ByteAddr> address_; ///< Address of basic block.
     boost::optional<ByteAddr> successorAddress_; ///< Address of the end of the basic block.
     std::vector<std::unique_ptr<Statement>> statements_; ///< Statements.
+    const Function *function_; ///< Function this basic block belongs to.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -80,6 +81,18 @@ class BasicBlock: public PrintableBase<BasicBlock>, boost::noncopyable {
      * \param[in] successorAddress New successor address.
      */
     void setSuccessorAddress(const boost::optional<ByteAddr> &successorAddress);
+
+    /**
+     * \return Pointer to the function this basic block belongs to. Can be NULL.
+     */
+    const Function *function() const { return function_; }
+
+    /**
+     * Sets the function this basic block belongs to.
+     *
+     * \param function Pointer to the function. Can be NULL.
+     */
+    void setFunction(const Function *function) { function_ = function; }
 
     /**
      * \return Statements of the basic block.

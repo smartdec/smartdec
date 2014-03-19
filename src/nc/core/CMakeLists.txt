@@ -146,8 +146,6 @@ set(SOURCES
     ir/misc/CensusVisitor.h
     ir/misc/PatternRecognition.cpp
     ir/misc/PatternRecognition.h
-    ir/misc/TermToFunction.cpp
-    ir/misc/TermToFunction.h
     ir/types/FunctionAnalyzer.cpp
     ir/types/FunctionAnalyzer.h
     ir/types/Type.cpp
