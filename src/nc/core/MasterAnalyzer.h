@@ -155,15 +155,6 @@ public:
      */
     virtual void generateTree(Context &context) const;
 
-#ifdef NC_TREE_CHECKS
-    /**
-     * Checks generated LikeC tree and makes the process crash if something is wrong.
-     *
-     * \param context Context.
-     */
-    virtual void checkTree(Context &context) const;
-#endif
-
     /**
      * Decompiles the assembler program.
      *

@@ -98,20 +98,6 @@ bool EntryHook::isArgumentTerm(const Term *term) const {
     return nc::contains(argumentsSet_, term);
 }
 
-void EntryHook::visitChildStatements(Visitor<const Statement> &visitor) const {
-    foreach (const auto &statement, entryStatements_) {
-        visitor(statement.get());
-    }
-}
-
-void EntryHook::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(stackPointer_.get());
-
-    foreach (const auto &argument, arguments_) {
-        visitor(argument.second.get());
-    }
-}
-
 } // namespace calling
 } // namespace ir
 } // namespace core

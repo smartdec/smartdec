@@ -34,7 +34,6 @@
 
 #include <nc/common/Kinds.h>
 #include <nc/common/Printable.h>
-#include <nc/common/Visitor.h>
 
 namespace nc {
 namespace core {
@@ -119,17 +118,9 @@ public:
     const arch::Instruction *instruction() const { return instruction_; }
 
     /**
-     * Calls visitor for statement's terms.
-     *
-     * \param[in] visitor Visitor for terms.
-     */
-    virtual void visitChildTerms(Visitor<Term> &visitor);
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const;
-
-    /**
      * Clones the statement via doClone() and copies properties common to all statements.
      *
-     * \returns                        Valid pointer to the clone.
+     * \returns Valid pointer to the clone.
      */
     std::unique_ptr<Statement> clone() const;
 

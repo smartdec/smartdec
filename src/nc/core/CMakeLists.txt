@@ -142,8 +142,6 @@ set(SOURCES
     ir/inlining/CallInliner.h
     ir/misc/ArrayAccess.h
     ir/misc/BoundsCheck.h
-    ir/misc/CensusVisitor.cpp
-    ir/misc/CensusVisitor.h
     ir/misc/PatternRecognition.cpp
     ir/misc/PatternRecognition.h
     ir/types/FunctionAnalyzer.cpp

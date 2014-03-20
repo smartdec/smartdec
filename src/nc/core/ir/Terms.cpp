@@ -80,12 +80,9 @@ Dereference *Dereference::doClone() const {
     return new Dereference(address()->clone(), domain(), size());
 }
 
-void Dereference::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(address_.get());
-}
-
-void Dereference::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(address_.get());
+void Dereference::setStatement(const Statement *statement) {
+    Term::setStatement(statement);
+    address()->setStatement(statement);
 }
 
 void Dereference::print(QTextStream &out) const {
@@ -118,12 +115,9 @@ UnaryOperator *UnaryOperator::doClone() const {
     return new UnaryOperator(operatorKind(), operand()->clone(), size());
 }
 
-void UnaryOperator::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(operand_.get());
-}
-
-void UnaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(operand_.get());
+void UnaryOperator::setStatement(const Statement *statement) {
+    Term::setStatement(statement);
+    operand()->setStatement(statement);
 }
 
 void UnaryOperator::print(QTextStream &out) const {
@@ -185,14 +179,10 @@ BinaryOperator *BinaryOperator::doClone() const {
     return new BinaryOperator(operatorKind(), left()->clone(), right()->clone(), size());
 }
 
-void BinaryOperator::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(left_.get());
-    visitor(right_.get());
-}
-
-void BinaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(left_.get());
-    visitor(right_.get());
+void BinaryOperator::setStatement(const Statement *statement) {
+    Term::setStatement(statement);
+    left()->setStatement(statement);
+    right()->setStatement(statement);
 }
 
 void BinaryOperator::print(QTextStream &out) const {
@@ -274,14 +264,10 @@ Choice *Choice::doClone() const {
     return new Choice(preferredTerm()->clone(), defaultTerm()->clone());
 }
 
-void Choice::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(preferredTerm_.get());
-    visitor(defaultTerm_.get());
-}
-
-void Choice::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(preferredTerm_.get());
-    visitor(defaultTerm_.get());
+void Choice::setStatement(const Statement *statement) {
+    Term::setStatement(statement);
+    preferredTerm()->setStatement(statement);
+    defaultTerm()->setStatement(statement);
 }
 
 void Choice::print(QTextStream &out) const {

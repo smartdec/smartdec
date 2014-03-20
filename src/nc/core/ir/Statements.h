@@ -115,9 +115,6 @@ public:
      */
     const Term *right() const { return right_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
     virtual void print(QTextStream &out) const override;
 
 protected:
@@ -142,9 +139,6 @@ public:
      * \return                         Valid pointer to the term whose definitions are killed.
      */
     Term *term() const { return term_.get(); }
-
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
 
     virtual void print(QTextStream &out) const override;
 
@@ -175,9 +169,6 @@ public:
      * \return Call target (function address).
      */
     const Term *target() const { return target_.get(); }
-
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
 
     virtual void print(QTextStream &out) const override;
 

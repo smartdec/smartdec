@@ -64,11 +64,11 @@ CallHook::CallHook(const Call *call, const Convention *convention, const Signatu
 
     foreach (const auto &pair, argumentTerms_) {
         pair.second->setAccessType(Term::READ);
-        pair.second->setStatementRecursively(call);
+        pair.second->setStatement(call);
     }
     foreach (const auto &pair, returnValueTerms_) {
         pair.second->setAccessType(Term::WRITE);
-        pair.second->setStatementRecursively(call);
+        pair.second->setStatement(call);
     }
 
     if (convention->calleeCleanup() && stackArgumentsSize) {
@@ -128,24 +128,6 @@ const Term *CallHook::getArgumentTerm(const Term *term) const {
 const Term *CallHook::getReturnValueTerm(const Term *term) const {
     assert(term != NULL);
     return nc::find(returnValueTerms_, term).get();
-}
-
-void CallHook::visitChildStatements(Visitor<const Statement> &visitor) const {
-    if (cleanupStatement_) {
-        visitor(cleanupStatement_.get());
-    }
-}
-
-void CallHook::visitChildTerms(Visitor<const Term> &visitor) const {
-    foreach (const auto &pair, argumentTerms_) {
-        visitor(pair.second.get());
-    }
-    foreach (const auto &pair, returnValueTerms_) {
-        visitor(pair.second.get());
-    }
-    if (stackPointer_) {
-        visitor(stackPointer_.get());
-    }
 }
 
 } // namespace calling

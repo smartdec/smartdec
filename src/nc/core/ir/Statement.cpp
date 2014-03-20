@@ -38,14 +38,6 @@ std::unique_ptr<Statement> Statement::clone() const {
     return result;
 }
 
-void Statement::visitChildTerms(Visitor<Term> & /*visitor*/) {
-    /* Nothing to do */
-}
-
-void Statement::visitChildTerms(Visitor<const Term> & /*visitor*/) const {
-    /* Nothing to do */
-}
-
 } // namespace ir
 } // namespace core
 } // namespace nc

@@ -62,18 +62,8 @@ Assignment::Assignment(std::unique_ptr<Term> left, std::unique_ptr<Term> right):
     left_->setAccessType(Term::WRITE);
     right_->setAccessType(Term::READ);
 
-    left_->setStatementRecursively(this);
-    right_->setStatementRecursively(this);
-}
-
-void Assignment::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(left_.get());
-    visitor(right_.get());
-}
-
-void Assignment::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(left_.get());
-    visitor(right_.get());
+    left_->setStatement(this);
+    right_->setStatement(this);
 }
 
 Assignment *Assignment::doClone() const {
@@ -90,15 +80,7 @@ Kill::Kill(std::unique_ptr<Term> term):
     assert(term_);
 
     term_->setAccessType(Term::KILL);
-    term_->setStatementRecursively(this);
-}
-
-void Kill::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(term_.get());
-}
-
-void Kill::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(term_.get());
+    term_->setStatement(this);
 }
 
 Kill *Kill::doClone() const {
@@ -116,15 +98,7 @@ Call::Call(std::unique_ptr<Term> target):
     assert(target_ != NULL);
 
     target_->setAccessType(Term::READ);
-    target_->setStatementRecursively(this);
-}
-
-void Call::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(target_.get());
-}
-
-void Call::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(target_.get());
+    target_->setStatement(this);
 }
 
 void Call::print(QTextStream &out) const {

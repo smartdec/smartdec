@@ -39,31 +39,12 @@ const Term *Term::source() const {
     return NULL;
 }
 
-void Term::setStatementRecursively(const Statement *statement) {
-    class SetStatementVisitor: public Visitor<Term> {
-        const Statement *statement_;
+void Term::setStatement(const Statement *statement) {
+    assert(statement_ == NULL);
+    assert(statement != NULL);
 
-        public:
-
-        SetStatementVisitor(const Statement *statement): statement_(statement) {}
-
-        void operator()(Term *term) override {
-            term->setStatement(statement_);
-            term->visitChildTerms(*this);
-        }
-    };
-
-    SetStatementVisitor visitor(statement);
-    visitor(this);
+    statement_ = statement;
 }
-
-void Term::visitChildTerms(Visitor<Term> & /*visitor*/) {
-    /* Nothing to do */
-} 
-
-void Term::visitChildTerms(Visitor<const Term> & /*visitor*/) const {
-    /* Nothing to do */
-} 
 
 }}} // namespace nc::core::ir
 

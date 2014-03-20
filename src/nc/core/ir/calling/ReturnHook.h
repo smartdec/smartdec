@@ -25,9 +25,7 @@
 
 #include <nc/config.h>
 
-#include <memory> /* std::unique_ptr */
-
-#include <nc/common/Visitor.h>
+#include <memory>
 
 #include <boost/unordered_map.hpp>
 
@@ -85,20 +83,6 @@ public:
      *         Will be NULL, if the signature does not include such an argument.
      */
     const Term *getReturnValueTerm(const Term *term) const;
-
-    /**
-     * Calls visitor for child statements.
-     *
-     * \param[in] visitor Visitor.
-     */
-    void visitChildStatements(Visitor<const Statement> &visitor) const;
-
-    /**
-     * Calls visitor for child terms.
-     *
-     * \param[in] visitor Visitor.
-     */
-    void visitChildTerms(Visitor<const Term> &visitor) const;
 };
 
 } // namespace calling

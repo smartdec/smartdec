@@ -30,9 +30,6 @@
 #include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
 
-#include <nc/common/Visitor.h>
-
-#include <nc/core/ir/MemoryLocation.h>
 #include <nc/core/ir/dflow/ReachingDefinitions.h>
 
 namespace nc {
@@ -122,20 +119,6 @@ public:
      *         calling convention defines no stack pointer.
      */
     const Term *stackPointer() const { return stackPointer_.get(); }
-
-    /**
-     * Calls visitor for child statements.
-     *
-     * \param[in] visitor Visitor.
-     */
-    void visitChildStatements(Visitor<const Statement> &visitor) const;
-
-    /**
-     * Calls visitor for child terms.
-     *
-     * \param[in] visitor Visitor.
-     */
-    void visitChildTerms(Visitor<const Term> &visitor) const;
 };
 
 } // namespace calling

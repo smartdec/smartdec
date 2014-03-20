@@ -53,7 +53,7 @@ ReturnHook::ReturnHook(const Return *ret, const Convention *convention, const Si
 
     foreach (const auto &pair, returnValueTerms_) {
         pair.second->setAccessType(Term::READ);
-        pair.second->setStatementRecursively(ret);
+        pair.second->setStatement(ret);
     }
 }
 
@@ -68,16 +68,6 @@ void ReturnHook::execute(dflow::ExecutionContext &context) {
 const Term *ReturnHook::getReturnValueTerm(const Term *term) const {
     assert(term != NULL);
     return nc::find(returnValueTerms_, term).get();
-}
-
-void ReturnHook::visitChildStatements(Visitor<const Statement> & /*visitor*/) const {
-    /* Nothing to do. */
-}
-
-void ReturnHook::visitChildTerms(Visitor<const Term> &visitor) const {
-    foreach (const auto &returnValue, returnValueTerms_) {
-        visitor(returnValue.second.get());
-    }
 }
 
 } // namespace calling

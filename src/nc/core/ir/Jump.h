@@ -101,9 +101,6 @@ public:
      */
     const JumpTarget &elseTarget() const { return elseTarget_; }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
     virtual void print(QTextStream &out) const override;
 
 protected:

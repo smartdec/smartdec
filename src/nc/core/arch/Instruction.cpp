@@ -26,7 +26,6 @@
 
 #include <QTextStream>
 
-#include <nc/common/Visitor.h>
 #include <nc/common/Foreach.h>
 
 #include "Operand.h"

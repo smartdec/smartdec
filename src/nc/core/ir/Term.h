@@ -33,7 +33,6 @@
 #include <nc/common/Kinds.h>
 #include <nc/common/Printable.h>
 #include <nc/common/Types.h>
-#include <nc/common/Visitor.h>
 
 #include "MemoryLocation.h"
 
@@ -54,10 +53,6 @@ class Statement;
 
 /**
  * Base class for different kinds of expressions of intermediate representation.
- *
- * Terms are supposed to be immutable <i>at the interface level</i>.
- * That is, once created and initialized, they cannot be changed.
- * This is why there is no point in using <tt>const Term</tt> type.
  */
 class Term: public Printable, boost::noncopyable {
     NC_CLASS_WITH_KINDS(Term, kind)
@@ -97,8 +92,8 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] kind                 Kind of this term.
-     * \param[in] size                 Size of this term's value in bits.
+     * \param[in] kind Kind of this term.
+     * \param[in] size Size of this term's value in bits.
      */
     Term(int kind, SmallBitSize size):
         kind_(kind), size_(size), accessType_(NO_ACCESS), statement_(NULL)
@@ -145,28 +140,14 @@ public:
      */
     const Statement *statement() const { return statement_; }
 
-protected:
     /**
-     * Sets the statement this term belongs to.
+     * Sets the statement this term and its children belong to.
      *
      * \param[in] statement Valid pointer to the statement.
      *
      * \note Must be called only once for each term.
      */
-    void setStatement(const Statement *statement) {
-        assert(statement_ == NULL);
-        assert(statement != NULL);
-
-        statement_ = statement;
-    }
-
-public:
-    /**
-     * Sets the statement that this term and child terms belong to.
-     *
-     * \param[in] statement Valid pointer to the statement.
-     */
-    void setStatementRecursively(const Statement *statement);
+    virtual void setStatement(const Statement *statement);
 
     /**
      * \return If the term stands in the left hand side of an assignment,
@@ -174,14 +155,6 @@ public:
      *         NULL is returned.
      */
     const Term *source() const;
-
-    /**
-     * Calls visitor for term's child terms.
-     *
-     * \param[in] visitor              Visitor.
-     */
-    virtual void visitChildTerms(Visitor<Term> &visitor);
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const;
 
     /**
      * \return Clone of the term.
@@ -224,8 +197,8 @@ protected:
  *
  * Must be used at global namespace.
  *
- * \param CLASS                        Term class.
- * \param KIND                         Term kind.
+ * \param CLASS Term class.
+ * \param KIND  Term kind.
  */
 #define NC_REGISTER_TERM_CLASS(CLASS, KIND)                                     \
     NC_REGISTER_CLASS_KIND(nc::core::ir::Term, CLASS, KIND)

@@ -11,8 +11,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 
-#include <nc/common/Visitor.h>
-
 #include <nc/core/ir/MemoryLocation.h>
 
 namespace nc {
@@ -95,20 +93,6 @@ public:
      *         false otherwise.
      */
     bool isArgumentTerm(const Term *term) const;
-
-    /**
-     * Calls visitor for child statements.
-     *
-     * \param[in] visitor Visitor.
-     */
-    void visitChildStatements(Visitor<const Statement> &visitor) const;
-
-    /**
-     * Calls visitor for child terms.
-     *
-     * \param[in] visitor Visitor.
-     */
-    void visitChildTerms(Visitor<const Term> &visitor) const;
 };
 
 } // namespace calling

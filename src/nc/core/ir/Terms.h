@@ -168,9 +168,7 @@ public:
      */
     const Term *address() const { return address_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
+    virtual void setStatement(const Statement *statement) override;
     virtual void print(QTextStream &out) const override;
 
 protected:
@@ -227,11 +225,10 @@ public:
      */
     const Term *operand() const { return operand_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
+    virtual void setStatement(const Statement *statement) override;
     virtual void print(QTextStream &out) const override;
 
+protected:
     virtual UnaryOperator *doClone() const override;
 };
 
@@ -313,11 +310,10 @@ public:
      */
     const Term *right() const { return right_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
+    virtual void setStatement(const Statement *statement) override;
     virtual void print(QTextStream &out) const override;
 
+protected:
     virtual BinaryOperator *doClone() const;
 };
 
@@ -360,9 +356,7 @@ public:
      */
     const Term *defaultTerm() const { return defaultTerm_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
+    virtual void setStatement(const Statement *statement) override;
     virtual void print(QTextStream &out) const override;
 
 protected:

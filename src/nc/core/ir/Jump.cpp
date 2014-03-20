@@ -41,15 +41,15 @@ Jump::Jump(std::unique_ptr<Term> condition, JumpTarget &&thenTarget, JumpTarget 
     assert(elseTarget_ && "Else target must be valid.");
 
     condition_->setAccessType(Term::READ);
-    condition_->setStatementRecursively(this);
+    condition_->setStatement(this);
 
     if (thenTarget_.address()) {
         thenTarget_.address()->setAccessType(Term::READ);
-        thenTarget_.address()->setStatementRecursively(this);
+        thenTarget_.address()->setStatement(this);
     }
     if (elseTarget_.address()) {
         elseTarget_.address()->setAccessType(Term::READ);
-        elseTarget_.address()->setStatementRecursively(this);
+        elseTarget_.address()->setStatement(this);
     }
 }
 
@@ -60,31 +60,7 @@ Jump::Jump(JumpTarget &&thenTarget):
 
     if (thenTarget_.address()) {
         thenTarget_.address()->setAccessType(Term::READ);
-        thenTarget_.address()->setStatementRecursively(this);
-    }
-}
-
-void Jump::visitChildTerms(Visitor<Term> &visitor) {
-    if (condition_.get()) {
-        visitor(condition_.get());
-    }
-    if (thenTarget().address()) {
-        visitor(thenTarget().address());
-    }
-    if (elseTarget().address()) {
-        visitor(elseTarget().address());
-    }
-}
-
-void Jump::visitChildTerms(Visitor<const Term> &visitor) const {
-    if (condition_.get()) {
-        visitor(condition_.get());
-    }
-    if (thenTarget().address()) {
-        visitor(thenTarget().address());
-    }
-    if (elseTarget().address()) {
-        visitor(elseTarget().address());
+        thenTarget_.address()->setStatement(this);
     }
 }
 

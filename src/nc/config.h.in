@@ -22,11 +22,6 @@
 /** Generate references to global variables instead of constants. */
 //#define NC_PREFER_GLOBAL_VARIABLES_TO_CONSTANTS
 
-#ifndef NDEBUG
-#   /** Check LikeC tree after its generation. */
-#   define NC_TREE_CHECKS
-#endif
-
 /** Use threads. */
 #cmakedefine NC_USE_THREADS
 

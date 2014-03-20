@@ -59,12 +59,6 @@
 #include <nc/core/likec/Tree.h>
 #include <nc/core/mangling/Demangler.h>
 
-#ifdef NC_TREE_CHECKS
-#include <nc/core/ir/misc/CensusVisitor.h>
-#include <nc/core/likec/Expression.h>
-#include <nc/core/likec/Statement.h>
-#endif
-
 namespace nc {
 namespace core {
 
@@ -222,54 +216,6 @@ void MasterAnalyzer::generateTree(Context &context) const {
     context.setTree(std::move(tree));
 }
 
-#ifdef NC_TREE_CHECKS
-void MasterAnalyzer::checkTree(Context &context) const {
-    context.logToken() << tr("Checking AST.");
-
-    class TreeVisitor: public Visitor<likec::TreeNode> {
-        boost::unordered_set<const ir::Statement *> statements_;
-        boost::unordered_set<const ir::Term *> terms_;
-
-        public:
-
-        TreeVisitor(const ir::misc::CensusVisitor &visitor):
-            statements_(visitor.statements().begin(), visitor.statements().end()),
-            terms_(visitor.terms().begin(), visitor.terms().end())
-        {}
-
-        virtual void operator()(likec::TreeNode *node) override {
-            if (const likec::Statement *statement = node->as<likec::Statement>()) {
-                if (statement->statement()) {
-                    assert(contains(statements_, statement->statement()));
-                }
-            } else if (const likec::Expression *expression = node->as<likec::Expression>()) {
-                if (expression->term()) {
-                    assert(contains(terms_, expression->term()));
-                }
-
-                auto type = expression->getType();
-                assert(type != NULL);
-#if 0
-                // TODO: make decompiler not to emit warnings here
-                if (type == expression->tree().makeErroneousType()) {
-                    ncWarning(typeid(*node).name());
-                }
-#endif
-            }
-            node->visitChildNodes(*this);
-        }
-    };
-
-    ir::misc::CensusVisitor visitor(context.hooks());
-    foreach (const ir::Function *function, context.functions()->all()) {
-        visitor(function);
-    }
-
-    TreeVisitor checker(visitor);
-    checker(context.tree()->root());
-}
-#endif
-
 void MasterAnalyzer::decompile(Context &context) const {
     context.logToken() << tr("Decompiling.");
 
@@ -302,11 +248,6 @@ void MasterAnalyzer::decompile(Context &context) const {
 
     generateTree(context);
     context.cancellationToken().poll();
-
-#ifdef NC_TREE_CHECKS
-    checkTree(context);
-    context.cancellationToken().poll();
-#endif
 
     context.logToken() << tr("Decompilation completed.");
 }
