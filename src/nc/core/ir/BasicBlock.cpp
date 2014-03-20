@@ -40,7 +40,7 @@ namespace core {
 namespace ir {
 
 BasicBlock::BasicBlock(const boost::optional<ByteAddr> &address):
-    address_(address), successorAddress_(address)
+    address_(address), successorAddress_(address), function_(NULL)
 {}
 
 BasicBlock::~BasicBlock() {}
