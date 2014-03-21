@@ -135,9 +135,9 @@ std::unique_ptr<BasicBlock> BasicBlock::split(std::size_t index, const boost::op
     this->setSuccessorAddress(address);
 
     /* Move statements to it. */
-    std::size_t size = statements_.size();
+    auto size = statements_.size();
     result->statements_.reserve(size - index);
-    for (std::size_t i = index; i < size; ++i) {
+    for (auto i = index; i < size; ++i) {
         result->addStatement(std::move(statements_[i]));
     }
     statements_.resize(index);

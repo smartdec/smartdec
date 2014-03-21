@@ -154,16 +154,16 @@ public:
     const Return *getReturn() const;
 
     /**
-     * Breaks the basic block into two parts. First part contains first 'index'
-     * statements and remains in the original basic block. Second part
-     * containing all other statements is moved to newly created
+     * Breaks the basic block into two parts. The first part contains the first
+     * 'index' statements and remains in the original basic block. The second
+     * part containing all the other statements is moved to a newly created
      * basic block.
      *
      * \param[in] index Index of the first statements of the second part.
      * \param[in] address Start address to give to the newly created basic block.
      *
      * \return Valid pointer to the newly created basic block containing the
-     * second part of statements.
+     *         second part of statements.
      */
     std::unique_ptr<BasicBlock> split(std::size_t index, const boost::optional<ByteAddr> &address);
 

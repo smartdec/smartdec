@@ -704,6 +704,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
             auto callOperator = std::make_unique<likec::CallOperator>(tree(), std::move(target));
 
             if (calleeId) {
+                // FIXME: we must generate cleanupStatement somewhere.
                 if (auto signature = parent().signatures().getSignature(calleeId)) {
                     if (auto callHook = parent().hooks().getCallHook(call)) {
                         foreach (const Term *argument, signature->arguments()) {

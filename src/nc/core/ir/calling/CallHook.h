@@ -77,7 +77,7 @@ public:
      * \param[in] signature Pointer to the function's signature. Can be NULL.
      * \param[in] stackArgumentsSize Size of arguments passed on the stack.
      */
-    CallHook(const Call *call, const Convention *convention, const Signature *signature, boost::optional<ByteSize> stackArgumentsSize);
+    CallHook(const Call *call, const Convention *convention, const Signature *signature, const boost::optional<ByteSize> &stackArgumentsSize);
 
     /**
      * Destructor.
