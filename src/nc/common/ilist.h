@@ -91,7 +91,7 @@ public:
      */
     ilist_iterator &operator++() noexcept {
         if (element_ != NULL) {
-            element_ = element_->next_;
+            element_ = element_->ilist_item<U>::next_;
         } else {
             element_ = list_.front_;
         }
@@ -112,7 +112,7 @@ public:
      */
     ilist_iterator &operator--() noexcept {
         if (element_ != NULL) {
-            element_ = element_->prev_;
+            element_ = element_->ilist_item<U>::prev_;
         } else {
             element_ = list_.back_;
         }
@@ -325,14 +325,14 @@ public:
         assert(element != NULL);
 
         if (element == front_) {
-            front_ = front_->next_;
+            front_ = front_->ilist_item<T>::next_;
         }
         if (element == back_) {
-            back_ = back_->prev_;
+            back_ = back_->ilist_item<T>::prev_;
         }
 
-        element->next_ = NULL;
-        element->prev_ = NULL;
+        element->ilist_item<T>::next_ = NULL;
+        element->ilist_item<T>::prev_ = NULL;
 
         return unique_ptr(element, deleter_);
     }
@@ -365,20 +365,20 @@ public:
      */
     value_type *insert(const_iterator position, unique_ptr element) noexcept {
         assert(element);
-        assert(element->next_ == NULL);
-        assert(element->prev_ == NULL);
+        assert(element->ilist_item<T>::next_ == NULL);
+        assert(element->ilist_item<T>::prev_ == NULL);
 
-        element->next_ = const_cast<value_type *>(*position);
-        element->prev_ = const_cast<value_type *>(*--position);
+        element->ilist_item<T>::next_ = const_cast<value_type *>(*position);
+        element->ilist_item<T>::prev_ = const_cast<value_type *>(*--position);
 
-        if (element->next_ != NULL) {
-            element->next_->prev_ = element.get();
+        if (element->ilist_item<T>::next_ != NULL) {
+            element->ilist_item<T>::next_->ilist_item<T>::prev_ = element.get();
         } else {
             back_ = element.get();
         }
 
-        if (element->prev_ != NULL) {
-            element->prev_->next_ = element.get();
+        if (element->ilist_item<T>::prev_ != NULL) {
+            element->ilist_item<T>::prev_->ilist_item<T>::next_ = element.get();
         } else {
             front_ = element.get();
         }
@@ -428,21 +428,21 @@ public:
         assert(result.back_ != NULL);
 
         if (result.front_ == front_) {
-            front_ = result.back_->next_;
+            front_ = result.back_->ilist_item<T>::next_;
             if (front_) {
-                front_->prev_ = NULL;
+                front_->ilist_item<T>::prev_ = NULL;
             }
         }
 
         if (result.back_ == back_) {
-            back_ = result.front_->prev_;
+            back_ = result.front_->ilist_item<T>::prev_;
             if (back_) {
-                back_->next_ = NULL;
+                back_->ilist_item<T>::next_ = NULL;
             }
         }
 
-        result.front_->prev_ = NULL;
-        result.back_->next_ = NULL;
+        result.front_->ilist_item<T>::prev_ = NULL;
+        result.back_->ilist_item<T>::next_ = NULL;
 
         return result;
     }
