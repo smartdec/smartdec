@@ -360,6 +360,8 @@ public:
      *
      * \param position Iterator identifying the position.
      * \param element Element to insert.
+     *
+     * \return Valid pointer to the inserted element.
      */
     value_type *insert(const_iterator position, unique_ptr element) noexcept {
         assert(element);
@@ -392,6 +394,8 @@ public:
      * Inserts given element to the front of the list.
      *
      * \param element Valid pointer to the element.
+     *
+     * \return Valid pointer to the inserted element.
      */
     value_type *push_front(unique_ptr element) noexcept {
         return insert(begin(), std::move(element));
@@ -401,6 +405,8 @@ public:
      * Inserts given element to the back of the list.
      *
      * \param element Valid pointer to the element.
+     *
+     * \return Valid pointer to the inserted element.
      */
     value_type *push_back(unique_ptr element) noexcept {
         return insert(end(), std::move(element));
