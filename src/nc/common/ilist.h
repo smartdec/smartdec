@@ -32,7 +32,7 @@ protected:
     /**
      * Protected constructor.
      */
-    ilist_item(): next_(NULL), prev_(NULL) {}
+    ilist_item() noexcept: next_(NULL), prev_(NULL) {}
 };
 
 /**
@@ -73,7 +73,7 @@ public:
      * \param list      Reference to the data of the list being iterated.
      * \param element   Pointer to the element this iterator points to.
      */
-    explicit ilist_iterator(const ilist_data<U> &list, T *element = NULL):
+    explicit ilist_iterator(const ilist_data<U> &list, T *element = NULL) noexcept:
         element_(element), list_(list)
     {}
 
@@ -82,14 +82,14 @@ public:
      *
      * \param that Iterator to construct from.
      */
-    ilist_iterator(const ilist_iterator<typename std::remove_const<T>::type, U> &that):
+    ilist_iterator(const ilist_iterator<typename std::remove_const<T>::type, U> &that) noexcept:
         element_(that.element_), list_(that.list_)
     {}
 
     /**
      * Prefix increment.
      */
-    ilist_iterator &operator++() {
+    ilist_iterator &operator++() noexcept {
         if (element_ != NULL) {
             element_ = element_->next_;
         } else {
@@ -101,7 +101,7 @@ public:
     /**
      * Postfix increment.
      */
-    ilist_iterator operator++(int) {
+    ilist_iterator operator++(int) noexcept {
         auto copy = *this;
         ++*this;
         return copy;
@@ -110,7 +110,7 @@ public:
     /**
      * Prefix decrement.
      */
-    ilist_iterator &operator--() {
+    ilist_iterator &operator--() noexcept {
         if (element_ != NULL) {
             element_ = element_->prev_;
         } else {
@@ -122,7 +122,7 @@ public:
     /**
      * Postfix decrement.
      */
-    ilist_iterator operator--(int) {
+    ilist_iterator operator--(int) noexcept {
         auto copy = *this;
         --*this;
         return copy;
@@ -131,28 +131,28 @@ public:
     /**
      * \returns True if *this and that point to the same element, false otherwise.
      */
-    bool operator==(const ilist_iterator &that) const {
+    bool operator==(const ilist_iterator &that) const noexcept {
         return this->element_ == that.element_;
     }
 
     /**
      * \returns True if *this and that point to different elements, false otherwise.
      */
-    bool operator!=(const ilist_iterator &that) const {
+    bool operator!=(const ilist_iterator &that) const noexcept {
         return !(*this == that);
     }
 
     /**
      * \return Pointer to the element being pointed to.
      */
-    T *operator->() const {
+    T *operator->() const noexcept {
         return element_;
     }
 
     /**
      * \return Pointer to the element being pointed to.
      */
-    T *operator*() const {
+    T *operator*() const noexcept {
         return element_;
     }
 };
@@ -209,7 +209,7 @@ public:
      *
      * \param deleter Deleter used for the destruction of managed elements.
      */
-    ilist(const deleter_type &deleter = deleter_type()):
+    ilist(const deleter_type &deleter = deleter_type()) noexcept:
         deleter_(deleter)
     {
         front_ = NULL;
@@ -226,7 +226,7 @@ public:
      *
      * \param that The list to move from.
      */
-    ilist(ilist &&that):
+    ilist(ilist &&that) noexcept:
         deleter_(std::move(that.deleter_))
     {
         front_ = that.front_;
@@ -241,7 +241,7 @@ public:
      *
      * Destroys all the elements in the list.
      */
-    ~ilist() { clear(); }
+    ~ilist() noexcept { clear(); }
 
     /**
      * Copy-assignment is forbidden.
@@ -253,7 +253,7 @@ public:
      *
      * \param that List to move from.
      */
-    ilist &operator=(ilist &&that) {
+    ilist &operator=(ilist &&that) noexcept {
         clear();
         swap(that);
         return *this;
@@ -264,7 +264,7 @@ public:
      *
      * \param that Another list.
      */
-    void swap(ilist &that) {
+    void swap(ilist &that) noexcept {
         std::swap(front_, that.front_);
         std::swap(back_, that.back_);
         std::swap(deleter_, that.deleter_);
@@ -273,40 +273,40 @@ public:
     /**
      * \return Deleter used for the destruction of managed elements.
      */
-    deleter_type &get_deleter() { return deleter_; }
+    deleter_type &get_deleter() noexcept { return deleter_; }
 
     /**
      * \return Deleter used for the destruction of managed elements.
      */
-    const deleter_type &get_deleter() const { return deleter_; }
+    const deleter_type &get_deleter() const noexcept { return deleter_; }
 
     /**
      * \return Pointer to the first element. Will be NULL if the list is empty.
      */
-    value_type *front() { return front_; }
+    value_type *front() noexcept { return front_; }
 
     /**
      * \return Pointer to the first element. Will be NULL if the list is empty.
      */
-    const value_type *front() const { return front_; }
+    const value_type *front() const noexcept { return front_; }
 
     /**
      * \return Pointer to the last element. Will be NULL if the list is empty.
      */
-    value_type *back() { return back_; }
+    value_type *back() noexcept { return back_; }
 
     /**
      * \return Pointer to the last element. Will be NULL if the list is empty.
      */
-    const value_type *back() const { return back_; }
+    const value_type *back() const noexcept { return back_; }
 
     /**
      * \return True if the list is empty, false otherwise.
      */
-    bool empty() const { return front() == NULL; }
+    bool empty() const noexcept { return front() == NULL; }
 
     /**
-     * Clears the list. Destroys all the elements.
+     * Removes and destroys all the elements in the list.
      */
     void clear() {
         while (!empty()) {
@@ -321,7 +321,7 @@ public:
      *
      * \return Valid pointer to the deleted element.
      */
-    unique_ptr erase(value_type *element) {
+    unique_ptr erase(value_type *element) noexcept {
         assert(element != NULL);
 
         if (element == front_) {
@@ -334,7 +334,7 @@ public:
         element->next_ = NULL;
         element->prev_ = NULL;
 
-        return unique_ptr(element);
+        return unique_ptr(element, deleter_);
     }
 
     /**
@@ -342,7 +342,7 @@ public:
      *
      * \return Valid pointer to the erased element.
      */
-    unique_ptr pop_front() {
+    unique_ptr pop_front() noexcept {
         return erase(front());
     }
 
@@ -351,7 +351,7 @@ public:
      *
      * \return Valid pointer to the erased element.
      */
-    unique_ptr pop_back() {
+    unique_ptr pop_back() noexcept {
         return erase(back());
     }
 
@@ -361,7 +361,7 @@ public:
      * \param position Iterator identifying the position.
      * \param element Element to insert.
      */
-    value_type *insert(const_iterator position, unique_ptr element) {
+    value_type *insert(const_iterator position, unique_ptr element) noexcept {
         assert(element);
         assert(element->next_ == NULL);
         assert(element->prev_ == NULL);
@@ -393,7 +393,7 @@ public:
      *
      * \param element Valid pointer to the element.
      */
-    value_type *push_front(unique_ptr element) {
+    value_type *push_front(unique_ptr element) noexcept {
         return insert(begin(), std::move(element));
     }
 
@@ -402,7 +402,7 @@ public:
      *
      * \param element Valid pointer to the element.
      */
-    value_type *push_back(unique_ptr element) {
+    value_type *push_back(unique_ptr element) noexcept {
         return insert(end(), std::move(element));
     }
 
@@ -412,7 +412,7 @@ public:
      *
      * \return List containing the range being cut out.
      */
-    ilist cut_out(const_iterator first, const_iterator last) {
+    ilist cut_out(const_iterator first, const_iterator last) noexcept {
         ilist result;
 
         if (first == last) {
@@ -448,69 +448,69 @@ public:
     /**
      * \return Iterator pointing to the first element.
      */
-    iterator begin() { return iterator(*this, front()); }
+    iterator begin() noexcept { return iterator(*this, front()); }
 
     /**
      * \return Iterator pointing to the next after the last element.
      */
-    iterator end() { return iterator(*this); }
+    iterator end() noexcept { return iterator(*this); }
 
     /**
      * \return Constant iterator to the first element.
      */
-    const_iterator begin() const { return cbegin(); }
+    const_iterator begin() const noexcept { return cbegin(); }
 
     /**
      * \return Constant iterator to the next after the last element.
      */
-    const_iterator end() const { return cend(); }
+    const_iterator end() const noexcept { return cend(); }
 
     /**
      * Reverse iterator pointing to the last element.
      */
-    reverse_iterator rbegin() { return reverse_iterator(end()); }
+    reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
 
     /**
      * Reverse iterator pointing to the element before the first one.
      */
-    reverse_iterator rend() { return reverse_iterator(begin()); }
+    reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
 
     /**
      * Reverse iterator pointing to the last element.
      */
-    const_reverse_iterator rbegin() const { return crbegin(); }
+    const_reverse_iterator rbegin() const noexcept { return crbegin(); }
 
     /**
      * Reverse iterator pointing to the element before the first one.
      */
-    const_reverse_iterator rend() const { return crend(); }
+    const_reverse_iterator rend() const noexcept { return crend(); }
 
     /**
      * \return Constant iterator to the first element.
      */
-    const_iterator cbegin() const { return const_iterator(*this, front()); }
+    const_iterator cbegin() const noexcept { return const_iterator(*this, front()); }
 
     /**
      * \return Constant iterator to the next after the last element.
      */
-    const_iterator cend() const { return const_iterator(*this); }
+    const_iterator cend() const noexcept { return const_iterator(*this); }
 
     /**
      * Reverse iterator pointing to the last element.
      */
-    const_reverse_iterator crbegin() const { return const_reverse_iterator(end()); }
+    const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
 
     /**
      * Reverse iterator pointing to the element before the first one.
      */
-    const_reverse_iterator crend() const { return const_reverse_iterator(begin()); }
+    const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
     /**
      * \param element Valid pointer to an element of the list.
      *
      * \return Iterator pointing to the given element.
      */
-    iterator get_iterator(value_type *element) {
+    iterator get_iterator(value_type *element) noexcept {
         assert(element != NULL);
         return iterator(*this, element);
     }
@@ -520,7 +520,7 @@ public:
      *
      * \return Constant iterator pointing to the given element.
      */
-    const_iterator get_iterator(const value_type *element) const {
+    const_iterator get_iterator(const value_type *element) const noexcept {
         assert(element != NULL);
         return const_iterator(*this, element);
     }
