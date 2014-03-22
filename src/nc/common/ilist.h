@@ -158,7 +158,7 @@ public:
 };
 
 /**
-* Intrusive singly linked list owning its elements.
+* Intrusive doubly linked list owning its elements.
 *
 * \param T       Element type.
 * \param Deleter Deleter type.
