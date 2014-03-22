@@ -74,13 +74,13 @@ public:
     };
 
     /**
-     * Types of term's access.
+     * How term is used.
      */
     enum AccessType {
-        NO_ACCESS, ///< Unknown, not set.
-        READ,      ///< Term is being read from.
-        WRITE,     ///< Term is being assigned to.
-        KILL       ///< Term is being killed.
+        NO_ACCESS, ///< Unknown.
+        READ,      ///< Term is read.
+        WRITE,     ///< Term is written.
+        KILL       ///< Term is killed.
     };
 
 private:
@@ -107,7 +107,12 @@ public:
     SmallBitSize size() const { return size_; }
 
     /**
-     * Sets the type of the term's use: read, write, or kill.
+     * \return Term's access type.
+     */
+    AccessType accessType() const { return accessType_; }
+
+    /**
+     * Sets the term's access type.
      *
      * \param[in] accessType Access type.
      *
@@ -115,7 +120,7 @@ public:
      */
     void setAccessType(AccessType accessType) {
         assert(accessType_ == NO_ACCESS);
-        assert(accessType == READ || accessType == WRITE || accessType == KILL);
+        assert(accessType  != NO_ACCESS);
 
         accessType_ = accessType;
     }

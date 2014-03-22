@@ -661,7 +661,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                         parent().makeType(parent().types().getType(assignment->left())),
                         std::move(right))));
         }
-        case Statement::KILL: {
+        case Statement::TOUCH: {
             return NULL;
         }
         case Statement::JUMP: {

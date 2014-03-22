@@ -26,6 +26,8 @@
 
 #include <QTextStream>
 
+#include <nc/common/Unreachable.h>
+
 #include <nc/core/arch/Instruction.h>
 
 namespace nc {
@@ -74,21 +76,35 @@ void Assignment::print(QTextStream &out) const {
     out << *left_ << " = " << *right_ << endl;
 }
 
-Kill::Kill(std::unique_ptr<Term> term):
-    Statement(KILL), term_(std::move(term))
+Touch::Touch(std::unique_ptr<Term> term, Term::AccessType accessType):
+    Statement(TOUCH), term_(std::move(term))
 {
     assert(term_);
+    assert(accessType != Term::NO_ACCESS);
 
-    term_->setAccessType(Term::KILL);
+    term_->setAccessType(accessType);
     term_->setStatement(this);
 }
 
-Kill *Kill::doClone() const {
-    return new Kill(term()->clone());
+Touch *Touch::doClone() const {
+    return new Touch(term()->clone(), term()->accessType());
 }
 
-void Kill::print(QTextStream &out) const {
-    out << "kill(" << *term_ << ")" << endl;
+void Touch::print(QTextStream &out) const {
+    switch (term()->accessType()) {
+        case Term::READ:
+            out << "read";
+            break;
+        case Term::WRITE:
+            out << "write";
+            break;
+        case Term::KILL:
+            out << "kill";
+            break;
+        default:
+            unreachable();
+    }
+    out << "(" << *term_ << ")" << endl;
 }
 
 Call::Call(std::unique_ptr<Term> target):

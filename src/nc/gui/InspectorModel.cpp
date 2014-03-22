@@ -138,10 +138,11 @@ void expand(InspectorItem *item, const core::ir::Statement *statement) {
             item->addChild(tr("right"), assignment->right());
             break;
         }
-        case core::ir::Statement::KILL: {
-            auto *kill = statement->asKill();
-            item->addComment("Kill");
-            item->addChild(tr("term"), kill->term());
+        case core::ir::Statement::TOUCH: {
+            auto *touch = statement->asTouch();
+            item->addComment("Touch");
+            item->addChild(tr("access type = %1").arg(touch->term()->accessType()));
+            item->addChild(tr("term"), touch->term());
             break;
         }
         case core::ir::Statement::JUMP: {

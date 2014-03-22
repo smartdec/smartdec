@@ -147,9 +147,9 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
             execute(assignment->left(), context);
             break;
         }
-        case Statement::KILL: {
-            auto kill = statement->asKill();
-            execute(kill->term(), context);
+        case Statement::TOUCH: {
+            auto touch = statement->asTouch();
+            execute(touch->term(), context);
             break;
         }
         case Statement::JUMP: {

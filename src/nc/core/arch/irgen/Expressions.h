@@ -1010,7 +1010,7 @@ protected:
     std::unique_ptr<ir::Statement> doCreateStatement(KillStatement<E> &statement) const {
         computeSize(statement.expression(), 0);
 
-        return std::make_unique<ir::Kill>(createTerm(statement.expression()));
+        return std::make_unique<ir::Touch>(createTerm(statement.expression()), ir::Term::KILL);
     }
 
     /**

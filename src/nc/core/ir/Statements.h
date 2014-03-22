@@ -48,12 +48,12 @@ public:
     /**
      * Constructor.
      *
-     * \param[in] text                 The comment.
+     * \param[in] text The comment.
      */
     Comment(const QString &text): Statement(COMMENT), text_(text) {}
 
     /**
-     * \return                         The comment.
+     * \return The comment.
      */
     const QString &text() const { return text_; }
 
@@ -88,30 +88,30 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] left                 Valid pointer to the term being the left-hand side.
-     * \param[in] right                Valid pointer to the term being the right-hand side.
+     * \param[in] left  Valid pointer to the term being the left-hand side.
+     * \param[in] right Valid pointer to the term being the right-hand side.
      *
      * Arguments have to have the same size. Use UnaryOperator for size conversions.
      */
     Assignment(std::unique_ptr<Term> left, std::unique_ptr<Term> right);
 
     /**
-     * \return                         Valid pointer to the term being the left-hand side.
+     * \return Valid pointer to the term being the left-hand side.
      */
     Term *left() { return left_.get(); }
 
     /**
-     * \return                         Valid pointer to the term being the left-hand side.
+     * \return Valid pointer to the term being the left-hand side.
      */
     const Term *left() const { return left_.get(); }
 
     /**
-     * \return                         Valid pointer to the term being the right-hand side.
+     * \return Valid pointer to the term being the right-hand side.
      */
     Term *right() { return right_.get(); }
 
     /**
-     * \return                         Valid pointer to the term being the right-hand side.
+     * \return Valid pointer to the term being the right-hand side.
      */
     const Term *right() const { return right_.get(); }
 
@@ -122,28 +122,29 @@ protected:
 };
 
 /**
- * Statement killing reaching definitions of a term.
+ * A statement reading, writing, or killing a term.
  */
-class Kill: public Statement {
-    std::unique_ptr<Term> term_; ///< Term whose definitions are killed.
+class Touch: public Statement {
+    std::unique_ptr<Term> term_; ///< Term being accessed.
 
 public:
     /**
      * Class constructor.
      *
-     * \param[in] term                 Valid pointer to the term whose definitions are killed.
+     * \param[in] term Valid pointer to the term being accessed.
+     * \param[in] accessType Type of term's use.
      */
-    Kill(std::unique_ptr<Term> term);
+    Touch(std::unique_ptr<Term> term, Term::AccessType accessType);
 
     /**
-     * \return                         Valid pointer to the term whose definitions are killed.
+     * \return Valid pointer to the term being accessed.
      */
     Term *term() const { return term_.get(); }
 
     virtual void print(QTextStream &out) const override;
 
 protected:
-    virtual Kill *doClone() const override;
+    virtual Touch *doClone() const override;
 };
 
 /**
@@ -205,8 +206,8 @@ const Assignment *Statement::asAssignment() const {
     return as<Assignment>();
 }
 
-const Kill *Statement::asKill() const {
-    return as<Kill>();
+const Touch *Statement::asTouch() const {
+    return as<Touch>();
 }
 
 const Call *Statement::asCall() const {

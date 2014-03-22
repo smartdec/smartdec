@@ -101,7 +101,7 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
             }
             break;
         }
-        case Statement::KILL:
+        case Statement::TOUCH:
             break;
         case Statement::JUMP: {
             const Jump *jump = statement->asJump();
