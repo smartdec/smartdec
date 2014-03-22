@@ -47,9 +47,13 @@ class Statement;
  * Basic block.
  */
 class BasicBlock: public PrintableBase<BasicBlock>, boost::noncopyable {
+public:
+    typedef ilist<Statement> Statements;
+
+private:
     boost::optional<ByteAddr> address_; ///< Address of basic block.
     boost::optional<ByteAddr> successorAddress_; ///< Address of the end of the basic block.
-    ilist<Statement> statements_; ///< Statements.
+    Statements statements_; ///< Statements.
     const Function *function_; ///< Function this basic block belongs to.
 
 public:
@@ -97,12 +101,12 @@ public:
     /**
      * \return Statements of the basic block.
      */
-    ilist<Statement> &statements() { return statements_; }
+    Statements &statements() { return statements_; }
 
     /**
      * \return Statements of the basic block.
      */
-    const ilist<Statement> &statements() const { return statements_; }
+    const Statements &statements() const { return statements_; }
 
     /**
      * Inserts a statement at the given position.
@@ -110,7 +114,7 @@ public:
      * \param position Position where the statement must be inserted.
      * \param statement Valid pointer to the statement being inserted.
      */
-    void insertStatement(ilist<Statement>::const_iterator position, std::unique_ptr<Statement> statement);
+    void insertStatement(Statements::const_iterator position, std::unique_ptr<Statement> statement);
 
     /**
      * Adds a statement to the end of the basic block.
@@ -171,7 +175,7 @@ public:
      * \return Valid pointer to the newly created basic block containing the
      *         second part of statements.
      */
-    std::unique_ptr<BasicBlock> split(ilist<Statement>::const_iterator position, const boost::optional<ByteAddr> &address);
+    std::unique_ptr<BasicBlock> split(Statements::const_iterator position, const boost::optional<ByteAddr> &address);
 
     /**
      * \return A valid pointer to the basic block which is a copy of this one.
