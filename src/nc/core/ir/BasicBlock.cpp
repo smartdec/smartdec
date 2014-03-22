@@ -50,43 +50,29 @@ void BasicBlock::setSuccessorAddress(const boost::optional<ByteAddr> &successorA
     successorAddress_ = successorAddress;
 }
 
-void BasicBlock::addStatement(std::unique_ptr<Statement> statement) {
+void BasicBlock::insertStatement(ilist<Statement>::const_iterator position, std::unique_ptr<Statement> statement) {
     assert(statement != NULL);
 
     statement->setBasicBlock(this);
-    statements_.push_back(std::move(statement));
+    statements_.insert(position, std::move(statement));
 }
 
-void BasicBlock::addStatements(std::vector<std::pair<const Statement *, std::unique_ptr<Statement>>> &&addedStatements) {
-    std::vector<std::unique_ptr<Statement>> newStatements;
+void BasicBlock::addStatement(std::unique_ptr<Statement> statement) {
+    assert(statement != NULL);
 
-    newStatements.reserve(statements_.size() + addedStatements.size());
-
-    auto i    = addedStatements.begin();
-    auto iend = addedStatements.end();
-
-    foreach (auto &statement, statements_) {
-        Statement *lastStatement = statement.get();
-        newStatements.push_back(std::move(statement));
-
-        while (i != iend && i->first == lastStatement) {
-            assert(i->second != NULL);
-
-            i->second->setBasicBlock(this);
-            newStatements.push_back(std::move(i->second));
-
-            ++i;
-        }
-    }
-
-    assert(i == iend);
-
-    statements_.swap(newStatements);
+    insertStatement(statements_.end(), std::move(statement));
 }
 
-void BasicBlock::popBack() {
+void BasicBlock::insertStatementAfter(const Statement *after, std::unique_ptr<Statement> statement) {
+    assert(after != NULL);
+    assert(statement != NULL);
+
+    insertStatement(++statements_.get_iterator(after), std::move(statement));
+}
+
+std::unique_ptr<Statement> BasicBlock::popBack() {
     assert(!statements_.empty());
-    statements_.pop_back();
+    return statements_.pop_back();
 }
 
 const Statement *BasicBlock::getTerminator() const {
@@ -126,21 +112,17 @@ const Return *BasicBlock::getReturn() const {
     }
 }
 
-std::unique_ptr<BasicBlock> BasicBlock::split(std::size_t index, const boost::optional<ByteAddr> &address) {
-    assert(index <= statements_.size());
-
+std::unique_ptr<BasicBlock> BasicBlock::split(ilist<Statement>::const_iterator position, const boost::optional<ByteAddr> &address) {
     /* Create a new basic block. */
     std::unique_ptr<BasicBlock> result(new BasicBlock(address));
     result->setSuccessorAddress(this->successorAddress());
     this->setSuccessorAddress(address);
 
     /* Move statements to it. */
-    auto size = statements_.size();
-    result->statements_.reserve(size - index);
-    for (auto i = index; i < size; ++i) {
-        result->addStatement(std::move(statements_[i]));
+    result->statements_ = statements_.cut_out(position, statements_.end());
+    foreach (auto statement, result->statements_) {
+        statement->setBasicBlock(result.get());
     }
-    statements_.resize(index);
 
     return result;
 }

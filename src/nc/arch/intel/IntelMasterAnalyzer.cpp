@@ -62,8 +62,6 @@ void IntelMasterAnalyzer::createProgram(core::Context &context) const {
         foreach (auto *basicBlock, program->basicBlocks()) {
             context.cancellationToken().poll();
 
-            std::vector<std::pair<const core::ir::Statement *, std::unique_ptr<core::ir::Statement>>> patchList;
-
             foreach (auto statement, basicBlock->statements()) {
                 if (auto assignment = statement->asAssignment()) {
                     if (auto access = assignment->left()->asMemoryLocationAccess()) {
@@ -72,17 +70,15 @@ void IntelMasterAnalyzer::createProgram(core::Context &context) const {
                             access->memoryLocation().addr() == 0 &&
                             access->memoryLocation().size() == 32)
                         {
-                            patchList.push_back(std::make_pair(
+                            basicBlock->insertStatementAfter(
                                 statement,
                                 std::make_unique<core::ir::Assignment>(
                                     std::make_unique<core::ir::MemoryLocationAccess>(access->memoryLocation().shifted(32)),
-                                    std::make_unique<core::ir::Constant>(SizedValue(32, 0)))));
+                                    std::make_unique<core::ir::Constant>(SizedValue(32, 0))));
                         }
                     }
                 }
             }
-
-            basicBlock->addStatements(std::move(patchList));
         }
     }
 }

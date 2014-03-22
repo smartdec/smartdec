@@ -43,7 +43,7 @@ namespace nc { namespace core { namespace ir { namespace inlining {
 void CallInliner::perform(Function *receivingFunction, const Call *call, const Function *inlinedFunction) const {
     /* Split call->basicBlock(). */
     BasicBlock *leadIn = call->basicBlock();
-    auto leadOut = leadIn->split(boost::find(leadIn->statements(), call) - leadIn->statements().begin() + 1, boost::none);
+    auto leadOut = leadIn->split(++call->basicBlock()->statements().get_iterator(call), boost::none);
 
     /* Clone the basic blocks of inlined function. */
     auto clones = FunctionsGenerator::cloneIntoFunction(inlinedFunction->basicBlocks(), receivingFunction);

@@ -26,13 +26,13 @@
 #include <nc/config.h>
 
 #include <memory>
-#include <vector>
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include <nc/common/Printable.h>
 #include <nc/common/Types.h>
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
@@ -49,7 +49,7 @@ class Statement;
 class BasicBlock: public PrintableBase<BasicBlock>, boost::noncopyable {
     boost::optional<ByteAddr> address_; ///< Address of basic block.
     boost::optional<ByteAddr> successorAddress_; ///< Address of the end of the basic block.
-    std::vector<std::unique_ptr<Statement>> statements_; ///< Statements.
+    ilist<Statement> statements_; ///< Statements.
     const Function *function_; ///< Function this basic block belongs to.
 
 public:
@@ -97,16 +97,20 @@ public:
     /**
      * \return Statements of the basic block.
      */
-    const std::vector<Statement *> &statements() {
-        return reinterpret_cast<const std::vector<Statement *> &>(statements_);
-    }
+    ilist<Statement> &statements() { return statements_; }
 
     /**
      * \return Statements of the basic block.
      */
-    const std::vector<const Statement *> &statements() const {
-        return reinterpret_cast<const std::vector<const Statement *> &>(statements_);
-    }
+    const ilist<Statement> &statements() const { return statements_; }
+
+    /**
+     * Inserts a statement at the given position.
+     *
+     * \param position Position where the statement must be inserted.
+     * \param statement Valid pointer to the statement being inserted.
+     */
+    void insertStatement(ilist<Statement>::const_iterator position, std::unique_ptr<Statement> statement);
 
     /**
      * Adds a statement to the end of the basic block.
@@ -116,18 +120,20 @@ public:
     void addStatement(std::unique_ptr<Statement> statement);
 
     /**
-     * Adds given statements after given existing statements.
+     * Inserts a statement after a given one.
      *
-     * \param addedStatements   List of pairs (existing statement, added statement).
-     *                          First components of the pairs must appear in the basic
-     *                          block in the same order as they appear in this list.
+     * \param after Valid pointer to the statement after which to insert.
+     * \param statement Valid pointer to the statement being inserted.
      */
-    void addStatements(std::vector<std::pair<const Statement *, std::unique_ptr<Statement>>> &&addedStatements);
+    void insertStatementAfter(const Statement *after, std::unique_ptr<Statement> statement);
 
     /**
-     * Removes the last statement of the basic block.
+     * Removes the last statement in the basic block.
+     * The basic block must be not empty.
+     *
+     * \return Valid pointer to the removed statement.
      */
-    void popBack();
+    std::unique_ptr<Statement> popBack();
 
     /**
      * \return Valid pointer to the last statement in the basic block if this
@@ -154,18 +160,18 @@ public:
     const Return *getReturn() const;
 
     /**
-     * Breaks the basic block into two parts. The first part contains the first
-     * 'index' statements and remains in the original basic block. The second
-     * part containing all the other statements is moved to a newly created
-     * basic block.
+     * Breaks the basic block into two parts. The first part contains the
+     * statements before the given position and remains in the original basic
+     * block. The second part includes remaining statements and is moved to a
+     * newly created basic block.
      *
-     * \param[in] index Index of the first statements of the second part.
+     * \param[in] position Iterator identifying the first statement of the second part.
      * \param[in] address Start address to give to the newly created basic block.
      *
      * \return Valid pointer to the newly created basic block containing the
      *         second part of statements.
      */
-    std::unique_ptr<BasicBlock> split(std::size_t index, const boost::optional<ByteAddr> &address);
+    std::unique_ptr<BasicBlock> split(ilist<Statement>::const_iterator position, const boost::optional<ByteAddr> &address);
 
     /**
      * \return A valid pointer to the basic block which is a copy of this one.

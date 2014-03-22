@@ -387,9 +387,9 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
             auto makeStatementsButLast = [&](const BasicBlock *basicBlock) {
                 addLabels(basicBlock, block, switchContext);
 
-                for (std::size_t i = 0, size = basicBlock->statements().size() - 1; i < size; ++i) {
+                for (auto i = basicBlock->statements().begin(), iend = --basicBlock->statements().end(); i != iend; ++i) {
                     /* We do not care about breakBB and others: we will not create gotos. */
-                    if (auto likecStatement = makeStatement(basicBlock->statements()[i], NULL, NULL, NULL)) {
+                    if (auto likecStatement = makeStatement(*i, NULL, NULL, NULL)) {
                         block->addStatement(std::move(likecStatement));
                     }
                 }
@@ -1127,8 +1127,10 @@ bool DefinitionGenerator::isDominating(const Term *write, const Term *read) cons
             const auto &statements = read->statement()->basicBlock()->statements();
             assert(nc::contains(statements, write->statement()));
             assert(nc::contains(statements, read->statement()));
-            return std::find(statements.begin(), statements.end(), write->statement()) <
-                   std::find(statements.begin(), statements.end(), read->statement());
+            return std::find(
+                std::find(statements.begin(), statements.end(), write->statement()),
+                statements.end(),
+                read->statement()) != statements.end();
         }
     } else {
         return dominators_->isDominating(write->statement()->basicBlock(), read->statement()->basicBlock());

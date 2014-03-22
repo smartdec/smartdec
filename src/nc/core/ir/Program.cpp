@@ -30,6 +30,7 @@
 
 #include <nc/common/Foreach.h>
 #include <nc/common/Range.h> /* For nc::find. */
+#include <nc/common/Unreachable.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/arch/Instruction.h>
@@ -75,19 +76,18 @@ BasicBlock *Program::createBasicBlock(ByteAddr address) {
     } else if (BasicBlock *basicBlock = getBasicBlockCovering(address)) {
         removeRange(basicBlock);
 
-        std::size_t i = 0;
-        for (std::size_t size = basicBlock->statements().size(); i < size; ++i) {
-            if (basicBlock->statements()[i]->instruction()->addr() >= address) {
-                break;
+        foreach (auto statement, basicBlock->statements()) {
+            if (statement->instruction()->addr() >= address) {
+                BasicBlock *result = takeOwnership(basicBlock->split(basicBlock->statements().get_iterator(statement), address));
+
+                addRange(basicBlock);
+                addRange(result);
+
+                return result;
             }
         }
 
-        BasicBlock *result = takeOwnership(basicBlock->split(i, address));
-
-        addRange(basicBlock);
-        addRange(result);
-
-        return result;
+        unreachable();
     } else {
         BasicBlock *result = takeOwnership(std::make_unique<BasicBlock>(address));
         addRange(result);

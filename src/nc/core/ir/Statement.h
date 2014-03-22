@@ -34,6 +34,7 @@
 
 #include <nc/common/Kinds.h>
 #include <nc/common/Printable.h>
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
@@ -60,7 +61,8 @@ class Return;
  * 
  * Statements are supposed to be immutable <i>at the interface level</i>.
  */
-class Statement: public Printable, boost::noncopyable {
+class Statement;
+class Statement: public Printable, public ilist_item<Statement>, boost::noncopyable {
     NC_CLASS_WITH_KINDS(Statement, kind)
 
 public:

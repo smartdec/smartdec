@@ -85,9 +85,7 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
     ir::dflow::DataflowAnalyzer analyzer(dataflow, image_->architecture(), NULL);
     ir::dflow::ExecutionContext context(analyzer);
 
-    for (std::size_t i = 0; i < basicBlock->statements().size(); ++i) {
-        ir::Statement *statement = basicBlock->statements()[i];
-
+    foreach (auto statement, basicBlock->statements()) {
         /* Execute yet another statement. */
         analyzer.execute(statement, context);
 
