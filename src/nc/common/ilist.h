@@ -366,18 +366,18 @@ public:
         assert(element->next_ == NULL);
         assert(element->prev_ == NULL);
 
-        if (position == begin()) {
-            element->next_ = front_;
+        if (empty()) {
+            assert(position == begin());
+            back_ = element.get();
             front_ = element.get();
-            if (back_ == NULL) {
-                back_ = front_;
-            }
+        } else if (position == begin()) {
+            element->next_ = front_;
+            element->next_->prev_ = element.get();
+            front_ = element.get();
         } else if (position == end()) {
             element->prev_ = back_;
+            element->prev_->next_ = element.get();
             back_ = element.get();
-            if (front_ == NULL) {
-                front_ = back_;
-            }
         } else {
             element->next_ = const_cast<value_type *>(*position);
             element->next_->prev_ = element.get();
