@@ -72,7 +72,7 @@ void TypeAnalyzer::analyze(const CancellationToken &canceled) {
             }
             canceled.poll();
         }
-    } while (!changed);
+    } while (changed);
 }
 
 namespace {
