@@ -11,6 +11,8 @@
 #include <utility> /* std::swap */
 #include <type_traits> /* std::remove_const */
 
+#include <boost/noncopyable.hpp>
+
 namespace nc {
 
 /**
@@ -19,7 +21,7 @@ namespace nc {
  * \tparam T Derived class of list elements.
  */
 template<class T>
-class ilist_item {
+class ilist_item: boost::noncopyable {
     /** Pointer to the next element. */
     T *next_;
 
@@ -175,7 +177,7 @@ public:
 * \param Deleter Type of deleter for the list elements.
 */
 template<class T, class Deleter = std::default_delete<T>>
-class ilist: private ilist_data<T> {
+class ilist: private ilist_data<T>, boost::noncopyable {
     using ilist_data<T>::front_;
     using ilist_data<T>::back_;
 
@@ -204,11 +206,6 @@ public:
     }
 
     /**
-     * Copy-construction is forbidden.
-     */
-    ilist(const ilist &) = delete;
-
-    /**
      * Move constructor.
      *
      * \param that The list to move from.
@@ -229,11 +226,6 @@ public:
      * Destroys all the elements in the list.
      */
     ~ilist() { clear(); }
-
-    /**
-     * Copy-assignment is forbidden.
-     */
-    ilist &operator=(const ilist &) = delete;
 
     /**
      * Move-assignment operator.
