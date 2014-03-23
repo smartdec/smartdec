@@ -6,6 +6,7 @@
 #include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
 
+#include "BasicBlock.h"
 #include "CFG.h"
 
 namespace nc {

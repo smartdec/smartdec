@@ -6,6 +6,7 @@
 #include <nc/config.h>
 
 #include <cassert>
+#include <iterator>
 #include <memory> /* std::unique_ptr */
 #include <utility> /* std::swap */
 #include <type_traits> /* std::remove_const */
@@ -15,7 +16,7 @@ namespace nc {
 /**
  * Base class for the elements of intrusive lists.
  *
- * \tparam Element class derived from ilist_item.
+ * \tparam T Derived class of list elements.
  */
 template<class T>
 class ilist_item {
@@ -38,7 +39,7 @@ protected:
 /**
  * Class containing pointers to the first and last element of a list.
  *
- * \tparam T Element type.
+ * \tparam T Type of elements.
  */
 template<class T>
 class ilist_data {
@@ -53,13 +54,22 @@ public:
 /**
  * Base class for an intrusive list iterator.
  *
- * \tparam T Element type as to be returned to the user.
- * \tparam U Element type as given to the container.
+ * \tparam T Element type as exposed to the user.
+ * \tparam U Element type as specified in the container.
  */
 template<class T, class U = T>
 class ilist_iterator: public std::iterator<std::bidirectional_iterator_tag, T> {
+    typedef std::iterator<std::bidirectional_iterator_tag, T> super;
+
+public:
+    typedef typename super::value_type value_type;
+    typedef typename super::difference_type difference_type;
+    typedef typename super::pointer pointer;
+    typedef typename super::reference reference;
+
+private:
     /** Pointer to the element the iterator points to. */
-    T *element_;
+    pointer element_;
 
     /** Reference to the data of the list being iterated. */
     const ilist_data<U> &list_;
@@ -73,7 +83,7 @@ public:
      * \param list      Reference to the data of the list being iterated.
      * \param element   Pointer to the element this iterator points to.
      */
-    explicit ilist_iterator(const ilist_data<U> &list, T *element = NULL) noexcept:
+    explicit ilist_iterator(const ilist_data<U> &list, pointer element = NULL) noexcept:
         element_(element), list_(list)
     {}
 
@@ -145,23 +155,24 @@ public:
     /**
      * \return Pointer to the element being pointed to.
      */
-    T *operator->() const noexcept {
+    pointer operator->() const noexcept {
         return element_;
     }
 
     /**
      * \return Pointer to the element being pointed to.
      */
-    T *operator*() const noexcept {
+    pointer operator*() const noexcept {
         return element_;
     }
 };
 
 /**
 * Intrusive doubly linked list owning its elements.
+* Features stable iterators, insertion and deletion in O(1) time.
 *
-* \param T       Element type.
-* \param Deleter Deleter type.
+* \param T       Type of elements.
+* \param Deleter Type of deleter for the list elements.
 */
 template<class T, class Deleter = std::default_delete<T>>
 class ilist: private ilist_data<T> {
@@ -169,47 +180,23 @@ class ilist: private ilist_data<T> {
     using ilist_data<T>::back_;
 
 public:
-    /**
-     * Type of the elements.
-     */
     typedef T value_type;
-
-    /**
-     * Type of the deleter for the list elements.
-     */
     typedef Deleter deleter_type;
-
-    /**
-     * Unique pointer type for the elements.
-     */
-    typedef std::unique_ptr<value_type, deleter_type> unique_ptr;
-
-    /**
-     * Iterator type.
-     */
-    typedef ilist_iterator<value_type, value_type> iterator;
-
-    /**
-     * Constant iterator type.
-     */
-    typedef ilist_iterator<const value_type, value_type> const_iterator;
-
-    /**
-     * Reverse iterator type.
-     */
+    typedef T *pointer;
+    typedef const T *const_pointer;
+    typedef std::unique_ptr<T, deleter_type> unique_ptr;
+    typedef ilist_iterator<T, T> iterator;
+    typedef ilist_iterator<const T, T> const_iterator;
     typedef std::reverse_iterator<iterator> reverse_iterator;
-
-    /**
-     * Constant reverse iterator type.
-     */
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef std::size_t size_type;
 
     /**
      * Constructs an empty list.
      *
-     * \param deleter Deleter used for the destruction of managed elements.
+     * \param deleter Deleter for the list elements.
      */
-    ilist(const deleter_type &deleter = deleter_type()) noexcept:
+    ilist(const deleter_type &deleter = deleter_type()):
         deleter_(deleter)
     {
         front_ = NULL;
@@ -226,7 +213,7 @@ public:
      *
      * \param that The list to move from.
      */
-    ilist(ilist &&that) noexcept:
+    ilist(ilist &&that):
         deleter_(std::move(that.deleter_))
     {
         front_ = that.front_;
@@ -241,7 +228,7 @@ public:
      *
      * Destroys all the elements in the list.
      */
-    ~ilist() noexcept { clear(); }
+    ~ilist() { clear(); }
 
     /**
      * Copy-assignment is forbidden.
@@ -264,7 +251,7 @@ public:
      *
      * \param that Another list.
      */
-    void swap(ilist &that) noexcept {
+    void swap(ilist &that) {
         std::swap(front_, that.front_);
         std::swap(back_, that.back_);
         std::swap(deleter_, that.deleter_);
@@ -283,22 +270,22 @@ public:
     /**
      * \return Pointer to the first element. Will be NULL if the list is empty.
      */
-    value_type *front() noexcept { return front_; }
+    pointer front() noexcept { return front_; }
 
     /**
      * \return Pointer to the first element. Will be NULL if the list is empty.
      */
-    const value_type *front() const noexcept { return front_; }
+    const_pointer front() const noexcept { return front_; }
 
     /**
      * \return Pointer to the last element. Will be NULL if the list is empty.
      */
-    value_type *back() noexcept { return back_; }
+    pointer back() noexcept { return back_; }
 
     /**
      * \return Pointer to the last element. Will be NULL if the list is empty.
      */
-    const value_type *back() const noexcept { return back_; }
+    const_pointer back() const noexcept { return back_; }
 
     /**
      * \return True if the list is empty, false otherwise.
@@ -321,7 +308,7 @@ public:
      *
      * \return Valid pointer to the deleted element.
      */
-    unique_ptr erase(value_type *element) noexcept {
+    unique_ptr erase(pointer element) {
         assert(element != NULL);
 
         if (element == front_) {
@@ -342,7 +329,7 @@ public:
      *
      * \return Valid pointer to the erased element.
      */
-    unique_ptr pop_front() noexcept {
+    unique_ptr pop_front() {
         return erase(front());
     }
 
@@ -351,7 +338,7 @@ public:
      *
      * \return Valid pointer to the erased element.
      */
-    unique_ptr pop_back() noexcept {
+    unique_ptr pop_back() {
         return erase(back());
     }
 
@@ -363,13 +350,13 @@ public:
      *
      * \return Valid pointer to the inserted element.
      */
-    value_type *insert(const_iterator position, unique_ptr element) noexcept {
-        assert(element);
+    pointer insert(const_iterator position, unique_ptr element) noexcept {
+        assert(element != NULL);
         assert(element->ilist_item<T>::next_ == NULL);
         assert(element->ilist_item<T>::prev_ == NULL);
 
-        element->ilist_item<T>::next_ = const_cast<value_type *>(*position);
-        element->ilist_item<T>::prev_ = const_cast<value_type *>(*--position);
+        element->ilist_item<T>::next_ = const_cast<pointer>(*position);
+        element->ilist_item<T>::prev_ = const_cast<pointer>(*--position);
 
         if (element->ilist_item<T>::next_ != NULL) {
             element->ilist_item<T>::next_->ilist_item<T>::prev_ = element.get();
@@ -393,7 +380,7 @@ public:
      *
      * \return Valid pointer to the inserted element.
      */
-    value_type *push_front(unique_ptr element) noexcept {
+    pointer push_front(unique_ptr element) noexcept {
         return insert(begin(), std::move(element));
     }
 
@@ -404,7 +391,7 @@ public:
      *
      * \return Valid pointer to the inserted element.
      */
-    value_type *push_back(unique_ptr element) noexcept {
+    pointer push_back(unique_ptr element) noexcept {
         return insert(end(), std::move(element));
     }
 
@@ -414,15 +401,15 @@ public:
      *
      * \return List containing the range being cut out.
      */
-    ilist cut_out(const_iterator first, const_iterator last) noexcept {
-        ilist result;
+    ilist cut_out(const_iterator first, const_iterator last) {
+        ilist result(deleter_);
 
         if (first == last) {
             return result;
         }
 
-        result.front_ = const_cast<value_type *>(*first);
-        result.back_ = const_cast<value_type *>(*--last);
+        result.front_ = const_cast<pointer>(*first);
+        result.back_ = const_cast<pointer>(*--last);
 
         assert(result.front_ != NULL);
         assert(result.back_ != NULL);
@@ -512,7 +499,7 @@ public:
      *
      * \return Iterator pointing to the given element.
      */
-    iterator get_iterator(value_type *element) noexcept {
+    iterator get_iterator(pointer element) noexcept {
         assert(element != NULL);
         return iterator(*this, element);
     }
@@ -522,14 +509,23 @@ public:
      *
      * \return Constant iterator pointing to the given element.
      */
-    const_iterator get_iterator(const value_type *element) const noexcept {
+    const_iterator get_iterator(const_pointer element) const noexcept {
         assert(element != NULL);
         return const_iterator(*this, element);
     }
 
+    /**
+     * \return Number of elements in the list.
+     *
+     * \warning This function takes O(N) time to compute.
+     */
+    size_type size() const noexcept {
+        return std::distance(begin(), end());
+    }
+
 private:
     /**
-     * Deleter.
+     * Deleter for the list elements.
      */
     deleter_type deleter_;
 };

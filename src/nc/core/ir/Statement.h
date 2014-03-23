@@ -62,7 +62,7 @@ class Return;
  * Statements are supposed to be immutable <i>at the interface level</i>.
  */
 class Statement;
-class Statement: public Printable, public ilist_item<Statement>, boost::noncopyable {
+class Statement: public Printable, public nc::ilist_item<Statement>, boost::noncopyable {
     NC_CLASS_WITH_KINDS(Statement, kind)
 
 public:

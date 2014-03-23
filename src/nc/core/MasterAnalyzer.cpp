@@ -106,7 +106,7 @@ void MasterAnalyzer::dataflowAnalysis(Context &context) const {
 
     context.setDataflows(std::make_unique<ir::dflow::Dataflows>());
 
-    foreach (auto function, context.functions()->all()) {
+    foreach (auto function, context.functions()->list()) {
         dataflowAnalysis(context, function);
         context.cancellationToken().poll();
     }
@@ -150,7 +150,7 @@ void MasterAnalyzer::livenessAnalysis(Context &context) const {
 
     context.setLivenesses(std::make_unique<ir::liveness::Livenesses>());
 
-    foreach (const ir::Function *function, context.functions()->all()) {
+    foreach (const ir::Function *function, context.functions()->list()) {
         livenessAnalysis(context, function);
     }
 }
@@ -186,7 +186,7 @@ void MasterAnalyzer::structuralAnalysis(Context &context) const {
 
     context.setGraphs(std::make_unique<ir::cflow::Graphs>());
 
-    foreach (auto function, context.functions()->all()) {
+    foreach (auto function, context.functions()->list()) {
         structuralAnalysis(context, function);
         context.cancellationToken().poll();
     }

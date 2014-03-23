@@ -32,6 +32,7 @@
 
 #include <nc/common/Printable.h>
 #include <nc/common/Range.h>
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
@@ -48,8 +49,12 @@ class JumpTarget;
  * basic blocks.
  */
 class CFG: public PrintableBase<CFG> {
+public:
+    typedef nc::ilist<BasicBlock> BasicBlocks;
+
+private:
     /** References to the set of basic blocks passed to the constructor. */
-    const std::vector<const BasicBlock *> &basicBlocks_;
+    const BasicBlocks &basicBlocks_;
 
     /** Mapping from a basic block to the list of its successors. */
     boost::unordered_map<const BasicBlock *, std::vector<const BasicBlock *>> successors_;
@@ -57,8 +62,7 @@ class CFG: public PrintableBase<CFG> {
     /** Mapping from a basic block to the list of its predecessors. */
     boost::unordered_map<const BasicBlock *, std::vector<const BasicBlock *>> predecessors_;
 
-    public:
-
+public:
     /**
      * Constructs control flow graph from a set of basic blocks.
      *
@@ -67,12 +71,12 @@ class CFG: public PrintableBase<CFG> {
      * Note that the set of basic blocks is not copied.
      * Instead, only a reference to it is stored.
      */
-    CFG(const std::vector<const BasicBlock *> &basicBlocks);
+    CFG(const BasicBlocks &basicBlocks);
 
     /**
      * \return The set of basic blocks that was passed to the constructor.
      */
-    const std::vector<const BasicBlock *> &basicBlocks() const { return basicBlocks_; }
+    const BasicBlocks &basicBlocks() const { return basicBlocks_; }
 
     /**
      * \param[in] basicBlock Valid pointer to a basic block.
@@ -101,8 +105,7 @@ class CFG: public PrintableBase<CFG> {
      */
     void print(QTextStream &out) const;
 
-    private:
-
+private:
     /**
      * Adds an edge from a predecessor to a successor.
      *

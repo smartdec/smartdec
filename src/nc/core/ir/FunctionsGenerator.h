@@ -43,15 +43,15 @@ class Program;
  * Generator of functions from control flow graph.
  */
 class FunctionsGenerator {
-    public:
-
+public:
     /**
      * Virtual destructor.
      */
     virtual ~FunctionsGenerator() {}
 
     /**
-     * Discovers functions in the control flow graph and 
+     * Discovers functions in the control flow graph and creates corresponding
+     * Function objects.
      *
      * \param[in] program Intermediate representation of a program.
      * \param[out] functions Where to add newly created functions.
@@ -66,19 +66,19 @@ class FunctionsGenerator {
      *
      * \return Created function.
      */
-    virtual std::unique_ptr<Function> makeFunction(const std::vector<const BasicBlock *> &nodes, const BasicBlock *entry = 0) const;
+    virtual std::unique_ptr<Function> makeFunction(const std::vector<const BasicBlock *> &basicBlocks, const BasicBlock *entry = 0) const;
 
     /**
      * Mapping from basic blocks to basic blocks.
      */
     typedef boost::unordered_map<const BasicBlock *, BasicBlock *> BasicBlockMap;
-    
+
     /**
      * Clones basic blocks and arcs between them.
      * Pointers to basic blocks in Jump statements are patched accordingly too.
      *
-     * \param[in] basicBlocks           Vector of valid pointers to basic blocks being cloned.
-     * \param     function              Function to add basic blocks to.
+     * \param basicBlocks   Vector of valid pointers to basic blocks being cloned.
+     * \param function      Function to add basic blocks to.
      *
      * \return Mapping of basic blocks to their clones.
      */

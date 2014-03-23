@@ -33,6 +33,7 @@
 
 #include <nc/common/Printable.h>
 #include <nc/common/Types.h>
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
@@ -44,8 +45,12 @@ class Function;
  * Functions in intermediate representation.
  */
 class Functions: public PrintableBase<Functions>, boost::noncopyable {
-    /** The functions. */
-    std::vector<std::unique_ptr<Function>> functions_;
+public:
+    typedef nc::ilist<Function> FunctionList;
+
+private:
+    /** List of functions. */
+    FunctionList functions_;
 
     /** Mapping from an entry address to the list of functions with this address. */
     boost::unordered_map<ByteAddr, std::vector<Function *>> entry2functions_;
@@ -62,11 +67,17 @@ public:
     ~Functions();
 
     /**
-     * \return List of functions in intermediate representation.
+     * \return List of functions.
+     *
+     * \warning Do not insert functions into the container directly.
+     *          Use methods of Functions class instead.
      */
-    const std::vector<Function *> &all() const {
-        return reinterpret_cast<const std::vector<Function *> &>(functions_);
-    }
+    FunctionList &list() { return functions_; }
+
+    /**
+     * \return List of functions.
+     */
+    const FunctionList &list() const { return functions_; }
 
     /**
      * Adds intermediate representation of a function and takes ownership of it.

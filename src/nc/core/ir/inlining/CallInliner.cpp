@@ -46,7 +46,9 @@ void CallInliner::perform(Function *receivingFunction, const Call *call, const F
     auto leadOut = leadIn->split(++call->basicBlock()->statements().get_iterator(call), boost::none);
 
     /* Clone the basic blocks of inlined function. */
-    auto clones = FunctionsGenerator::cloneIntoFunction(inlinedFunction->basicBlocks(), receivingFunction);
+    auto clones = FunctionsGenerator::cloneIntoFunction(
+        std::vector<const BasicBlock *>(inlinedFunction->basicBlocks().begin(), inlinedFunction->basicBlocks().end()),
+        receivingFunction);
 
     /* Replace the call by the jump to the cloned entry. */
     leadIn->popBack();

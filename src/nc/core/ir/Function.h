@@ -27,11 +27,11 @@
 
 #include <cassert>
 #include <memory>
-#include <vector>
 
 #include <boost/noncopyable.hpp>
 
 #include <nc/common/Printable.h>
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
@@ -42,25 +42,35 @@ class BasicBlock;
 /**
  * Intermediate representation of a function.
  */
-class Function: public PrintableBase<Function>, boost::noncopyable {
+class Function;
+class Function: public PrintableBase<Function>, public nc::ilist_item<Function>, boost::noncopyable {
+public:
+    typedef nc::ilist<BasicBlock> BasicBlocks;
+
+private:
     BasicBlock *entry_; ///< Entry basic block.
-    std::vector<std::unique_ptr<BasicBlock>> basicBlocks_; ///< All basic blocks of the function.
+    BasicBlocks basicBlocks_; ///< All basic blocks of the function.
 
 public:
     /**
-     * Class constructor.
+     * Constructor.
      */
     Function();
 
     /**
-     * Class destructor.
+     * Destructor.
      */
     ~Function();
 
     /**
      * \return Pointer to the entry basic block. Can be NULL.
      */
-    BasicBlock *entry() const { return entry_; }
+    BasicBlock *entry() { return entry_; }
+
+    /**
+     * \return Pointer to the entry basic block. Can be NULL.
+     */
+    const BasicBlock *entry() const { return entry_; }
 
     /**
      * Sets the function's entry.
@@ -74,17 +84,16 @@ public:
 
     /**
      * \return All basic blocks of the function.
+     *
+     * \warning Do not insert basic blocks into the container directly.
+     *          Use methods of Function class instead.
      */
-    const std::vector<BasicBlock *> &basicBlocks() {
-        return reinterpret_cast<const std::vector<BasicBlock *> &>(basicBlocks_);
-    }
+    BasicBlocks &basicBlocks() { return basicBlocks_; }
 
     /**
      * \return All basic blocks of the function.
      */
-    const std::vector<const BasicBlock *> &basicBlocks() const {
-        return reinterpret_cast<const std::vector<const BasicBlock *> &>(basicBlocks_);
-    }
+    const BasicBlocks &basicBlocks() const { return basicBlocks_; }
 
     /**
      * Adds basic block to the function. The function doesn't have ownership of basic blocks.

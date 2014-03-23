@@ -65,14 +65,14 @@ void IRGenerator::generate(const CancellationToken &canceled) {
     }
 
     /* Compute jump targets. */
-    for (std::size_t i = 0; i < program_->basicBlocks().size(); ++i) {
-        computeJumpTargets(program_->basicBlocks()[i]);
+    foreach (auto basicBlock, program_->basicBlocks()) {
+        computeJumpTargets(basicBlock);
         canceled.poll();
     }
 
     /* Add jumps to direct successors where necessary. */
-    for (std::size_t i = 0; i < program_->basicBlocks().size(); ++i) {
-        addJumpToDirectSuccessor(program_->basicBlocks()[i]);
+    foreach (auto basicBlock, program_->basicBlocks()) {
+        addJumpToDirectSuccessor(basicBlock);
         canceled.poll();
     }
 }

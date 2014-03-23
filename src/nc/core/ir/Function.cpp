@@ -47,7 +47,7 @@ void Function::addBasicBlock(std::unique_ptr<BasicBlock> basicBlock) {
 }
 
 bool Function::isEmpty() const {
-    foreach (const BasicBlock *basicBlock, basicBlocks()) {
+    foreach (auto basicBlock, basicBlocks()) {
         if (!basicBlock->statements().empty()) {
             return false;
         }

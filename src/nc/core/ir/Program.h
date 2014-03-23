@@ -48,15 +48,18 @@ namespace ir {
  * Intermediate representation of a program.
  */
 class Program: public PrintableBase<Program>, boost::noncopyable {
+public:
+    typedef nc::ilist<BasicBlock> BasicBlocks;
+
+private:
     typedef Range<ByteAddr> AddrRange;
 
-    std::vector<std::unique_ptr<BasicBlock>> basicBlocks_; ///< Basic blocks.
+    BasicBlocks basicBlocks_; ///< Basic blocks.
     std::map<AddrRange, BasicBlock *> range2basicBlock_; ///< Mapping of a range of addresses to the basic block covering the range.
     boost::unordered_map<ByteAddr, BasicBlock *> start2basicBlock_; ///< Mapping of an address to the basic block at this address.
     boost::unordered_set<ByteAddr> calledAddresses_; ///< Addresses having calls to them.
 
-    public:
-
+public:
     /**
      * Constructor.
      */
@@ -69,17 +72,16 @@ class Program: public PrintableBase<Program>, boost::noncopyable {
 
     /**
      * \return All basic blocks of the program.
+     *
+     * \warning Do not insert basic blocks into this container directly.
+     *          Use methods of Program class instead.
      */
-    const std::vector<BasicBlock *> &basicBlocks() {
-        return reinterpret_cast<const std::vector<BasicBlock *> &>(basicBlocks_);
-    }
+    BasicBlocks &basicBlocks() { return basicBlocks_; }
 
     /**
      * \return All basic blocks of the program.
      */
-    const std::vector<const BasicBlock *> &basicBlocks() const {
-        return reinterpret_cast<const std::vector<const BasicBlock *> &>(basicBlocks_);
-    }
+    const BasicBlocks &basicBlocks() const { return basicBlocks_; }
 
     /**
      * \param address       Address.
@@ -146,8 +148,7 @@ class Program: public PrintableBase<Program>, boost::noncopyable {
      */
     void print(QTextStream &out) const;
 
-    private:
-
+private:
     /**
      * Takes ownership of given basic block.
      *

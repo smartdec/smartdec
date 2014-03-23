@@ -55,7 +55,7 @@ void CodeGenerator::makeCompilationUnit() {
     tree().setPointerSize(image().architecture()->bitness());
     tree().setRoot(std::make_unique<likec::CompilationUnit>(tree()));
 
-    foreach (const Function *function, functions().all()) {
+    foreach (const Function *function, functions().list()) {
         makeFunctionDefinition(function);
         cancellationToken().poll();
     }

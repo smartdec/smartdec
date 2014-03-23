@@ -52,9 +52,9 @@ void TypeAnalyzer::analyze(const CancellationToken &canceled) {
     joinArgumentTypes();
 
     std::vector<FunctionAnalyzer> analyzers;
-    analyzers.reserve(functions_.all().size());
+    analyzers.reserve(functions_.list().size());
 
-    foreach (auto function, functions_.all()) {
+    foreach (auto function, functions_.list()) {
         analyzers.emplace_back(types_, function, *dataflows_.at(function), *livenesses_.at(function));
     }
 

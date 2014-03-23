@@ -46,9 +46,10 @@ class Statement;
 /**
  * Basic block.
  */
-class BasicBlock: public PrintableBase<BasicBlock>, boost::noncopyable {
+class BasicBlock;
+class BasicBlock: public PrintableBase<BasicBlock>, public nc::ilist_item<BasicBlock>, boost::noncopyable {
 public:
-    typedef ilist<Statement> Statements;
+    typedef nc::ilist<Statement> Statements;
 
 private:
     boost::optional<ByteAddr> address_; ///< Address of basic block.
@@ -100,6 +101,9 @@ public:
 
     /**
      * \return Statements of the basic block.
+     *
+     * \warning Do not insert statements into the container directly.
+     *          Use methods of BasicBlock class instead.
      */
     Statements &statements() { return statements_; }
 

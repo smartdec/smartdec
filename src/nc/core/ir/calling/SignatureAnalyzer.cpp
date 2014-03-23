@@ -46,7 +46,7 @@ SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image 
     dataflows_(dataflows),
     hooks_(hooks)
 {
-    foreach (auto function, functions.all()) {
+    foreach (auto function, functions.list()) {
         foreach (auto basicBlock, function->basicBlocks()) {
             foreach (auto statement, basicBlock->statements()) {
                 if (auto call = statement->asCall()) {

@@ -40,7 +40,7 @@ namespace nc {
 namespace core {
 namespace ir {
 
-CFG::CFG(const std::vector<const BasicBlock *> &basicBlocks):
+CFG::CFG(const BasicBlocks &basicBlocks):
     basicBlocks_(basicBlocks)
 {
     foreach (const BasicBlock *basicBlock, basicBlocks) {
