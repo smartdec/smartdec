@@ -173,7 +173,7 @@ FunctionsGenerator::cloneIntoFunction(const std::vector<const BasicBlock *> &bas
 
             /* Remove jumps to direct successors that were not cloned. */
             if (jump->isUnconditional() && !jump->thenTarget()) {
-                basicBlock->popBack();
+                basicBlock->statements().pop_back();
             }
         }
     }

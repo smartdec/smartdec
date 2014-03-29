@@ -219,10 +219,12 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *
             }
         };
 
+        const auto &reachingDefinitions = dataflow.getDefinitions(callHook->snapshotTerm());
+
         foreach (auto memoryLocation, callArguments) {
             memoryLocation = fixup(memoryLocation);
 
-            if (memoryLocation && callHook->reachingDefinitions().projected(memoryLocation).empty()) {
+            if (memoryLocation && reachingDefinitions.projected(memoryLocation).empty()) {
                 result.push_back(memoryLocation);
             }
         }
@@ -260,7 +262,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call
      * Count as an argument everything that reaches the call, can be used to
      * pass an argument, and not used somewhere else.
      */
-    foreach (const auto &chunk, callHook->reachingDefinitions().chunks()) {
+    foreach (const auto &chunk, dataflow.getDefinitions(callHook->snapshotTerm()).chunks()) {
         if (auto memoryLocation = fixup(chunk.location())) {
             foreach (const Term *term, chunk.definitions()) {
                 if (uses.getUses(term).empty()) {

@@ -27,12 +27,10 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
+#include <nc/core/ir/BasicBlock.h>
+#include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/dflow/Dataflow.h>
-#include <nc/core/ir/dflow/DataflowAnalyzer.h>
-#include <nc/core/ir/dflow/ExecutionContext.h>
-#include <nc/core/ir/dflow/Value.h>
 
 #include "Convention.h"
 #include "Signature.h"
@@ -42,60 +40,61 @@ namespace core {
 namespace ir {
 namespace calling {
 
-EntryHook::EntryHook(const Convention *convention, const Signature *signature) {
+EntryHook::EntryHook(const Convention *convention, const Signature *signature):
+    insertedStatementsCount_(0)
+{
     assert(convention != NULL);
 
-    stackPointer_ = std::make_unique<MemoryLocationAccess>(convention->stackPointer());
-    stackPointer_->setAccessType(Term::WRITE);
-
-    entryStatements_.reserve(convention->entryStatements().size());
-
-    foreach (const Statement *statement, convention->entryStatements()) {
-        entryStatements_.push_back(statement->clone());
+    if (convention->stackPointer()) {
+        statements_.push_back(std::make_unique<Assignment>(
+            std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
+            std::make_unique<Intrinsic>(Intrinsic::ZERO_STACK_OFFSET, convention->stackPointer().size<SmallBitSize>())
+        ));
     }
 
+    foreach (auto statement, convention->entryStatements()) {
+        statements_.push_back(statement->clone());
+    }
+
+    auto createArgument = [&](const Term *term) {
+        auto clone = term->clone();
+        argumentTerms_[term] = clone.get();
+
+        statements_.push_back(std::make_unique<Assignment>(
+            std::move(clone),
+            std::make_unique<Intrinsic>(Intrinsic::UNDEFINED, term->size())
+        ));
+    };
+
     if (signature) {
-        foreach (const Term *argument, signature->arguments()) {
-            auto term = argument->clone();
-            term->setAccessType(Term::WRITE);
-            argumentsSet_.insert(term.get());
-            arguments_[argument] = std::move(term);
+        foreach (auto term, signature->arguments()) {
+            createArgument(term);
         }
     }
 }
 
 EntryHook::~EntryHook() {}
 
-void EntryHook::execute(dflow::ExecutionContext &context) {
-    /**
-     * Set stack pointer offset to zero and execute the term.
-     */
-    auto value = context.analyzer().dataflow().getValue(stackPointer_.get());
-    value->makeStackOffset(0);
-    value->setAbstractValue(dflow::AbstractValue(stackPointer_->size(), -1, -1));
-    context.analyzer().execute(stackPointer_.get(), context);
-
-    /*
-     * Execute all arguments terms.
-     */
-    foreach (const auto &argument, arguments_) {
-        context.analyzer().execute(argument.second.get(), context);
+void EntryHook::instrument(Function *function) {
+    if (!function->entry()) {
+        return;
     }
 
-    /*
-     * Execute entry statements.
-     */
-    foreach (auto &statement, entryStatements_) {
-        context.analyzer().execute(statement.get(), context);
+    while (!statements_.empty()) {
+        function->entry()->pushFront(statements_.pop_front());
+        ++insertedStatementsCount_;
     }
 }
 
-const Term *EntryHook::getArgumentTerm(const Term *term) const {
-    return nc::find(arguments_, term).get();
-}
+void EntryHook::deinstrument(Function *function) {
+    if (!function->entry()) {
+        return;
+    }
 
-bool EntryHook::isArgumentTerm(const Term *term) const {
-    return nc::contains(argumentsSet_, term);
+    while (insertedStatementsCount_ > 0) {
+        statements_.push_back(function->entry()->statements().pop_front());
+        --insertedStatementsCount_;
+    }
 }
 
 } // namespace calling

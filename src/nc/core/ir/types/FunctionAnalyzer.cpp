@@ -64,7 +64,6 @@ void FunctionAnalyzer::analyze(const Term *term) {
     switch (term->kind()) {
         case Term::INT_CONST: /* FALLTHROUGH */
         case Term::INTRINSIC: /* FALLTHROUGH */
-        case Term::UNDEFINED: /* FALLTHROUGH */
         case Term::MEMORY_LOCATION_ACCESS:
             break;
         case Term::DEREFERENCE: {
@@ -83,6 +82,10 @@ void FunctionAnalyzer::analyze(const Term *term) {
         default:
             unreachable();
             break;
+    }
+
+    if (dataflow_.getValue(term)->isStackOffset()) {
+        types_.getType(term)->makePointer();
     }
 }
 

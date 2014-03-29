@@ -25,9 +25,10 @@
 
 #include <nc/config.h>
 
-#include <memory>
-
 #include <boost/unordered_map.hpp>
+
+#include <nc/common/Range.h>
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
@@ -37,31 +38,32 @@ class Return;
 class Statement;
 class Term;
 
-namespace dflow {
-    class ExecutionContext;
-}
-
 namespace calling {
 
 class Convention;
 class Signature;
 
 /**
- * Hook being executed after a return is executed.
+ * Hook installed at a return site.
  */
 class ReturnHook {
+    /** Statements inserted during instrumentation. */
+    nc::ilist<Statement> statements_;
+
     /** Mapping of terms where return values may be kept to their clones. */
-    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValueTerms_;
+    boost::unordered_map<const Term *, const Term *> returnValueTerms_;
+
+    /** Number of inserted statements. */
+    std::size_t insertedStatementsCount_;
 
 public:
     /**
      * Class constructor.
      *
-     * \param[in] ret Valid pointer to the return statement being hooked.
      * \param[in] convention Valid pointer to the calling convention.
      * \param[in] signature Pointer to the function's signature. Can be NULL.
      */
-    ReturnHook(const Return *ret, const Convention *convention, const Signature *signature);
+    ReturnHook(const Convention *convention, const Signature *signature);
 
     /**
      * Destructor.
@@ -69,11 +71,18 @@ public:
     ~ReturnHook();
 
     /**
-     * A method being called when specified return statement is executed.
-     * 
-     * \param context Execution context.
+     * Instruments a return statement.
+     *
+     * \param[in] ret Valid pointer to the return statement.
      */
-    void execute(dflow::ExecutionContext &context);
+    void instrument(Return *ret);
+
+    /**
+     * Deinstruments the previously instrumented return statement.
+     *
+     * \param[in] ret Valid pointer to the return statement.
+     */
+    void deinstrument(Return *ret);
 
     /**
      * \param term Valid pointer to a term representing the return value
@@ -82,7 +91,10 @@ public:
      * \return Pointer to the term representing the return value in the hook.
      *         Will be NULL, if the signature does not include such an argument.
      */
-    const Term *getReturnValueTerm(const Term *term) const;
+    const Term *getReturnValueTerm(const Term *term) const {
+        assert(term != NULL);
+        return nc::find(returnValueTerms_, term);
+    }
 };
 
 } // namespace calling

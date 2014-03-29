@@ -35,7 +35,12 @@ namespace core {
 namespace ir {
 namespace calling {
 
-Convention::Convention(QString name): name_(std::move(name)), calleeCleanup_(false) {}
+Convention::Convention(QString name):
+    name_(std::move(name)),
+    firstArgumentOffset_(0),
+    argumentAlignment_(0),
+    calleeCleanup_(false)
+{}
 
 Convention::~Convention() {}
 

@@ -39,10 +39,6 @@
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calling/CallHook.h>
-#include <nc/core/ir/calling/Hooks.h>
-#include <nc/core/ir/calling/EntryHook.h>
-#include <nc/core/ir/calling/ReturnHook.h>
 
 #include "Dataflow.h"
 #include "ExecutionContext.h"
@@ -89,15 +85,6 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
 
             /* Remove definitions that do not cover the memory location that they define. */
             context.definitions().filterOut(notCovered);
-
-            /* If this is a function entry, run the calling convention-specific code. */
-            if (basicBlock == function()->entry()) {
-                if (hooks()) {
-                    if (auto entryHook = hooks()->getEntryHook(function())) {
-                        entryHook->execute(context);
-                    }
-                }
-            }
 
             /* Execute all the statements in the basic block. */
             foreach (const Statement *statement, basicBlock->statements()) {
@@ -171,6 +158,8 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
             execute(call->target(), context);
 
             if (hooks()) {
+                // TODO
+#if 0
                 const Value *targetValue = dataflow().getValue(call->target());
 
                 if (targetValue->abstractValue().isConcrete()) {
@@ -178,19 +167,11 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
                 } else {
                     hooks()->setCalledAddress(call, boost::none);
                 }
-
-                if (auto callHook = hooks()->getCallHook(call)) {
-                    callHook->execute(context);
-                }
+#endif
             }
             break;
         }
         case Statement::RETURN: {
-            if (function() && hooks()) {
-                if (auto returnHook = hooks()->getReturnHook(function(), statement->asReturn())) {
-                    returnHook->execute(context);
-                }
-            }
             break;
         }
         default:
@@ -211,12 +192,33 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
             value->makeNotProduct();
             break;
         }
-        case Term::INTRINSIC: /* FALLTHROUGH */
-        case Term::UNDEFINED: {
-            Value *value = dataflow().getValue(term);
-            value->setAbstractValue(AbstractValue(term->size(), -1, -1));
-            value->makeNotStackOffset();
-            value->makeNotProduct();
+        case Term::INTRINSIC: {
+            auto intrinsic = term->asIntrinsic();
+            Value *value = dataflow().getValue(intrinsic);
+
+            switch (intrinsic->intrinsicKind()) {
+                case Intrinsic::UNKNOWN: /* FALLTHROUGH */
+                case Intrinsic::UNDEFINED: {
+                    value->setAbstractValue(AbstractValue(term->size(), -1, -1));
+                    value->makeNotStackOffset();
+                    value->makeNotProduct();
+                    break;
+                }
+                case Intrinsic::ZERO_STACK_OFFSET: {
+                    value->setAbstractValue(AbstractValue(term->size(), -1, -1));
+                    value->makeStackOffset(0);
+                    value->makeNotProduct();
+                    break;
+                }
+                case Intrinsic::REACHING_SNAPSHOT: {
+                    dataflow_.getDefinitions(intrinsic) = context.definitions();
+                    break;
+                }
+                default: {
+                    ncWarning("Unknown kind of intrinsic: '%1'", intrinsic->intrinsicKind());
+                    break;
+                }
+            }
             break;
         }
         case Term::MEMORY_LOCATION_ACCESS: {

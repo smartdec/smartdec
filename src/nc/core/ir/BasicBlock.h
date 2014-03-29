@@ -118,14 +118,21 @@ public:
      * \param position Position where the statement must be inserted.
      * \param statement Valid pointer to the statement being inserted.
      */
-    void insertStatement(Statements::const_iterator position, std::unique_ptr<Statement> statement);
+    void insert(Statements::const_iterator position, std::unique_ptr<Statement> statement);
 
     /**
-     * Adds a statement to the end of the basic block.
+     * Insertes a statement at the front of the basic block.
      *
      * \param statement Valid pointer to the statement being added.
      */
-    void addStatement(std::unique_ptr<Statement> statement);
+    void pushFront(std::unique_ptr<Statement> statement);
+
+    /**
+     * Inserts a statement at the end of the basic block.
+     *
+     * \param statement Valid pointer to the statement being added.
+     */
+    void pushBack(std::unique_ptr<Statement> statement);
 
     /**
      * Inserts a statement after a given one.
@@ -133,15 +140,7 @@ public:
      * \param after Valid pointer to the statement after which to insert.
      * \param statement Valid pointer to the statement being inserted.
      */
-    void insertStatementAfter(const Statement *after, std::unique_ptr<Statement> statement);
-
-    /**
-     * Removes the last statement in the basic block.
-     * The basic block must be not empty.
-     *
-     * \return Valid pointer to the removed statement.
-     */
-    std::unique_ptr<Statement> popBack();
+    void insertAfter(const Statement *after, std::unique_ptr<Statement> statement);
 
     /**
      * \return Valid pointer to the last statement in the basic block if this

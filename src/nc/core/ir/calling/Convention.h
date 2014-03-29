@@ -26,9 +26,10 @@
 #include <nc/config.h>
 
 #include <memory>
-#include <vector>
 
 #include <QString>
+
+#include <nc/common/ilist.h>
 
 #include <nc/core/ir/MemoryLocation.h>
 
@@ -45,6 +46,10 @@ namespace calling {
  * Description of a calling convention.
  */
 class Convention {
+public:
+    typedef nc::ilist<Statement> Statements;
+
+private:
     QString name_; ///< Name of the calling convention.
 
     MemoryLocation stackPointer_; ///< Memory location of stack pointer register.
@@ -57,7 +62,7 @@ class Convention {
 
     bool calleeCleanup_; ///< Callee cleans up arguments.
 
-    std::vector<std::unique_ptr<const Statement>> entryStatements_; ///< Statements executed when a function is entered.
+    nc::ilist<Statement> entryStatements_; ///< Statements executed when the function is entered.
 
 public:
     /**
@@ -140,9 +145,7 @@ public:
      * they are guaranteed to be set by calling convention, i.e. set Intel's direction
      * flag to zero.
      */
-    const std::vector<const Statement *> &entryStatements() const {
-        return reinterpret_cast<const std::vector<const Statement *> &>(entryStatements_);
-    }
+    const Statements &entryStatements() const { return entryStatements_; }
 
 protected:
     /**

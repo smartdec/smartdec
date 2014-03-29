@@ -66,49 +66,42 @@ protected:
 };
 
 /**
- * Value computed using built-in function.
+ * Term representing a special value.
  */
 class Intrinsic: public Term {
-    NC_CLASS_WITH_KINDS(Intrinsic, intrinsicKind)
+    int intrinsicKind_;     ///< Kind of this intrinsic.
 
 public:
+    /**
+     * Intrinsic kinds.
+     */
     enum {
-        UNKNOWN,    ///< Unknown intrinsic.
-        USER = 1000 ///< First user intrinsic.
+        UNKNOWN,            ///< Unknown intrinsic.
+        UNDEFINED,          ///< Undefined value, generally not a stack offset.
+        ZERO_STACK_OFFSET,  ///< Undefined value, zero stack offset.
+        REACHING_SNAPSHOT,  ///< Used for making shapshots of reaching definitions.
+        USER = 1000         ///< First user intrinsic.
     };
 
     /**
      * Constructor.
      *
-     * \param[in] intrinsicKind Kind of the intrinsic.
+     * \param[in] intrinsicKind Type of this intrinsic.
      * \param[in] size          Size of this term's value in bits.
      */
     Intrinsic(int intrinsicKind, SmallBitSize size):
         Term(INTRINSIC, size), intrinsicKind_(intrinsicKind)
     {}
 
+    /**
+     * \return Kind of this intrinsic.
+     */
+    int intrinsicKind() const { return intrinsicKind_; }
+
     virtual void print(QTextStream &out) const override;
 
 protected:
     virtual Intrinsic *doClone() const override;
-};
-
-/**
- * Undefined.
- */
-class Undefined: public Term {
-public:
-    /**
-     * Constructor.
-     * 
-     * \param[in] size Size of this term's value in bits.
-     */
-    Undefined(SmallBitSize size): Term(UNDEFINED, size) {}
-
-    virtual void print(QTextStream &out) const override;
-
-protected:
-    virtual Undefined *doClone() const override;
 };
 
 /**

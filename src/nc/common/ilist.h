@@ -298,7 +298,7 @@ public:
      *
      * \param element Valid pointer to an element in the list.
      *
-     * \return Valid pointer to the deleted element.
+     * \return Valid pointer to the removed element.
      */
     unique_ptr erase(pointer element) {
         assert(element != NULL);
@@ -314,6 +314,17 @@ public:
         element->ilist_item<T>::prev_ = NULL;
 
         return unique_ptr(element, deleter_);
+    }
+
+    /**
+     * Removes the element at a given position from the list.
+     *
+     * \param iterator Iterator pointing to the given element.
+     *
+     * \return Valid pointer to the removed element.
+     */
+    unique_ptr erase(iterator iterator) {
+        return erase(*iterator);
     }
 
     /**

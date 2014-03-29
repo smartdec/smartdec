@@ -5,25 +5,18 @@
 
 #include <nc/config.h>
 
-#include <memory>
-#include <vector>
-
 #include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 
-#include <nc/core/ir/MemoryLocation.h>
+#include <nc/common/ilist.h>
+#include <nc/common/Range.h>
 
 namespace nc {
 namespace core {
 namespace ir {
 
-class MemoryLocation;
+class Function;
 class Statement;
 class Term;
-
-namespace dflow {
-    class ExecutionContext;
-}
 
 namespace calling {
 
@@ -31,27 +24,24 @@ class Convention;
 class Signature;
 
 /**
- * Hook being executed before function's entry is executed.
+ * Hook installed at function's entry.
  */
 class EntryHook {
-    /** Term for initializing stack pointer. */
-    std::unique_ptr<Term> stackPointer_;
+    /** Statements inserted during installation. */
+    nc::ilist<Statement> statements_;
 
-    /** Statements executed when a function is entered. */
-    std::vector<std::unique_ptr<const Statement>> entryStatements_;
+    /** Mapping from argument terms to their clones. */
+    boost::unordered_map<const Term *, const Term *> argumentTerms_;
 
-    /** Mapping of argument memory locations to corresponding terms. */
-    boost::unordered_map<const Term *, std::unique_ptr<Term>> arguments_;
-
-    /** Set of the values in arguments_. */
-    boost::unordered_set<const Term *> argumentsSet_;
+    /** Number of inserted statements. */
+    std::size_t insertedStatementsCount_;
 
 public:
     /**
      * Class constructor.
      *
-     * \param[in] convention Valid pointer to the calling convention.
-     * \param[in] signature Pointer to the function's signature. Can be NULL.
+     * \param[in] convention    Valid pointer to the calling convention.
+     * \param[in] signature     Pointer to the function's signature. Can be NULL.
      */
     EntryHook(const Convention *convention, const Signature *signature);
 
@@ -61,38 +51,30 @@ public:
     ~EntryHook();
 
     /**
-     * \return Statements that are executed behind the scence on function entry. Can be NULL.
+     * Instruments a function.
      *
-     * These statements will be actually used for generation of function->entry() basic block's code.
+     * \param[in] function Valid pointer to the function.
      */
-    const std::vector<const Statement *> &entryStatements() const {
-        return reinterpret_cast<const std::vector<const Statement *> &>(entryStatements_);
+    void instrument(Function *function);
+
+    /**
+     * Deinstruments the previously instrumented function.
+     *
+     * \param[in] function Valid pointer to the function.
+     */
+    void deinstrument(Function *function);
+
+    /**
+     * \param term Valid pointer to the term representing an argument
+     *             in the signature.
+     *
+     * \return Pointer to the term representing this argument in the instrumentation.
+     *         Will be NULL, if the signature does not include such an argument.
+     */
+    const Term *getArgumentTerm(const Term *term) const {
+        assert(term != NULL);
+        return nc::find(argumentTerms_, term);
     }
-
-    /**
-     * This method is called just before function's entry
-     * basic block gets executed.
-     *
-     * \param context Execution context.
-     */
-    void execute(dflow::ExecutionContext &context);
-
-    /**
-     * \param term Valid pointer to a term representing an argument
-     *             in a signature.
-     *
-     * \return Pointer to the term representing this argument in the hook.
-     *         Will be NULL, if signature does not include such an argument.
-     */
-    const Term *getArgumentTerm(const Term *term) const;
-
-    /**
-     * \param term Valid pointer to a term.
-     *
-     * \return True if the term is an argument term belonging to this hook,
-     *         false otherwise.
-     */
-    bool isArgumentTerm(const Term *term) const;
 };
 
 } // namespace calling

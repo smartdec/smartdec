@@ -24,14 +24,12 @@
 
 #include "ReturnHook.h"
 
+#include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/dflow/Dataflow.h>
-#include <nc/core/ir/dflow/DataflowAnalyzer.h>
-#include <nc/core/ir/dflow/ExecutionContext.h>
 
 #include <nc/common/Foreach.h>
-#include <nc/common/Range.h>
+#include <nc/common/make_unique.h>
 
 #include "Convention.h"
 #include "Signature.h"
@@ -41,33 +39,45 @@ namespace core {
 namespace ir {
 namespace calling {
 
-ReturnHook::ReturnHook(const Return *ret, const Convention *convention, const Signature *signature) {
-    assert(ret != NULL);
+ReturnHook::ReturnHook(const Convention *convention, const Signature *signature):
+    insertedStatementsCount_(0)
+{
     assert(convention != NULL);
+
+    auto createReturnValue = [&](const Term *term) {
+        auto clone = term->clone();
+        returnValueTerms_[term] = clone.get();
+        statements_.push_back(std::make_unique<Touch>(
+            std::move(clone),
+            Term::READ
+        ));
+    };
 
     if (signature) {
         if (signature->returnValue()) {
-            returnValueTerms_[signature->returnValue()] = signature->returnValue()->clone();
+            createReturnValue(signature->returnValue());
         }
-    }
-
-    foreach (const auto &pair, returnValueTerms_) {
-        pair.second->setAccessType(Term::READ);
-        pair.second->setStatement(ret);
+    } else {
+        foreach (auto term, convention->returnValueTerms()) {
+            createReturnValue(term);
+        }
     }
 }
 
 ReturnHook::~ReturnHook() {}
 
-void ReturnHook::execute(dflow::ExecutionContext &context) {
-    foreach (const auto &pair, returnValueTerms_) {
-        context.analyzer().execute(pair.second.get(), context);
+void ReturnHook::instrument(Return *ret) {
+    while (!statements_.empty()) {
+        ret->basicBlock()->insertAfter(ret, statements_.pop_back());
+        ++insertedStatementsCount_;
     }
 }
 
-const Term *ReturnHook::getReturnValueTerm(const Term *term) const {
-    assert(term != NULL);
-    return nc::find(returnValueTerms_, term).get();
+void ReturnHook::deinstrument(Return *ret) {
+    while (insertedStatementsCount_ > 0) {
+        statements_.push_back(ret->basicBlock()->statements().erase(++ret->basicBlock()->statements().get_iterator(ret)));
+        --insertedStatementsCount_;
+    }
 }
 
 } // namespace calling

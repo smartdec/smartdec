@@ -881,7 +881,7 @@ protected:
             throw InvalidInstructionException(tr("size of an undefined expression is unknown"));
         }
 
-        return std::make_unique<ir::Undefined>(expression.size());
+        return std::make_unique<ir::Intrinsic>(ir::Intrinsic::UNDEFINED, expression.size());
     }
 
     /**
@@ -1290,7 +1290,7 @@ public:
 
     void operator()(std::unique_ptr<ir::Statement> statement) const {
         statement->setInstruction(mFactory.instruction());
-        mBasicBlock->addStatement(std::move(statement));
+        mBasicBlock->pushBack(std::move(statement));
     }
 
 protected:

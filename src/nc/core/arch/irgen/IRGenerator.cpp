@@ -199,7 +199,7 @@ void IRGenerator::addJumpToDirectSuccessor(ir::BasicBlock *basicBlock) {
     if (!basicBlock->getTerminator()) {
         if (basicBlock->successorAddress() && basicBlock->successorAddress() != basicBlock->address()) {
             if (ir::BasicBlock *directSuccessor = program_->getBasicBlockStartingAt(*basicBlock->successorAddress())) {
-                basicBlock->addStatement(std::make_unique<ir::Jump>(ir::JumpTarget(directSuccessor)));
+                basicBlock->pushBack(std::make_unique<ir::Jump>(ir::JumpTarget(directSuccessor)));
             }
         }
     }

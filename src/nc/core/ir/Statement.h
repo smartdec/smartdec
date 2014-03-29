@@ -105,12 +105,10 @@ public:
     void setBasicBlock(BasicBlock *basicBlock) { basicBlock_ = basicBlock; }
 
     /**
-     * \param[in] instruction Instruction that this statement was generated from.
+     * \param[in] instruction Instruction from which this statement was generated.
      */
     void setInstruction(const arch::Instruction *instruction) {
-        assert(instruction);
-        assert(!instruction_); /* Must be used for initialization only. */
-
+        assert(!instruction_ && "Instruction must be set only once.");
         instruction_ = instruction;
     }
 

@@ -25,12 +25,12 @@
 
 #include <nc/config.h>
 
-#include <memory>
-
 #include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
 
-#include <nc/core/ir/dflow/ReachingDefinitions.h>
+#include <nc/common/Range.h>
+#include <nc/common/Types.h>
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
@@ -40,33 +40,32 @@ class Call;
 class Statement;
 class Term;
 
-namespace dflow {
-    class ExecutionContext;
-}
-
 namespace calling {
 
 class Convention;
 class Signature;
 
 /**
- * Hook being executed after a call is executed.
+ * Hooks installed at a call site.
  */
 class CallHook {
+    /** Term for tracking stack pointer. */
+    const Term *stackPointer_;
+
+    /** Statements inserted during instrumentation. */
+    nc::ilist<Statement> statements_;
+
+    /** Term for snapshotting reaching definitions. */
+    const Term *snapshotTerm_;
+
     /** Mapping from an argument term to its clone. */
-    boost::unordered_map<const Term *, std::unique_ptr<Term>> argumentTerms_;
+    boost::unordered_map<const Term *, const Term *> argumentTerms_;
 
     /** Mapping from a return value term to its clone. */
-    boost::unordered_map<const Term *, std::unique_ptr<Term>> returnValueTerms_;
+    boost::unordered_map<const Term *, const Term *> returnValueTerms_;
 
-    /** Term for tracking stack pointer. */
-    std::unique_ptr<Term> stackPointer_;
-
-    /** Statement to change stack pointer by the amendment constant. */
-    std::unique_ptr<Statement> cleanupStatement_;
-
-    /** Definitions reaching this hook. */
-    dflow::ReachingDefinitions reachingDefinitions_;
+    /** Number of inserted statements. */
+    std::size_t insertedStatementsCount_;
 
 public:
     /**
@@ -77,7 +76,7 @@ public:
      * \param[in] signature Pointer to the function's signature. Can be NULL.
      * \param[in] stackArgumentsSize Size of arguments passed on the stack.
      */
-    CallHook(const Call *call, const Convention *convention, const Signature *signature, const boost::optional<ByteSize> &stackArgumentsSize);
+    CallHook(const Convention *convention, const Signature *signature, const boost::optional<ByteSize> &stackArgumentsSize);
 
     /**
      * Destructor.
@@ -85,16 +84,24 @@ public:
     ~CallHook();
 
     /**
-     * A method being called when specified call statement is executed.
+     * Instruments a call statement.
      *
-     * \param context Execution context.
+     * \param[in] call Valid pointer to the call statement.
      */
-    void execute(dflow::ExecutionContext &context);
+    void instrument(Call *call);
 
     /**
-     * \return Definitions reaching this hook.
+     * Deinstruments the previously instrumented call statement.
+     *
+     * \param[in] call Valid pointer to the call statement.
      */
-    const dflow::ReachingDefinitions &reachingDefinitions() const { return reachingDefinitions_; }
+    void deinstrument(Call *call);
+
+    /**
+     * \return Pointer to the term used for snapshotting reaching definitions.
+     *         Will be NULL if signature was given to the constructor.
+     */
+    const Term *snapshotTerm() const { return snapshotTerm_; }
 
     /**
      * \param term Valid pointer to a term representing the argument
@@ -103,7 +110,10 @@ public:
      * \return Pointer to the term representing this argument in the hook.
      *         Will be NULL, if signature does not include such an argument.
      */
-    const Term *getArgumentTerm(const Term *term) const;
+    const Term *getArgumentTerm(const Term *term) const {
+        assert(term != NULL);
+        return nc::find(argumentTerms_, term);
+    }
 
     /**
      * \param term Valid pointer to a term representing the return value
@@ -112,13 +122,16 @@ public:
      * \return Pointer to the term representing the return value in the hook.
      *         Will be NULL, if the signature does not include such an argument.
      */
-    const Term *getReturnValueTerm(const Term *term) const;
+    const Term *getReturnValueTerm(const Term *term) const {
+        assert(term != NULL);
+        return nc::find(returnValueTerms_, term);
+    }
 
     /**
      * \return Pointer to the stack pointer term. Can be NULL if the corresponding
      *         calling convention defines no stack pointer.
      */
-    const Term *stackPointer() const { return stackPointer_.get(); }
+    const Term *stackPointer() const { return stackPointer_; }
 };
 
 } // namespace calling

@@ -236,10 +236,6 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
             item->addChild(tr("intrinsic kind = %1").arg(intrinsic->intrinsicKind()));
             break;
         }
-        case core::ir::Term::UNDEFINED: {
-            item->addChild(tr("Undefined"));
-            break;
-        }
         case core::ir::Term::MEMORY_LOCATION_ACCESS: {
             auto *access = term->asMemoryLocationAccess();
             item->addComment(tr("Memory Location Access"));

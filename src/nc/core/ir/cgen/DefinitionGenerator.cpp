@@ -143,12 +143,6 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
                         std::make_unique<likec::VariableIdentifier>(tree(), variableDeclaration))));
             }
         }
-
-        foreach (const Statement *statement, entryHook->entryStatements()) {
-            if (auto likecStatement = makeStatement(statement, NULL, NULL, NULL)) {
-                definition()->block()->addStatement(std::move(likecStatement));
-            }
-        }
     }
 
     SwitchContext switchContext;
@@ -730,7 +724,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
         }
         case Statement::RETURN: {
             if (signature()->returnValue()) {
-                if (auto returnHook = parent().hooks().getReturnHook(function_, statement->asReturn())) {
+                if (auto returnHook = parent().hooks().getReturnHook(statement->asReturn())) {
                     return std::make_unique<likec::Return>(
                         tree(),
                         makeExpression(returnHook->getReturnValueTerm(signature()->returnValue())));
@@ -822,9 +816,6 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
         }
         case Term::INTRINSIC: {
             return std::make_unique<likec::CallOperator>(tree(), std::make_unique<likec::String>(tree(), "intrinsic"));
-        }
-        case Term::UNDEFINED: {
-            return std::make_unique<likec::CallOperator>(tree(), std::make_unique<likec::String>(tree(), "undefined"));
         }
         case Term::MEMORY_LOCATION_ACCESS: {
             assert(!"The term must belong to a variable.");
@@ -1106,15 +1097,6 @@ bool DefinitionGenerator::isDominating(const Term *write, const Term *read) cons
     assert(read != NULL);
     assert(read->isRead());
 
-    if (!write->statement() || !write->statement()->basicBlock()) {
-        if (auto entryHook = parent().hooks().getEntryHook(function_)) {
-            /* Assignments to arguments dominate everything in the function. */
-            if (entryHook->isArgumentTerm(write)) {
-                return true;
-            }
-        }
-        return false;
-    }
     if (!read->statement() || !read->statement()->basicBlock()) {
         return false;
     }
@@ -1216,8 +1198,6 @@ bool DefinitionGenerator::isMovable(const Term *term) {
                 return true;
             case Term::INTRINSIC:
                 return false;
-            case Term::UNDEFINED:
-                return true;
             case Term::MEMORY_LOCATION_ACCESS:
                 return false;
             case Term::DEREFERENCE:

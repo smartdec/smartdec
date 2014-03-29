@@ -169,7 +169,7 @@ public:
      * \return Pointer to a ReturnHook instance for this return statement.
      * Can be NULL. Such instance is created when necessary and if possible.
      */
-    ReturnHook *getReturnHook(const Function *function, const Return *ret);
+    ReturnHook *getReturnHook(const Return *ret);
 
     /**
      * \param call Valid pointer to a call statement.

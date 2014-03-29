@@ -122,10 +122,10 @@ EntryHook *Hooks::getEntryHook(const Function *function) {
     return NULL;
 }
 
-ReturnHook *Hooks::getReturnHook(const Function *function, const Return *ret) {
+ReturnHook *Hooks::getReturnHook(const Return *ret) {
     assert(ret != NULL);
 
-    auto calleeId = getCalleeId(function);
+    auto calleeId = getCalleeId(ret->basicBlock()->function());
     if (!calleeId) {
         return NULL;
     }
@@ -135,7 +135,7 @@ ReturnHook *Hooks::getReturnHook(const Function *function, const Return *ret) {
     }
     if (auto convention = getConvention(calleeId)) {
         return (calleeHooks_[calleeId].returnHooks[ret] =
-            std::make_unique<ReturnHook>(ret, convention, signatures_.getSignature(calleeId))).get();
+            std::make_unique<ReturnHook>(convention, signatures_.getSignature(calleeId))).get();
     }
     return NULL;
 }
@@ -153,7 +153,7 @@ CallHook *Hooks::getCallHook(const Call *call) {
     }
     if (auto convention = getConvention(calleeId)) {
         return (calleeHooks_[calleeId].callHooks[call] = std::make_unique<CallHook>(
-            call, convention, signatures_.getSignature(calleeId), conventions_.getStackArgumentsSize(calleeId))).get();
+            convention, signatures_.getSignature(calleeId), conventions_.getStackArgumentsSize(calleeId))).get();
     }
     return NULL;
 }

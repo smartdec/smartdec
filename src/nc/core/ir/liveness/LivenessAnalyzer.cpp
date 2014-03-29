@@ -158,8 +158,6 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
             break;
         case Term::INTRINSIC:
             break;
-        case Term::UNDEFINED:
-            break;
         case Term::MEMORY_LOCATION_ACCESS: {
             if (term->isRead()) {
                 foreach (auto &chunk, dataflow().getDefinitions(term).chunks()) {

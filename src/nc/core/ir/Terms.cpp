@@ -47,15 +47,7 @@ Intrinsic *Intrinsic::doClone() const {
 }
 
 void Intrinsic::print(QTextStream &out) const {
-    out << "intrinsic";
-}
-
-Undefined *Undefined::doClone() const {
-    return new Undefined(size());
-}
-
-void Undefined::print(QTextStream &out) const {
-    out << "undefined";
+    out << "intrinsic(" << intrinsicKind() << ")";
 }
 
 MemoryLocationAccess::MemoryLocationAccess(const MemoryLocation &memoryLocation):

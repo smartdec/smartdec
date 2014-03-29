@@ -42,7 +42,6 @@ namespace ir {
 
 class Constant;
 class Intrinsic;
-class Undefined;
 class BinaryOperator;
 class Choice;
 class Dereference;
@@ -63,8 +62,7 @@ public:
      */
     enum {
         INT_CONST, ///< Integer constant.
-        INTRINSIC, ///< Intrinsic function call.
-        UNDEFINED, ///< Undefined value.
+        INTRINSIC, ///< Some special value.
         MEMORY_LOCATION_ACCESS, ///< Access to an abstract memory location.
         DEREFERENCE, ///< Dereference.
         UNARY_OPERATOR, ///< Unary operator.
@@ -210,7 +208,6 @@ protected:
 
 NC_REGISTER_TERM_CLASS(nc::core::ir::Constant,             nc::core::ir::Term::INT_CONST)
 NC_REGISTER_TERM_CLASS(nc::core::ir::Intrinsic,            nc::core::ir::Term::INTRINSIC)
-NC_REGISTER_TERM_CLASS(nc::core::ir::Undefined,            nc::core::ir::Term::UNDEFINED)
 NC_REGISTER_TERM_CLASS(nc::core::ir::MemoryLocationAccess, nc::core::ir::Term::MEMORY_LOCATION_ACCESS)
 NC_REGISTER_TERM_CLASS(nc::core::ir::Dereference,          nc::core::ir::Term::DEREFERENCE)
 NC_REGISTER_TERM_CLASS(nc::core::ir::UnaryOperator,        nc::core::ir::Term::UNARY_OPERATOR)

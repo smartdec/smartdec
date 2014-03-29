@@ -51,14 +51,14 @@ void CallInliner::perform(Function *receivingFunction, const Call *call, const F
         receivingFunction);
 
     /* Replace the call by the jump to the cloned entry. */
-    leadIn->popBack();
-    leadIn->addStatement(std::make_unique<Jump>(JumpTarget(nc::find(clones, inlinedFunction->entry()))));
+    leadIn->statements().pop_back();
+    leadIn->pushBack(std::make_unique<Jump>(JumpTarget(nc::find(clones, inlinedFunction->entry()))));
 
     /* Replace returns by the jumps to 'lead out'. */
     foreach (BasicBlock *basicBlock, clones | boost::adaptors::map_values) {
         if (basicBlock->getReturn()) {
-            basicBlock->popBack();
-            basicBlock->addStatement(std::make_unique<Jump>(leadOut.get()));
+            basicBlock->statements().pop_back();
+            basicBlock->pushBack(std::make_unique<Jump>(leadOut.get()));
         }
     }
 

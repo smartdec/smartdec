@@ -70,11 +70,12 @@ void IntelMasterAnalyzer::createProgram(core::Context &context) const {
                             access->memoryLocation().addr() == 0 &&
                             access->memoryLocation().size() == 32)
                         {
-                            basicBlock->insertStatementAfter(
-                                statement,
-                                std::make_unique<core::ir::Assignment>(
+                            auto patch = std::make_unique<core::ir::Assignment>(
                                     std::make_unique<core::ir::MemoryLocationAccess>(access->memoryLocation().shifted(32)),
-                                    std::make_unique<core::ir::Constant>(SizedValue(32, 0))));
+                                    std::make_unique<core::ir::Constant>(SizedValue(32, 0)));
+                            patch->setInstruction(statement->instruction());
+
+                            basicBlock->insertAfter(statement, std::move(patch));
                         }
                     }
                 }
