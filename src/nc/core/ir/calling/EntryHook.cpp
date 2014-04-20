@@ -33,14 +33,14 @@
 #include <nc/core/ir/Terms.h>
 
 #include "Convention.h"
-#include "Signature.h"
+#include "FunctionSignature.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace calling {
 
-EntryHook::EntryHook(const Convention *convention, const Signature *signature):
+EntryHook::EntryHook(const Convention *convention, const FunctionSignature *signature):
     insertedStatementsCount_(0)
 {
     assert(convention != NULL);
@@ -68,7 +68,7 @@ EntryHook::EntryHook(const Convention *convention, const Signature *signature):
 
     if (signature) {
         foreach (auto term, signature->arguments()) {
-            createArgument(term);
+            createArgument(term.get());
         }
     }
 }

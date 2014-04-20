@@ -43,7 +43,7 @@ class Term;
 namespace calling {
 
 class Convention;
-class Signature;
+class CallSignature;
 
 /**
  * Hooks installed at a call site.
@@ -73,10 +73,10 @@ public:
      *
      * \param[in] call Valid pointer to the call statement being hooked.
      * \param[in] convention Valid pointer to the calling convention.
-     * \param[in] signature Pointer to the function's signature. Can be NULL.
+     * \param[in] signature Pointer to the call's signature. Can be NULL.
      * \param[in] stackArgumentsSize Size of arguments passed on the stack.
      */
-    CallHook(const Convention *convention, const Signature *signature, const boost::optional<ByteSize> &stackArgumentsSize);
+    CallHook(const Convention *convention, const CallSignature *signature, const boost::optional<ByteSize> &stackArgumentsSize);
 
     /**
      * Destructor.

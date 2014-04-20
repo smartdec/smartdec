@@ -43,7 +43,7 @@ namespace ir {
 class Term;
 
 namespace calling {
-    class Signature;
+    class FunctionSignature;
 }
 
 namespace cgen {
@@ -53,7 +53,7 @@ namespace cgen {
  */
 class DeclarationGenerator: boost::noncopyable {
     CodeGenerator &parent_; ///< Parent code generator.
-    const calling::Signature *signature_; ///< Signature of the function.
+    const calling::FunctionSignature *signature_; ///< Signature of the function.
     likec::FunctionDeclaration *declaration_; ///< Function's declaration.
 
 public:
@@ -63,7 +63,7 @@ public:
      * \param parent Parent code generator.
      * \param signature Valid pointer to the function's signature.
      */
-    DeclarationGenerator(CodeGenerator &parent, const calling::Signature *signature);
+    DeclarationGenerator(CodeGenerator &parent, const calling::FunctionSignature *signature);
 
     /**
      * Virtual destructor.
@@ -84,7 +84,7 @@ public:
      * \return Pointer to the signature of the function, for which
      *         declaration is generated. Can be NULL.
      */
-    const calling::Signature *signature() const { return signature_; }
+    const calling::FunctionSignature *signature() const { return signature_; }
 
     /**
      * \return Function's declaration.

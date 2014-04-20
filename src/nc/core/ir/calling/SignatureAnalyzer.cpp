@@ -76,6 +76,8 @@ void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
     do {
         changed = false;
 
+        // FIXME
+        #if 0
         foreach (const CalleeId &calleeId, hooks_.map() | boost::adaptors::map_keys) {
             auto arguments = computeArguments(calleeId);
             auto &oldArguments = id2arguments_[calleeId];
@@ -87,6 +89,7 @@ void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
 
             canceled.poll();
         }
+        #endif
 
         if (++niterations > 5) {
             ncWarning("Didn't reach a fixpoint after %1 iterations while reconstructing arguments. Giving up.", niterations);
@@ -125,6 +128,8 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &
         return result;
     }
 
+    // FIXME
+    #if 0
     const auto &calleeHooks = nc::find(hooks_.map(), calleeId);
 
     struct Placement {
@@ -167,6 +172,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &
             }
         }
     }
+    #endif
 
     return convention->sortArguments(result);
 }
@@ -198,6 +204,8 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *
      * is not defined in the function, this memory location is likely
      * to be used for passing an argument.
      */
+    // FIXME
+    #if 0
     foreach (auto call, nc::find(function2calls_, function)) {
         const auto &callArguments = nc::find(id2arguments_, hooks_.getCalleeId(call));
         if (callArguments.empty()) {
@@ -229,6 +237,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *
             }
         }
     }
+    #endif
 
     return result;
 }
@@ -277,15 +286,20 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call
 }
 
 void SignatureAnalyzer::computeSignatures(const CancellationToken &canceled) {
+    // FIXME
+    #if 0
     foreach (const auto &calleeId, hooks_.map() | boost::adaptors::map_keys) {
         computeSignature(calleeId);
         canceled.poll();
     }
+    #endif
 }
 
 void SignatureAnalyzer::computeSignature(const CalleeId &calleeId) {
     assert(calleeId);
 
+    // FIXME
+    #if 0
     if (signatures_.getSignature(calleeId)) {
         return;
     }
@@ -346,6 +360,7 @@ void SignatureAnalyzer::computeSignature(const CalleeId &calleeId) {
     }
 
     signatures_.setSignature(calleeId, std::move(signature));
+    #endif
 }
 
 } // namespace calling

@@ -34,6 +34,8 @@
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statements.h>
+#include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Value.h>
 
 #include "Conventions.h"
 #include "CallHook.h"
@@ -47,13 +49,9 @@ namespace core {
 namespace ir {
 namespace calling {
 
-Hooks::Hooks(const Conventions &conventions, const Signatures &signatures):
-    conventions_(conventions), signatures_(signatures)
-{}
+namespace {
 
-Hooks::~Hooks() {}
-
-CalleeId Hooks::getCalleeId(const Function *function) const {
+CalleeId getCalleeId(const Function *function) {
     assert(function != NULL);
 
     if (function->entry() && function->entry()->address()) {
@@ -63,11 +61,11 @@ CalleeId Hooks::getCalleeId(const Function *function) const {
     }
 }
 
-CalleeId Hooks::getCalleeId(const Call *call) const {
+CalleeId getCalleeId(const Call *call, const boost::optional<ByteAddr> calledAddress) {
     assert(call != NULL);
 
-    if (auto addr = getCalledAddress(call)) {
-        return CalleeId(*addr, CalleeId::entryAddr);
+    if (calledAddress) {
+        return CalleeId(*calledAddress, CalleeId::entryAddr);
     } else if (call->instruction()) {
         return CalleeId(call->instruction()->addr(), CalleeId::callAddr);
     } else {
@@ -75,21 +73,13 @@ CalleeId Hooks::getCalleeId(const Call *call) const {
     }
 }
 
-boost::optional<ByteAddr> Hooks::getCalledAddress(const Call *call) const {
-    assert(call != NULL);
+} // anonymous namespace
 
-    return nc::find_optional(call2address_, call);
-}
+Hooks::Hooks(const Conventions &conventions, const Signatures &signatures):
+    conventions_(conventions), signatures_(signatures)
+{}
 
-void Hooks::setCalledAddress(const Call *call, boost::optional<ByteAddr> addr) {
-    assert(call != NULL);
-
-    if (addr) {
-        call2address_[call] = *addr;
-    } else {
-        call2address_.erase(call);
-    }
-}
+Hooks::~Hooks() {}
 
 const Convention *Hooks::getConvention(const CalleeId &calleeId) {
     if (!calleeId) {
@@ -106,56 +96,177 @@ const Convention *Hooks::getConvention(const CalleeId &calleeId) {
 EntryHook *Hooks::getEntryHook(const Function *function) {
     assert(function != NULL);
 
-    auto calleeId = getCalleeId(function);
-
-    if (!calleeId) {
-        return NULL;
-    }
-
-    if (auto result = nc::find(nc::find(calleeHooks_, calleeId).entryHooks, function).get()) {
-        return result;
-    }
-    if (auto convention = getConvention(calleeId)) {
-        return (calleeHooks_[calleeId].entryHooks[function] =
-            std::make_unique<EntryHook>(convention, signatures_.getSignature(calleeId))).get();
-    }
-    return NULL;
-}
-
-ReturnHook *Hooks::getReturnHook(const Return *ret) {
-    assert(ret != NULL);
-
-    auto calleeId = getCalleeId(ret->basicBlock()->function());
-    if (!calleeId) {
-        return NULL;
-    }
-
-    if (auto result = nc::find(nc::find(calleeHooks_, calleeId).returnHooks, ret).get()) {
-        return result;
-    }
-    if (auto convention = getConvention(calleeId)) {
-        return (calleeHooks_[calleeId].returnHooks[ret] =
-            std::make_unique<ReturnHook>(convention, signatures_.getSignature(calleeId))).get();
-    }
-    return NULL;
+    return nc::find(lastEntryHooks_, function);
 }
 
 CallHook *Hooks::getCallHook(const Call *call) {
     assert(call != NULL);
 
-    auto calleeId = getCalleeId(call);
-    if (!calleeId) {
-        return NULL;
+    return nc::find(lastCallHooks_, call);
+}
+
+ReturnHook *Hooks::getReturnHook(const Return *ret) {
+    assert(ret != NULL);
+
+    return nc::find(lastReturnHooks_, ret);
+}
+
+void Hooks::instrument(Function *function, const dflow::Dataflow *dataflow) {
+    assert(function != NULL);
+
+    auto &hooks = insertedHooks_[function];
+
+    if (!hooks.empty()) {
+        deinstrument(function);
     }
 
-    if (auto result = nc::find(nc::find(calleeHooks_, calleeId).callHooks, call).get()) {
-        return result;
+    hooks.push_back(function->entry()->pushFront(std::make_unique<Callback>([=](){
+        instrumentEntry(function);
+    })));
+
+    foreach (auto basicBlock, function->basicBlocks()) {
+        foreach (auto statement, basicBlock->statements()) {
+            if (auto call = statement->as<Call>()) {
+                hooks.push_back(basicBlock->insertAfter(call, std::make_unique<Callback>([=](){
+                    auto value = dataflow->getValue(call->target());
+                    if (value->abstractValue().isConcrete()) {
+                        instrumentCall(call, value->abstractValue().asConcrete().value());
+                    } else {
+                        instrumentCall(call, boost::none);
+                    }
+                })));
+            } else if (auto ret = statement->as<Return>()) {
+                hooks.push_back(basicBlock->insertBefore(ret, std::make_unique<Callback>([=](){
+                    instrumentReturn(ret);
+                })));
+            }
+        }
     }
-    if (auto convention = getConvention(calleeId)) {
-        return (calleeHooks_[calleeId].callHooks[call] = std::make_unique<CallHook>(
-            convention, signatures_.getSignature(calleeId), conventions_.getStackArgumentsSize(calleeId))).get();
+}
+
+void Hooks::deinstrument(Function *function) {
+    assert(function != NULL);
+
+    auto &hooks = insertedHooks_[function];
+
+    foreach (auto hook, hooks) {
+        hook->basicBlock()->statements().erase(hook);
     }
-    return NULL;
+
+    insertedHooks_.erase(function);
+
+    foreach (auto basicBlock, function->basicBlocks()) {
+        foreach (auto statement, basicBlock->statements()) {
+            if (auto call = statement->as<Call>()) {
+                deinstrumentCall(call);
+            } else if (auto ret = statement->as<Return>()) {
+                deinstrumentReturn(ret);
+            }
+        }
+    }
+}
+
+void Hooks::deinstrumentAll() {
+    /* deinstrument() can break iterators. */
+    while (!insertedHooks_.empty()) {
+        deinstrument(insertedHooks_.begin()->first);
+    }
+}
+
+void Hooks::instrumentEntry(Function *function) {
+    auto convention = getConvention(getCalleeId(function));
+    auto signature = signatures_.getSignature(function).get();
+    auto &entryHook = entryHooks_[std::make_tuple(function, convention, signature)];
+
+    if (!entryHook) {
+        entryHook = std::make_unique<EntryHook>(convention, signature);
+    }
+
+    auto &lastEntryHook = lastEntryHooks_[function];
+
+    if (entryHook.get() != lastEntryHook) {
+        if (lastEntryHook) {
+            lastEntryHook->deinstrument(function);
+        }
+        if (entryHook) {
+            entryHook->instrument(function);
+        }
+        lastEntryHook = entryHook.get();
+    }
+}
+
+void Hooks::deinstrumentEntry(Function *function) {
+    auto &lastEntryHook = lastEntryHooks_[function];
+
+    if (lastEntryHook) {
+        lastEntryHook->deinstrument(function);
+        lastEntryHook = NULL;
+    }
+}
+
+void Hooks::instrumentCall(Call *call, const boost::optional<ByteAddr> &calledAddress) {
+    auto calleeId = getCalleeId(call, calledAddress);
+    auto convention = getConvention(calleeId);
+    auto signature = signatures_.getSignature(call).get();
+    auto stackArgumentsSize = conventions_.getStackArgumentsSize(calleeId);
+    auto &callHook = callHooks_[std::make_tuple(call, convention, signature, stackArgumentsSize)];
+
+    if (!callHook) {
+        callHook = std::make_unique<CallHook>(convention, signature, stackArgumentsSize);
+    }
+
+    auto &lastCallHook = lastCallHooks_[call];
+
+    if (callHook.get() != lastCallHook) {
+        if (lastCallHook) {
+            lastCallHook->deinstrument(call);
+        }
+        if (callHook) {
+            callHook->instrument(call);
+        }
+        lastCallHook = callHook.get();
+    }
+}
+
+void Hooks::deinstrumentCall(Call *call) {
+    auto &lastCallHook = lastCallHooks_[call];
+
+    if (lastCallHook) {
+        lastCallHook->deinstrument(call);
+        lastCallHook = NULL;
+    }
+}
+
+void Hooks::instrumentReturn(Return *ret) {
+    auto function = ret->basicBlock()->function();
+    auto convention = getConvention(getCalleeId(function));
+    auto signature = signatures_.getSignature(function).get();
+    auto &returnHook = returnHooks_[std::make_tuple(ret, convention, signature)];
+
+    if (!returnHook) {
+        returnHook = std::make_unique<ReturnHook>(convention, signature);
+    }
+
+    auto &lastReturnHook = lastReturnHooks_[ret];
+
+    if (returnHook.get() != lastReturnHook) {
+        if (lastReturnHook) {
+            lastReturnHook->deinstrument(ret);
+        }
+        if (returnHook) {
+            returnHook->instrument(ret);
+        }
+        lastReturnHook = returnHook.get();
+    }
+}
+
+void Hooks::deinstrumentReturn(Return *ret) {
+    auto &lastReturnHook = lastReturnHooks_[ret];
+
+    if (lastReturnHook) {
+        lastReturnHook->deinstrument(ret);
+        lastReturnHook = NULL;
+    }
 }
 
 } // namespace calling

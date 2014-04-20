@@ -99,6 +99,10 @@ void MasterAnalyzer::dataflowAnalysis(Context &context) const {
         context.setConventions(std::make_unique<ir::calling::Conventions>());
     }
 
+    if (context.hooks()) {
+        context.hooks()->deinstrumentAll();
+    }
+
     context.setHooks(std::make_unique<ir::calling::Hooks>(*context.conventions(), *context.signatures()));
     context.hooks()->setConventionDetector([this, &context](const ir::calling::CalleeId &calleeId) {
         this->detectCallingConvention(context, calleeId);
@@ -112,13 +116,15 @@ void MasterAnalyzer::dataflowAnalysis(Context &context) const {
     }
 }
 
-void MasterAnalyzer::dataflowAnalysis(Context &context, const ir::Function *function) const {
+void MasterAnalyzer::dataflowAnalysis(Context &context, ir::Function *function) const {
     context.logToken() << tr("Dataflow analysis of %1.").arg(reinterpret_cast<uintptr_t>(function), 0, 16);
 
     std::unique_ptr<ir::dflow::Dataflow> dataflow(new ir::dflow::Dataflow());
 
-    ir::dflow::DataflowAnalyzer(*dataflow, context.image()->architecture(), function, context.hooks())
-        .analyze(context.cancellationToken());
+    context.hooks()->instrument(function, dataflow.get());
+
+    ir::dflow::DataflowAnalyzer(*dataflow, context.image()->architecture())
+        .analyze(function, context.cancellationToken());
 
     context.dataflows()->emplace(function, std::move(dataflow));
 }

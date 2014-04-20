@@ -33,9 +33,9 @@
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/calling/CallHook.h>
 #include <nc/core/ir/calling/EntryHook.h>
+#include <nc/core/ir/calling/FunctionSignature.h>
 #include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/calling/ReturnHook.h>
-#include <nc/core/ir/calling/Signature.h>
 #include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/likec/FunctionDeclaration.h>
@@ -46,7 +46,7 @@ namespace core {
 namespace ir {
 namespace cgen {
 
-DeclarationGenerator::DeclarationGenerator(CodeGenerator &parent, const calling::Signature *signature):
+DeclarationGenerator::DeclarationGenerator(CodeGenerator &parent, const calling::FunctionSignature *signature):
     parent_(parent),
     signature_(signature),
     declaration_(NULL)
@@ -68,8 +68,8 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 
     setDeclaration(functionDeclaration.get());
 
-    foreach (const Term *argument, signature()->arguments()) {
-        makeArgumentDeclaration(argument);
+    foreach (const auto &argument, signature()->arguments()) {
+        makeArgumentDeclaration(argument.get());
     }
 
     return functionDeclaration;
@@ -77,7 +77,7 @@ std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclarat
 
 const likec::Type *DeclarationGenerator::makeReturnType() {
     if (signature()->returnValue()) {
-        return parent().makeType(parent().types().getType(signature()->returnValue()));
+        return parent().makeType(parent().types().getType(signature()->returnValue().get()));
     }
     return tree().makeVoidType();
 }

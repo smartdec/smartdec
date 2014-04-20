@@ -45,16 +45,15 @@ namespace arch {
 
 namespace ir {
 
-class BasicBlock;
-class Term;
-
-class Comment;
-class InlineAssembly;
 class Assignment;
-class Touch;
-class Jump;
+class BasicBlock;
 class Call;
+class Callback;
+class InlineAssembly;
+class Jump;
 class Return;
+class Term;
+class Touch;
 
 /**
  * Base class for different kinds of statements of intermediate representation.
@@ -70,13 +69,13 @@ public:
      * Statement kind.
      */
     enum {
-        COMMENT,        ///< Comment.
         INLINE_ASSEMBLY,///< Inline assembly.
         ASSIGNMENT,     ///< Assignment.
-        TOUCH,          ///< Reads, writes, or kills a term.
         JUMP,           ///< Jump to an address.
         CALL,           ///< Function call.
         RETURN,         ///< Return from function call.
+        TOUCH,          ///< Reads, writes, or kills a term.
+        CALLBACK,       ///< Custom operation.
         USER = 1000     ///< Base for user-defined statements.
     };
 
@@ -124,22 +123,14 @@ public:
      */
     std::unique_ptr<Statement> clone() const;
 
-    inline bool isComment() const;
-    inline bool isInlineAssembly() const;
-    inline bool isAssignment() const;
-    inline bool isTouch() const;
-    inline bool isJump() const;
-    inline bool isCall() const;
-    inline bool isReturn() const;
-
     /* The following functions are defined in Statements.h. */
 
-    inline const Comment *asComment() const;
     inline const Assignment *asAssignment() const;
-    inline const Touch *asTouch() const;
     inline const Jump *asJump() const;
     inline const Call *asCall() const;
     inline const Return *asReturn() const;
+    inline const Touch *asTouch() const;
+    inline const Callback *asCallback() const;
     
 protected:
     /**
@@ -165,44 +156,12 @@ protected:
 #define NC_REGISTER_STATEMENT_CLASS(CLASS, KIND)                                \
     NC_REGISTER_CLASS_KIND(nc::core::ir::Statement, CLASS, KIND)
 
-NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Comment,        nc::core::ir::Statement::COMMENT)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::InlineAssembly, nc::core::ir::Statement::INLINE_ASSEMBLY)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Assignment,     nc::core::ir::Statement::ASSIGNMENT)
-NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Touch,          nc::core::ir::Statement::TOUCH)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Jump,           nc::core::ir::Statement::JUMP)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Call,           nc::core::ir::Statement::CALL)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Return,         nc::core::ir::Statement::RETURN)
-
-namespace nc { namespace core { namespace ir {
-
-bool Statement::isComment() const {
-    return is<Comment>();
-}
-
-bool Statement::isInlineAssembly() const {
-    return is<InlineAssembly>();
-}
-
-bool Statement::isAssignment() const {
-    return is<Assignment>();
-}
-
-bool Statement::isTouch() const {
-    return is<Touch>();
-}
-
-bool Statement::isJump() const {
-    return is<Jump>();
-}
-
-bool Statement::isCall() const {
-    return is<Call>();
-}
-
-bool Statement::isReturn() const {
-    return is<Return>();
-}
-
-}}} // namespace nc::core::ir
+NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Touch,          nc::core::ir::Statement::TOUCH)
+NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Callback,       nc::core::ir::Statement::CALLBACK)
 
 /* vim:set et sts=4 sw=4: */

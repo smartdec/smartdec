@@ -59,8 +59,8 @@ class Term;
 
 namespace calling {
     class CalleeId;
+    class FunctionSignature;
     class Hooks;
-    class Signature;
     class Signatures;
 }
 
@@ -135,7 +135,7 @@ class CodeGenerator: boost::noncopyable {
     boost::unordered_map<const vars::Variable *, likec::VariableDeclaration *> variableDeclarations_;
 
     /** Mapping of functions to their declarations. */
-    boost::unordered_map<const calling::Signature *, likec::FunctionDeclaration *> signature2declaration_;
+    boost::unordered_map<const calling::FunctionSignature *, likec::FunctionDeclaration *> signature2declaration_;
 
 public:
 
@@ -257,11 +257,11 @@ public:
     /**
      * Creates function's declaration, if it was not yet, and adds it to the compilation unit.
      *
-     * \param[in] calleeId Id of a called function.
+     * \param[in] signature Valid pointer to the signature of the function.
      *
-     * \return Declaration for this function, or NULL if it was impossible to create one.
+     * \return Valid pointer to the declaration for a function with this signature.
      */
-    likec::FunctionDeclaration *makeFunctionDeclaration(const calling::CalleeId &calleeId);
+    likec::FunctionDeclaration *makeFunctionDeclaration(const calling::FunctionSignature *signature);
 
     /**
      * Creates function's definition and adds it to the compilation unit.
@@ -283,7 +283,7 @@ public:
      * Thus, when a function, whose body is being generated, is looking for
      * its own declaration, CodeGenerator already knows about it.
      */
-    void setFunctionDeclaration(const calling::Signature *signature, likec::FunctionDeclaration *declaration);
+    void setFunctionDeclaration(const calling::FunctionSignature *signature, likec::FunctionDeclaration *declaration);
 };
 
 } // namespace cgen

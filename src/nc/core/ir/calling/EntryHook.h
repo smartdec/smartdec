@@ -21,7 +21,7 @@ class Term;
 namespace calling {
 
 class Convention;
-class Signature;
+class FunctionSignature;
 
 /**
  * Hook installed at function's entry.
@@ -43,7 +43,7 @@ public:
      * \param[in] convention    Valid pointer to the calling convention.
      * \param[in] signature     Pointer to the function's signature. Can be NULL.
      */
-    EntryHook(const Convention *convention, const Signature *signature);
+    EntryHook(const Convention *convention, const FunctionSignature *signature);
 
     /**
      * Destructor.

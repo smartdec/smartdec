@@ -34,14 +34,6 @@ namespace nc {
 namespace core {
 namespace ir {
 
-Comment *Comment::doClone() const {
-    return new Comment(text());
-}
-
-void Comment::print(QTextStream &out) const {
-    out << text_ << endl;
-}
-
 InlineAssembly *InlineAssembly::doClone() const {
     return new InlineAssembly();
 }
@@ -127,6 +119,14 @@ Return *Return::doClone() const {
 
 void Return::print(QTextStream &out) const {
     out << "return" << endl;
+}
+
+Callback *Callback::doClone() const {
+    return new Callback(function());
+}
+
+void Callback::print(QTextStream &out) const {
+    out << "callback" << endl;
 }
 
 } // namespace ir

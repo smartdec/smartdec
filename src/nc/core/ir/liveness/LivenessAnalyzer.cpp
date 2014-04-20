@@ -27,7 +27,6 @@
 #include <cassert>
 
 #include <nc/common/Foreach.h>
-#include <nc/common/Range.h>
 #include <nc/common/Warnings.h>
 
 #include <nc/core/arch/Architecture.h>
@@ -37,7 +36,6 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/calling/CallHook.h>
-#include <nc/core/ir/calling/EntryHook.h>
 #include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/calling/ReturnHook.h>
 #include <nc/core/ir/calling/Signatures.h>
@@ -74,22 +72,10 @@ void LivenessAnalyzer::analyze() {
             computeLiveness(statement);
         }
     }
-
-    if (auto calleeId = hooks().getCalleeId(function())) {
-        if (auto signature = signatures().getSignature(calleeId)) {
-            if (signature->returnValue()) {
-                foreach (const auto &returnAndHook, nc::find(hooks().map(), calleeId).returnHooks) {
-                    makeLive(returnAndHook.second->getReturnValueTerm(signature->returnValue()));
-                }
-            }
-        }
-    }
 }
 
 void LivenessAnalyzer::computeLiveness(const Statement *statement) {
     switch (statement->kind()) {
-        case Statement::COMMENT:
-            break;
         case Statement::INLINE_ASSEMBLY:
             break;
         case Statement::ASSIGNMENT: {
@@ -101,8 +87,6 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
             }
             break;
         }
-        case Statement::TOUCH:
-            break;
         case Statement::JUMP: {
             const Jump *jump = statement->asJump();
 
@@ -124,22 +108,32 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
 
             makeLive(call->target());
 
-            if (auto calleeId = hooks().getCalleeId(call)) {
-                if (auto signature = signatures().getSignature(calleeId)) {
-                    if (auto callHook = hooks().getCallHook(call)) {
-                        foreach (const Term *argument, signature->arguments()) {
-                            makeLive(callHook->getArgumentTerm(argument));
-                        }
+            if (auto signature = signatures().getSignature(call)) {
+                if (auto callHook = hooks().getCallHook(call)) {
+                    foreach (const auto &argument, signature->arguments()) {
+                        makeLive(callHook->getArgumentTerm(argument.get()));
                     }
                 }
             }
 
             break;
         }
-        case Statement::RETURN:
+        case Statement::RETURN: {
+            auto ret = statement->asReturn();
+
+            if (auto signature = signatures().getSignature(function())) {
+                if (signature->returnValue()) {
+                    if (auto returnHook = hooks().getReturnHook(ret)) {
+                        makeLive(returnHook->getReturnValueTerm(signature->returnValue().get()));
+                    }
+                }
+            }
+            break;
+        }
+        case Statement::TOUCH:
             break;
         default:
-            ncWarning("Was called for unsupported kind of statement.");
+            ncWarning("Unknown statement kind: '%1'.", static_cast<int>(statement->kind()));
             break;
     }
 }
@@ -211,7 +205,7 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
             break;
         }
         default:
-            ncWarning("Was called for unsupported kind of term.");
+            ncWarning("Unknown term kind: '%1'.", static_cast<int>(term->kind()));
             break;
     }
 }

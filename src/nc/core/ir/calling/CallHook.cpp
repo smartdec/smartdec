@@ -32,15 +32,15 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 
+#include "CallSignature.h"
 #include "Convention.h"
-#include "Signature.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace calling {
 
-CallHook::CallHook(const Convention *convention, const Signature *signature,
+CallHook::CallHook(const Convention *convention, const CallSignature *signature,
     const boost::optional<ByteSize> &stackArgumentsSize):
     stackPointer_(NULL), snapshotTerm_(NULL), insertedStatementsCount_(0)
 {
@@ -77,12 +77,12 @@ CallHook::CallHook(const Convention *convention, const Signature *signature,
     };
 
     if (signature) {
-        foreach (auto term, signature->arguments()) {
-            createArgument(term);
+        foreach (const auto &term, signature->arguments()) {
+            createArgument(term.get());
         }
 
         if (signature->returnValue()) {
-            createReturnValue(signature->returnValue());
+            createReturnValue(signature->returnValue().get());
         }
     } else {
         auto snapshotTerm = std::make_unique<Intrinsic>(Intrinsic::REACHING_SNAPSHOT, 1);

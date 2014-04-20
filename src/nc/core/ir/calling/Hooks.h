@@ -25,6 +25,15 @@
 
 #include <nc/config.h>
 
+/*
+ * There is no standard implementation of a hash for tuples, and it's a pain to
+ * make one, so that it works on compilers that do not support variadic
+ * templates. Therefore, we fallback to std::map when keys are tuples.
+ */
+#include <functional>
+#include <map> 
+#include <tuple>
+
 #include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
 
@@ -38,19 +47,28 @@ namespace ir {
 
 class Call;
 class Function;
+class Statement;
 class Return;
+
+namespace dflow {
+    class Dataflow;
+}
 
 namespace calling {
 
 class CallHook;
+class CallSignature;
 class Convention;
 class Conventions;
 class EntryHook;
+class FunctionSignature;
 class ReturnHook;
+class Signature;
 class Signatures;
 
 /**
- * Calling conventions hooks.
+ * This class is responsible for instrumenting functions with special hooks
+ * that take care of handling calling-convention-specific stuff.
  */
 class Hooks {
     /** Assigned calling conventions. */
@@ -67,25 +85,26 @@ private:
     /** Calling convention detector. */
     ConventionDetector conventionDetector_;
 
-    /** Mapping from a call to its destination address. */
-    boost::unordered_map<const Call *, ByteAddr> call2address_;
+    /** Hooks inserted into a given function. */
+    boost::unordered_map<Function *, std::vector<Statement *>> insertedHooks_;
 
-public:
-    /** All hooks of a certain callee id. */
-    struct CalleeHooks {
-        /** Mapping from a function to its entry hook. */
-        boost::unordered_map<const Function *, std::unique_ptr<EntryHook>> entryHooks;
+    /** All entry hooks ever created. */
+    std::map<std::tuple<const Function *, const Convention *, const FunctionSignature *>, std::unique_ptr<EntryHook>> entryHooks_;
 
-        /** Mapping from a return statement to its return hook. */
-        boost::unordered_map<const Return *, std::unique_ptr<ReturnHook>> returnHooks;
+    /** Mapping from a function to the last entry hook used for instrumenting it. */
+    boost::unordered_map<const Function *, EntryHook *> lastEntryHooks_;
 
-        /** Mapping from a call statement to its call hook. */
-        boost::unordered_map<const Call *, std::unique_ptr<CallHook>> callHooks;
-    };
+    /** All call hooks ever created. */
+    std::map<std::tuple<const Call *, const Convention *, const CallSignature *, boost::optional<ByteSize>>, std::unique_ptr<CallHook>> callHooks_;
 
-private:
-    /** Hooks per callee id. */
-    boost::unordered_map<CalleeId, CalleeHooks> calleeHooks_;
+    /** Mapping from a call to the last call hook used for instrumenting it. */
+    boost::unordered_map<const Call *, CallHook *> lastCallHooks_;
+
+    /** All return hooks ever created. */
+    std::map<std::tuple<const Return *, const Convention *, const FunctionSignature *>, std::unique_ptr<ReturnHook>> returnHooks_;
+
+    /** Mapping from a return to the last return hook used for instrumenting it. */
+    boost::unordered_map<const Return *, ReturnHook *> lastReturnHooks_;
 
 public:
     /**
@@ -119,35 +138,6 @@ public:
     }
 
     /**
-     * \param function Valid pointer to a function.
-     *
-     * \return Id of the function.
-     */
-    CalleeId getCalleeId(const Function *function) const;
-
-    /**
-     * \param call Valid pointer to a call.
-     *
-     * \return Id of the function called.
-     */
-    CalleeId getCalleeId(const Call *call) const;
-
-    /**
-     * \param call Valid pointer to a Call instance.
-     *
-     * \return Address this call is a call to.
-     */
-    boost::optional<ByteAddr> getCalledAddress(const Call *call) const;
-
-    /**
-     * Sets the destination address of a call.
-     *
-     * \param call Valid pointer to a Call instance.
-     * \param addr New destination address of the call.
-     */
-    void setCalledAddress(const Call *call, boost::optional<ByteAddr> addr);
-
-    /**
      * \param calleeId Callee id.
      *
      * \return Pointer to the calling convention used for calls to given address. Can be NULL.
@@ -157,32 +147,100 @@ public:
     /**
      * \param function Valid pointer to a function.
      *
-     * \return Pointer to a EntryHook instance for this function.
-     * Can be NULL. Such instance is created when necessary and if possible.
+     * \return Pointer to the last EntryHook used for instrumenting this function.
+     *         Can be NULL.
      */
     EntryHook *getEntryHook(const Function *function);
+
+    /**
+     * \param call Valid pointer to a call statement.
+     *
+     * \return Pointer to the last CallHook used for instrumenting this call.
+     *         Can be NULL.
+     */
+    CallHook *getCallHook(const Call *call);
 
     /**
      * \param function Valid pointer to a function.
      * \param ret Valid pointer to a return statement.
      *
-     * \return Pointer to a ReturnHook instance for this return statement.
-     * Can be NULL. Such instance is created when necessary and if possible.
+     * \return Pointer to the last ReturnHook used for instrumenting this return.
+     *         Can be NULL.
      */
     ReturnHook *getReturnHook(const Return *ret);
 
     /**
-     * \param call Valid pointer to a call statement.
+     * Inserts callback statements into the function. When executed by
+     * the dataflow analyzer, these callback statements will insert
+     * calling-convention-specific code in the function's entry, and
+     * at call and return sites.
      *
-     * \return Pointer to a CallHook instance for this call statement.
-     * Can be NULL. Such instance is created when necessary and if possible.
+     * \param function Valid pointer to a function.
+     * \param dataflow Dataflow information storage used for the analysis.
      */
-    CallHook *getCallHook(const Call *call);
+    void instrument(Function *function, const dflow::Dataflow *dataflow);
 
     /**
-     * \return Mapping from a callee id to its hooks.
+     * Undoes instrumentation of a function.
+     *
+     * \param function Valid pointer to a function.
      */
-    const boost::unordered_map<CalleeId, CalleeHooks> &map() const { return calleeHooks_; }
+    void deinstrument(Function *function);
+
+    /**
+     * Undoes instrumentation of all the functions.
+     */
+    void deinstrumentAll();
+
+private:
+    /**
+     * Creates an EntryHook (if not done yet) and instruments the function with it.
+     * If the function was previously instrumented, deinstruments it.
+     *
+     * \param function Valid pointer to a function.
+     */
+    void instrumentEntry(Function *function);
+
+    /**
+     * Undoes the instrumentation of a function's entry, if performed before.
+     * Otherwise, does nothing.
+     *
+     * \param function Valid pointer to a function.
+     */
+    void deinstrumentEntry(Function *function);
+
+    /**
+     * Creates a CallHook (if not done yet) and instruments the call with it.
+     * If the call was previously instrumented, deinstruments it.
+     *
+     * \param call Valid pointer to a call.
+     * \param calledAddress The address being called or boost::none.
+     */
+    void instrumentCall(Call *call, const boost::optional<ByteAddr> &calledAddress);
+
+    /**
+     * Undoes the instrumentation of a call, if performed before.
+     * Otherwise, does nothing.
+     *
+     * \param function Valid pointer to a call.
+     */
+    void deinstrumentCall(Call *call);
+
+    /**
+     * Creates a ReturnHook (if not done yet) and instruments the return with it.
+     * If the return was previously instrumented, deinstruments it.
+     *
+     * \param return Valid pointer to a return statement.
+     */
+    void instrumentReturn(Return *ret);
+
+    /**
+     * Undoes the instrumentation of a return statement, if performed before.
+     * Otherwise, does nothing.
+     *
+     * \param ret Valid pointer to a return statement.
+     */
+    void deinstrumentReturn(Return *ret);
 };
 
 } // namespace calling

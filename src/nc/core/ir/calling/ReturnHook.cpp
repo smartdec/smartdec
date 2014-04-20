@@ -32,14 +32,14 @@
 #include <nc/common/make_unique.h>
 
 #include "Convention.h"
-#include "Signature.h"
+#include "FunctionSignature.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace calling {
 
-ReturnHook::ReturnHook(const Convention *convention, const Signature *signature):
+ReturnHook::ReturnHook(const Convention *convention, const FunctionSignature *signature):
     insertedStatementsCount_(0)
 {
     assert(convention != NULL);
@@ -55,7 +55,7 @@ ReturnHook::ReturnHook(const Convention *convention, const Signature *signature)
 
     if (signature) {
         if (signature->returnValue()) {
-            createReturnValue(signature->returnValue());
+            createReturnValue(signature->returnValue().get());
         }
     } else {
         foreach (auto term, convention->returnValueTerms()) {
@@ -68,14 +68,14 @@ ReturnHook::~ReturnHook() {}
 
 void ReturnHook::instrument(Return *ret) {
     while (!statements_.empty()) {
-        ret->basicBlock()->insertAfter(ret, statements_.pop_back());
+        ret->basicBlock()->insertBefore(ret, statements_.pop_front());
         ++insertedStatementsCount_;
     }
 }
 
 void ReturnHook::deinstrument(Return *ret) {
     while (insertedStatementsCount_ > 0) {
-        statements_.push_back(ret->basicBlock()->statements().erase(++ret->basicBlock()->statements().get_iterator(ret)));
+        statements_.push_front(ret->basicBlock()->statements().erase(--ret->basicBlock()->statements().get_iterator(ret)));
         --insertedStatementsCount_;
     }
 }

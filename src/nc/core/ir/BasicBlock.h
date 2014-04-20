@@ -117,30 +117,48 @@ public:
      *
      * \param position Position where the statement must be inserted.
      * \param statement Valid pointer to the statement being inserted.
+     *
+     * \return Valid pointer to the inserted statement.
      */
-    void insert(Statements::const_iterator position, std::unique_ptr<Statement> statement);
+    Statement *insert(Statements::const_iterator position, std::unique_ptr<Statement> statement);
 
     /**
      * Insertes a statement at the front of the basic block.
      *
      * \param statement Valid pointer to the statement being added.
+     *
+     * \return Valid pointer to the inserted statement.
      */
-    void pushFront(std::unique_ptr<Statement> statement);
+    Statement *pushFront(std::unique_ptr<Statement> statement);
 
     /**
      * Inserts a statement at the end of the basic block.
      *
      * \param statement Valid pointer to the statement being added.
+     *
+     * \return Valid pointer to the inserted statement.
      */
-    void pushBack(std::unique_ptr<Statement> statement);
+    Statement *pushBack(std::unique_ptr<Statement> statement);
 
     /**
      * Inserts a statement after a given one.
      *
      * \param after Valid pointer to the statement after which to insert.
      * \param statement Valid pointer to the statement being inserted.
+     *
+     * \return Valid pointer to the inserted statement.
      */
-    void insertAfter(const Statement *after, std::unique_ptr<Statement> statement);
+    Statement *insertAfter(const Statement *after, std::unique_ptr<Statement> statement);
+
+    /**
+     * Inserts a statement before a given one.
+     *
+     * \param before Valid pointer to the statement before which to insert.
+     * \param statement Valid pointer to the statement being inserted.
+     *
+     * \return Valid pointer to the inserted statement.
+     */
+    Statement *insertBefore(const Statement *before, std::unique_ptr<Statement> statement);
 
     /**
      * \return Valid pointer to the last statement in the basic block if this

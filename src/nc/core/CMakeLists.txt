@@ -91,12 +91,12 @@ set(SOURCES
     ir/calling/Convention.h
     ir/calling/EntryHook.cpp
     ir/calling/EntryHook.h
+    ir/calling/FunctionSignature.cpp
+    ir/calling/FunctionSignature.h
     ir/calling/Hooks.cpp
     ir/calling/Hooks.h
     ir/calling/ReturnHook.cpp
     ir/calling/ReturnHook.h
-    ir/calling/Signature.cpp
-    ir/calling/Signature.h
     ir/calling/SignatureAnalyzer.cpp
     ir/calling/SignatureAnalyzer.h
     ir/cflow/BasicNode.cpp

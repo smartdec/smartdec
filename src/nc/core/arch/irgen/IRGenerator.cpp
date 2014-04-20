@@ -82,56 +82,65 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
 
     /* Prepare context for quick and dirty dataflow analysis. */
     ir::dflow::Dataflow dataflow;
-    ir::dflow::DataflowAnalyzer analyzer(dataflow, image_->architecture(), NULL);
+    ir::dflow::DataflowAnalyzer analyzer(dataflow, image_->architecture());
     ir::dflow::ExecutionContext context(analyzer);
 
     foreach (auto statement, basicBlock->statements()) {
         /* Execute yet another statement. */
         analyzer.execute(statement, context);
 
-        if (statement->isInlineAssembly()) {
-            /*
-             * Inline assembly can do unpredictable things.
-             * Therefore, clear the reaching definitions.
-             */
-            context.definitions().clear();
-        } else if (statement->isCall()) {
-            const ir::Call *call = statement->asCall();
-            const ir::dflow::Value *addressValue = dataflow.getValue(call->target());
+        switch (statement->kind()) {
+            case ir::Statement::INLINE_ASSEMBLY: {
+                /*
+                 * Inline assembly can do unpredictable things.
+                 * Therefore, clear the reaching definitions.
+                 */
+                context.definitions().clear();
+                break;
+            }
+            case ir::Statement::CALL: {
+                auto call = statement->asCall();
+                auto addressValue = dataflow.getValue(call->target());
 
-            /* Record information about the function entry. */
-            if (addressValue->abstractValue().isConcrete()) {
-                ByteAddr address = addressValue->abstractValue().asConcrete().value();
+                /* Record information about the function entry. */
+                if (addressValue->abstractValue().isConcrete()) {
+                    ByteAddr address = addressValue->abstractValue().asConcrete().value();
 
-                program_->addCalledAddress(address);
-                program_->createBasicBlock(address);
-            } else {
-                foreach (ByteAddr address, getJumpTableEntries(call->target(), dataflow)) {
                     program_->addCalledAddress(address);
                     program_->createBasicBlock(address);
+                } else {
+                    foreach (ByteAddr address, getJumpTableEntries(call->target(), dataflow)) {
+                        program_->addCalledAddress(address);
+                        program_->createBasicBlock(address);
+                    }
                 }
+
+                /*
+                 * A call can do unpredictable things.
+                 * Therefore, clear the reaching definitions.
+                 */
+                context.definitions().clear();
+                break;
             }
+            case ir::Statement::JUMP: {
+                auto jump = statement->as<ir::Jump>();
 
-            /*
-             * A call can do unpredictable things.
-             * Therefore, clear the reaching definitions.
-             */
-            context.definitions().clear();
-        } else if (statement->isJump()) {
-            ir::Jump *jump = statement->as<ir::Jump>();
+                /* If target basic block is unknown, try to guess it. */
+                computeJumpTarget(jump->thenTarget(), dataflow);
+                computeJumpTarget(jump->elseTarget(), dataflow);
 
-            /* If target basic block is unknown, try to guess it. */
-            computeJumpTarget(jump->thenTarget(), dataflow);
-            computeJumpTarget(jump->elseTarget(), dataflow);
-
-            /* Current basic block ends here. */
-            if (jump->basicBlock()->address() && jump->instruction()) {
-                program_->createBasicBlock(jump->instruction()->endAddr());
+                /* Current basic block ends here. */
+                if (jump->basicBlock()->address() && jump->instruction()) {
+                    program_->createBasicBlock(jump->instruction()->endAddr());
+                }
+                break;
             }
-        } else if (statement->isReturn()) {
-            /* Current basic block ends here. */
-            if (statement->basicBlock()->address()) {
-                program_->createBasicBlock(statement->instruction()->endAddr());
+            case ir::Statement::RETURN: {
+                /* Current basic block ends here. */
+                if (statement->basicBlock()->address()) {
+                    program_->createBasicBlock(statement->instruction()->endAddr());
+                }
+                break;
             }
         }
     }

@@ -25,69 +25,46 @@
 
 #include <nc/config.h>
 
-#include <cassert>
 #include <memory>
 #include <vector>
 
 #include <QString>
 
+#include <nc/core/ir/Term.h>
+
 namespace nc {
 namespace core {
 namespace ir {
-
-class Term;
-
 namespace calling {
 
 /**
- * Signature of a function: name, arguments, return value.
+ * Signature of a function: arguments, return value, name.
  */
-class Signature {
+class FunctionSignature {
+    std::vector<std::shared_ptr<const Term>> arguments_; ///< Terms representing the arguments.
+    bool variadic_; ///< True if the function is variadic.
+    std::shared_ptr<const Term> returnValue_; ///< Term representing the return value.
     QString name_; ///< Name of the function.
-    std::vector<std::unique_ptr<Term>> arguments_; ///< Function's arguments.
-    bool variadic_; ///< True if a function is variadic.
-    std::unique_ptr<Term> returnValue_; ///< Term containing the return value.
     QString comment_; ///< Comment to generate before the function's declaration.
 
 public:
     /**
      * Constructs an empty signature.
      */
-    Signature();
+    FunctionSignature(): variadic_(false) {}
 
     /**
-     * Destructor.
+     * \return List of terms representing function's arguments.
      */
-    ~Signature();
+    std::vector<std::shared_ptr<const Term>> &arguments() { return arguments_; }
 
     /**
-     * \return Name of the function.
+     * \return List of terms representing function's arguments.
      */
-    const QString &name() const { return name_; }
+    const std::vector<std::shared_ptr<const Term>> &arguments() const { return arguments_; }
 
     /**
-     * Sets the function name.
-     *
-     * \param name New name.
-     */
-    void setName(QString name) { name_ = std::move(name); }
-
-    /**
-     * \return List of function's arguments.
-     */
-    const std::vector<const Term *> &arguments() const {
-        return reinterpret_cast<const std::vector<const Term *> &>(arguments_);
-    }
-
-    /**
-     * Adds a term representing function's argument.
-     *
-     * \param term Valid pointer to a term.
-     */
-    void addArgument(std::unique_ptr<Term> term);
-
-    /**
-     * \return True if the function is variadic.
+     * \return True if the function is variadic, false otherwise.
      */
     bool variadic() const { return variadic_; }
 
@@ -101,14 +78,26 @@ public:
     /**
      * \return Pointer to the term containing the return value. Can be NULL.
      */
-    const Term *returnValue() const { return returnValue_.get(); }
+    const std::shared_ptr<const Term> &returnValue() const { return returnValue_; }
 
     /**
-     * Sets the pointer to the term containing the return value.
+     * Sets the pointer to the term representing the return value.
      *
      * \param term Valid pointer to the term.
      */
-    void setReturnValue(std::unique_ptr<Term> term);
+    void setReturnValue(std::shared_ptr<Term> term) { returnValue_ = std::move(term); }
+
+    /**
+     * \return Name of the function.
+     */
+    const QString &name() const { return name_; }
+
+    /**
+     * Sets the function name.
+     *
+     * \param name New name.
+     */
+    void setName(QString name) { name_ = std::move(name); }
 
     /**
      * \return Comment to generate before the function's declaration.

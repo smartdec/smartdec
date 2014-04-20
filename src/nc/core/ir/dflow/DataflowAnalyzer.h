@@ -39,17 +39,12 @@ namespace arch {
 
 namespace ir {
 
-class BasicBlock;
 class Function;
 class MemoryLocation;
 class Statement;
 class Term;
 class UnaryOperator;
 class BinaryOperator;
-
-namespace calling {
-    class Hooks;
-}
 
 namespace dflow {
 
@@ -64,25 +59,16 @@ class ReachingDefinitions;
 class DataflowAnalyzer {
     Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Valid pointer to architecture description.
-    const Function *function_; ///< Analyzed function.
-    calling::Hooks *hooks_; ///< Calls data.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
      * \param dataflow An object where to store results of analyses.
      * \param architecture Valid pointer to architecture description.
-     * \param function Pointer to the analyzed function. Can be NULL.
-     * \param hooks Pointer to the calls data. Can be NULL.
      */
-    DataflowAnalyzer(Dataflow &dataflow,
-        const arch::Architecture *architecture,
-        const Function *function = NULL,
-        calling::Hooks *hooks = NULL
-    ):
-        dataflow_(dataflow), architecture_(architecture), function_(function), hooks_(hooks)
+    DataflowAnalyzer(Dataflow &dataflow, const arch::Architecture *architecture):
+        dataflow_(dataflow), architecture_(architecture)
     {
         assert(architecture != NULL);
     }
@@ -98,50 +84,36 @@ class DataflowAnalyzer {
     Dataflow &dataflow() const { return dataflow_; }
 
     /**
-     * \return Function being analyzed.
-     */
-
-    /**
      * \return Valid pointer to architecture description.
      */
     const arch::Architecture *architecture() const { return architecture_; }
 
     /**
-     * \return Pointer to the analyzed function. Can be NULL.
-     */
-    const Function *function() const { return function_; }
-
-    /**
-     * \return Pointer to the calls data. Can be NULL.
-     */
-    calling::Hooks *hooks() const { return hooks_; }
-
-    /**
      * Performs joint reaching definitions and constant propagation/folding
      * analysis on the function given to the constructor.
      *
+     * \param[in] function  Valid pointer to the function.
      * \param[in] canceled  Cancellation token.
      */
-    void analyze(const CancellationToken &canceled);
+    void analyze(const Function *function, const CancellationToken &canceled);
 
     /**
      * Executes a statement.
      *
-     * \param[in] statement Valid pointer to a statement.
-     * \param     context   Execution context.
+     * \param statement Valid pointer to a statement.
+     * \param context   Execution context.
      */
     virtual void execute(const Statement *statement, ExecutionContext &context);
 
     /**
      * Executes a term.
      *
-     * \param[in] term      Valid pointer to a term.
-     * \param     context   Execution context.
+     * \param term      Valid pointer to a term.
+     * \param context   Execution context.
      */
     virtual void execute(const Term *term, ExecutionContext &context);
 
-    protected:
-
+protected:
     /**
      * Executes a unary operator.
      *

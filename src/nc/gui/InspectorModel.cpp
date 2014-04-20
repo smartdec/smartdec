@@ -125,24 +125,11 @@ void expand(InspectorItem *item, const core::ir::Statement *statement) {
     }
 
     switch (statement->kind()) {
-        case core::ir::Statement::COMMENT: {
-            auto *comment = statement->asComment();
-            item->addComment("Comment");
-            item->addChild(tr("text = %1").arg(comment->text()));
-            break;
-        }
         case core::ir::Statement::ASSIGNMENT: {
             auto *assignment = statement->asAssignment();
             item->addComment("Assignment");
             item->addChild(tr("left"), assignment->left());
             item->addChild(tr("right"), assignment->right());
-            break;
-        }
-        case core::ir::Statement::TOUCH: {
-            auto *touch = statement->asTouch();
-            item->addComment("Touch");
-            item->addChild(tr("access type = %1").arg(touch->term()->accessType()));
-            item->addChild(tr("term"), touch->term());
             break;
         }
         case core::ir::Statement::JUMP: {
@@ -163,6 +150,17 @@ void expand(InspectorItem *item, const core::ir::Statement *statement) {
         }
         case core::ir::Statement::RETURN: {
             item->addComment("Return");
+            break;
+        }
+        case core::ir::Statement::TOUCH: {
+            auto *touch = statement->asTouch();
+            item->addComment("Touch");
+            item->addChild(tr("access type = %1").arg(touch->term()->accessType()));
+            item->addChild(tr("term"), touch->term());
+            break;
+        }
+        case core::ir::Statement::CALLBACK: {
+            item->addComment("Callback");
             break;
         }
         default: {

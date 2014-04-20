@@ -164,14 +164,6 @@ public:
      */
     std::unique_ptr<Term> clone() const { return std::unique_ptr<Term>(doClone()); }
 
-    inline bool isConstant() const;
-    inline bool isIntrinsic() const;
-    inline bool isMemoryLocationAccess() const;
-    inline bool isDereference() const;
-    inline bool isUnaryOperator() const;
-    inline bool isBinaryOperator() const;
-    inline bool isChoice() const;
-
     /* The following functions are defined in Terms.h. */
 
     inline const Constant *asConstant() const;
@@ -213,18 +205,5 @@ NC_REGISTER_TERM_CLASS(nc::core::ir::Dereference,          nc::core::ir::Term::D
 NC_REGISTER_TERM_CLASS(nc::core::ir::UnaryOperator,        nc::core::ir::Term::UNARY_OPERATOR)
 NC_REGISTER_TERM_CLASS(nc::core::ir::BinaryOperator,       nc::core::ir::Term::BINARY_OPERATOR)
 NC_REGISTER_TERM_CLASS(nc::core::ir::Choice,               nc::core::ir::Term::CHOICE)
-
-
-namespace nc { namespace core { namespace ir {
-
-bool Term::isConstant() const { return is<Constant>(); }
-bool Term::isIntrinsic() const { return is<Intrinsic>(); }
-bool Term::isMemoryLocationAccess() const { return is<MemoryLocationAccess>(); }
-bool Term::isDereference() const { return is<Dereference>(); }
-bool Term::isUnaryOperator() const { return is<UnaryOperator>(); }
-bool Term::isBinaryOperator() const { return is<BinaryOperator>(); }
-bool Term::isChoice() const { return is<Choice>(); }
-
-}}} // namespace nc::core::ir
 
 /* vim:set et sts=4 sw=4: */

@@ -98,44 +98,47 @@ void TypeAnalyzer::joinVariableTypes() {
 }
 
 void TypeAnalyzer::joinArgumentTypes() {
+    // FIXME
+#if 0
     foreach (const auto &calleeIdAndHooks, hooks_.map()) {
         auto &calleeId = calleeIdAndHooks.first;
         auto &calleeHooks = calleeIdAndHooks.second;
 
         if (auto signature = signatures_.getSignature(calleeId)) {
-            foreach (const Term *argument, signature->arguments()) {
-                Type *commonType = types_.getType(argument);
+            foreach (const auto &argument, signature->arguments()) {
+                Type *commonType = types_.getType(argument.get());
 
                 foreach (const auto &functionAndHook, calleeHooks.entryHooks) {
-                    if (auto term = functionAndHook.second->getArgumentTerm(argument)) {
+                    if (auto term = functionAndHook.second->getArgumentTerm(argument.get())) {
                         commonType->unionSet(types_.getType(term));
                     }
                 }
 
                 foreach (const auto &callAndHook, calleeHooks.callHooks) {
-                    if (auto term = callAndHook.second->getArgumentTerm(argument)) {
+                    if (auto term = callAndHook.second->getArgumentTerm(argument.get())) {
                         commonType->unionSet(types_.getType(term));
                     }
                 }
             }
 
             if (signature->returnValue()) {
-                Type *commonType = types_.getType(signature->returnValue());
+                Type *commonType = types_.getType(signature->returnValue().get());
 
                 foreach (const auto &functionAndHook, calleeHooks.returnHooks) {
-                    if (auto term = functionAndHook.second->getReturnValueTerm(signature->returnValue())) {
+                    if (auto term = functionAndHook.second->getReturnValueTerm(signature->returnValue().get())) {
                         commonType->unionSet(types_.getType(term));
                     }
                 }
 
                 foreach (const auto &callAndHook, calleeHooks.callHooks) {
-                    if (auto term = callAndHook.second->getReturnValueTerm(signature->returnValue())) {
+                    if (auto term = callAndHook.second->getReturnValueTerm(signature->returnValue().get())) {
                         commonType->unionSet(types_.getType(term));
                     }
                 }
             }
         }
     }
+#endif
 }
 
 }}}} // namespace nc::core::ir::types

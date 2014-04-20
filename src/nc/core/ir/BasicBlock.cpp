@@ -50,26 +50,39 @@ void BasicBlock::setSuccessorAddress(const boost::optional<ByteAddr> &successorA
     successorAddress_ = successorAddress;
 }
 
-void BasicBlock::insert(ilist<Statement>::const_iterator position, std::unique_ptr<Statement> statement) {
+Statement *BasicBlock::insert(ilist<Statement>::const_iterator position, std::unique_ptr<Statement> statement) {
     assert(statement != NULL);
 
-    statement->setBasicBlock(this);
+    auto result = statement.get();
     statements_.insert(position, std::move(statement));
+    result->setBasicBlock(this);
+    return result;
 }
 
-void BasicBlock::pushFront(std::unique_ptr<Statement> statement) {
-    insert(statements_.begin(), std::move(statement));
+Statement *BasicBlock::pushFront(std::unique_ptr<Statement> statement) {
+    assert(statement != NULL);
+
+    return insert(statements_.begin(), std::move(statement));
 }
 
-void BasicBlock::pushBack(std::unique_ptr<Statement> statement) {
-    insert(statements_.end(), std::move(statement));
+Statement *BasicBlock::pushBack(std::unique_ptr<Statement> statement) {
+    assert(statement != NULL);
+
+    return insert(statements_.end(), std::move(statement));
 }
 
-void BasicBlock::insertAfter(const Statement *after, std::unique_ptr<Statement> statement) {
+Statement *BasicBlock::insertAfter(const Statement *after, std::unique_ptr<Statement> statement) {
     assert(after != NULL);
     assert(statement != NULL);
 
-    insert(++statements_.get_iterator(after), std::move(statement));
+    return insert(++statements_.get_iterator(after), std::move(statement));
+}
+
+Statement *BasicBlock::insertBefore(const Statement *before, std::unique_ptr<Statement> statement) {
+    assert(before != NULL);
+    assert(statement != NULL);
+
+    return insert(statements_.get_iterator(before), std::move(statement));
 }
 
 const Statement *BasicBlock::getTerminator() const {
@@ -78,7 +91,7 @@ const Statement *BasicBlock::getTerminator() const {
     }
 
     const Statement *terminator = statements().back();
-    if (terminator->isJump() || terminator->isReturn()) {
+    if (terminator->is<Jump>() || terminator->is<Return>()) {
         return terminator;
     }
 

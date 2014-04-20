@@ -79,7 +79,7 @@ public:
         UNKNOWN,            ///< Unknown intrinsic.
         UNDEFINED,          ///< Undefined value, generally not a stack offset.
         ZERO_STACK_OFFSET,  ///< Undefined value, zero stack offset.
-        REACHING_SNAPSHOT,  ///< Used for making shapshots of reaching definitions.
+        REACHING_SNAPSHOT,  ///< Used for making snapshots of reaching definitions.
         USER = 1000         ///< First user intrinsic.
     };
 

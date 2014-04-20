@@ -49,8 +49,8 @@ namespace core {
 namespace ir {
 namespace dflow {
 
-void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
-    assert(function() != NULL);
+void DataflowAnalyzer::analyze(const Function *function, const CancellationToken &canceled) {
+    assert(function != NULL);
 
     /*
      * Returns true if the given term does not cover given memory location.
@@ -59,8 +59,8 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
         return !dataflow().getMemoryLocation(term).covers(mloc);
     };
 
-    /* Control-flow graph to run abstract interpretation loop on. */
-    CFG cfg(function()->basicBlocks());
+    /* Control flow graph to run abstract interpretation loop on. */
+    CFG cfg(function->basicBlocks());
 
     /* Mapping of a basic block to the definitions reaching its end. */
     boost::unordered_map<const BasicBlock *, ReachingDefinitions> outDefinitions;
@@ -75,7 +75,7 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
         /*
          * Run abstract interpretation on all basic blocks.
          */
-        foreach (const BasicBlock *basicBlock, function()->basicBlocks()) {
+        foreach (auto basicBlock, function->basicBlocks()) {
             ExecutionContext context(*this);
 
             /* Merge reaching definitions from predecessors. */
@@ -87,11 +87,11 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
             context.definitions().filterOut(notCovered);
 
             /* Execute all the statements in the basic block. */
-            foreach (const Statement *statement, basicBlock->statements()) {
+            foreach (auto statement, basicBlock->statements()) {
                 execute(statement, context);
             }
 
-            /* Something changed? */
+            /* Something has changed? */
             ReachingDefinitions &definitions(outDefinitions[basicBlock]);
             if (definitions != context.definitions()) {
                 definitions = std::move(context.definitions());
@@ -120,8 +120,6 @@ void DataflowAnalyzer::analyze(const CancellationToken &canceled) {
 
 void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &context) {
     switch (statement->kind()) {
-        case Statement::COMMENT:
-            break;
         case Statement::INLINE_ASSEMBLY:
             /*
              * To be completely correct, one should clear reaching definitions.
@@ -132,11 +130,6 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
             auto assignment = statement->asAssignment();
             execute(assignment->right(), context);
             execute(assignment->left(), context);
-            break;
-        }
-        case Statement::TOUCH: {
-            auto touch = statement->asTouch();
-            execute(touch->term(), context);
             break;
         }
         case Statement::JUMP: {
@@ -156,22 +149,18 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
         case Statement::CALL: {
             auto call = statement->asCall();
             execute(call->target(), context);
-
-            if (hooks()) {
-                // TODO
-#if 0
-                const Value *targetValue = dataflow().getValue(call->target());
-
-                if (targetValue->abstractValue().isConcrete()) {
-                    hooks()->setCalledAddress(call, targetValue->abstractValue().asConcrete().value());
-                } else {
-                    hooks()->setCalledAddress(call, boost::none);
-                }
-#endif
-            }
             break;
         }
         case Statement::RETURN: {
+            break;
+        }
+        case Statement::TOUCH: {
+            auto touch = statement->asTouch();
+            execute(touch->term(), context);
+            break;
+        }
+        case Statement::CALLBACK: {
+            statement->asCallback()->function()();
             break;
         }
         default:

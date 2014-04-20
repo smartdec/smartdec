@@ -95,7 +95,7 @@ public:
      * \param context Context.
      * \param function Valid pointer to the function.
      */
-    virtual void dataflowAnalysis(Context &context, const ir::Function *function) const;
+    virtual void dataflowAnalysis(Context &context, ir::Function *function) const;
 
     /**
      * Reconstructs signatures of functions.

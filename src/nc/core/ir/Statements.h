@@ -37,32 +37,6 @@ namespace nc {
 namespace core {
 namespace ir {
 
-/**
- * Statement doing really nothing, but capable of delivering some user-defined text.
- * Useful mainly for debugging.
- */
-class Comment: public Statement {
-    QString text_; ///< The comment.
-
-public:
-    /**
-     * Constructor.
-     *
-     * \param[in] text The comment.
-     */
-    Comment(const QString &text): Statement(COMMENT), text_(text) {}
-
-    /**
-     * \return The comment.
-     */
-    const QString &text() const { return text_; }
-
-    virtual void print(QTextStream &out) const override;
-
-protected:
-    virtual Comment *doClone() const override;
-};
-
 class InlineAssembly: public Statement {
     public:
 
@@ -71,10 +45,10 @@ class InlineAssembly: public Statement {
      */
     InlineAssembly(): Statement(INLINE_ASSEMBLY) {}
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual InlineAssembly *doClone() const override;
+    InlineAssembly *doClone() const override;
 };
 
 /**
@@ -115,10 +89,10 @@ public:
      */
     const Term *right() const { return right_.get(); }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Assignment *doClone() const override;
+    Assignment *doClone() const override;
 };
 
 /**
@@ -141,10 +115,10 @@ public:
      */
     Term *term() const { return term_.get(); }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Touch *doClone() const override;
+    Touch *doClone() const override;
 };
 
 /**
@@ -171,10 +145,10 @@ public:
      */
     const Term *target() const { return target_.get(); }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Call *doClone() const override { return new Call(target()->clone()); }
+    Call *doClone() const override { return new Call(target()->clone()); }
 };
 
 /**
@@ -187,20 +161,43 @@ public:
      */
     Return(): Statement(RETURN) {}
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Return *doClone() const override;
+    Return *doClone() const override;
 };
 
+/**
+ * Statement used for performing custom operations during
+ * dataflow analysis.
+ */
+class Callback: public Statement {
+    std::function<void()> function_; ///< Callback function.
+
+public:
+    /**
+     * Constructor.
+     *
+     * \param function Callback function.
+     */
+    Callback(std::function<void()> function):
+        Statement(CALLBACK), function_(std::move(function))
+    {}
+
+    /**
+     * \return Callback function.
+     */
+    const std::function<void()> &function() const { return function_; }
+
+    void print(QTextStream &out) const override;
+
+protected:
+    Callback *doClone() const override;
+};
 
 /*
  * Statement implementation follows.
  */
-
-const Comment *Statement::asComment() const {
-    return as<Comment>();
-}
 
 const Assignment *Statement::asAssignment() const {
     return as<Assignment>();
@@ -216,6 +213,10 @@ const Call *Statement::asCall() const {
 
 const Return *Statement::asReturn() const {
     return as<Return>();
+}
+
+const Callback *Statement::asCallback() const {
+    return as<Callback>();
 }
 
 } // namespace ir

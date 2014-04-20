@@ -210,18 +210,16 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
     }
 }
 
-likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(const calling::CalleeId &calleeId) {
-    if (auto signature = signatures().getSignature(calleeId)) {
-        if (auto declaration = nc::find(signature2declaration_, signature)) {
-            return declaration;
-        }
-        if (!signature->name().isEmpty()) {
-            DeclarationGenerator generator(*this, signature);
-            tree().root()->addDeclaration(generator.createDeclaration());
-            return generator.declaration();
-        }
+likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(const calling::FunctionSignature *signature) {
+    assert(signature != NULL);
+
+    if (auto declaration = nc::find(signature2declaration_, signature)) {
+        return declaration;
     }
-    return NULL;
+
+    DeclarationGenerator generator(*this, signature);
+    tree().root()->addDeclaration(generator.createDeclaration());
+    return generator.declaration();
 }
 
 likec::FunctionDefinition *CodeGenerator::makeFunctionDefinition(const Function *function) {
@@ -230,7 +228,7 @@ likec::FunctionDefinition *CodeGenerator::makeFunctionDefinition(const Function 
     return generator.definition();
 }
 
-void CodeGenerator::setFunctionDeclaration(const calling::Signature *signature, likec::FunctionDeclaration *declaration) {
+void CodeGenerator::setFunctionDeclaration(const calling::FunctionSignature *signature, likec::FunctionDeclaration *declaration) {
     assert(signature != NULL);
     assert(declaration != NULL);
 

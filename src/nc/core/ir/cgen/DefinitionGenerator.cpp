@@ -97,7 +97,7 @@ namespace ir {
 namespace cgen {
 
 DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *function, const CancellationToken &canceled):
-    DeclarationGenerator(parent, parent.signatures().getSignature(parent.hooks().getCalleeId(function))),
+    DeclarationGenerator(parent, parent.signatures().getSignature(function).get()),
     function_(function),
     dataflow_(*parent.dataflows().at(function)),
     graph_(*parent.graphs().at(function)),
@@ -126,8 +126,8 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     setDefinition(functionDefinition.get());
 
     if (auto entryHook = parent().hooks().getEntryHook(function_)) {
-        foreach (const Term *argument, signature()->arguments()) {
-            auto term = entryHook->getArgumentTerm(argument);
+        foreach (const auto &argument, signature()->arguments()) {
+            auto term = entryHook->getArgumentTerm(argument.get());
             auto variable = parent().variables().getVariable(term);
 
             if (variable->memoryLocation() == dataflow_.getMemoryLocation(term)) {
@@ -626,9 +626,6 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::makeStatement(const State
 
 std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Statement *statement, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB) {
     switch (statement->kind()) {
-        case Statement::COMMENT: {
-            return std::make_unique<likec::CommentStatement>(tree(), statement->asComment()->text());
-        }
         case Statement::INLINE_ASSEMBLY: {
             return std::make_unique<likec::InlineAssembly>(tree(), statement->instruction() ? statement->instruction()->toString(): QString());
         }
@@ -684,11 +681,13 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             std::unique_ptr<likec::Expression> target;
 
-            auto calleeId = parent().hooks().getCalleeId(call);
-
-            if (auto functionDeclaration = parent().makeFunctionDeclaration(calleeId)) {
-                target = std::make_unique<likec::FunctionIdentifier>(tree(), functionDeclaration);
-                target->setTerm(call->target());
+            auto targetValue = dataflow_.getValue(call->target());
+            if (targetValue->abstractValue().isConcrete()) {
+                if (auto functionSignature = parent().signatures().getSignature(targetValue->abstractValue().asConcrete().value()).get()) {
+                    auto functionDeclaration = parent().makeFunctionDeclaration(functionSignature);
+                    target = std::make_unique<likec::FunctionIdentifier>(tree(), functionDeclaration);
+                    target->setTerm(call->target());
+                }
             }
 
             if (!target) {
@@ -697,25 +696,22 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             auto callOperator = std::make_unique<likec::CallOperator>(tree(), std::move(target));
 
-            if (calleeId) {
-                // FIXME: we must generate cleanupStatement somewhere.
-                if (auto signature = parent().signatures().getSignature(calleeId)) {
-                    if (auto callHook = parent().hooks().getCallHook(call)) {
-                        foreach (const Term *argument, signature->arguments()) {
-                            callOperator->addArgument(makeExpression(callHook->getArgumentTerm(argument)));
-                        }
+            if (auto callSignature = parent().signatures().getSignature(call)) {
+                if (auto callHook = parent().hooks().getCallHook(call)) {
+                    foreach (const auto &argument, callSignature->arguments()) {
+                        callOperator->addArgument(makeExpression(callHook->getArgumentTerm(argument.get())));
+                    }
 
-                        if (signature->returnValue()) {
-                            const Term *returnValueTerm = callHook->getReturnValueTerm(signature->returnValue());
+                    if (callSignature->returnValue()) {
+                        const Term *returnValueTerm = callHook->getReturnValueTerm(callSignature->returnValue().get());
 
-                            return std::make_unique<likec::ExpressionStatement>(tree(),
-                                std::make_unique<likec::BinaryOperator>(tree(),
-                                    likec::BinaryOperator::ASSIGN,
-                                    makeExpression(returnValueTerm),
-                                    std::make_unique<likec::Typecast>(tree(),
-                                        parent().makeType(parent().types().getType(returnValueTerm)),
-                                        std::move(callOperator))));
-                        }
+                        return std::make_unique<likec::ExpressionStatement>(tree(),
+                            std::make_unique<likec::BinaryOperator>(tree(),
+                                likec::BinaryOperator::ASSIGN,
+                                makeExpression(returnValueTerm),
+                                std::make_unique<likec::Typecast>(tree(),
+                                    parent().makeType(parent().types().getType(returnValueTerm)),
+                                    std::move(callOperator))));
                     }
                 }
             }
@@ -727,7 +723,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                 if (auto returnHook = parent().hooks().getReturnHook(statement->asReturn())) {
                     return std::make_unique<likec::Return>(
                         tree(),
-                        makeExpression(returnHook->getReturnValueTerm(signature()->returnValue())));
+                        makeExpression(returnHook->getReturnValueTerm(signature()->returnValue().get())));
                 }
             }
             return std::make_unique<likec::Return>(tree());
