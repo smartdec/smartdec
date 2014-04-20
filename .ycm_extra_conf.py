@@ -16,6 +16,20 @@ default_flags = [
     '-I' + os.path.join(project_root, 'src', '3rd-party'),
 ]
 
+# Compiling from clang the binary uses the correct default header search paths
+# but compiling from libclang.so does not. Therefore, we add the right paths
+# manually.
+extra_flags = [
+    '-I/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../../include/c++/4.8',
+    '-I/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../../include/c++/4.8/backward',
+    '-I/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../../include/x86_64-linux-gnu/c++/4.8',
+    '-I/usr/local/include',
+    '-I/usr/bin/../lib/clang/3.4/include',
+    '-I/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/include',
+    '-I/usr/include/x86_64-linux-gnu',
+    '-I/usr/include'
+]
+
 # CMake generates a json database inside the build directory.
 compilation_database_folder = os.path.join(project_root, 'build')
 
@@ -41,14 +55,14 @@ def GetCompilationInfoForFile(filename):
     return database.GetCompilationInfoForFile(filename)
 
 def FlagsForFile(filename, **kwargs):
+    flags = default_flags
+
     if database:
         compilation_info = GetCompilationInfoForFile(filename)
         if compilation_info:
-            return {
-                'flags': compilation_info.compiler_flags_,
-                'do_cache': True
-            }
+            flags = list(compilation_info.compiler_flags_)
+
     return {
-        'flags': default_flags,
-        'do_cache': False
+        'flags': flags + extra_flags,
+        'do_cache': True
     }
