@@ -27,8 +27,10 @@
 #include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
 
+#include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
+#include <nc/core/ir/Statements.h>
 #include <nc/core/ir/calling/CallHook.h>
 #include <nc/core/ir/calling/EntryHook.h>
 #include <nc/core/ir/calling/Hooks.h>
@@ -98,47 +100,40 @@ void TypeAnalyzer::joinVariableTypes() {
 }
 
 void TypeAnalyzer::joinArgumentTypes() {
-    // FIXME
-#if 0
-    foreach (const auto &calleeIdAndHooks, hooks_.map()) {
-        auto &calleeId = calleeIdAndHooks.first;
-        auto &calleeHooks = calleeIdAndHooks.second;
-
-        if (auto signature = signatures_.getSignature(calleeId)) {
-            foreach (const auto &argument, signature->arguments()) {
-                Type *commonType = types_.getType(argument.get());
-
-                foreach (const auto &functionAndHook, calleeHooks.entryHooks) {
-                    if (auto term = functionAndHook.second->getArgumentTerm(argument.get())) {
-                        commonType->unionSet(types_.getType(term));
-                    }
-                }
-
-                foreach (const auto &callAndHook, calleeHooks.callHooks) {
-                    if (auto term = callAndHook.second->getArgumentTerm(argument.get())) {
-                        commonType->unionSet(types_.getType(term));
-                    }
+    foreach (auto function, functions_.list()) {
+        if (auto entryHook = hooks_.getEntryHook(function)) {
+            if (auto signature = signatures_.getSignature(function)) {
+                foreach (const auto &term, signature->arguments()) {
+                    types_.getType(term.get())->unionSet(types_.getType(entryHook->getArgumentTerm(term.get())));
                 }
             }
+        }
 
-            if (signature->returnValue()) {
-                Type *commonType = types_.getType(signature->returnValue().get());
-
-                foreach (const auto &functionAndHook, calleeHooks.returnHooks) {
-                    if (auto term = functionAndHook.second->getReturnValueTerm(signature->returnValue().get())) {
-                        commonType->unionSet(types_.getType(term));
+        foreach (auto basicBlock, function->basicBlocks()) {
+            foreach (auto statement, basicBlock->statements()) {
+                if (auto call = statement->asCall()) {
+                    if (auto callHook = hooks_.getCallHook(call)) {
+                        if (auto signature = signatures_.getSignature(call)) {
+                            foreach (const auto &term, signature->arguments()) {
+                                types_.getType(term.get())->unionSet(types_.getType(callHook->getArgumentTerm(term.get())));
+                            }
+                            if (auto returnValue = signature->returnValue().get()) {
+                                types_.getType(returnValue)->unionSet(types_.getType(callHook->getReturnValueTerm(returnValue)));
+                            }
+                        }
                     }
-                }
-
-                foreach (const auto &callAndHook, calleeHooks.callHooks) {
-                    if (auto term = callAndHook.second->getReturnValueTerm(signature->returnValue().get())) {
-                        commonType->unionSet(types_.getType(term));
+                } else if (auto ret = statement->asReturn()) {
+                    if (auto returnHook = hooks_.getReturnHook(ret)) {
+                        if (auto signature = signatures_.getSignature(function)) {
+                            if (auto returnValue = signature->returnValue().get()) {
+                                types_.getType(returnValue)->unionSet(types_.getType(returnHook->getReturnValueTerm(returnValue)));
+                            }
+                        }
                     }
                 }
             }
         }
     }
-#endif
 }
 
 }}}} // namespace nc::core::ir::types
