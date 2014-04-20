@@ -74,7 +74,7 @@ class LivenessAnalyzer {
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Architecture.
     const cflow::Graph &regionGraph_; ///< Reduced control-flow graph.
-    calling::Hooks &hooks_; ///< Calling convention hooks.
+    const calling::Hooks &hooks_; ///< Calling convention hooks.
     const calling::Signatures &signatures_; ///< Signatures of functions.
     std::vector<const Jump *> deadJumps_; ///< Useless jumps.
 
@@ -92,7 +92,7 @@ public:
      */
     LivenessAnalyzer(Liveness &liveness, const Function *function,
         const dflow::Dataflow &dataflow, const arch::Architecture *architecture, 
-        const cflow::Graph &regionGraph, calling::Hooks &hooks,
+        const cflow::Graph &regionGraph, const calling::Hooks &hooks,
         const calling::Signatures &signatures
     ):
         liveness_(liveness), function_(function), dataflow_(dataflow),
@@ -138,7 +138,7 @@ public:
     /**
      * \return Calls data.
      */
-    calling::Hooks &hooks() const { return hooks_; }
+    const calling::Hooks &hooks() const { return hooks_; }
 
     /**
      * \return Signatures of functions.

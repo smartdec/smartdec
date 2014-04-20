@@ -142,7 +142,7 @@ public:
      *
      * \return Pointer to the calling convention used for calls to given address. Can be NULL.
      */
-    const Convention *getConvention(const CalleeId &calleeId);
+    const Convention *getConvention(const CalleeId &calleeId) const;
 
     /**
      * \param function Valid pointer to a function.
@@ -150,7 +150,7 @@ public:
      * \return Pointer to the last EntryHook used for instrumenting this function.
      *         Can be NULL.
      */
-    EntryHook *getEntryHook(const Function *function);
+    const EntryHook *getEntryHook(const Function *function) const;
 
     /**
      * \param call Valid pointer to a call statement.
@@ -158,7 +158,7 @@ public:
      * \return Pointer to the last CallHook used for instrumenting this call.
      *         Can be NULL.
      */
-    CallHook *getCallHook(const Call *call);
+    const CallHook *getCallHook(const Call *call) const;
 
     /**
      * \param function Valid pointer to a function.
@@ -167,7 +167,7 @@ public:
      * \return Pointer to the last ReturnHook used for instrumenting this return.
      *         Can be NULL.
      */
-    ReturnHook *getReturnHook(const Return *ret);
+    const ReturnHook *getReturnHook(const Return *ret) const;
 
     /**
      * Inserts callback statements into the function. When executed by

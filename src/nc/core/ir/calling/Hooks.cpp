@@ -81,7 +81,7 @@ Hooks::Hooks(const Conventions &conventions, const Signatures &signatures):
 
 Hooks::~Hooks() {}
 
-const Convention *Hooks::getConvention(const CalleeId &calleeId) {
+const Convention *Hooks::getConvention(const CalleeId &calleeId) const {
     if (!calleeId) {
         return NULL;
     }
@@ -93,19 +93,19 @@ const Convention *Hooks::getConvention(const CalleeId &calleeId) {
     }
 }
 
-EntryHook *Hooks::getEntryHook(const Function *function) {
+const EntryHook *Hooks::getEntryHook(const Function *function) const {
     assert(function != NULL);
 
     return nc::find(lastEntryHooks_, function);
 }
 
-CallHook *Hooks::getCallHook(const Call *call) {
+const CallHook *Hooks::getCallHook(const Call *call) const {
     assert(call != NULL);
 
     return nc::find(lastCallHooks_, call);
 }
 
-ReturnHook *Hooks::getReturnHook(const Return *ret) {
+const ReturnHook *Hooks::getReturnHook(const Return *ret) const {
     assert(ret != NULL);
 
     return nc::find(lastReturnHooks_, ret);

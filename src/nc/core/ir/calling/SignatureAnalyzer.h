@@ -47,7 +47,7 @@ class SignatureAnalyzer {
     Signatures &signatures_;
     const image::Image &image_;
     const dflow::Dataflows &dataflows_;
-    Hooks &hooks_;
+    const Hooks &hooks_;
     boost::unordered_map<const Call *, const Function *> call2function_;
     boost::unordered_map<const Function *, std::vector<const Call *>> function2calls_;
     boost::unordered_map<const Function *, std::unique_ptr<dflow::Uses>> function2uses_;
@@ -61,10 +61,10 @@ public:
      * \param image Executable image.
      * \param functions Functions.
      * \param dataflows Dataflows.
-     * \param hooks Calls data.
+     * \param hooks Hooks.
      */
     SignatureAnalyzer(Signatures &signatures, const image::Image &image, const Functions &functions,
-        const dflow::Dataflows &dataflows, Hooks &hooks);
+        const dflow::Dataflows &dataflows, const Hooks &hooks);
 
     /**
      * Destructor.

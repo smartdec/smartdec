@@ -39,7 +39,7 @@ namespace ir {
 namespace calling {
 
 SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image &image, const Functions &functions,
-    const dflow::Dataflows &dataflows, Hooks &hooks
+    const dflow::Dataflows &dataflows, const Hooks &hooks
 ):
     signatures_(signatures),
     image_(image),

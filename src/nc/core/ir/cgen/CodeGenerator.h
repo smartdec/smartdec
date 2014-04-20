@@ -102,7 +102,7 @@ class CodeGenerator: boost::noncopyable {
     const Functions &functions_;
 
     /** Hooks of calling conventions. */
-    calling::Hooks &hooks_;
+    const calling::Hooks &hooks_;
 
     /** Signatures of the functions. */
     const calling::Signatures &signatures_;
@@ -145,7 +145,7 @@ public:
      * \param[out] tree Abstract syntax tree to generate code in.
      * \param[in] image Executable image being decompiled.
      * \param[in] functions Intermediate representation of functions.
-     * \param[in] hooks Hooks of calling conventions.
+     * \param[in] hooks Call hooks.
      * \param[in] signatures Signatures of functions.
      * \param[in] dataflows Dataflow information for all functions.
      * \param[in] variables Information about reconstructed variables.
@@ -154,7 +154,7 @@ public:
      * \param[in] types Information about types.
      * \param[in] cancellationToken Cancellation token.
      */
-    CodeGenerator(likec::Tree &tree, const image::Image &image, const Functions &functions, calling::Hooks &hooks,
+    CodeGenerator(likec::Tree &tree, const image::Image &image, const Functions &functions, const calling::Hooks &hooks,
         const calling::Signatures &signatures, const dflow::Dataflows &dataflows, const vars::Variables &variables,
         const cflow::Graphs &graphs, const liveness::Livenesses &livenesses, const types::Types &types,
         const CancellationToken &cancellationToken
@@ -182,7 +182,7 @@ public:
     /**
      * \return Hooks of calling conventions.
      */
-    calling::Hooks &hooks() const { return hooks_; }
+    const calling::Hooks &hooks() const { return hooks_; }
 
     /**
      * \return Signatures of functions.
