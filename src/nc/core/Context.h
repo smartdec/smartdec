@@ -199,6 +199,11 @@ public:
     /**
      * \return Pointer to the signatures of functions. Can be NULL.
      */
+    ir::calling::Signatures *signatures() { return signatures_.get(); }
+
+    /**
+     * \return Pointer to the signatures of functions. Can be NULL.
+     */
     const ir::calling::Signatures *signatures() const { return signatures_.get(); }
 
     /**

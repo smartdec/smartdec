@@ -29,7 +29,6 @@
 #include <nc/common/Unreachable.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/Context.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/arch/Registers.h>
@@ -652,9 +651,6 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                         parent().makeType(parent().types().getType(assignment->left())),
                         std::move(right))));
         }
-        case Statement::TOUCH: {
-            return NULL;
-        }
         case Statement::JUMP: {
             const Jump *jump = statement->asJump();
 
@@ -727,6 +723,12 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                 }
             }
             return std::make_unique<likec::Return>(tree());
+        }
+        case Statement::TOUCH: {
+            return NULL;
+        }
+        case Statement::CALLBACK: {
+            return NULL;
         }
     }
 

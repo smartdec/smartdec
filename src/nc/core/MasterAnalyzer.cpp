@@ -128,13 +128,9 @@ void MasterAnalyzer::dataflowAnalysis(Context &context, ir::Function *function) 
 void MasterAnalyzer::reconstructSignatures(Context &context) const {
     context.logToken() << tr("Reconstructing function signatures.");
 
-    auto signatures = std::make_unique<ir::calling::Signatures>();
-
-    ir::calling::SignatureAnalyzer(*signatures, *context.image(), *context.functions(),
+    ir::calling::SignatureAnalyzer(*context.signatures(), *context.image(), *context.functions(),
         *context.dataflows(), *context.hooks())
         .analyze(context.cancellationToken());
-
-    context.setSignatures(std::move(signatures));
 }
 
 void MasterAnalyzer::reconstructVariables(Context &context) const {

@@ -89,12 +89,9 @@ void Hooks::instrument(Function *function, const dflow::Dataflow *dataflow) {
     assert(function != NULL);
     assert(dataflow != NULL);
 
+    deinstrument(function);
+
     auto &hooks = insertedHooks_[function];
-
-    if (!hooks.empty()) {
-        deinstrument(function);
-    }
-
     hooks.push_back(function->entry()->pushFront(std::make_unique<Callback>([=](){
         instrumentEntry(function);
     })));
