@@ -83,21 +83,17 @@ void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
         changed = false;
 
         foreach (const CalleeId &calleeId, id2referrers_ | boost::adaptors::map_keys) {
-            auto arguments = computeArguments(calleeId);
-            auto &oldArguments = id2arguments_[calleeId];
-
-            if (arguments != oldArguments) {
-                oldArguments = std::move(arguments);
+            if (computeArguments(calleeId)) {
                 changed = true;
             }
-
-            canceled.poll();
         }
 
         if (++niterations > 5) {
             ncWarning("Didn't reach a fixpoint after %1 iterations while reconstructing arguments. Giving up.", niterations);
             break;
         }
+
+        canceled.poll();
     } while (changed);
 }
 
@@ -121,14 +117,12 @@ bool isHomogeneous(const Container &container) {
 
 } // anonymous namespace
 
-std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &calleeId) {
+bool SignatureAnalyzer::computeArguments(const CalleeId &calleeId) {
     assert(calleeId);
-
-    std::vector<MemoryLocation> result;
 
     auto convention = hooks_.conventions().getConvention(calleeId);
     if (!convention) {
-        return result;
+        return false;
     }
 
     const auto &referrers = nc::find(id2referrers_, calleeId);
@@ -166,16 +160,88 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &
         }
     };
 
+    std::vector<MemoryLocation> arguments;
+    boost::unordered_map<const Call *, std::vector<MemoryLocation>> extraArguments;
+
     foreach (auto &locationAndPlacement, placements) {
         if (auto location = getArgumentLocation(locationAndPlacement.second)) {
             if (location.addr() == locationAndPlacement.first.addr()) {
-                result.push_back(location);
+                arguments.push_back(location);
+            }
+        } else {
+            foreach (const auto &callAndLocation, locationAndPlacement.second.inCalls) {
+                if (callAndLocation.second.addr() == locationAndPlacement.first.addr()) {
+                    extraArguments[callAndLocation.first].push_back(callAndLocation.second);
+                }
             }
         }
     }
 
-    return convention->sortArguments(result);
+    arguments = convention->sortArguments(arguments);
+    foreach (auto &callAndLocations, extraArguments) {
+        callAndLocations.second = convention->sortArguments(callAndLocations.second);
+    }
+
+    bool changed = false;
+
+    auto &oldArguments = id2arguments_[calleeId];
+    if (oldArguments != arguments) {
+        oldArguments = std::move(arguments);
+        changed = true;
+    }
+
+    foreach (auto &callAndLocations, extraArguments) {
+        auto &oldExtraArguments = call2extraArguments_[callAndLocations.first];
+        if (oldExtraArguments != callAndLocations.second) {
+            oldExtraArguments = std::move(callAndLocations.second);
+            changed = true;
+        }
+    }
+
+    return changed;
 }
+
+namespace {
+
+class StackOffsetFixer {
+    boost::optional<BitSize> stackOffset_;
+
+public:
+    StackOffsetFixer(const Term *stackPointer, const dflow::Dataflow &dataflow) {
+        if (stackPointer) {
+            auto value = dataflow.getValue(stackPointer);
+            if (value->isStackOffset()) {
+                stackOffset_ = value->stackOffset() * CHAR_BIT;
+            }
+        }
+    }
+
+    MemoryLocation addStackOffset(const MemoryLocation &memoryLocation) {
+        if (memoryLocation.domain() == MemoryDomain::STACK) {
+            if (stackOffset_) {
+                return memoryLocation.shifted(*stackOffset_);
+            } else {
+                return MemoryLocation();
+            }
+        } else {
+            return memoryLocation;
+        }
+    }
+
+    MemoryLocation removeStackOffset(const MemoryLocation &memoryLocation) {
+        if (memoryLocation.domain() == MemoryDomain::STACK) {
+            if (stackOffset_) {
+                return memoryLocation.shifted(-*stackOffset_);
+            } else {
+                return MemoryLocation();
+            }
+        } else {
+            return memoryLocation;
+        }
+    }
+};
+
+} // anonymous namespace
 
 std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *function) {
     assert(function != NULL);
@@ -211,24 +277,11 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *
         }
 
         auto callHook = hooks_.getCallHook(call);
-        auto stackPointerValue = dataflow.getValue(callHook->stackPointer());
-
-        auto fixup = [&](const MemoryLocation &memoryLocation) -> MemoryLocation {
-            if (memoryLocation.domain() == MemoryDomain::STACK) {
-                if (stackPointerValue->isStackOffset()) {
-                    return memoryLocation.shifted(stackPointerValue->stackOffset() * CHAR_BIT);
-                } else {
-                    return MemoryLocation();
-                }
-            } else {
-                return memoryLocation;
-            }
-        };
-
-        const auto &reachingDefinitions = dataflow.getDefinitions(callHook->snapshotTerm());
+        auto fixer = StackOffsetFixer(callHook->stackPointer(), dataflow);
+        auto &reachingDefinitions = dataflow.getDefinitions(callHook->snapshotTerm());
 
         foreach (auto memoryLocation, callArguments) {
-            memoryLocation = fixup(memoryLocation);
+            memoryLocation = fixer.addStackOffset(memoryLocation);
 
             if (memoryLocation && reachingDefinitions.projected(memoryLocation).empty()) {
                 result.push_back(memoryLocation);
@@ -250,35 +303,17 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call
     }
 
     auto function = call->basicBlock()->function();
-    assert(function != NULL);
-
     auto &dataflow = *dataflows_.at(function);
     auto &uses = *function2uses_.at(function);
-    auto stackPointerValue = dataflow.getValue(callHook->stackPointer());
+    auto fixer = StackOffsetFixer(callHook->stackPointer(), dataflow);
 
-    auto fixup = [&](const MemoryLocation &memoryLocation) -> MemoryLocation {
-        if (memoryLocation.domain() == MemoryDomain::STACK) {
-            if (stackPointerValue->isStackOffset()) {
-                return memoryLocation.shifted(-stackPointerValue->stackOffset() * CHAR_BIT);
-            } else {
-                return MemoryLocation();
-            }
-        } else {
-            return memoryLocation;
-        }
-    };
-
-    /*
-     * Count as an argument everything that reaches the call, can be used to
-     * pass an argument, and not used somewhere else.
-     */
     foreach (const auto &chunk, dataflow.getDefinitions(callHook->snapshotTerm()).chunks()) {
-        if (auto memoryLocation = fixup(chunk.location())) {
-            foreach (const Term *term, chunk.definitions()) {
-                if (uses.getUses(term).empty()) {
+        foreach (const Term *term, chunk.definitions()) {
+            if (uses.getUses(term).empty()) {
+                if (auto memoryLocation = fixer.removeStackOffset(chunk.location())) {
                     result.push_back(memoryLocation);
-                    break;
                 }
+                break;
             }
         }
     }

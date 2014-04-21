@@ -36,8 +36,6 @@ namespace dflow {
 
 namespace calling {
 
-class CallHook;
-class CalleeId;
 class Hooks;
 class Signatures;
 
@@ -56,10 +54,21 @@ class SignatureAnalyzer {
         std::vector<const Return *> returns;
     };
 
+    /** Mapping from a callee id to the functions, calls, and returns with this id. */
     boost::unordered_map<CalleeId, Referrers> id2referrers_;
+
+    /** Mapping from a function to the list of calls in it.*/
     boost::unordered_map<const Function *, std::vector<const Call *>> function2calls_;
+
+    /** Mapping from a function to the term use information for this function. */
     boost::unordered_map<const Function *, std::unique_ptr<dflow::Uses>> function2uses_;
+
+    /** Mapping from a callee id to the list of its formal arguments. */
     boost::unordered_map<CalleeId, std::vector<MemoryLocation>> id2arguments_;
+
+    /** Mapping from a call to the list of factual arguments not included into the list of
+     *  formal arguments of the respective callee id. */
+    boost::unordered_map<const Call *, std::vector<MemoryLocation>> call2extraArguments_;
 
 public:
     /**
@@ -95,14 +104,14 @@ private:
     void computeArguments(const CancellationToken &canceled);
 
     /**
-     * Computes arguments of the function with the given callee id
+     * Recomputes arguments of the function with the given callee id
      * by looking at the function's body and calls to it.
      *
      * \param[in] calleeId Valid callee id.
      *
-     * \return Computed locations of arguments.
+     * \return True if something has changed, false otherwise.
      */
-    std::vector<MemoryLocation> computeArguments(const CalleeId &calleeId);
+    bool computeArguments(const CalleeId &calleeId);
 
     /**
      * \param[in] function Valid pointer to a function.
