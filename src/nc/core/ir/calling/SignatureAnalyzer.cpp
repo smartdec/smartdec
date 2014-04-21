@@ -323,83 +323,116 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call
 
 void SignatureAnalyzer::computeSignatures(const CancellationToken &canceled) {
     foreach (const auto &calleeId, id2referrers_ | boost::adaptors::map_keys) {
-        computeSignature(calleeId);
+        computeSignatures(calleeId);
         canceled.poll();
     }
 }
 
-void SignatureAnalyzer::computeSignature(const CalleeId &calleeId) {
-    assert(calleeId);
+namespace {
 
-    auto signature = std::make_shared<FunctionSignature>();
+class ArgumentFactory {
+    MemoryLocation stackPointer_;
+public:
 
-    /*
-     * Pick up a name for the function.
-     */
-    if (calleeId.entryAddress()) {
-        /* Take the name of the corresponding symbol, if possible. */
-        if (auto symbol = image_.symbols()->find(image::Symbol::Function, *calleeId.entryAddress())) {
-            signature->setName(likec::Tree::cleanName(symbol->name()));
-
-            if (signature->name() != symbol->name()) {
-                signature->addComment(symbol->name());
-            }
-
-            QString demangledName = image_.demangler()->demangle(symbol->name());
-            if (demangledName.contains('(') && demangledName != symbol->name()) {
-                signature->addComment(demangledName);
-            }
+    ArgumentFactory(const Convention *convention) {
+        if (convention) {
+            stackPointer_ = convention->stackPointer();
         }
-
-        if (signature->name().isEmpty()) {
-            /* Invent a name based on the entry address. */
-            signature->setName(QString(QLatin1String("func_%1"))
-                .arg(*calleeId.entryAddress(), 0, 16));
-        }
-    } else if (calleeId.function()) {
-        signature->setName(QString(QLatin1String("func_noentry_%1"))
-            .arg(reinterpret_cast<uintptr_t>(calleeId.function()), 0, 16));
-    } else {
-        /* Function is unknown, leave the name empty. */
     }
 
-    /*
-     * Set arguments.
-     */
-    if (auto convention = hooks_.conventions().getConvention(calleeId)) {
-        foreach (const auto &memoryLocation, nc::find(id2arguments_, calleeId)) {
-            if (memoryLocation.domain() == MemoryDomain::STACK) {
-                signature->arguments().push_back(std::make_unique<Dereference>(
+    std::shared_ptr<Term> operator()(const MemoryLocation &memoryLocation) const {
+        if (memoryLocation.domain() == MemoryDomain::STACK) {
+            if (stackPointer_) {
+                return std::make_shared<Dereference>(
                     std::make_unique<BinaryOperator>(
                         BinaryOperator::ADD,
-                        std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
+                        std::make_unique<MemoryLocationAccess>(stackPointer_),
                         std::make_unique<Constant>(SizedValue(
-                            convention->stackPointer().size<SmallBitSize>(),
+                            stackPointer_.size<SmallBitSize>(),
                             memoryLocation.addr() / CHAR_BIT)),
-                        convention->stackPointer().size()),
+                        stackPointer_.size<SmallBitSize>()),
                     MemoryDomain::MEMORY,
                     memoryLocation.size<SmallBitSize>()
-                ));
+                );
             } else {
-                signature->arguments().push_back(std::make_unique<MemoryLocationAccess>(memoryLocation));
+                return NULL;
             }
+        } else {
+            return std::make_shared<MemoryLocationAccess>(memoryLocation);
+        }
+    }
+};
+
+} // anonymous namespace
+
+void SignatureAnalyzer::computeSignatures(const CalleeId &calleeId) {
+    assert(calleeId);
+
+    auto functionSignature = std::make_shared<FunctionSignature>();
+
+    computeName(calleeId, *functionSignature);
+
+    auto convention = hooks_.conventions().getConvention(calleeId);
+    auto argumentFactory = ArgumentFactory(convention);
+
+    foreach (const auto &memoryLocation, nc::find(id2arguments_, calleeId)) {
+        if (auto term = argumentFactory(memoryLocation)) {
+            functionSignature->arguments().push_back(term);
         }
     }
 
-    auto callSignature = std::make_shared<CallSignature>();
-    callSignature->arguments() = signature->arguments();
-    callSignature->setReturnValue(signature->returnValue());
-
     if (calleeId.entryAddress()) {
-        signatures_.setSignature(*calleeId.entryAddress(), signature);
+        signatures_.setSignature(*calleeId.entryAddress(), functionSignature);
     }
 
     const auto &referrers = nc::find(id2referrers_, calleeId);
     foreach (auto function, referrers.functions) {
-        signatures_.setSignature(function, signature);
+        signatures_.setSignature(function, functionSignature);
     }
+
     foreach (auto call, referrers.calls) {
+        auto callSignature = std::make_shared<CallSignature>();
+
+        callSignature->arguments() = functionSignature->arguments();
+        foreach (const auto &memoryLocation, nc::find(call2extraArguments_, call)) {
+            if (auto term = argumentFactory(memoryLocation)) {
+                callSignature->arguments().push_back(term);
+            }
+        }
+        callSignature->setReturnValue(functionSignature->returnValue());
+
         signatures_.setSignature(call, callSignature);
+    }
+}
+
+void SignatureAnalyzer::computeName(const CalleeId &calleeId, FunctionSignature &signature) {
+    assert(calleeId);
+
+    if (calleeId.entryAddress()) {
+        /* Take the name of the corresponding symbol, if possible. */
+        if (auto symbol = image_.symbols()->find(image::Symbol::Function, *calleeId.entryAddress())) {
+            signature.setName(likec::Tree::cleanName(symbol->name()));
+
+            if (signature.name() != symbol->name()) {
+                signature.addComment(symbol->name());
+            }
+
+            QString demangledName = image_.demangler()->demangle(symbol->name());
+            if (demangledName.contains('(') && demangledName != symbol->name()) {
+                signature.addComment(demangledName);
+            }
+        }
+
+        if (signature.name().isEmpty()) {
+            /* Invent a name based on the entry address. */
+            signature.setName(QString(QLatin1String("func_%1"))
+                .arg(*calleeId.entryAddress(), 0, 16));
+        }
+    } else if (calleeId.function()) {
+        signature.setName(QString(QLatin1String("func_noentry_%1"))
+            .arg(reinterpret_cast<uintptr_t>(calleeId.function()), 0, 16));
+    } else {
+        /* Function is unknown, leave the name empty. */
     }
 }
 

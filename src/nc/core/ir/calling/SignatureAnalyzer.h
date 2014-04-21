@@ -36,6 +36,7 @@ namespace dflow {
 
 namespace calling {
 
+class FunctionSignature;
 class Hooks;
 class Signatures;
 
@@ -137,11 +138,21 @@ private:
     void computeSignatures(const CancellationToken &canceled);
 
     /**
-     * Reconstructs the signature of a function identified by a given callee id.
+     * Reconstructs the signatures of the functions and calls
+     * with the given callee id.
      *
      * \param calleeId Valid callee id.
      */
-    void computeSignature(const CalleeId &calleeId);
+    void computeSignatures(const CalleeId &calleeId);
+
+    /**
+     * Chooses a name for a function with the given callee id and
+     * sets it in the signature.
+     *
+     * \param calleeId Valid callee id.
+     * \param signature Signature.
+     */
+    void computeName(const CalleeId &calleeId, FunctionSignature &signature);
 };
 
 } // namespace calling
