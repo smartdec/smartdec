@@ -125,6 +125,8 @@ void IntelMasterAnalyzer::dataflowAnalysis(core::Context &context, core::ir::Fun
 
     std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
 
+    context.hooks()->instrument(function, dataflow.get());
+
     IntelDataflowAnalyzer(*dataflow, context.image()->architecture())
         .analyze(function, context.cancellationToken());
 
