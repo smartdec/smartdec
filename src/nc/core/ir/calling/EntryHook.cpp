@@ -67,7 +67,7 @@ EntryHook::EntryHook(const Convention *convention, const FunctionSignature *sign
     };
 
     if (signature) {
-        foreach (auto term, signature->arguments()) {
+        foreach (const auto &term, signature->arguments()) {
             createArgument(term.get());
         }
     }
@@ -81,7 +81,7 @@ void EntryHook::instrument(Function *function) {
     }
 
     while (!statements_.empty()) {
-        function->entry()->pushFront(statements_.pop_front());
+        function->entry()->pushFront(statements_.pop_back());
         ++insertedStatementsCount_;
     }
 }

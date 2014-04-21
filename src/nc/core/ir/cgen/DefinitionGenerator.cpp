@@ -127,7 +127,11 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     if (auto entryHook = parent().hooks().getEntryHook(function_)) {
         foreach (const auto &argument, signature()->arguments()) {
             auto term = entryHook->getArgumentTerm(argument.get());
+            assert(term != NULL && "Entry hook must have clones of all arguments in the signature.");
+            assert(dataflow_.getMemoryLocation(term) && "Argument must have a memory location.");
+
             auto variable = parent().variables().getVariable(term);
+            assert(variable != NULL && "Each term with a memory location must belong to a variable.");
 
             if (variable->memoryLocation() == dataflow_.getMemoryLocation(term)) {
                 auto &variableDeclaration = variableDeclarations_[variable];
