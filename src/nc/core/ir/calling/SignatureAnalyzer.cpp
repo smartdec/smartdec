@@ -38,8 +38,8 @@ namespace core {
 namespace ir {
 namespace calling {
 
-SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image &image, const Functions &functions,
-    const dflow::Dataflows &dataflows, const Hooks &hooks
+SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image &image,
+    const Functions &functions, const dflow::Dataflows &dataflows, const Hooks &hooks
 ):
     signatures_(signatures),
     image_(image),
@@ -47,11 +47,17 @@ SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image 
     hooks_(hooks)
 {
     foreach (auto function, functions.list()) {
+        auto &dataflow = *dataflows.at(function);
+
+        id2referrers_[getCalleeId(function)].functions.push_back(function);
+
         foreach (auto basicBlock, function->basicBlocks()) {
             foreach (auto statement, basicBlock->statements()) {
                 if (auto call = statement->asCall()) {
-                    call2function_[call] = function;
+                    id2referrers_[getCalleeId(call, dataflow)].calls.push_back(call);
                     function2calls_[function].push_back(call);
+                } else if (auto ret = statement->asReturn()) {
+                    id2referrers_[getCalleeId(function)].returns.push_back(ret);
                 }
             }
         }
@@ -76,9 +82,7 @@ void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
     do {
         changed = false;
 
-        // FIXME
-        #if 0
-        foreach (const CalleeId &calleeId, hooks_.map() | boost::adaptors::map_keys) {
+        foreach (const CalleeId &calleeId, id2referrers_ | boost::adaptors::map_keys) {
             auto arguments = computeArguments(calleeId);
             auto &oldArguments = id2arguments_[calleeId];
 
@@ -89,7 +93,6 @@ void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
 
             canceled.poll();
         }
-        #endif
 
         if (++niterations > 5) {
             ncWarning("Didn't reach a fixpoint after %1 iterations while reconstructing arguments. Giving up.", niterations);
@@ -128,9 +131,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &
         return result;
     }
 
-    // FIXME
-    #if 0
-    const auto &calleeHooks = nc::find(hooks_.map(), calleeId);
+    const auto &referrers = nc::find(id2referrers_, calleeId);
 
     struct Placement {
         MemoryLocation inFunctions;
@@ -139,18 +140,18 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &
 
     boost::unordered_map<MemoryLocation, Placement> placements;
 
-    foreach (const auto &functionAndHook, calleeHooks.entryHooks) {
-        foreach (const auto &memoryLocation, getUndefinedUses(functionAndHook.first)) {
+    foreach (auto function, referrers.functions) {
+        foreach (const auto &memoryLocation, getUndefinedUses(function)) {
             if (auto argumentLocation = convention->getArgumentLocationCovering(memoryLocation)) {
                 placements[argumentLocation].inFunctions.merge(memoryLocation);
             }
         }
     }
 
-    foreach (const auto &callAndHook, calleeHooks.callHooks) {
-        foreach (const auto &memoryLocation, getUnusedDefines(callAndHook.first, callAndHook.second.get())) {
+    foreach (const auto &call, referrers.calls) {
+        foreach (const auto &memoryLocation, getUnusedDefines(call)) {
             if (auto argumentLocation = convention->getArgumentLocationCovering(memoryLocation)) {
-                placements[argumentLocation].inCalls[callAndHook.first].merge(memoryLocation);
+                placements[argumentLocation].inCalls[call].merge(memoryLocation);
             }
         }
     }
@@ -172,7 +173,6 @@ std::vector<MemoryLocation> SignatureAnalyzer::computeArguments(const CalleeId &
             }
         }
     }
-    #endif
 
     return convention->sortArguments(result);
 }
@@ -204,10 +204,8 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *
      * is not defined in the function, this memory location is likely
      * to be used for passing an argument.
      */
-    // FIXME
-    #if 0
     foreach (auto call, nc::find(function2calls_, function)) {
-        const auto &callArguments = nc::find(id2arguments_, hooks_.getCalleeId(call));
+        const auto &callArguments = nc::find(id2arguments_, getCalleeId(call, dataflow));
         if (callArguments.empty()) {
             continue;
         }
@@ -237,18 +235,21 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *
             }
         }
     }
-    #endif
 
     return result;
 }
 
-std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call, const CallHook *callHook) {
+std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call) {
     assert(call != NULL);
-    assert(callHook != NULL);
 
     std::vector<MemoryLocation> result;
 
-    auto function = nc::find(call2function_, call);
+    auto callHook = hooks_.getCallHook(call);
+    if (!callHook) {
+        return result;
+    }
+
+    auto function = call->basicBlock()->function();
     assert(function != NULL);
 
     auto &dataflow = *dataflows_.at(function);
@@ -286,25 +287,16 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call
 }
 
 void SignatureAnalyzer::computeSignatures(const CancellationToken &canceled) {
-    // FIXME
-    #if 0
-    foreach (const auto &calleeId, hooks_.map() | boost::adaptors::map_keys) {
+    foreach (const auto &calleeId, id2referrers_ | boost::adaptors::map_keys) {
         computeSignature(calleeId);
         canceled.poll();
     }
-    #endif
 }
 
 void SignatureAnalyzer::computeSignature(const CalleeId &calleeId) {
     assert(calleeId);
 
-    // FIXME
-    #if 0
-    if (signatures_.getSignature(calleeId)) {
-        return;
-    }
-
-    auto signature = std::make_unique<Signature>();
+    auto signature = std::make_shared<FunctionSignature>();
 
     /*
      * Pick up a name for the function.
@@ -342,7 +334,7 @@ void SignatureAnalyzer::computeSignature(const CalleeId &calleeId) {
     if (auto convention = hooks_.conventions().getConvention(calleeId)) {
         foreach (const auto &memoryLocation, nc::find(id2arguments_, calleeId)) {
             if (memoryLocation.domain() == MemoryDomain::STACK) {
-                signature->addArgument(std::make_unique<Dereference>(
+                signature->arguments().push_back(std::make_unique<Dereference>(
                     std::make_unique<BinaryOperator>(
                         BinaryOperator::ADD,
                         std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
@@ -354,13 +346,26 @@ void SignatureAnalyzer::computeSignature(const CalleeId &calleeId) {
                     memoryLocation.size<SmallBitSize>()
                 ));
             } else {
-                signature->addArgument(std::make_unique<MemoryLocationAccess>(memoryLocation));
+                signature->arguments().push_back(std::make_unique<MemoryLocationAccess>(memoryLocation));
             }
         }
     }
 
-    signatures_.setSignature(calleeId, std::move(signature));
-    #endif
+    auto callSignature = std::make_shared<CallSignature>();
+    callSignature->arguments() = signature->arguments();
+    callSignature->setReturnValue(signature->returnValue());
+
+    if (calleeId.entryAddress()) {
+        signatures_.setSignature(*calleeId.entryAddress(), signature);
+    }
+
+    const auto &referrers = nc::find(id2referrers_, calleeId);
+    foreach (auto function, referrers.functions) {
+        signatures_.setSignature(function, signature);
+    }
+    foreach (auto call, referrers.calls) {
+        signatures_.setSignature(call, callSignature);
+    }
 }
 
 } // namespace calling

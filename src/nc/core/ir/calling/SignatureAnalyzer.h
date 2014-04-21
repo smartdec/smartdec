@@ -27,6 +27,7 @@ namespace ir {
 
 class Call;
 class Functions;
+class Return;
 
 namespace dflow {
     class Dataflows;
@@ -48,7 +49,14 @@ class SignatureAnalyzer {
     const image::Image &image_;
     const dflow::Dataflows &dataflows_;
     const Hooks &hooks_;
-    boost::unordered_map<const Call *, const Function *> call2function_;
+
+    struct Referrers {
+        std::vector<const Function *> functions;
+        std::vector<const Call *> calls;
+        std::vector<const Return *> returns;
+    };
+
+    boost::unordered_map<CalleeId, Referrers> id2referrers_;
     boost::unordered_map<const Function *, std::vector<const Call *>> function2calls_;
     boost::unordered_map<const Function *, std::unique_ptr<dflow::Uses>> function2uses_;
     boost::unordered_map<CalleeId, std::vector<MemoryLocation>> id2arguments_;
@@ -106,12 +114,11 @@ private:
 
     /**
      * \param[in] call Valid pointer to a call statement.
-     * \param[in] callHook Valid pointer to its call hook.
      *
      * \return Memory locations that are defined before the call, but never used.
      *         Stack offsets are fixed up in accordance to the reaching stack pointer value.
      */
-    std::vector<MemoryLocation> getUnusedDefines(const Call *call, const CallHook *callHook);
+    std::vector<MemoryLocation> getUnusedDefines(const Call *call);
 
     /**
      * Computes and sets signatures for all callee ids.

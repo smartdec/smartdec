@@ -177,7 +177,8 @@ public:
      * at call and return sites.
      *
      * \param function Valid pointer to a function.
-     * \param dataflow Dataflow information storage used for the analysis.
+     * \param dataflow Valid pointer to the dataflow information to be used
+     *                 to discover the called address when instrumenting calls.
      */
     void instrument(Function *function, const dflow::Dataflow *dataflow);
 
@@ -215,9 +216,9 @@ private:
      * If the call was previously instrumented, deinstruments it.
      *
      * \param call Valid pointer to a call.
-     * \param calledAddress The address being called or boost::none.
+     * \param dataflow Dataflow information for the function to which the call belongs.
      */
-    void instrumentCall(Call *call, const boost::optional<ByteAddr> &calledAddress);
+    void instrumentCall(Call *call, const dflow::Dataflow &dataflow);
 
     /**
      * Undoes the instrumentation of a call, if performed before.
@@ -243,6 +244,21 @@ private:
      */
     void deinstrumentReturn(Return *ret);
 };
+
+/**
+ * \param function Valid pointer to a function.
+ *
+ * \return Callee id for the given function.
+ */
+CalleeId getCalleeId(const Function *function);
+
+/**
+ * \param call Valid pointer to a call.
+ * \param dataflow Dataflow information for the function to which the call belongs.
+ *
+ * \return Callee id for the given call.
+ */
+CalleeId getCalleeId(const Call *call, const dflow::Dataflow &dataflow);
 
 } // namespace calling
 } // namespace ir

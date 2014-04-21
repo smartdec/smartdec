@@ -49,32 +49,6 @@ namespace core {
 namespace ir {
 namespace calling {
 
-namespace {
-
-CalleeId getCalleeId(const Function *function) {
-    assert(function != NULL);
-
-    if (function->entry() && function->entry()->address()) {
-        return CalleeId(*function->entry()->address(), CalleeId::entryAddr);
-    } else {
-        return CalleeId(function);
-    }
-}
-
-CalleeId getCalleeId(const Call *call, const boost::optional<ByteAddr> calledAddress) {
-    assert(call != NULL);
-
-    if (calledAddress) {
-        return CalleeId(*calledAddress, CalleeId::entryAddr);
-    } else if (call->instruction()) {
-        return CalleeId(call->instruction()->addr(), CalleeId::callAddr);
-    } else {
-        return CalleeId();
-    }
-}
-
-} // anonymous namespace
-
 Hooks::Hooks(const Conventions &conventions, const Signatures &signatures):
     conventions_(conventions), signatures_(signatures)
 {}
@@ -113,6 +87,7 @@ const ReturnHook *Hooks::getReturnHook(const Return *ret) const {
 
 void Hooks::instrument(Function *function, const dflow::Dataflow *dataflow) {
     assert(function != NULL);
+    assert(dataflow != NULL);
 
     auto &hooks = insertedHooks_[function];
 
@@ -128,12 +103,7 @@ void Hooks::instrument(Function *function, const dflow::Dataflow *dataflow) {
         foreach (auto statement, basicBlock->statements()) {
             if (auto call = statement->as<Call>()) {
                 hooks.push_back(basicBlock->insertAfter(call, std::make_unique<Callback>([=](){
-                    auto value = dataflow->getValue(call->target());
-                    if (value->abstractValue().isConcrete()) {
-                        instrumentCall(call, value->abstractValue().asConcrete().value());
-                    } else {
-                        instrumentCall(call, boost::none);
-                    }
+                    instrumentCall(call, *dataflow);
                 })));
             } else if (auto ret = statement->as<Return>()) {
                 hooks.push_back(basicBlock->insertBefore(ret, std::make_unique<Callback>([=](){
@@ -204,8 +174,8 @@ void Hooks::deinstrumentEntry(Function *function) {
     }
 }
 
-void Hooks::instrumentCall(Call *call, const boost::optional<ByteAddr> &calledAddress) {
-    auto calleeId = getCalleeId(call, calledAddress);
+void Hooks::instrumentCall(Call *call, const dflow::Dataflow &dataflow) {
+    auto calleeId = getCalleeId(call, dataflow);
     auto convention = getConvention(calleeId);
     auto signature = signatures_.getSignature(call).get();
     auto stackArgumentsSize = conventions_.getStackArgumentsSize(calleeId);
@@ -266,6 +236,29 @@ void Hooks::deinstrumentReturn(Return *ret) {
     if (lastReturnHook) {
         lastReturnHook->deinstrument(ret);
         lastReturnHook = NULL;
+    }
+}
+
+CalleeId getCalleeId(const Function *function) {
+    assert(function != NULL);
+
+    if (function->entry() && function->entry()->address()) {
+        return CalleeId(*function->entry()->address(), CalleeId::entryAddr);
+    } else {
+        return CalleeId(function);
+    }
+}
+
+CalleeId getCalleeId(const Call *call, const dflow::Dataflow &dataflow) {
+    assert(call != NULL);
+
+    auto targetValue = dataflow.getValue(call->target());
+    if (targetValue->abstractValue().isConcrete()) {
+        return CalleeId(targetValue->abstractValue().asConcrete().value(), CalleeId::entryAddr);
+    } else if (call->instruction()) {
+        return CalleeId(call->instruction()->addr(), CalleeId::callAddr);
+    } else {
+        return CalleeId();
     }
 }
 

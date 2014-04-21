@@ -132,6 +132,8 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
         }
         case Statement::TOUCH:
             break;
+        case Statement::CALLBACK:
+            break;
         default:
             ncWarning("Unknown statement kind: '%1'.", static_cast<int>(statement->kind()));
             break;

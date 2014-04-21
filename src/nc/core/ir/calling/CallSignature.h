@@ -43,7 +43,7 @@ public:
      *
      * \param term Valid pointer to the term.
      */
-    void setReturnValue(std::shared_ptr<Term> term) { returnValue_ = std::move(term); }
+    void setReturnValue(std::shared_ptr<const Term> term) { returnValue_ = std::move(term); }
 };
 
 } // namespace calling
