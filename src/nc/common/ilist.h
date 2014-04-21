@@ -310,6 +310,13 @@ public:
             back_ = back_->ilist_item<T>::prev_;
         }
 
+        if (element->ilist_item<T>::prev_) {
+            element->ilist_item<T>::prev_->ilist_item<T>::next_ = element->ilist_item<T>::next_;
+        }
+        if (element->ilist_item<T>::next_) {
+            element->ilist_item<T>::next_->ilist_item<T>::prev_ = element->ilist_item<T>::prev_;
+        }
+
         element->ilist_item<T>::next_ = NULL;
         element->ilist_item<T>::prev_ = NULL;
 
