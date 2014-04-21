@@ -75,6 +75,13 @@ public:
     virtual void createFunctions(Context &context) const;
 
     /**
+     * Creates the hooks manager.
+     *
+     * \param context Context.
+     */
+    virtual void createHooks(Context &context) const;
+
+    /**
      * Detects and sets the calling convention of a function.
      *
      * \param context Context.

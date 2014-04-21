@@ -85,7 +85,7 @@ class Context: public QObject {
     std::unique_ptr<ir::Program> program_; ///< Program.
     std::unique_ptr<ir::Functions> functions_; ///< Functions.
     std::unique_ptr<ir::calling::Conventions> conventions_; ///< Assigned calling conventions.
-    std::unique_ptr<ir::calling::Hooks> hooks_; ///< Hooks of calling conventions.
+    std::unique_ptr<ir::calling::Hooks> hooks_; ///< Hooks manager.
     std::unique_ptr<ir::calling::Signatures> signatures_; ///< Signatures.
     std::unique_ptr<ir::dflow::Dataflows> dataflows_; ///< Dataflows.
     std::unique_ptr<ir::vars::Variables> variables_; ///< Reconstructed variables.
@@ -173,19 +173,19 @@ public:
     const ir::calling::Conventions *conventions() const { return conventions_.get(); }
 
     /**
-     * Sets the calling conventions hooks.
+     * Sets the hooks manager.
      *
-     * \param hooks Pointer to the hooks information. Can be NULL.
+     * \param hooks Pointer to the hooks manager. Can be NULL.
      */
     void setHooks(std::unique_ptr<ir::calling::Hooks> hooks);
 
     /**
-     * \return Pointer to the information on calling conventions of functions. Can be NULL.
+     * \return Pointer to the hooks manager. Can be NULL.
      */
     ir::calling::Hooks *hooks() { return hooks_.get(); }
 
     /**
-     * \return Pointer to the information on calling conventions of functions. Can be NULL.
+     * \return Pointer to the hooks manager. Can be NULL.
      */
     const ir::calling::Hooks *hooks() const { return hooks_.get(); }
 

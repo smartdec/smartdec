@@ -67,8 +67,9 @@ class Signature;
 class Signatures;
 
 /**
- * This class is responsible for instrumenting functions with special hooks
- * that take care of handling calling-convention-specific stuff.
+ * Hooks manager: it is responsible for instrumenting functions
+ * with special hooks that take care of handling calling-convention-specific
+ * stuff.
  */
 class Hooks {
     /** Assigned calling conventions. */

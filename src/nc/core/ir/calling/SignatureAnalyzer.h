@@ -61,7 +61,7 @@ public:
      * \param image Executable image.
      * \param functions Functions.
      * \param dataflows Dataflows.
-     * \param hooks Hooks.
+     * \param hooks Hooks manager.
      */
     SignatureAnalyzer(Signatures &signatures, const image::Image &image, const Functions &functions,
         const dflow::Dataflows &dataflows, const Hooks &hooks);

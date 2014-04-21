@@ -101,7 +101,7 @@ class CodeGenerator: boost::noncopyable {
     /** Intermediate representation of functions. */
     const Functions &functions_;
 
-    /** Hooks of calling conventions. */
+    /** Hooks manager. */
     const calling::Hooks &hooks_;
 
     /** Signatures of the functions. */
@@ -145,7 +145,7 @@ public:
      * \param[out] tree Abstract syntax tree to generate code in.
      * \param[in] image Executable image being decompiled.
      * \param[in] functions Intermediate representation of functions.
-     * \param[in] hooks Call hooks.
+     * \param[in] hooks Hooks manager.
      * \param[in] signatures Signatures of functions.
      * \param[in] dataflows Dataflow information for all functions.
      * \param[in] variables Information about reconstructed variables.

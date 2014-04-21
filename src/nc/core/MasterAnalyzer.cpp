@@ -85,28 +85,24 @@ void MasterAnalyzer::createFunctions(Context &context) const {
     context.setFunctions(std::move(functions));
 }
 
+void MasterAnalyzer::createHooks(Context &context) const {
+    context.logToken() << tr("Creating hooks.");
+
+    context.setSignatures(std::make_unique<ir::calling::Signatures>());
+    context.setConventions(std::make_unique<ir::calling::Conventions>());
+    context.setHooks(std::make_unique<ir::calling::Hooks>(*context.conventions(), *context.signatures()));
+
+    context.hooks()->setConventionDetector([this, &context](const ir::calling::CalleeId &calleeId) {
+        this->detectCallingConvention(context, calleeId);
+    });
+}
+
 void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::calling::CalleeId &/*descriptor*/) const {
     /* Nothing to do. */
 }
 
 void MasterAnalyzer::dataflowAnalysis(Context &context) const {
     context.logToken() << tr("Dataflow analysis.");
-
-    if (!context.signatures()) {
-        context.setSignatures(std::make_unique<ir::calling::Signatures>());
-    }
-    if (!context.conventions()) {
-        context.setConventions(std::make_unique<ir::calling::Conventions>());
-    }
-
-    if (context.hooks()) {
-        context.hooks()->deinstrumentAll();
-    }
-
-    context.setHooks(std::make_unique<ir::calling::Hooks>(*context.conventions(), *context.signatures()));
-    context.hooks()->setConventionDetector([this, &context](const ir::calling::CalleeId &calleeId) {
-        this->detectCallingConvention(context, calleeId);
-    });
 
     context.setDataflows(std::make_unique<ir::dflow::Dataflows>());
 
@@ -229,6 +225,9 @@ void MasterAnalyzer::decompile(Context &context) const {
     context.cancellationToken().poll();
 
     createFunctions(context);
+    context.cancellationToken().poll();
+
+    createHooks(context);
     context.cancellationToken().poll();
 
     dataflowAnalysis(context);

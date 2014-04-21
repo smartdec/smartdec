@@ -65,7 +65,7 @@ class TypeAnalyzer {
     const dflow::Dataflows &dataflows_; ///< Dataflow information.
     const vars::Variables &variables_; ///< Information about reconstructed variables.
     const liveness::Livenesses &livenesses_; ///< Set of terms producing actual high-level code.
-    const calling::Hooks &hooks_; ///< Calling conventions hooks.
+    const calling::Hooks &hooks_; ///< Hooks manager.
     const calling::Signatures &signatures_; ///< Signatures of functions.
 
 public:
@@ -77,7 +77,7 @@ public:
      * \param[in] dataflows Dataflow information.
      * \param[in] variables Information about reconstructed variables.
      * \param[in] livenesses Liveness information.
-     * \param[in] hooks Calling conventions hooks.
+     * \param[in] hooks Hooks manager.
      * \param[in] signatures Signatures of functions.
      */
     TypeAnalyzer(Types &types, const Functions &functions, const dflow::Dataflows &dataflows,

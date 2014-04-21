@@ -74,7 +74,7 @@ class LivenessAnalyzer {
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Architecture.
     const cflow::Graph &regionGraph_; ///< Reduced control-flow graph.
-    const calling::Hooks &hooks_; ///< Calling convention hooks.
+    const calling::Hooks &hooks_; ///< Hooks manager.
     const calling::Signatures &signatures_; ///< Signatures of functions.
     std::vector<const Jump *> deadJumps_; ///< Useless jumps.
 
@@ -87,7 +87,7 @@ public:
      * \param[in]  dataflow     Dataflow information.
      * \param[in]  architecture Valid pointer to the architecture.
      * \param[in]  regionGraph  Reduced control-flow graph.
-     * \param[in]  hooks        Calls data.
+     * \param[in]  hooks        Hooks manager.
      * \param[in]  signatures   Signatures of functions.
      */
     LivenessAnalyzer(Liveness &liveness, const Function *function,
