@@ -71,7 +71,6 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] call Valid pointer to the call statement being hooked.
      * \param[in] convention Valid pointer to the calling convention.
      * \param[in] signature Pointer to the call's signature. Can be NULL.
      * \param[in] stackArgumentsSize Size of arguments passed on the stack.

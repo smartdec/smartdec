@@ -61,12 +61,12 @@ public:
     /**
      * Creates a function out of a set of nodes and, optionally, entry basic block.
      *
-     * \param[in] nodes Nodes belonging to a function.
+     * \param[in] basicBlocks Basic blocks belonging to a function.
      * \param[in] entry Entry basic block of a function, if known.
      *
      * \return Created function.
      */
-    virtual std::unique_ptr<Function> makeFunction(const std::vector<const BasicBlock *> &basicBlocks, const BasicBlock *entry = 0) const;
+    virtual std::unique_ptr<Function> makeFunction(const std::vector<const BasicBlock *> &basicBlocks, const BasicBlock *entry = NULL) const;
 
     /**
      * Mapping from basic blocks to basic blocks.

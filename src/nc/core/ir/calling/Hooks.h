@@ -162,7 +162,6 @@ public:
     const CallHook *getCallHook(const Call *call) const;
 
     /**
-     * \param function Valid pointer to a function.
      * \param ret Valid pointer to a return statement.
      *
      * \return Pointer to the last ReturnHook used for instrumenting this return.
@@ -224,7 +223,7 @@ private:
      * Undoes the instrumentation of a call, if performed before.
      * Otherwise, does nothing.
      *
-     * \param function Valid pointer to a call.
+     * \param call Valid pointer to a call.
      */
     void deinstrumentCall(Call *call);
 
@@ -232,7 +231,7 @@ private:
      * Creates a ReturnHook (if not done yet) and instruments the return with it.
      * If the return was previously instrumented, deinstruments it.
      *
-     * \param return Valid pointer to a return statement.
+     * \param ret Valid pointer to a return statement.
      */
     void instrumentReturn(Return *ret);
 

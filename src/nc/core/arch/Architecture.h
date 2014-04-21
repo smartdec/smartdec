@@ -140,6 +140,8 @@ public:
     }
 
     /**
+     * \param name Name of a calling convention.
+     *
      * \return Pointer to the calling convention with the given name. Can be NULL.
      */
     const ir::calling::Convention *getCallingConvention(const QString &name) const;
@@ -206,7 +208,7 @@ protected:
 
     /**
      * Adds a calling convention.
-     * There must be no calling convention with the same name in the repository.
+     * There must be no convention with the same name already added.
      *
      * \param convention Valid pointer to the calling convention.
      */
