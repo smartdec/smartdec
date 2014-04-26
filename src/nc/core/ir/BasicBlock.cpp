@@ -33,8 +33,6 @@
 #include <nc/common/Escaping.h>
 #include <nc/common/Foreach.h>
 
-#include <boost/range/algorithm/find.hpp>
-
 namespace nc {
 namespace core {
 namespace ir {
