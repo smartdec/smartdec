@@ -21,7 +21,7 @@ namespace nc {
  * \tparam T Derived class of list elements.
  */
 template<class T>
-class ilist_item: boost::noncopyable {
+class ilist_item {
     /** Pointer to the next element. */
     T *next_;
 
@@ -36,6 +36,17 @@ protected:
      * Protected constructor.
      */
     ilist_item() noexcept: next_(NULL), prev_(NULL) {}
+
+private:
+    /**
+     * Copying is forbidden.
+     */
+    ilist_item(const ilist_item &);
+
+    /**
+     * Copying is forbidden.
+     */
+    ilist_item &operator=(const ilist_item &);
 };
 
 /**
