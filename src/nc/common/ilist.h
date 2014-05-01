@@ -85,7 +85,7 @@ private:
     pointer element_;
 
     /** Reference to the data of the list being iterated. */
-    const ilist_data<U> &list_;
+    const ilist_data<U> *list_;
 
     template<class X, class Y> friend class ilist_iterator;
 
@@ -96,9 +96,11 @@ public:
      * \param list      Reference to the data of the list being iterated.
      * \param element   Pointer to the element this iterator points to.
      */
-    explicit ilist_iterator(const ilist_data<U> &list, pointer element = NULL) noexcept:
+    explicit ilist_iterator(const ilist_data<U> *list, pointer element = NULL) noexcept:
         element_(element), list_(list)
-    {}
+    {
+		assert(list != NULL);
+	}
 
     /**
      * Constructor from a non-const iterator.
@@ -116,7 +118,7 @@ public:
         if (element_ != NULL) {
             element_ = element_->ilist_item<U>::next_;
         } else {
-            element_ = list_.front_;
+            element_ = list_->front_;
         }
         return *this;
     }
@@ -137,7 +139,7 @@ public:
         if (element_ != NULL) {
             element_ = element_->ilist_item<U>::prev_;
         } else {
-            element_ = list_.back_;
+            element_ = list_->back_;
         }
         return *this;
     }
@@ -465,12 +467,12 @@ public:
     /**
      * \return Iterator pointing to the first element.
      */
-    iterator begin() noexcept { return iterator(*this, front()); }
+    iterator begin() noexcept { return iterator(this, front()); }
 
     /**
      * \return Iterator pointing to the next after the last element.
      */
-    iterator end() noexcept { return iterator(*this); }
+    iterator end() noexcept { return iterator(this); }
 
     /**
      * \return Constant iterator to the first element.
@@ -505,12 +507,12 @@ public:
     /**
      * \return Constant iterator to the first element.
      */
-    const_iterator cbegin() const noexcept { return const_iterator(*this, front()); }
+    const_iterator cbegin() const noexcept { return const_iterator(this, front()); }
 
     /**
      * \return Constant iterator to the next after the last element.
      */
-    const_iterator cend() const noexcept { return const_iterator(*this); }
+    const_iterator cend() const noexcept { return const_iterator(this); }
 
     /**
      * Reverse iterator pointing to the last element.
@@ -529,7 +531,7 @@ public:
      */
     iterator get_iterator(pointer element) noexcept {
         assert(element != NULL);
-        return iterator(*this, element);
+        return iterator(this, element);
     }
 
     /**
@@ -539,7 +541,7 @@ public:
      */
     const_iterator get_iterator(const_pointer element) const noexcept {
         assert(element != NULL);
-        return const_iterator(*this, element);
+        return const_iterator(this, element);
     }
 
     /**

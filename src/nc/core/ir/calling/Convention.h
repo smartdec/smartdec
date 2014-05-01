@@ -26,6 +26,7 @@
 #include <nc/config.h>
 
 #include <memory>
+#include <vector>
 
 #include <QString>
 

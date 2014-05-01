@@ -33,6 +33,7 @@
 #include <functional>
 #include <map> 
 #include <tuple>
+#include <vector>
 
 #include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
