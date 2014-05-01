@@ -24,13 +24,13 @@
 
 #include "Program.h"
 
+#include <algorithm> /* std::find_if */
 #include <cassert>
 
 #include <QTextStream>
 
 #include <nc/common/Foreach.h>
 #include <nc/common/Range.h> /* For nc::find. */
-#include <nc/common/Unreachable.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/arch/Instruction.h>
@@ -76,22 +76,19 @@ BasicBlock *Program::createBasicBlock(ByteAddr address) {
     } else if (BasicBlock *basicBlock = getBasicBlockCovering(address)) {
         removeRange(basicBlock);
 
-        foreach (auto statement, basicBlock->statements()) {
-            if (statement->instruction()->addr() >= address) {
-                BasicBlock *result = takeOwnership(basicBlock->split(basicBlock->statements().get_iterator(statement), address));
+        auto iterator = std::find_if(basicBlock->statements().begin(), basicBlock->statements().end(), [address](const Statement *statement) {
+            return statement->instruction()->addr() >= address;
+        });
 
-                addRange(basicBlock);
-                addRange(result);
+        BasicBlock *result = takeOwnership(basicBlock->split(iterator, address));
 
-                return result;
-            }
-        }
+        addRange(basicBlock);
+        addRange(result);
 
-        unreachable();
+        return result;
     } else {
         BasicBlock *result = takeOwnership(std::make_unique<BasicBlock>(address));
         addRange(result);
-
         return result;
     }
 }
@@ -104,7 +101,7 @@ BasicBlock *Program::getBasicBlockForInstruction(const arch::Instruction *instru
         /* Maybe this instruction stands next to an existing basic block? */
         result = getBasicBlockCovering(instruction->addr() - 1);
 
-        /* No way? Create new block. */
+        /* No? Create a new block. */
         if (!result) {
             result = createBasicBlock(instruction->addr());
         }
