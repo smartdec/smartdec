@@ -61,7 +61,7 @@ class CallHook {
     /** Mapping from an argument term to its clone. */
     boost::unordered_map<const Term *, const Term *> argumentTerms_;
 
-    /** Mapping from a return value term to its clone. */
+    /** Mapping from return value terms to their clones. */
     boost::unordered_map<const Term *, const Term *> returnValueTerms_;
 
     /** Number of inserted statements. */
@@ -131,6 +131,11 @@ public:
      *         calling convention defines no stack pointer.
      */
     const Term *stackPointer() const { return stackPointer_; }
+
+    /**
+     * \return Mapping from return value terms to their clones.
+     */
+    const boost::unordered_map<const Term *, const Term *> &returnValueTerms() const { return returnValueTerms_; }
 };
 
 } // namespace calling

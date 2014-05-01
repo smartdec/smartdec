@@ -28,6 +28,7 @@ namespace ir {
 class Call;
 class Functions;
 class Return;
+class Term;
 
 namespace dflow {
     class Dataflows;
@@ -39,6 +40,7 @@ namespace calling {
 class FunctionSignature;
 class Hooks;
 class Signatures;
+class ReturnHook;
 
 /**
  * This class reconstructs signatures of functions.
@@ -61,6 +63,9 @@ class SignatureAnalyzer {
     /** Mapping from a function to the list of calls in it.*/
     boost::unordered_map<const Function *, std::vector<const Call *>> function2calls_;
 
+    /** Mapping from a function to the list of returns in it.*/
+    boost::unordered_map<const Function *, std::vector<const Return *>> function2returns_;
+
     /** Mapping from a function to the term use information for this function. */
     boost::unordered_map<const Function *, std::unique_ptr<dflow::Uses>> function2uses_;
 
@@ -70,6 +75,10 @@ class SignatureAnalyzer {
     /** Mapping from a call to the list of factual arguments not included into the list of
      *  formal arguments of the respective callee id. */
     boost::unordered_map<const Call *, std::vector<MemoryLocation>> call2extraArguments_;
+
+    /** Mapping from a callee id to the estimated return value term and
+     * (if it is a MemoryLocationAccess) its part used for passing the return value. */
+    boost::unordered_map<CalleeId, std::pair<const Term *, MemoryLocation>> id2returnValue_;
 
 public:
     /**
@@ -102,7 +111,7 @@ private:
      *
      * \param[in] canceled Cancellation token.
      */
-    void computeArguments(const CancellationToken &canceled);
+    void computeArgumentsAndReturnValues(const CancellationToken &canceled);
 
     /**
      * Recomputes arguments of the function with the given callee id
@@ -110,9 +119,37 @@ private:
      *
      * \param[in] calleeId Valid callee id.
      *
-     * \return True if something has changed, false otherwise.
+     * \return True if the arguments have changed, false otherwise.
      */
     bool computeArguments(const CalleeId &calleeId);
+
+    /**
+     * Recomputes the return value of the function with the given callee id
+     * by looking at the call and return sites.
+     *
+     * \param[in] calleeId Valid callee id.
+     *
+     * \return True if the return value has changed, false otherwise.
+     */
+    bool computeReturnValue(const CalleeId &calleeId);
+
+    /**
+     * \param term Valid pointer to a read term.
+     *
+     * \return True if the term is a read that belongs to some instruction
+     *         or is a read of a return value created by ReturnHook, and
+     *         this term belongs to the signature.
+     */
+    bool isRealRead(const Term *term);
+
+    /**
+     * \param term Valid pointer to a write term.
+     *
+     * \return True if the term is a write that belongs to some instruction
+     *         or is a write of return value created by CallHook, and
+     *         this term belongs to the signature.
+     */
+    bool isRealWrite(const Term *term);
 
     /**
      * \param[in] function Valid pointer to a function.
@@ -129,6 +166,24 @@ private:
      *         Stack offsets are fixed up in accordance to the reaching stack pointer value.
      */
     std::vector<MemoryLocation> getUnusedDefines(const Call *call);
+
+    /**
+     * \param[in] call Valid pointer to a call statement.
+     *
+     * \return List of terms identifying the locations that can be used
+     *         to pass return values and that are read after the call,
+     *         together with the corresponding memory locations being read.
+     */
+    std::vector<std::pair<const Term *, MemoryLocation>> getUsedReturnValues(const Call *call);
+
+    /**
+     * \param[in] ret Valid pointer to a return statement.
+     *
+     * \return List of terms identifying the locations that can be used
+     *         to pass return values, values in which are defined before
+     *         the return, however, not used before it.
+     */
+    std::vector<std::pair<const Term *, MemoryLocation>> getUnusedReturnValues(const Return *ret);
 
     /**
      * Computes and sets signatures for all callee ids.

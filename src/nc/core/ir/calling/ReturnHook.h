@@ -95,6 +95,11 @@ public:
         assert(term != NULL);
         return nc::find(returnValueTerms_, term);
     }
+
+    /**
+     * \return Mapping from return value terms to their clones.
+     */
+    const boost::unordered_map<const Term *, const Term *> &returnValueTerms() const { return returnValueTerms_; }
 };
 
 } // namespace calling

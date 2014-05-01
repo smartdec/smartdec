@@ -58,6 +58,7 @@ SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image 
                     function2calls_[function].push_back(call);
                 } else if (auto ret = statement->asReturn()) {
                     id2referrers_[getCalleeId(function)].returns.push_back(ret);
+                    function2returns_[function].push_back(ret);
                 }
             }
         }
@@ -71,11 +72,11 @@ SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image 
 SignatureAnalyzer::~SignatureAnalyzer() {}
 
 void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
-    computeArguments(canceled);
+    computeArgumentsAndReturnValues(canceled);
     computeSignatures(canceled);
 }
 
-void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
+void SignatureAnalyzer::computeArgumentsAndReturnValues(const CancellationToken &canceled) {
     int niterations = 0;
 
     bool changed;
@@ -84,6 +85,9 @@ void SignatureAnalyzer::computeArguments(const CancellationToken &canceled) {
 
         foreach (const CalleeId &calleeId, id2referrers_ | boost::adaptors::map_keys) {
             if (computeArguments(calleeId)) {
+                changed = true;
+            }
+            if (computeReturnValue(calleeId)) {
                 changed = true;
             }
         }
@@ -142,7 +146,7 @@ bool SignatureAnalyzer::computeArguments(const CalleeId &calleeId) {
         }
     }
 
-    foreach (const auto &call, referrers.calls) {
+    foreach (auto call, referrers.calls) {
         foreach (const auto &memoryLocation, getUnusedDefines(call)) {
             if (auto argumentLocation = convention->getArgumentLocationCovering(memoryLocation)) {
                 placements[argumentLocation].inCalls[call].merge(memoryLocation);
@@ -199,6 +203,82 @@ bool SignatureAnalyzer::computeArguments(const CalleeId &calleeId) {
     }
 
     return changed;
+}
+
+bool SignatureAnalyzer::computeReturnValue(const CalleeId &calleeId) {
+    assert(calleeId);
+
+    const auto &referrers = nc::find(id2referrers_, calleeId);
+
+    struct Placement {
+        MemoryLocation location;
+        std::size_t votes;
+
+        Placement(): votes(0) {}
+    };
+
+    boost::unordered_map<const Term *, Placement> placements;
+
+    foreach (auto call, referrers.calls) {
+        foreach (const auto &termAndLocation, getUsedReturnValues(call)) {
+            auto &placement = placements[termAndLocation.first];
+            ++placement.votes;
+            if (termAndLocation.first->asMemoryLocationAccess()) {
+                placement.location = MemoryLocation::merge(placement.location, termAndLocation.second);
+            }
+        }
+    }
+
+    if (placements.empty()) {
+        foreach (auto function, referrers.functions) {
+            foreach (auto ret, nc::find(function2returns_, function)) {
+                foreach (const auto &termAndLocation, getUnusedReturnValues(ret)) {
+                    auto &placement = placements[termAndLocation.first];
+                    ++placement.votes;
+                    if (termAndLocation.first->asMemoryLocationAccess()) {
+                        placement.location = MemoryLocation::merge(placement.location, termAndLocation.second);
+                    }
+                }
+            }
+        }
+    }
+
+    std::pair<const Term *, MemoryLocation> returnValue;
+
+    if (!placements.empty()) {
+        auto it = std::max_element(placements.begin(), placements.end(),
+            [](const std::pair<const Term *, Placement> &a, const std::pair<const Term *, Placement> b){
+                return a.second.votes < b.second.votes;
+        });
+
+        returnValue = std::make_pair(it->first, it->second.location);
+    }
+
+    auto &oldReturnValue = id2returnValue_[calleeId];
+    if (oldReturnValue != returnValue) {
+        oldReturnValue = returnValue;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool SignatureAnalyzer::isRealRead(const Term *term) {
+    assert(term != NULL);
+    assert(term->isRead());
+
+    // TODO
+
+    return true;
+}
+
+bool SignatureAnalyzer::isRealWrite(const Term *term) {
+    assert(term != NULL);
+    assert(term->isWrite());
+
+    // TODO
+
+    return true;
 }
 
 namespace {
@@ -259,7 +339,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *
         auto term = termAndLocation.first;
         const auto &memoryLocation = termAndLocation.second;
 
-        if (term->isRead() && dataflow.getDefinitions(term).empty()) {
+        if (term->isRead() && dataflow.getDefinitions(term).empty() && isRealRead(term)) {
             result.push_back(memoryLocation);
         }
     }
@@ -309,12 +389,88 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call
 
     foreach (const auto &chunk, dataflow.getDefinitions(callHook->snapshotTerm()).chunks()) {
         foreach (const Term *term, chunk.definitions()) {
-            if (uses.getUses(term).empty()) {
+            if (uses.getUses(term).empty() && isRealWrite(term)) {
                 if (auto memoryLocation = fixer.removeStackOffset(chunk.location())) {
                     result.push_back(memoryLocation);
                 }
                 break;
             }
+        }
+    }
+
+    return result;
+}
+
+std::vector<std::pair<const Term *, MemoryLocation>> SignatureAnalyzer::getUsedReturnValues(const Call *call) {
+    assert(call != NULL);
+
+    std::vector<std::pair<const Term *, MemoryLocation>> result;
+
+    auto callHook = hooks_.getCallHook(call);
+    if (!callHook) {
+        return result;
+    }
+
+    auto function = call->basicBlock()->function();
+    auto &dataflow = *dataflows_.at(function);
+    auto &uses = *function2uses_.at(function);
+
+    foreach (const auto &termAndClone, callHook->returnValueTerms()) {
+        MemoryLocation usedPart;
+
+        foreach (const Term *use, uses.getUses(termAndClone.second)) {
+            if (isRealRead(use)) {
+                usedPart = MemoryLocation::merge(usedPart, dataflow.getMemoryLocation(use));
+            }
+        }
+
+        if (usedPart) {
+            result.push_back(std::make_pair(termAndClone.first, usedPart));
+        }
+    }
+
+    return result;
+}
+
+std::vector<std::pair<const Term *, MemoryLocation>> SignatureAnalyzer::getUnusedReturnValues(const Return *ret) {
+    assert(ret != NULL);
+
+    std::vector<std::pair<const Term *, MemoryLocation>> result;
+
+    auto returnHook = hooks_.getReturnHook(ret);
+    if (!returnHook) {
+        return result;
+    }
+
+    auto function = ret->basicBlock()->function();
+    auto &dataflow = *dataflows_.at(function);
+    auto &uses = *function2uses_.at(function);
+
+    foreach (const auto &termAndClone, returnHook->returnValueTerms()) {
+        MemoryLocation unusedPart;
+
+        foreach (const auto &chunk, dataflow.getDefinitions(termAndClone.second).chunks()) {
+            bool used = false;
+
+            foreach (const Term *definition, chunk.definitions()) {
+                foreach (const Term *use, uses.getUses(definition)) {
+                    if (use != termAndClone.second && isRealRead(use)) {
+                        used = true;
+                        break;
+                    }
+                }
+                if (used) {
+                    break;
+                }
+            }
+
+            if (!used) {
+                unusedPart = MemoryLocation::merge(unusedPart, chunk.location());
+            }
+        }
+
+        if (unusedPart) {
+            result.push_back(std::make_pair(termAndClone.first, unusedPart));
         }
     }
 
@@ -379,6 +535,13 @@ void SignatureAnalyzer::computeSignatures(const CalleeId &calleeId) {
         if (auto term = argumentFactory(memoryLocation)) {
             functionSignature->arguments().push_back(term);
         }
+    }
+
+    auto &returnValue = nc::find(id2returnValue_, calleeId);
+    if (returnValue.second) {
+        functionSignature->setReturnValue(std::make_shared<MemoryLocationAccess>(returnValue.second));
+    } else if (returnValue.first) {
+        functionSignature->setReturnValue(returnValue.first->clone());
     }
 
     if (calleeId.entryAddress()) {
