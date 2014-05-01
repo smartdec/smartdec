@@ -49,6 +49,9 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
     # GCC warns about optimizing expressions like x <= x + 1 also when these expressions
     # arise only after inlining, so there is sometimes no decent way to kill the warning.
     add_definitions(-Wno-strict-overflow)
+
+    # GCC produces false positives with boost::optional
+    add_definitions(-Wno-maybe-uninitialized)
 endif()
 
 #
