@@ -449,6 +449,13 @@ public:
             }
         }
 
+        if (result.front_->ilist_item<T>::prev_) {
+            result.front_->ilist_item<T>::prev_->ilist_item<T>::next_ = result.back_->ilist_item<T>::next_;
+        }
+        if (result.back_->ilist_item<T>::next_) {
+            result.back_->ilist_item<T>::next_->ilist_item<T>::prev_ = result.front_->ilist_item<T>::prev_;
+        }
+
         result.front_->ilist_item<T>::prev_ = NULL;
         result.back_->ilist_item<T>::next_ = NULL;
 
