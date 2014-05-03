@@ -118,22 +118,32 @@ bool SignatureAnalyzer::isRealWrite(const Term *term) {
 }
 
 void SignatureAnalyzer::computeArtificialTerms() {
+    foreach (auto &hook, hooks_.callHooks() | boost::adaptors::map_values) {
+        foreach (const auto &termAndClone, hook->returnValueTerms()) {
+            artificialTerms_.insert(termAndClone.second);
+        }
+    }
+
+    foreach (auto &hook, hooks_.returnHooks() | boost::adaptors::map_values) {
+        foreach (const auto &termAndClone, hook->returnValueTerms()) {
+            artificialTerms_.insert(termAndClone.second);
+        }
+    }
+
     foreach (const auto &calleeAndReferrers, id2referrers_) {
+        const auto &returnTermAndLocation = nc::find(id2returnValue_, calleeAndReferrers.first);
+
         foreach (const Call *call, calleeAndReferrers.second.calls) {
             if (auto hook = hooks_.getCallHook(call)) {
-                foreach (const auto &termAndClone, hook->returnValueTerms()) {
-                    artificialTerms_.insert(termAndClone.second);
+                if (returnTermAndLocation.first) {
+                    artificialTerms_.erase(hook->getReturnValueTerm(returnTermAndLocation.first));
                 }
             }
         }
         foreach (const Return *ret, calleeAndReferrers.second.returns) {
             if (auto hook = hooks_.getReturnHook(ret)) {
-                foreach (const auto &termAndClone, hook->returnValueTerms()) {
-                    artificialTerms_.insert(termAndClone.second);
-                }
-                const auto &termAndLocation = nc::find(id2returnValue_, calleeAndReferrers.first);
-                if (termAndLocation.first) {
-                    artificialTerms_.erase(hook->getReturnValueTerm(termAndLocation.first));
+                if (returnTermAndLocation.first) {
+                    artificialTerms_.erase(hook->getReturnValueTerm(returnTermAndLocation.first));
                 }
             }
         }

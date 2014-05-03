@@ -194,6 +194,10 @@ public:
      */
     void deinstrumentAll();
 
+    auto callHooks() const -> const decltype(callHooks_) & { return callHooks_; }
+
+    auto returnHooks() const -> const decltype(returnHooks_) & { return returnHooks_; }
+
 private:
     /**
      * Creates an EntryHook (if not done yet) and instruments the function with it.
