@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
 #include <nc/core/ir/MemoryLocation.h>
 
@@ -80,6 +81,9 @@ class SignatureAnalyzer {
      * (if it is a MemoryLocationAccess) its part used for passing the return value. */
     boost::unordered_map<CalleeId, std::pair<const Term *, MemoryLocation>> id2returnValue_;
 
+    /** Terms that do not belong to the program, but to the hooks. */
+    boost::unordered_set<const Term *> artificialTerms_;
+
 public:
     /**
      * Constructor.
@@ -114,6 +118,29 @@ private:
     void computeArgumentsAndReturnValues(const CancellationToken &canceled);
 
     /**
+     * \param term Valid pointer to a read term.
+     *
+     * \return True if the term is a read that belongs to some instruction
+     *         or is a read of a return value created by ReturnHook, and
+     *         this term belongs to the signature.
+     */
+    bool isRealRead(const Term *term);
+
+    /**
+     * \param term Valid pointer to a write term.
+     *
+     * \return True if the term is a write that belongs to some instruction
+     *         or is a write of return value created by CallHook, and
+     *         this term belongs to the signature.
+     */
+    bool isRealWrite(const Term *term);
+
+    /**
+     * Computes the terms representing potential arguments inserted by hooks.
+     */
+    void computeArtificialTerms();
+
+    /**
      * Recomputes arguments of the function with the given callee id
      * by looking at the function's body and calls to it.
      *
@@ -132,24 +159,6 @@ private:
      * \return True if the return value has changed, false otherwise.
      */
     bool computeReturnValue(const CalleeId &calleeId);
-
-    /**
-     * \param term Valid pointer to a read term.
-     *
-     * \return True if the term is a read that belongs to some instruction
-     *         or is a read of a return value created by ReturnHook, and
-     *         this term belongs to the signature.
-     */
-    bool isRealRead(const Term *term);
-
-    /**
-     * \param term Valid pointer to a write term.
-     *
-     * \return True if the term is a write that belongs to some instruction
-     *         or is a write of return value created by CallHook, and
-     *         this term belongs to the signature.
-     */
-    bool isRealWrite(const Term *term);
 
     /**
      * \param[in] function Valid pointer to a function.

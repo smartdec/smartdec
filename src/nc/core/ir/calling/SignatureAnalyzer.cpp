@@ -83,6 +83,8 @@ void SignatureAnalyzer::computeArgumentsAndReturnValues(const CancellationToken 
     do {
         changed = false;
 
+        computeArtificialTerms();
+
         foreach (const CalleeId &calleeId, id2referrers_ | boost::adaptors::map_keys) {
             if (computeArguments(calleeId)) {
                 changed = true;
@@ -99,6 +101,43 @@ void SignatureAnalyzer::computeArgumentsAndReturnValues(const CancellationToken 
 
         canceled.poll();
     } while (changed);
+}
+
+bool SignatureAnalyzer::isRealRead(const Term *term) {
+    assert(term != NULL);
+    assert(term->isRead());
+
+    return !nc::contains(artificialTerms_, term);
+}
+
+bool SignatureAnalyzer::isRealWrite(const Term *term) {
+    assert(term != NULL);
+    assert(term->isWrite());
+
+    return !nc::contains(artificialTerms_, term);
+}
+
+void SignatureAnalyzer::computeArtificialTerms() {
+    foreach (const auto &calleeAndReferrers, id2referrers_) {
+        foreach (const Call *call, calleeAndReferrers.second.calls) {
+            if (auto hook = hooks_.getCallHook(call)) {
+                foreach (const auto &termAndClone, hook->returnValueTerms()) {
+                    artificialTerms_.insert(termAndClone.second);
+                }
+            }
+        }
+        foreach (const Return *ret, calleeAndReferrers.second.returns) {
+            if (auto hook = hooks_.getReturnHook(ret)) {
+                foreach (const auto &termAndClone, hook->returnValueTerms()) {
+                    artificialTerms_.insert(termAndClone.second);
+                }
+                const auto &termAndLocation = nc::find(id2returnValue_, calleeAndReferrers.first);
+                if (termAndLocation.first) {
+                    artificialTerms_.erase(hook->getReturnValueTerm(termAndLocation.first));
+                }
+            }
+        }
+    }
 }
 
 namespace {
@@ -261,24 +300,6 @@ bool SignatureAnalyzer::computeReturnValue(const CalleeId &calleeId) {
     } else {
         return false;
     }
-}
-
-bool SignatureAnalyzer::isRealRead(const Term *term) {
-    assert(term != NULL);
-    assert(term->isRead());
-
-    // TODO
-
-    return true;
-}
-
-bool SignatureAnalyzer::isRealWrite(const Term *term) {
-    assert(term != NULL);
-    assert(term->isWrite());
-
-    // TODO
-
-    return true;
 }
 
 namespace {
