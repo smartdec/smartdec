@@ -445,7 +445,7 @@ std::vector<std::pair<const Term *, MemoryLocation>> SignatureAnalyzer::getUsedR
             }
         }
 
-        if (usedPart) {
+        if (usedPart && usedPart.addr() == dataflow.getMemoryLocation(termAndClone.second).addr()) {
             result.push_back(std::make_pair(termAndClone.first, usedPart));
         }
     }
@@ -490,7 +490,7 @@ std::vector<std::pair<const Term *, MemoryLocation>> SignatureAnalyzer::getUnuse
             }
         }
 
-        if (unusedPart) {
+        if (unusedPart && unusedPart.addr() == dataflow.getMemoryLocation(termAndClone.second).addr()) {
             result.push_back(std::make_pair(termAndClone.first, unusedPart));
         }
     }
