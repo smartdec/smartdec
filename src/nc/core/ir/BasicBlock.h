@@ -102,8 +102,8 @@ public:
     /**
      * \return Statements of the basic block.
      *
-     * \warning Do not insert statements into the container directly.
-     *          Use methods of BasicBlock class instead.
+     * \warning Do not insert or erase statements into/from the container
+     *          directly. Use the methods of BasicBlock class instead.
      */
     Statements &statements() { return statements_; }
 
@@ -159,6 +159,16 @@ public:
      * \return Valid pointer to the inserted statement.
      */
     Statement *insertBefore(const Statement *before, std::unique_ptr<Statement> statement);
+
+    /**
+     * Erases a statement pointed by the given iterator.
+     * Sets the basic block pointer in this statement to NULL.
+     *
+     * \param statement Valid pointer to the erased statement.
+     *
+     * \return The erased statement.
+     */
+    std::unique_ptr<Statement> erase(Statement *statement);
 
     /**
      * \return Valid pointer to the last statement in the basic block if this

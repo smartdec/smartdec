@@ -117,7 +117,7 @@ void Hooks::deinstrument(Function *function) {
     auto &hooks = insertedHooks_[function];
 
     foreach (auto hook, hooks) {
-        hook->basicBlock()->statements().erase(hook);
+        hook->basicBlock()->erase(hook);
     }
 
     insertedHooks_.erase(function);

@@ -118,7 +118,7 @@ void CallHook::instrument(Call *call) {
 
 void CallHook::deinstrument(Call *call) {
     while (insertedStatementsCount_ > 0) {
-        statements_.push_back(call->basicBlock()->statements().erase(++call->basicBlock()->statements().get_iterator(call)));
+        statements_.push_back(call->basicBlock()->erase(*++call->basicBlock()->statements().get_iterator(call)));
         --insertedStatementsCount_;
     }
 }

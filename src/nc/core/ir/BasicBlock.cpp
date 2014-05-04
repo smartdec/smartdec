@@ -50,6 +50,7 @@ void BasicBlock::setSuccessorAddress(const boost::optional<ByteAddr> &successorA
 
 Statement *BasicBlock::insert(ilist<Statement>::const_iterator position, std::unique_ptr<Statement> statement) {
     assert(statement != NULL);
+    assert(statement->basicBlock() == NULL);
 
     auto result = statement.get();
     statements_.insert(position, std::move(statement));
@@ -81,6 +82,13 @@ Statement *BasicBlock::insertBefore(const Statement *before, std::unique_ptr<Sta
     assert(statement != NULL);
 
     return insert(statements_.get_iterator(before), std::move(statement));
+}
+
+std::unique_ptr<Statement> BasicBlock::erase(Statement *statement) {
+    auto result = statements_.erase(statement);
+    assert(result->basicBlock() == this);
+    result->setBasicBlock(NULL);
+    return result;
 }
 
 const Statement *BasicBlock::getTerminator() const {

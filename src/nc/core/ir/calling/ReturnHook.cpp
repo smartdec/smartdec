@@ -75,7 +75,7 @@ void ReturnHook::instrument(Return *ret) {
 
 void ReturnHook::deinstrument(Return *ret) {
     while (insertedStatementsCount_ > 0) {
-        statements_.push_front(ret->basicBlock()->statements().erase(--ret->basicBlock()->statements().get_iterator(ret)));
+        statements_.push_front(ret->basicBlock()->erase(*--ret->basicBlock()->statements().get_iterator(ret)));
         --insertedStatementsCount_;
     }
 }
