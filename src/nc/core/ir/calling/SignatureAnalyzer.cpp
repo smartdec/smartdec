@@ -118,32 +118,26 @@ bool SignatureAnalyzer::isRealWrite(const Term *term) {
 }
 
 void SignatureAnalyzer::computeArtificialTerms() {
-    foreach (auto &hook, hooks_.callHooks() | boost::adaptors::map_values) {
-        foreach (const auto &termAndClone, hook->returnValueTerms()) {
-            artificialTerms_.insert(termAndClone.second);
-        }
-    }
-
-    foreach (auto &hook, hooks_.returnHooks() | boost::adaptors::map_values) {
-        foreach (const auto &termAndClone, hook->returnValueTerms()) {
-            artificialTerms_.insert(termAndClone.second);
-        }
-    }
-
     foreach (const auto &calleeAndReferrers, id2referrers_) {
-        const auto &returnTermAndLocation = nc::find(id2returnValue_, calleeAndReferrers.first);
+        const auto &returnTerm = nc::find(id2returnValue_, calleeAndReferrers.first).first;
 
         foreach (const Call *call, calleeAndReferrers.second.calls) {
             if (auto hook = hooks_.getCallHook(call)) {
-                if (returnTermAndLocation.first) {
-                    artificialTerms_.erase(hook->getReturnValueTerm(returnTermAndLocation.first));
+                foreach (const auto &termAndClone, hook->returnValueTerms()) {
+                    artificialTerms_.insert(termAndClone.second);
+                }
+                if (returnTerm) {
+                    artificialTerms_.erase(hook->getReturnValueTerm(returnTerm));
                 }
             }
         }
         foreach (const Return *ret, calleeAndReferrers.second.returns) {
             if (auto hook = hooks_.getReturnHook(ret)) {
-                if (returnTermAndLocation.first) {
-                    artificialTerms_.erase(hook->getReturnValueTerm(returnTermAndLocation.first));
+                foreach (const auto &termAndClone, hook->returnValueTerms()) {
+                    artificialTerms_.insert(termAndClone.second);
+                }
+                if (returnTerm) {
+                    artificialTerms_.erase(hook->getReturnValueTerm(returnTerm));
                 }
             }
         }
