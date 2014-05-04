@@ -49,6 +49,24 @@ namespace core {
 namespace ir {
 namespace dflow {
 
+namespace {
+
+template<class Map, class Pred>
+void remove_if(Map &map, Pred pred) {
+    auto i = map.begin();
+    auto iend = map.end();
+
+    while (i != iend) {
+        if (pred(i->first)) {
+            i = map.erase(i);
+        } else {
+            ++i;
+        }
+    }
+}
+
+} // anonymous namespace
+
 void DataflowAnalyzer::analyze(const Function *function, const CancellationToken &canceled) {
     assert(function != NULL);
 
@@ -116,6 +134,21 @@ void DataflowAnalyzer::analyze(const Function *function, const CancellationToken
 
         canceled.poll();
     }
+
+    /*
+     * Remove information about terms that disappeared.
+     * Terms can disappear if e.g. a call is deinstrumented during the analysis.
+     */
+    auto disappeared = [](const Term *term){ return term->statement()->basicBlock() == NULL; };
+
+    std::vector<const Term *> disappearedTerms;
+    foreach (auto &termAndDefinitions, dataflow().term2definitions()) {
+        termAndDefinitions.second.filterOut([disappeared](const MemoryLocation &, const Term *term) { return disappeared(term); } );
+    }
+
+    remove_if(dataflow().term2value(), disappeared);
+    remove_if(dataflow().term2location(), disappeared);
+    remove_if(dataflow().term2definitions(), disappeared);
 }
 
 void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &context) {

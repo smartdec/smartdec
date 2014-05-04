@@ -25,7 +25,6 @@
 
 #include <nc/config.h>
 
-#include <vector>
 #include <memory>
 
 #include <boost/unordered_map.hpp>
@@ -85,6 +84,16 @@ public:
      *         for the right hand side of the assignment is returned.
      */
     const Value *getValue(const Term *term) const;
+
+    /**
+     * \return Mapping from a term to the description of its value.
+     */
+    boost::unordered_map<const Term *, std::unique_ptr<Value>> &term2value() { return term2value_; }
+
+    /**
+     * \return Mapping from a term to the description of its value.
+     */
+    const boost::unordered_map<const Term *, std::unique_ptr<Value>> &term2value() const { return term2value_; }
 
     /**
      * \param[in] term Valid pointer to a term.
