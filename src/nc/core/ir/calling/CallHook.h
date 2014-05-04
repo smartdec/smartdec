@@ -58,7 +58,7 @@ class CallHook {
     /** Term for snapshotting reaching definitions. */
     const Term *snapshotTerm_;
 
-    /** Mapping from an argument term to its clone. */
+    /** Mapping from argument terms to their clones. */
     boost::unordered_map<const Term *, const Term *> argumentTerms_;
 
     /** Mapping from return value terms to their clones. */
@@ -131,6 +131,11 @@ public:
      *         calling convention defines no stack pointer.
      */
     const Term *stackPointer() const { return stackPointer_; }
+
+    /**
+     * \return Mapping from argument terms to their clones.
+     */
+    const boost::unordered_map<const Term *, const Term *> &argumentTerms() const { return argumentTerms_; }
 
     /**
      * \return Mapping from return value terms to their clones.

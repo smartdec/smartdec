@@ -75,6 +75,11 @@ public:
         assert(term != NULL);
         return nc::find(argumentTerms_, term);
     }
+
+    /**
+     * \return Mapping from argument terms to their clones.
+     */
+    const boost::unordered_map<const Term *, const Term *> &argumentTerms() const { return argumentTerms_; }
 };
 
 } // namespace calling

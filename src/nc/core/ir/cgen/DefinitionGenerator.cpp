@@ -148,6 +148,8 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
         }
     }
 
+    computeInvisibleStatements();
+
     SwitchContext switchContext;
     makeStatements(graph_.root(), definition()->block(), NULL, NULL, NULL, switchContext);
 
@@ -598,6 +600,10 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const cfl
 
 std::unique_ptr<likec::Statement> DefinitionGenerator::makeStatement(const Statement *statement, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB) {
     assert(statement);
+
+    if (nc::contains(invisibleStatements_, statement)) {
+        return NULL;
+    }
 
     auto result = doMakeStatement(statement, nextBB, breakBB, continueBB);
 
@@ -1260,6 +1266,35 @@ bool DefinitionGenerator::isIntermediate(const vars::Variable *variable) {
                 }
             }
         }();
+    }
+}
+
+void DefinitionGenerator::computeInvisibleStatements() {
+    if (auto hook = parent().hooks().getEntryHook(function_)) {
+        foreach (const auto &termAndClone, hook->argumentTerms()) {
+            invisibleStatements_.insert(termAndClone.second->statement());
+        }
+    }
+
+    foreach (auto basicBlock, function_->basicBlocks()) {
+        foreach (auto statement, basicBlock->statements()) {
+            if (auto call = statement->asCall()) {
+                if (auto hook = parent().hooks().getCallHook(call)) {
+                    foreach (const auto &termAndClone, hook->argumentTerms()) {
+                        invisibleStatements_.insert(termAndClone.second->statement());
+                    }
+                    foreach (const auto &termAndClone, hook->returnValueTerms()) {
+                        invisibleStatements_.insert(termAndClone.second->statement());
+                    }
+                }
+            } else if (auto ret = statement->asReturn()) {
+                if (auto hook = parent().hooks().getReturnHook(ret)) {
+                    foreach (const auto &termAndClone, hook->returnValueTerms()) {
+                        invisibleStatements_.insert(termAndClone.second->statement());
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -26,6 +26,7 @@
 #include <nc/config.h>
 
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
 #include "DeclarationGenerator.h"
 
@@ -91,6 +92,7 @@ class DefinitionGenerator: public DeclarationGenerator {
     boost::unordered_map<const BasicBlock *, likec::LabelDeclaration *> labels_; ///< Labels inside the function.
     boost::unordered_map<const vars::Variable *, bool> isSingleAssignment_; ///< Memoized results of isSingleAssignment().
     boost::unordered_map<const vars::Variable *, bool> isIntermediate_; ///< Memoized results of isIntermediate().
+    boost::unordered_set<const Statement *> invisibleStatements_; ///< Statements that must be generate no code.
 
 public:
     /**
@@ -124,7 +126,7 @@ public:
      */
     std::unique_ptr<likec::FunctionDefinition> createDefinition();
 
-protected:
+private:
     /**
      * \param[in] variable Valid pointer to a local variable.
      *
@@ -348,6 +350,13 @@ protected:
      *         by the expression assigned to it.
      */
     bool isIntermediate(const vars::Variable *variable);
+
+    /**
+     * Computes the statements for which no code must be generated.
+     * They are the statements to which the clones of argument and
+     * return value statements belong.
+     */
+    void computeInvisibleStatements();
 };
 
 } // namespace cgen
