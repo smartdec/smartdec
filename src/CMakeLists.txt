@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(NOCODE C CXX)
+project(Decompiler C CXX)
 
 enable_testing()
 
