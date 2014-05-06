@@ -29,17 +29,15 @@
 #include <nc/gui/MainWindow.h>
 
 int main(int argc, char **argv) {
-    using namespace nc;
-
     QApplication app(argc, argv);
 
-    gui::MainWindow mainWindow;
+    nc::gui::MainWindow mainWindow;
+
+    mainWindow.show();
 
     QStringList filenames = QCoreApplication::arguments();
     filenames.removeFirst();
     mainWindow.open(filenames);
-
-    mainWindow.show();
 
     return app.exec();
 }
