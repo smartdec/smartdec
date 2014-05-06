@@ -20,3 +20,6 @@ gmon.out
 
 # vim swap files.
 *.sw[a-z]
+
+# Python's byte code files.
+*.pyc

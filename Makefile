@@ -22,7 +22,7 @@ test-all: build
 	$(SRC_DIR)/test-scripts/test-decompiler.py --build-dir $(BUILD_DIR) --no-default-tests --tests-pattern "$(CURDIR)/examples/private/all/*.exe"
 
 $(MAKEFILE):
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake $(SRC_DIR)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=YES $(SRC_DIR)
 
 .PHONY: tags
 tags:
@@ -41,7 +41,7 @@ gitstats: .git
 
 .PHONY: clean
 clean:
-	rm -f tags gmon.out core vgcore.*
+	rm -f tags gmon.out core vgcore.* .ycm_extra_conf.pyc
 	-$(MAKE) -C $(BUILD_DIR) clean
 
 .PHONY:
