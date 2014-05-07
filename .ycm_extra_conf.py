@@ -16,7 +16,7 @@ default_flags = [
     '-I' + os.path.join(project_root, 'src', '3rd-party'),
 ]
 
-# Compiling from clang the binary uses the correct default header search paths
+# Compiling by the clang binary uses the correct default header search paths
 # but compiling from libclang.so does not. Therefore, we add the right paths
 # manually.
 extra_flags = [
