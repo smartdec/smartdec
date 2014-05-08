@@ -1,4 +1,6 @@
 import os
+from subprocess import Popen, PIPE
+import re
 import ycm_core
 
 SOURCE_EXTENSIONS = ['.cpp', '.cxx', '.cc', '.c']
@@ -16,19 +18,19 @@ default_flags = [
     '-I' + os.path.join(project_root, 'src', '3rd-party'),
 ]
 
+def GetStandardIncludePaths():
+    try:
+        process = Popen(['clang', '-v', '-E', '-x', 'c++', '-'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        err = process.communicate()[1]
+        match = re.search('#include <\.\.\.> search starts here:\n(.*)\nEnd of search list\.', err, re.DOTALL)
+        return match.group(1).split()
+    except:
+        return []
+
 # Compiling by the clang binary uses the correct default header search paths
 # but compiling from libclang.so does not. Therefore, we add the right paths
 # manually.
-extra_flags = [
-    '-I/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../../include/c++/4.8',
-    '-I/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../../include/c++/4.8/backward',
-    '-I/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/../../../../include/x86_64-linux-gnu/c++/4.8',
-    '-I/usr/local/include',
-    '-I/usr/bin/../lib/clang/3.4/include',
-    '-I/usr/bin/../lib/gcc/x86_64-linux-gnu/4.8/include',
-    '-I/usr/include/x86_64-linux-gnu',
-    '-I/usr/include'
-]
+extra_flags = ['-I' + x for x in GetStandardIncludePaths()]
 
 # CMake generates a json database inside the build directory.
 compilation_database_folder = os.path.join(project_root, 'build')
