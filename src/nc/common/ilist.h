@@ -223,7 +223,8 @@ public:
      *
      * \param that The list to move from.
      */
-    ilist(ilist &&that):
+    template<class U>
+    ilist(ilist<U, Deleter> &&that):
         deleter_(std::move(that.deleter_))
     {
         front_ = that.front_;
@@ -245,9 +246,17 @@ public:
      *
      * \param that List to move from.
      */
-    ilist &operator=(ilist &&that) noexcept {
+    template<class U>
+    ilist &operator=(ilist<U, Deleter> &&that) {
         clear();
-        swap(that);
+
+        deleter_ = std::move(that.deleter_);
+        front_ = that.front_;
+        back_ = that.back_;
+
+        that.front_ = NULL;
+        that.back_ = NULL;
+
         return *this;
     }
 
