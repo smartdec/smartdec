@@ -99,8 +99,8 @@ public:
     explicit ilist_iterator(const ilist_data<U> *list, pointer element = NULL) noexcept:
         element_(element), list_(list)
     {
-		assert(list != NULL);
-	}
+        assert(list != NULL);
+    }
 
     /**
      * Constructor from a non-const iterator.
