@@ -16,6 +16,7 @@ default_flags = [
     '-std=c++11',
     '-I' + os.path.join(project_root, 'src'),
     '-I' + os.path.join(project_root, 'src', '3rd-party'),
+    '-I' + os.path.join(project_root, 'build'),
 ]
 
 def GetStandardIncludePaths():
