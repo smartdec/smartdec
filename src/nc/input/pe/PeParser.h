@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <nc/config.h>
+
 #include <nc/core/input/Parser.h>
 
 namespace nc {
