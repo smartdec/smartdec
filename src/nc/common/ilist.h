@@ -378,7 +378,7 @@ public:
      * Inserts the element in the list at the given position.
      *
      * \param position Iterator identifying the position.
-     * \param element Element to insert.
+     * \param element Valid pointer to the element to insert.
      *
      * \return Valid pointer to the inserted element.
      */
