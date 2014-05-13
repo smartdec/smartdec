@@ -46,8 +46,7 @@ class Statement;
 /**
  * Basic block.
  */
-class BasicBlock;
-class BasicBlock: public PrintableBase<BasicBlock>, public nc::ilist_item<BasicBlock>, boost::noncopyable {
+class BasicBlock: public PrintableBase<BasicBlock>, public nc::ilist_item, boost::noncopyable {
 public:
     typedef nc::ilist<Statement> Statements;
 

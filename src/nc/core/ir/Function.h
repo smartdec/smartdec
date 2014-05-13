@@ -42,8 +42,7 @@ class BasicBlock;
 /**
  * Intermediate representation of a function.
  */
-class Function;
-class Function: public PrintableBase<Function>, public nc::ilist_item<Function>, boost::noncopyable {
+class Function: public PrintableBase<Function>, public nc::ilist_item, boost::noncopyable {
 public:
     typedef nc::ilist<BasicBlock> BasicBlocks;
 

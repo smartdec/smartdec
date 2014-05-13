@@ -8,28 +8,20 @@
 #include <cassert>
 #include <iterator>
 #include <memory> /* std::unique_ptr */
+#include <type_traits>
 #include <utility> /* std::swap */
-#include <type_traits> /* std::remove_const */
-
-#include <boost/noncopyable.hpp>
 
 namespace nc {
 
 /**
  * Base class for the elements of intrusive lists.
- *
- * \tparam T Derived class of list elements.
  */
-template<class T>
 class ilist_item {
     /** Pointer to the next element. */
-    T *next_;
+    ilist_item *next_;
 
     /** Pointer to the previous element. */
-    T *prev_;
-
-    template<class X, class Y> friend class ilist;
-    template<class X, class Y> friend class ilist_iterator;
+    ilist_item *prev_;
 
 protected:
     /**
@@ -47,6 +39,9 @@ private:
      * Copying is forbidden.
      */
     ilist_item &operator=(const ilist_item &);
+
+    template<class X, class Y> friend class ilist;
+    template<class X> friend class ilist_iterator;
 };
 
 /**
@@ -54,23 +49,38 @@ private:
  *
  * \tparam T Type of elements.
  */
-template<class T>
 class ilist_data {
 public:
     /** Pointer to the first element. */
-    T *front_;
+    ilist_item *front_;
 
     /** Pointer to the last element. */
-    T *back_;
+    ilist_item *back_;
+
+protected:
+    /**
+     * Default constructor. Does no initialization.
+     */
+    ilist_data() {}
+
+private:
+    /**
+     * Copying is forbidden.
+     */
+    ilist_data(const ilist_data &);
+
+    /**
+     * Copying is forbidden.
+     */
+    ilist_data &operator=(const ilist_data &);
 };
 
 /**
  * Base class for an intrusive list iterator.
  *
  * \tparam T Element type as exposed to the user.
- * \tparam U Element type as specified in the container.
  */
-template<class T, class U = T>
+template<class T>
 class ilist_iterator: public std::iterator<std::bidirectional_iterator_tag, T> {
     typedef std::iterator<std::bidirectional_iterator_tag, T> super;
 
@@ -82,12 +92,12 @@ public:
 
 private:
     /** Pointer to the element the iterator points to. */
-    pointer element_;
+    ilist_item *element_;
 
     /** Reference to the data of the list being iterated. */
-    const ilist_data<U> *list_;
+    const ilist_data *list_;
 
-    template<class X, class Y> friend class ilist_iterator;
+    template<class X> friend class ilist_iterator;
 
 public:
     /**
@@ -96,27 +106,45 @@ public:
      * \param list      Reference to the data of the list being iterated.
      * \param element   Pointer to the element this iterator points to.
      */
-    explicit ilist_iterator(const ilist_data<U> *list, pointer element = NULL) noexcept:
+    explicit ilist_iterator(const ilist_data *list, ilist_item *element = NULL) noexcept:
         element_(element), list_(list)
     {
         assert(list != NULL);
     }
 
+private:
+    class Tag {};
+
+public:
     /**
-     * Constructor from a non-const iterator.
+     * Constructor from a compatible iterator.
      *
      * \param that Iterator to construct from.
      */
-    ilist_iterator(const ilist_iterator<typename std::remove_const<T>::type, U> &that) noexcept:
+    template<class U>
+    ilist_iterator(const ilist_iterator<U> &that, typename std::enable_if<std::is_convertible<U *, T *>::value, Tag>::type = Tag()) noexcept:
         element_(that.element_), list_(that.list_)
     {}
+
+    /**
+     * Assignment from a compatible iterator.
+     *
+     * \param that Iterator to assign from.
+     */
+    template<class U>
+    typename std::enable_if<std::is_convertible<U *, T *>::value, ilist_iterator &>::type
+    operator=(const ilist_iterator<U> &that) noexcept {
+        element_ = that.element_;
+        list_ = that.list_;
+        return *this;
+    }
 
     /**
      * Prefix increment.
      */
     ilist_iterator &operator++() noexcept {
         if (element_ != NULL) {
-            element_ = element_->ilist_item<U>::next_;
+            element_ = element_->next_;
         } else {
             element_ = list_->front_;
         }
@@ -137,7 +165,7 @@ public:
      */
     ilist_iterator &operator--() noexcept {
         if (element_ != NULL) {
-            element_ = element_->ilist_item<U>::prev_;
+            element_ = element_->prev_;
         } else {
             element_ = list_->back_;
         }
@@ -171,14 +199,14 @@ public:
      * \return Pointer to the element being pointed to.
      */
     pointer operator->() const noexcept {
-        return element_;
+        return static_cast<pointer>(element_);
     }
 
     /**
      * \return Pointer to the element being pointed to.
      */
     pointer operator*() const noexcept {
-        return element_;
+        return static_cast<pointer>(element_);
     }
 };
 
@@ -190,18 +218,15 @@ public:
 * \param Deleter Type of deleter for the list elements.
 */
 template<class T, class Deleter = std::default_delete<T>>
-class ilist: private ilist_data<T>, boost::noncopyable {
-    using ilist_data<T>::front_;
-    using ilist_data<T>::back_;
-
+class ilist: private ilist_data {
 public:
     typedef T value_type;
     typedef Deleter deleter_type;
     typedef T *pointer;
     typedef const T *const_pointer;
     typedef std::unique_ptr<T, deleter_type> unique_ptr;
-    typedef ilist_iterator<T, T> iterator;
-    typedef ilist_iterator<const T, T> const_iterator;
+    typedef ilist_iterator<T> iterator;
+    typedef ilist_iterator<const T> const_iterator;
     typedef std::reverse_iterator<iterator> reverse_iterator;
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
     typedef std::size_t size_type;
@@ -284,22 +309,22 @@ public:
     /**
      * \return Pointer to the first element. Will be NULL if the list is empty.
      */
-    pointer front() noexcept { return front_; }
+    pointer front() noexcept { return static_cast<pointer>(front_); }
 
     /**
      * \return Pointer to the first element. Will be NULL if the list is empty.
      */
-    const_pointer front() const noexcept { return front_; }
+    const_pointer front() const noexcept { return static_cast<pointer>(front_); }
 
     /**
      * \return Pointer to the last element. Will be NULL if the list is empty.
      */
-    pointer back() noexcept { return back_; }
+    pointer back() noexcept { return static_cast<pointer>(back_); }
 
     /**
      * \return Pointer to the last element. Will be NULL if the list is empty.
      */
-    const_pointer back() const noexcept { return back_; }
+    const_pointer back() const noexcept { return static_cast<pointer>(back_); }
 
     /**
      * \return True if the list is empty, false otherwise.
@@ -322,27 +347,29 @@ public:
      *
      * \return Valid pointer to the removed element.
      */
-    unique_ptr erase(pointer element) {
+    unique_ptr erase(const_pointer element) {
         assert(element != NULL);
 
-        if (element == front_) {
-            front_ = front_->ilist_item<T>::next_;
+        ilist_item *item = const_cast<pointer>(element);
+
+        if (item == front_) {
+            front_ = front_->next_;
         }
-        if (element == back_) {
-            back_ = back_->ilist_item<T>::prev_;
+        if (item == back_) {
+            back_ = back_->prev_;
         }
 
-        if (element->ilist_item<T>::prev_) {
-            element->ilist_item<T>::prev_->ilist_item<T>::next_ = element->ilist_item<T>::next_;
+        if (item->prev_) {
+            item->prev_->next_ = item->next_;
         }
-        if (element->ilist_item<T>::next_) {
-            element->ilist_item<T>::next_->ilist_item<T>::prev_ = element->ilist_item<T>::prev_;
+        if (item->next_) {
+            item->next_->prev_ = item->prev_;
         }
 
-        element->ilist_item<T>::next_ = NULL;
-        element->ilist_item<T>::prev_ = NULL;
+        item->next_ = NULL;
+        item->prev_ = NULL;
 
-        return unique_ptr(element, deleter_);
+        return unique_ptr(const_cast<pointer>(element), deleter_);
     }
 
     /**
@@ -352,7 +379,7 @@ public:
      *
      * \return Valid pointer to the removed element.
      */
-    unique_ptr erase(iterator iterator) {
+    unique_ptr erase(const_iterator iterator) {
         return erase(*iterator);
     }
 
@@ -384,22 +411,25 @@ public:
      */
     pointer insert(const_iterator position, unique_ptr element) noexcept {
         assert(element != NULL);
-        assert(element->ilist_item<T>::next_ == NULL);
-        assert(element->ilist_item<T>::prev_ == NULL);
 
-        element->ilist_item<T>::next_ = const_cast<pointer>(*position);
-        element->ilist_item<T>::prev_ = const_cast<pointer>(*--position);
+        auto item = static_cast<ilist_item *>(element.get());
 
-        if (element->ilist_item<T>::next_ != NULL) {
-            element->ilist_item<T>::next_->ilist_item<T>::prev_ = element.get();
+        assert(item->next_ == NULL);
+        assert(item->prev_ == NULL);
+
+        item->next_ = const_cast<pointer>(*position);
+        item->prev_ = const_cast<pointer>(*--position);
+
+        if (item->next_ != NULL) {
+            item->next_->prev_ = item;
         } else {
-            back_ = element.get();
+            back_ = item;
         }
 
-        if (element->ilist_item<T>::prev_ != NULL) {
-            element->ilist_item<T>::prev_->ilist_item<T>::next_ = element.get();
+        if (item->prev_ != NULL) {
+            item->prev_->next_ = element.get();
         } else {
-            front_ = element.get();
+            front_ = item;
         }
 
         return element.release();
@@ -447,28 +477,28 @@ public:
         assert(result.back_ != NULL);
 
         if (result.front_ == front_) {
-            front_ = result.back_->ilist_item<T>::next_;
+            front_ = result.back_->next_;
             if (front_) {
-                front_->ilist_item<T>::prev_ = NULL;
+                front_->prev_ = NULL;
             }
         }
 
         if (result.back_ == back_) {
-            back_ = result.front_->ilist_item<T>::prev_;
+            back_ = result.front_->prev_;
             if (back_) {
-                back_->ilist_item<T>::next_ = NULL;
+                back_->next_ = NULL;
             }
         }
 
-        if (result.front_->ilist_item<T>::prev_) {
-            result.front_->ilist_item<T>::prev_->ilist_item<T>::next_ = result.back_->ilist_item<T>::next_;
+        if (result.front_->prev_) {
+            result.front_->prev_->next_ = result.back_->next_;
         }
-        if (result.back_->ilist_item<T>::next_) {
-            result.back_->ilist_item<T>::next_->ilist_item<T>::prev_ = result.front_->ilist_item<T>::prev_;
+        if (result.back_->next_) {
+            result.back_->next_->prev_ = result.front_->prev_;
         }
 
-        result.front_->ilist_item<T>::prev_ = NULL;
-        result.back_->ilist_item<T>::next_ = NULL;
+        result.front_->prev_ = NULL;
+        result.back_->next_ = NULL;
 
         return result;
     }
@@ -476,7 +506,7 @@ public:
     /**
      * \return Iterator pointing to the first element.
      */
-    iterator begin() noexcept { return iterator(this, front()); }
+    iterator begin() noexcept { return iterator(this, front_); }
 
     /**
      * \return Iterator pointing to the next after the last element.
@@ -516,7 +546,7 @@ public:
     /**
      * \return Constant iterator to the first element.
      */
-    const_iterator cbegin() const noexcept { return const_iterator(this, front()); }
+    const_iterator cbegin() const noexcept { return const_iterator(this, front_); }
 
     /**
      * \return Constant iterator to the next after the last element.
@@ -538,9 +568,9 @@ public:
      *
      * \return Iterator pointing to the given element.
      */
-    iterator get_iterator(pointer element) noexcept {
+    iterator get_iterator(const_pointer element) noexcept {
         assert(element != NULL);
-        return iterator(this, element);
+        return iterator(this, const_cast<pointer>(element));
     }
 
     /**
