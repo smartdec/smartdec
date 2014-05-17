@@ -27,14 +27,9 @@
 
 #include <nc/common/SizedValue.h>
 
-#include <nc/core/ir/dflow/AbstractValue.h>
-
 #include "Term.h"
 
 namespace nc {
-
-class SizedValue;
-
 namespace core {
 namespace ir {
 
@@ -48,19 +43,19 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] value                Value of the constant.
+     * \param[in] value Value of the constant.
      */
     Constant(const SizedValue &value): Term(INT_CONST, value.size()), value_(value.value()) {}
 
     /**
-     * \return Value of the constant. Bits starting from size() and higher are zero.
+     * \return Value of the constant.
      */
     SizedValue value() const { return SizedValue(size(), value_, SizedValue::exact); }
 
     /**
      * Sets the value of the constant.
      *
-     * \param[in] value New value.
+     * \param[in] value New value. It is truncated to the lower size() bits.
      */
     void setValue(ConstantValue value) { value_ = bitTruncate(value, size()); }
 
@@ -186,12 +181,11 @@ protected:
  * Unary operator.
  */
 class UnaryOperator: public Term {
-    NC_CLASS_WITH_KINDS(UnaryOperator, operatorKind)
-
-    std::unique_ptr<Term> operand_; ///< The operand of the unary operator.
-
 public:
-    enum {
+    /**
+     * Unary operator kinds.
+     */
+    enum OperatorKind {
         NOT, ///< Bitwise NOT.
         NEGATION, ///< Integer negation.
         SIGN_EXTEND, ///< Sign extend.
@@ -200,10 +194,15 @@ public:
         USER = 1000 ///< Base for user-defined operators.
     };
 
+private:
+    int operatorKind_; ///< Operator kind.
+    std::unique_ptr<Term> operand_; ///< Operand.
+
+public:
     /**
      * Class constructor.
      *
-     * \param[in] operatorKind  Subkind of the unary operator.
+     * \param[in] operatorKind  Kind of the unary operator.
      * \param[in] operand       The operand of the unary operator.
      * \param[in] size          Size of this term's value in bits.
      *
@@ -212,6 +211,11 @@ public:
      * \note If operator's kind is TRUNCATE, operator's size must be strictly smaller than operand's size.
      */
     UnaryOperator(int operatorKind, std::unique_ptr<Term> operand, SmallBitSize size);
+
+    /**
+     * \return Kind of the operator.
+     */
+    int operatorKind() const { return operatorKind_; }
 
     /**
      * \return Valid pointer to the operand of this operator.
@@ -226,26 +230,7 @@ public:
     virtual void visitChildTerms(Visitor<Term> &visitor) override;
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
 
-    /**
-     * Applies the operator to an abstract value.
-     *
-     * \param a Operand value.
-     *
-     * \return Resulting abstract value. Its size is equal to this->size().
-     */
-    dflow::AbstractValue apply(const dflow::AbstractValue &a) const;
-
     virtual void print(QTextStream &out) const override;
-
-protected:
-    /**
-     * Actually applies the unary operator to an abstract value.
-     *
-     * \param a Operand value.
-     *
-     * \return Resulting abstract value. Its size must be equal to this->size().
-     */
-    virtual dflow::AbstractValue doApply(const dflow::AbstractValue &a) const;
 
     virtual UnaryOperator *doClone() const override;
 };
@@ -254,13 +239,11 @@ protected:
  * Binary operator.
  */
 class BinaryOperator: public Term {
-    NC_CLASS_WITH_KINDS(BinaryOperator, operatorKind)
-
-    std::unique_ptr<Term> left_; ///< Left operand.
-    std::unique_ptr<Term> right_; ///< Right operand.
-
 public:
-    enum {
+    /**
+     * Binary operator kinds.
+     */
+    enum OperatorKind {
         AND, ///< Bitwise AND.
         OR,  ///< Bitwise OR.
         XOR, ///< Bitwise XOR.
@@ -282,10 +265,16 @@ public:
         USER = 1000 ///< Base for user-defined operators.
     };
 
+private:
+    int operatorKind_; ///< Operator kind.
+    std::unique_ptr<Term> left_; ///< Left operand.
+    std::unique_ptr<Term> right_; ///< Right operand.
+
+public:
     /**
      * Class constructor.
      *
-     * \param[in] operatorKind  Subkind of the binary operator.
+     * \param[in] operatorKind  Kind of the binary operator.
      * \param[in] left          Left operand.
      * \param[in] right         Right operand.
      * \param[in] size          Size of this term's value in bits.
@@ -298,6 +287,11 @@ public:
      *       then operand's sizes must be equal, and operator's size must be 1.
      */
     BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right, SmallBitSize size);
+
+    /**
+     * \return Kind of the operator.
+     */
+    int operatorKind() const { return operatorKind_; }
 
     /**
      * \return Valid pointer to the left operand of this operator.
@@ -322,28 +316,7 @@ public:
     virtual void visitChildTerms(Visitor<Term> &visitor) override;
     virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
 
-    /**
-     * Applies this operator to abstract values.
-     *
-     * \param a Left operand value.
-     * \param b Right operand value.
-     *
-     * \return Resulting abstract value. Its size is equal to this->size().
-     */
-    virtual dflow::AbstractValue apply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const;
-
     virtual void print(QTextStream &out) const override;
-
-protected:
-    /**
-     * Applies this operator to abstract values.
-     *
-     * \param a Left operand value.
-     * \param b Right operand value.
-     *
-     * \return Resulting abstract value. Its size must be equal to this->size().
-     */
-    virtual dflow::AbstractValue doApply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const;
 
     virtual BinaryOperator *doClone() const;
 };

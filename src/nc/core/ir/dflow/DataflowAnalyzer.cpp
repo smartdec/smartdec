@@ -28,6 +28,7 @@
 
 #include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
+#include <nc/common/Unreachable.h>
 #include <nc/common/Warnings.h>
 
 #include <nc/core/arch/Architecture.h>
@@ -220,7 +221,7 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
             break;
         }
         default:
-            ncWarning("Was called for unsupported kind of statement: '%1'.", static_cast<int>(statement->kind()));
+            ncWarning("Unsupported statement kind: '%1'.", static_cast<int>(statement->kind()));
             break;
     }
 }
@@ -301,7 +302,7 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
             break;
         }
         default:
-            ncWarning("Was called for unsupported kind of term: '%1'.", static_cast<int>(term->kind()));
+            ncWarning("Unknown term kind: '%1'.", static_cast<int>(term->kind()));
             break;
     }
 
@@ -371,8 +372,6 @@ void DataflowAnalyzer::mergeReachingValues(const Term *term) {
 
         foreach (const Term *definition, pair.second) {
             auto definitionLocation = dataflow().getMemoryLocation(definition);
-            assert(definitionLocation.covers(definedLocation));
-
             auto definitionValue = dataflow().getValue(definition);
             auto definitionAbstractValue = definitionValue->abstractValue();
 
@@ -437,7 +436,7 @@ void DataflowAnalyzer::executeUnaryOperator(const UnaryOperator *unary, Executio
     Value *value = dataflow().getValue(unary);
     Value *operandValue = dataflow().getValue(unary->operand());
 
-    value->setAbstractValue(unary->apply(operandValue->abstractValue()).merge(value->abstractValue()));
+    value->setAbstractValue(apply(unary, operandValue->abstractValue()).merge(value->abstractValue()));
 
     switch (unary->operatorKind()) {
         case UnaryOperator::SIGN_EXTEND:
@@ -469,7 +468,7 @@ void DataflowAnalyzer::executeBinaryOperator(const BinaryOperator *binary, Execu
     Value *leftValue = dataflow().getValue(binary->left());
     Value *rightValue = dataflow().getValue(binary->right());
 
-    value->setAbstractValue(binary->apply(leftValue->abstractValue(), rightValue->abstractValue()).merge(value->abstractValue()));
+    value->setAbstractValue(apply(binary, leftValue->abstractValue(), rightValue->abstractValue()).merge(value->abstractValue()));
 
     /* Compute stack offset. */
     switch (binary->operatorKind()) {
@@ -528,6 +527,68 @@ void DataflowAnalyzer::executeBinaryOperator(const BinaryOperator *binary, Execu
         default:
             value->makeNotProduct();
             break;
+    }
+}
+
+AbstractValue DataflowAnalyzer::apply(const UnaryOperator *unary, const AbstractValue &a) {
+    switch (unary->operatorKind()) {
+        case UnaryOperator::NOT:
+            return ~a;
+        case UnaryOperator::NEGATION:
+            return -a;
+        case UnaryOperator::SIGN_EXTEND:
+            return dflow::AbstractValue(a).signExtend(unary->size());
+        case UnaryOperator::ZERO_EXTEND:
+            return dflow::AbstractValue(a).zeroExtend(unary->size());
+        case UnaryOperator::TRUNCATE:
+            return dflow::AbstractValue(a).resize(unary->size());
+        default:
+            unreachable();
+            return dflow::AbstractValue();
+    }
+}
+
+AbstractValue DataflowAnalyzer::apply(const BinaryOperator *binary, const AbstractValue &a, const AbstractValue &b) {
+    switch (binary->operatorKind()) {
+        case BinaryOperator::AND:
+            return a & b;
+        case BinaryOperator::OR:
+            return a | b;
+        case BinaryOperator::XOR:
+            return a ^ b;
+        case BinaryOperator::SHL:
+            return a << b;
+        case BinaryOperator::SHR:
+            return dflow::UnsignedAbstractValue(a) >> b;
+        case BinaryOperator::SAR:
+            return dflow::SignedAbstractValue(a) >> b;
+        case BinaryOperator::ADD:
+            return a + b;
+        case BinaryOperator::SUB:
+            return a - b;
+        case BinaryOperator::MUL:
+            return a * b;
+        case BinaryOperator::SIGNED_DIV:
+            return dflow::SignedAbstractValue(a) / b;
+        case BinaryOperator::UNSIGNED_DIV:
+            return dflow::UnsignedAbstractValue(a) / b;
+        case BinaryOperator::SIGNED_REM:
+            return dflow::SignedAbstractValue(a) % b;
+        case BinaryOperator::UNSIGNED_REM:
+            return dflow::UnsignedAbstractValue(a) % b;
+        case BinaryOperator::EQUAL:
+            return a == b;
+        case BinaryOperator::SIGNED_LESS:
+            return dflow::SignedAbstractValue(a) < b;
+        case BinaryOperator::SIGNED_LESS_OR_EQUAL:
+            return dflow::SignedAbstractValue(a) <= b;
+        case BinaryOperator::UNSIGNED_LESS:
+            return dflow::UnsignedAbstractValue(a) < b;
+        case BinaryOperator::UNSIGNED_LESS_OR_EQUAL:
+            return dflow::UnsignedAbstractValue(a) <= b;
+        default:
+            unreachable();
+            return dflow::AbstractValue();
     }
 }
 

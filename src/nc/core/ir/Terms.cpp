@@ -26,8 +26,6 @@
 
 #include <QTextStream>
 
-#include <nc/common/Foreach.h>
-#include <nc/common/SizedValue.h>
 #include <nc/common/Unreachable.h>
 
 namespace nc {
@@ -128,30 +126,6 @@ void UnaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
     visitor(operand_.get());
 }
 
-dflow::AbstractValue UnaryOperator::apply(const dflow::AbstractValue &a) const {
-    auto result = doApply(a);
-    assert(result.size() == size());
-    return result;
-}
-
-dflow::AbstractValue UnaryOperator::doApply(const dflow::AbstractValue &a) const {
-    switch (operatorKind()) {
-        case NOT:
-            return ~a;
-        case NEGATION:
-            return -a;
-        case SIGN_EXTEND:
-            return dflow::AbstractValue(a).signExtend(size());
-        case ZERO_EXTEND:
-            return dflow::AbstractValue(a).zeroExtend(size());
-        case TRUNCATE:
-            return dflow::AbstractValue(a).resize(size());
-        default:
-            unreachable();
-            return dflow::AbstractValue();
-    }
-}
-
 void UnaryOperator::print(QTextStream &out) const {
     switch (operatorKind()) {
         case NOT:
@@ -219,57 +193,6 @@ void BinaryOperator::visitChildTerms(Visitor<Term> &visitor) {
 void BinaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
     visitor(left_.get());
     visitor(right_.get());
-}
-
-// TODO: move to DataflowAnalyzer.
-dflow::AbstractValue BinaryOperator::apply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const {
-    auto result = doApply(a, b);
-    assert(result.size() == size());
-    return result;
-}
-
-dflow::AbstractValue BinaryOperator::doApply(const dflow::AbstractValue &a, const dflow::AbstractValue &b) const {
-    switch (operatorKind()) {
-        case AND:
-            return a & b;
-        case OR:
-            return a | b;
-        case XOR:
-            return a ^ b;
-        case SHL:
-            return a << b;
-        case SHR:
-            return dflow::UnsignedAbstractValue(a) >> b;
-        case SAR:
-            return dflow::SignedAbstractValue(a) >> b;
-        case ADD:
-            return a + b;
-        case SUB:
-            return a - b;
-        case MUL:
-            return a * b;
-        case SIGNED_DIV:
-            return dflow::SignedAbstractValue(a) / b;
-        case UNSIGNED_DIV:
-            return dflow::UnsignedAbstractValue(a) / b;
-        case SIGNED_REM:
-            return dflow::SignedAbstractValue(a) % b;
-        case UNSIGNED_REM:
-            return dflow::UnsignedAbstractValue(a) % b;
-        case EQUAL:
-            return a == b;
-        case SIGNED_LESS:
-            return dflow::SignedAbstractValue(a) < b;
-        case SIGNED_LESS_OR_EQUAL:
-            return dflow::SignedAbstractValue(a) <= b;
-        case UNSIGNED_LESS:
-            return dflow::UnsignedAbstractValue(a) < b;
-        case UNSIGNED_LESS_OR_EQUAL:
-            return dflow::UnsignedAbstractValue(a) <= b;
-        default:
-            unreachable();
-            return dflow::AbstractValue();
-    }
 }
 
 void BinaryOperator::print(QTextStream &out) const {

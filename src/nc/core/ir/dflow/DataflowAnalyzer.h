@@ -52,6 +52,7 @@ namespace calls {
 
 namespace dflow {
 
+class AbstractValue;
 class Dataflow;
 class ExecutionContext;
 
@@ -161,6 +162,27 @@ class DataflowAnalyzer {
      * \param     context   Execution context.
      */
     virtual void executeBinaryOperator(const BinaryOperator *binary, ExecutionContext &context);
+
+    /**
+     * Applies a unary operator to an abstract value.
+     *
+     * \param unary Valid pointer to the unary operand.
+     * \param a Operand value.
+     *
+     * \return Resulting abstract value. Its size is equal to unary->size().
+     */
+    virtual AbstractValue apply(const UnaryOperator *unary, const AbstractValue &a);
+
+    /**
+     * Applies a binary operator to an abstract value.
+     *
+     * \param binary Valid pointer to the binary operand.
+     * \param a Left operand's value.
+     * \param b Right operand's value.
+     *
+     * \return Resulting abstract value. Its size is equal to unary->size().
+     */
+    virtual AbstractValue apply(const BinaryOperator *binary, const AbstractValue &a, const AbstractValue &b);
 };
 
 } // namespace dflow
