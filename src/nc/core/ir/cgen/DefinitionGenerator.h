@@ -90,9 +90,9 @@ class DefinitionGenerator: public DeclarationGenerator {
 
     boost::unordered_map<const ir::vars::Variable *, likec::VariableDeclaration *> variableDeclarations_; ///< Local variables of current function definition.
     boost::unordered_map<const BasicBlock *, likec::LabelDeclaration *> labels_; ///< Labels inside the function.
-    boost::unordered_map<const vars::Variable *, bool> isSingleAssignment_; ///< Memoized results of isSingleAssignment().
-    boost::unordered_map<const vars::Variable *, bool> isIntermediate_; ///< Memoized results of isIntermediate().
     boost::unordered_set<const Statement *> invisibleStatements_; ///< Statements that must be generate no code.
+    boost::unordered_set<const Term *> intermediateTerms_;
+    boost::unordered_map<const Term *, const Term *> term2substitution_;
 
 public:
     /**
@@ -311,52 +311,16 @@ private:
     bool isDominating(const Term *write, const Term *read) const;
 
     /**
-     * \param[in] variable Valid pointer to a variable.
-     *
-     * \return Pointer to a write term belonging to the variable, if
-     *         there is only one such term. Otherwise, NULL.
-     */
-    const Term *getSingleDefinition(const vars::Variable *variable) const;
-
-    /**
-     * \param[in] variable Valid pointer to a variable.
-     *
-     * \return Pointer to a live read term belonging to the variable,
-     *         if there is only only one such term. Otherwise, NULL.
-     */
-    const Term *getSingleUse(const vars::Variable *variable) const;
-
-    /**
-     * \param[in] variable Valid pointer to a variable.
-     *
-     * \return True if the variable is written to only once, and all its
-     *         live uses are guaranteed to read initialized value.
-     */
-    bool isSingleAssignment(const vars::Variable *variable);
-
-    /**
-     * \param[in] term Valid pointer to a term.
-     *
-     * \return True if the expression generated from this term can be
-     *         moved to a different place without its value being
-     *         affected, false otherwise.
-     */
-    bool isMovable(const Term *term);
-
-    /**
-     * \param[in] variable Valid pointer to a variable.
-     *
-     * \return True if all occurrences of this variable can be replaced
-     *         by the expression assigned to it.
-     */
-    bool isIntermediate(const vars::Variable *variable);
-
-    /**
      * Computes the statements for which no code must be generated.
      * They are the statements to which the clones of argument and
      * return value statements belong.
      */
     void computeInvisibleStatements();
+
+    /**
+     * Computes which terms can be substituted instead of which ones.
+     */
+    void computeSubstitutions();
 };
 
 } // namespace cgen

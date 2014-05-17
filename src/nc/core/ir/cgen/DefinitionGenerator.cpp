@@ -149,6 +149,7 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     }
 
     computeInvisibleStatements();
+    computeSubstitutions();
 
     SwitchContext switchContext;
     makeStatements(graph_.root(), definition()->block(), NULL, NULL, NULL, switchContext);
@@ -645,10 +646,8 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                 return NULL;
             }
 
-            if (auto variable = parent().variables().getVariable(assignment->left())) {
-                if (isIntermediate(variable)) {
-                    return NULL;
-                }
+            if (nc::contains(intermediateTerms_, assignment->left())) {
+                return NULL;
             }
 
             std::unique_ptr<likec::Expression> left(makeExpression(assignment->left()));
@@ -810,9 +809,9 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
     }
 #endif
 
-    if (auto variable = parent().variables().getVariable(term)) {
-        if (isIntermediate(variable)) {
-            return makeExpression(getSingleDefinition(variable)->source());
+    if (parent().variables().getVariable(term)) {
+        if (auto substitution = nc::find(term2substitution_, term)) {
+            return makeExpression(substitution);
         } else {
             return makeVariableAccess(term);
         }
@@ -1105,9 +1104,6 @@ bool DefinitionGenerator::isDominating(const Term *write, const Term *read) cons
     assert(read != NULL);
     assert(read->isRead());
 
-    if (!read->statement() || !read->statement()->basicBlock()) {
-        return false;
-    }
     if (write->statement()->basicBlock() == read->statement()->basicBlock()) {
         if (write->statement()->instruction() && read->statement()->instruction() &&
             write->statement()->instruction() != read->statement()->instruction())
@@ -1127,145 +1123,45 @@ bool DefinitionGenerator::isDominating(const Term *write, const Term *read) cons
     }
 }
 
-const Term *DefinitionGenerator::getSingleDefinition(const vars::Variable *variable) const {
-    assert(variable != NULL);
-
-    const Term *result = NULL;
-    foreach (const auto &termAndLocation, variable->termsAndLocations()) {
-        if (termAndLocation.term->isWrite()) {
-            if (result == NULL) {
-                result = termAndLocation.term;
-            } else {
-                return NULL;
-            }
-        }
-    }
-    return result;
-}
-
-const Term *DefinitionGenerator::getSingleUse(const vars::Variable *variable) const {
-    assert(variable != NULL);
-
-    const Term *result = NULL;
-    foreach (const auto &termAndLocation, variable->termsAndLocations()) {
-        if (termAndLocation.term->isRead() && liveness_.isLive(termAndLocation.term)) {
-            if (result == NULL) {
-                result = termAndLocation.term;
-            } else {
-                return NULL;
-            }
-        }
-    }
-    return result;
-}
-
-bool DefinitionGenerator::isSingleAssignment(const vars::Variable *variable) {
-    assert(variable != NULL);
-
-    if (auto result = nc::find_optional(isSingleAssignment_, variable)) {
-        return *result;
-    } else {
-        return isSingleAssignment_[variable] = [&]() {
-            if (variable->isGlobal()) {
-                return false;
-            }
-
-            auto definition = getSingleDefinition(variable);
-            if (!definition) {
-                return false;
-            }
-
-            foreach (const auto &termAndLocation, variable->termsAndLocations()) {
-                auto term = termAndLocation.term;
-                auto &location = termAndLocation.location;
-
-                if (term->isRead() && liveness_.isLive(term)) {
-                    if (!isDominating(definition, term)) {
-                        return false;
-                    }
-                    if (location != variable->memoryLocation()) {
-                        return false;
-                    }
-                } else if (term->isWrite()) {
-                    if (location != variable->memoryLocation()) {
-                        return false;
+void DefinitionGenerator::computeSubstitutions() {
+    foreach (const auto &termAndLocation, dataflow_.term2location()) {
+        if (termAndLocation.first->isWrite() &&
+            liveness_.isLive(termAndLocation.first) &&
+            termAndLocation.first->source() != NULL &&
+            !nc::contains(invisibleStatements_, termAndLocation.first->statement()) &&
+            !parent().image().architecture()->isGlobalMemory(termAndLocation.second))
+        {
+            const Term *onlyUse = NULL;
+            const auto &uses = uses_->getUses(termAndLocation.first);
+            foreach (const Term *use, uses) {
+                if (liveness_.isLive(use)) {
+                    if (onlyUse == NULL) {
+                        onlyUse = use;
+                    } else {
+                        onlyUse = NULL;
+                        break;
                     }
                 }
             }
-            return true;
-        }();
-    }
-}
 
-bool DefinitionGenerator::isMovable(const Term *term) {
-    if (auto variable = parent().variables().getVariable(term)) {
-        return isSingleAssignment(variable);
-    } else {
-        switch (term->kind()) {
-            case Term::INT_CONST:
-                return true;
-            case Term::INTRINSIC:
-                return false;
-            case Term::MEMORY_LOCATION_ACCESS:
-                return false;
-            case Term::DEREFERENCE:
-                return false;
-            case Term::UNARY_OPERATOR:
-                return isMovable(term->asUnaryOperator()->operand());
-            case Term::BINARY_OPERATOR: {
-                auto binary = term->asBinaryOperator();
-                return isMovable(binary->left()) && isMovable(binary->right());
-            }
-            case Term::CHOICE: {
-                auto choice = term->asChoice();
-                if (!dataflow_.getDefinitions(choice->preferredTerm()).empty()) {
-                    return isMovable(choice->preferredTerm());
-                } else {
-                    return isMovable(choice->defaultTerm());
+            if (onlyUse) {
+                const auto &definitions = dataflow_.getDefinitions(onlyUse);
+                if (definitions.chunks().size() == 1 &&
+                    definitions.chunks().front().location() == termAndLocation.second &&
+                    definitions.chunks().front().definitions().size() == 1)
+                {
+                    assert(definitions.chunks().front().location() == dataflow_.getMemoryLocation(onlyUse));
+                    assert(definitions.chunks().front().definitions().front() == termAndLocation.first);
+
+                    // TODO: check that the substituted expression does not
+                    // change its value on the way.
+                    if (isDominating(termAndLocation.first, onlyUse)) {
+                        term2substitution_[onlyUse] = termAndLocation.first->source();
+                        intermediateTerms_.insert(termAndLocation.first);
+                    }
                 }
             }
-            default:
-                unreachable();
         }
-    }
-}
-
-bool DefinitionGenerator::isIntermediate(const vars::Variable *variable) {
-// TODO: does not work on the 5th example. Makes decompiler crash on pbmtext.exe
-    return false;
-
-    if (auto result = nc::find_optional(isIntermediate_, variable)) {
-        return *result;
-    } else {
-        return isIntermediate_[variable] = [&]() {
-            if (variable->isGlobal()) {
-                return false;
-            }
-
-            if (!isSingleAssignment(variable)) {
-                return false;
-            }
-
-            auto definition = getSingleDefinition(variable);
-            assert(definition != NULL);
-
-            if (!definition->source()) {
-                return false;
-            }
-
-            /*
-             * We do not want to substitute complex expressions multiple times.
-             */
-            if (getSingleUse(variable)) {
-                return isMovable(definition->source());
-            } else {
-                if (auto sourceVariable = parent().variables().getVariable(definition->source())) {
-                    return isSingleAssignment(sourceVariable);
-                } else {
-                    return false;
-                }
-            }
-        }();
     }
 }
 
