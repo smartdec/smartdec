@@ -329,7 +329,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
     switch (instr->mnemonic()->number()) {
         case ADC: {
             _[
-                operand(0) = operand(0) + operand(1) + cf(),
+                operand(0) = operand(0) + operand(1) + zero_extend(cf()),
                 cf() = intrinsic(),
                 pf() = intrinsic(),
                 zf() = operand(0) == constant(0),
@@ -471,7 +471,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
 
             auto increment = temporary(instr->addressSize());
             _[
-                increment = constant(accessSize / CHAR_BIT) - constant(2 * accessSize / CHAR_BIT, si.memoryLocation().size()) * df()
+                increment = constant(accessSize / CHAR_BIT) - constant(2 * accessSize / CHAR_BIT, si.memoryLocation().size()) * zero_extend(df())
             ];
 
             IntelExpressionFactoryCallback condition(factory, program->createBasicBlock());
@@ -1048,7 +1048,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
 
             if (instr->operands().size() == 1) {
-                _[regizter(sp) = regizter(sp) + operand(0)];
+                _[regizter(sp) = regizter(sp) + zero_extend(operand(0))];
             }
 
             _[return_()];
@@ -1086,21 +1086,21 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
         }
         case SBB: {
             _[
-                less()             = signed_(operand(0))   <  operand(1) + cf(),
-                less_or_equal()    = signed_(operand(0))   <= operand(1) + cf(),
-                greater()          = signed_(operand(0))   >  operand(1) + cf(),
-                greater_or_equal() = signed_(operand(0))   >= operand(1) + cf(),
-                below()            = unsigned_(operand(0)) <  operand(1) + cf(),
-                below_or_equal()   = unsigned_(operand(0)) <= operand(1) + cf(),
-                above()            = unsigned_(operand(0)) >  operand(1) + cf(),
-                above_or_equal()   = unsigned_(operand(0)) >= operand(1) + cf(),
+                less()             = signed_(operand(0))   <  operand(1) + zero_extend(cf()),
+                less_or_equal()    = signed_(operand(0))   <= operand(1) + zero_extend(cf()),
+                greater()          = signed_(operand(0))   >  operand(1) + zero_extend(cf()),
+                greater_or_equal() = signed_(operand(0))   >= operand(1) + zero_extend(cf()),
+                below()            = unsigned_(operand(0)) <  operand(1) + zero_extend(cf()),
+                below_or_equal()   = unsigned_(operand(0)) <= operand(1) + zero_extend(cf()),
+                above()            = unsigned_(operand(0)) >  operand(1) + zero_extend(cf()),
+                above_or_equal()   = unsigned_(operand(0)) >= operand(1) + zero_extend(cf()),
 
-                operand(0) = operand(0) - (operand(1) + cf()),
+                operand(0) = operand(0) - (operand(1) + zero_extend(cf())),
 
                 cf() = intrinsic(),
                 pf() = intrinsic(),
-                zf() = operand(0) == constant(0) + cf(),
-                sf() = signed_(operand(0)) < constant(0) + cf(),
+                zf() = operand(0) == constant(0) + zero_extend(cf()),
+                sf() = signed_(operand(0)) < constant(0) + zero_extend(cf()),
                 of() = intrinsic(),
                 af() = intrinsic()
             ];

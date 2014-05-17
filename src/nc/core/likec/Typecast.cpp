@@ -79,7 +79,7 @@ Expression *Typecast::rewrite() {
      * (int32_t*)((uintptr_t)expr + const) -> (int32_t)(expr + const / sizeof(int32_t))
      */
     if (auto pointerType = type_->as<PointerType>()) {
-        if (pointerType->pointeeType()->size() % CHAR_BIT == 0) {
+        if (pointerType->pointeeType()->size() && pointerType->pointeeType()->size() % CHAR_BIT == 0) {
             ByteSize pointeeSizeInBytes = pointerType->pointeeType()->size() / CHAR_BIT;
 
             if (auto binary = operand()->as<BinaryOperator>()) {
