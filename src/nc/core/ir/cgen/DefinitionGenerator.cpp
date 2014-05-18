@@ -1129,7 +1129,7 @@ void DefinitionGenerator::computeSubstitutions() {
             liveness_.isLive(termAndLocation.first) &&
             termAndLocation.first->source() != NULL &&
             !nc::contains(invisibleStatements_, termAndLocation.first->statement()) &&
-            !parent().image().architecture()->isGlobalMemory(termAndLocation.second))
+            parent().variables().getVariable(termAndLocation.first)->isLocal())
         {
             const Term *onlyUse = NULL;
             const auto &uses = uses_->getUses(termAndLocation.first);
