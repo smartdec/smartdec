@@ -97,8 +97,6 @@ private:
     /** Reference to the data of the list being iterated. */
     const ilist_data *list_;
 
-    template<class X> friend class ilist_iterator;
-
 public:
     /**
      * Constructor.
@@ -185,6 +183,7 @@ public:
      * \returns True if *this and that point to the same element, false otherwise.
      */
     bool operator==(const ilist_iterator &that) const noexcept {
+        assert(this->list_ == that.list_);
         return this->element_ == that.element_;
     }
 
@@ -208,6 +207,9 @@ public:
     pointer operator*() const noexcept {
         return static_cast<pointer>(element_);
     }
+
+    template<class X> friend class ilist_iterator;
+    template<class X, class Y> friend class ilist;
 };
 
 /**
@@ -291,9 +293,9 @@ public:
      * \param that Another list.
      */
     void swap(ilist &that) {
+        std::swap(deleter_, that.deleter_);
         std::swap(front_, that.front_);
         std::swap(back_, that.back_);
-        std::swap(deleter_, that.deleter_);
     }
 
     /**
@@ -410,6 +412,7 @@ public:
      * \return Valid pointer to the inserted element.
      */
     pointer insert(const_iterator position, unique_ptr element) noexcept {
+        assert(position.list_ == this);
         assert(element != NULL);
 
         auto item = static_cast<ilist_item *>(element.get());
@@ -464,6 +467,9 @@ public:
      * \return List containing the range being cut out.
      */
     ilist cut_out(const_iterator first, const_iterator last) {
+        assert(first.list_ == this);
+        assert(last.list_ == this);
+
         ilist result(deleter_);
 
         if (first == last) {
