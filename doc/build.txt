@@ -11,6 +11,7 @@ capable of building it:
     * MinGW-w64 GCC >= 4.6 <http://mingw-w64.sourceforge.net/>
     * Microsoft Visual Studio 2010 <http://www.microsoft.com/>
     * Microsoft Visual Studio 2012 <http://www.microsoft.com/>
+    * Microsoft Visual Studio 2013 <http://www.microsoft.com/>
 
 The following software packages must be installed before SmartDec can be
 built:
