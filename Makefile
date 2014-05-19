@@ -34,7 +34,7 @@ gitstats: .git
 
 .PHONY: clean
 clean:
-	rm -f tags gmon.out core vgcore.* .ycm_extra_conf.pyc
+	rm -f tags gmon.out core core.* vgcore.* .ycm_extra_conf.pyc
 	-$(MAKE) -C $(BUILD_DIR) clean
 
 .PHONY:
