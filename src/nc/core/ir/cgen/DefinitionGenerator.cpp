@@ -1145,13 +1145,12 @@ void DefinitionGenerator::computeSubstitutions() {
                 }
             }
 
-            if (onlyUse) {
+            if (onlyUse && dataflow_.getMemoryLocation(onlyUse) == termAndLocation.second) {
                 const auto &definitions = dataflow_.getDefinitions(onlyUse);
                 if (definitions.chunks().size() == 1 &&
                     definitions.chunks().front().location() == termAndLocation.second &&
                     definitions.chunks().front().definitions().size() == 1)
                 {
-                    assert(definitions.chunks().front().location() == dataflow_.getMemoryLocation(onlyUse));
                     assert(definitions.chunks().front().definitions().front() == termAndLocation.first);
 
                     // TODO: check that the substituted expression does not
