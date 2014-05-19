@@ -26,11 +26,6 @@ built:
     * Boost >= 1.49 <http://www.boost.org/> (headers only)
     * Qt >= 4.7 <http://qt.nokia.com/>
 
-Also, test scripts are written in Python programming language. If you
-are going to run them, you will need
-
-    * Python >= 2.7 <http://www.python.org/>
-
 For package installation instructions, refer to the respective web pages
 and/or your operating system's manual.
 
@@ -76,8 +71,6 @@ The simplest way to compile SmartDec on UNIX is:
     2. Type `make' to configure and build the package. The package will
        be built in the subdirectory called `build'.
 
-    3. Optionally, type `make test' to run regression tests.
-
 Building the Long Way (UNIX and Windows)
 ========================================
 
@@ -85,8 +78,7 @@ The normal way to compile SmartDec on UNIX and Windows is:
 
     1. Make sure that CMake executable is in your PATH. If you are going
        to use MinGW GCC, add to the PATH the `bin' directory of MinGW,
-       so that `g++' executable could be found. If you are going to run
-       tests, make sure that `python' executable is in your PATH too.
+       so that `g++' executable could be found.
 
     2. Open a terminal (on UNIX) or a command prompt (on Windows).
 
@@ -145,8 +137,5 @@ build may fail, or even succeed but produce non-working executables.
 
     6. Type `cmake --build .' to compile SmartDec. In case you use
        MSBuild, you can choose the build mode using `--config' option.
-
-    7. Optionally, type `python ../src/test-scripts/test-decompiler.py'
-       to run regression tests.
 
 # vim:set et sts=4 sw=4 tw=72:
