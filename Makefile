@@ -1,5 +1,6 @@
 SRC_DIR		= $(CURDIR)/src
 BUILD_DIR	= $(CURDIR)/build
+TEST_DIR	= $(CURDIR)/tests
 MAKEFILE	= $(BUILD_DIR)/Makefile
 
 .PHONY: all
@@ -11,15 +12,7 @@ build: $(MAKEFILE)
 
 .PHONY: test
 test: build
-	$(SRC_DIR)/test-scripts/test-decompiler.py --build-dir $(BUILD_DIR)
-
-.PHONY: test-coreutils
-test-coreutils: build
-	$(SRC_DIR)/test-scripts/test-decompiler.py --build-dir $(BUILD_DIR) --no-default-tests --tests-pattern "$(CURDIR)/examples/private/coreutils/*.exe"
-
-.PHONY: test-all
-test-all: build
-	$(SRC_DIR)/test-scripts/test-decompiler.py --build-dir $(BUILD_DIR) --no-default-tests --tests-pattern "$(CURDIR)/examples/private/all/*.exe"
+	$(TEST_DIR)/test-decompiler.py --build-dir $(BUILD_DIR)
 
 $(MAKEFILE):
 	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=YES $(SRC_DIR)
