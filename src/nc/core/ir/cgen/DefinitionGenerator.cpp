@@ -1125,7 +1125,8 @@ bool DefinitionGenerator::isDominating(const Term *write, const Term *read) cons
 
 void DefinitionGenerator::computeSubstitutions() {
     foreach (const auto &termAndLocation, dataflow_.term2location()) {
-        if (termAndLocation.first->isWrite() &&
+        if (termAndLocation.second &&
+            termAndLocation.first->isWrite() &&
             liveness_.isLive(termAndLocation.first) &&
             termAndLocation.first->source() != NULL &&
             !nc::contains(invisibleStatements_, termAndLocation.first->statement()) &&
