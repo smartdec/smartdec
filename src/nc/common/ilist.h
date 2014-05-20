@@ -76,7 +76,7 @@ private:
 };
 
 /**
- * Base class for an intrusive list iterator.
+ * Intrusive list iterator.
  *
  * \tparam T Element type as exposed to the user.
  */
@@ -94,7 +94,7 @@ private:
     /** Pointer to the element the iterator points to. */
     ilist_item *element_;
 
-    /** Reference to the data of the list being iterated. */
+    /** Valid pointer to the data of the list being iterated. */
     const ilist_data *list_;
 
 public:
@@ -102,7 +102,7 @@ public:
      * Constructor.
      *
      * \param list      Reference to the data of the list being iterated.
-     * \param element   Pointer to the element this iterator points to.
+     * \param element   Pointer to the element this iterator points to. Can be NULL.
      */
     explicit ilist_iterator(const ilist_data *list, ilist_item *element = NULL) noexcept:
         element_(element), list_(list)
