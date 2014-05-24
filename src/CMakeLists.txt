@@ -6,6 +6,9 @@ enable_testing()
 # Show what's going on when running make.
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
+# Generate compilation database for YouCompleteMe.
+set(CMAKE_EXPORT_COMPILE_COMMANDS YES)
+
 #
 # Include additional scripts.
 #

@@ -15,7 +15,7 @@ test: build
 	$(TEST_DIR)/test-decompiler.py --build-dir $(BUILD_DIR)
 
 $(MAKEFILE):
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=YES $(SRC_DIR)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake $(SRC_DIR)
 
 .PHONY: tags
 tags:
