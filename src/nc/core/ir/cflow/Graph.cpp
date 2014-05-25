@@ -57,11 +57,6 @@ Edge *Graph::createEdge(Node *tail, Node *head) {
 
 void Graph::print(QTextStream &out) const {
     out << *root();
-    foreach (const Edge *edge, edges_) {
-        if (edge->tail() && edge->head()) {
-            out << "node" << edge->tail() << " -> node" << edge->head() << endl;
-        }
-    }
 }
 
 } // namespace cflow

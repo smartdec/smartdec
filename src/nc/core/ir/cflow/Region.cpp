@@ -164,6 +164,10 @@ void Region::print(QTextStream &out) const {
     out << "subgraph cluster" << this << " {" << endl;
     foreach (const Node *node, nodes()) {
         out << *node;
+
+        foreach (const Edge *edge, node->outEdges()) {
+            out << "node" << edge->tail() << " -> node" << edge->head() << endl;
+        }
     }
     out << '}' << endl;
 

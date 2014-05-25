@@ -43,6 +43,11 @@ void BasicNode::print(QTextStream &out) const {
     QString label;
     QTextStream ls(&label);
 
+    if (basicBlock()->address()) {
+        ls << QString("address %1").arg(*basicBlock()->address(), 0, 16) << endl;
+    }
+    ls << QString("basic block %1").arg(reinterpret_cast<uintptr_t>(basicBlock()), 0, 16) << endl;
+
     foreach (const Statement *statement, basicBlock()->statements()) {
         ls << *statement;
     }
