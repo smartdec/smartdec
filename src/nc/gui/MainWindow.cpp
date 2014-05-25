@@ -594,7 +594,7 @@ void MainWindow::about() {
         "</ul></p>"
         "<p>Report bugs to <a href=\"mailto:yegor.derevenets@gmail.com\">yegor.derevenets@gmail.com</a>.</p>"
         "<p>SmartDec home page: <a href=\"http://decompilation.info/\">decompilation.info</a>.</p>"
-        ).arg(QString(git_sha1).left(5)).arg(__DATE__));
+        ).arg(QString(QLatin1String(git_sha1)).left(7)).arg(__DATE__));
 }
 
 }} // namespace nc::gui
