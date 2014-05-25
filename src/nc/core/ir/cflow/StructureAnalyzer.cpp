@@ -30,6 +30,7 @@
 #include <boost/unordered_map.hpp>
 
 #include <nc/common/Foreach.h>
+#include <nc/common/Range.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/ir/BasicBlock.h>
@@ -261,6 +262,16 @@ bool StructureAnalyzer::reduceCyclic(Node *entry, const Dfs &dfs) {
     LoopExplorer explorer(entry, dfs);
 
     if (explorer.loopNodes().empty()) {
+        return false;
+    }
+
+    /*
+     * If the entry node of the analyzed region belongs to the loop, but
+     * it is not the loop entry, do not reduce the loop.
+     */
+    if (entry != entry->parent()->entry() &&
+        nc::contains(explorer.loopNodes(), entry->parent()->entry()))
+    {
         return false;
     }
 
