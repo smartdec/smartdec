@@ -725,7 +725,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
                 if (result1->size() == arg0->size()) {
                     _[regizter(result1) = regizter(arg0) * operand(0)];
                 } else {
-                    _[regizter(result1) = sign_extend(regizter(arg0)) * operand(0)];
+                    _[regizter(result1) = sign_extend(regizter(arg0)) * sign_extend(operand(0))];
                 }
                 if (result2) {
                     _[regizter(result2) = intrinsic()];
