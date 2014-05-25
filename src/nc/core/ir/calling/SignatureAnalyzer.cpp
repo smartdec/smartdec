@@ -95,7 +95,7 @@ void SignatureAnalyzer::computeArgumentsAndReturnValues(const CancellationToken 
         }
 
         if (++niterations > 5) {
-            ncWarning("Didn't reach a fixpoint after %1 iterations while reconstructing arguments. Giving up.", niterations);
+            ncWarning("Fixpoint was not reached after %1 iterations while reconstructing arguments. Giving up.", niterations);
             break;
         }
 

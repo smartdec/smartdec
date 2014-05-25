@@ -128,7 +128,7 @@ void DataflowAnalyzer::analyze(const Function *function, const CancellationToken
          * Do we loop infinitely?
          */
         if (++niterations >= 30) {
-            ncWarning("Didn't reach a fixpoint after %1 iterations while analyzing dataflow. Giving up.", niterations);
+            ncWarning("Fixpoint was not reached after %1 iterations while analyzing dataflow. Giving up.", niterations);
             break;
         }
 
