@@ -25,10 +25,6 @@ tags:
 doxydoc:
 	doxygen
 
-.PHONY: lines
-lines:
-	find $(SRC_DIR) \( -name "*.cpp" -o -name "*.c" -o -name "*.h" \) -print0 | xargs -0 wc
-
 gitstats: .git
 	gitstats . gitstats
 
