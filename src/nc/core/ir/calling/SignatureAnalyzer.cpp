@@ -476,20 +476,22 @@ std::vector<std::pair<const Term *, MemoryLocation>> SignatureAnalyzer::getUnuse
 
         foreach (const auto &chunk, dataflow.getDefinitions(termAndClone.second).chunks()) {
             bool used = false;
+            bool defined = false;
 
             foreach (const Term *definition, chunk.definitions()) {
-                foreach (const Term *use, uses.getUses(definition)) {
-                    if (use != termAndClone.second && isRealRead(use)) {
-                        used = true;
-                        break;
+                if (isRealWrite(definition)) {
+                    defined = true;
+
+                    foreach (const Term *use, uses.getUses(definition)) {
+                        if (use != termAndClone.second && isRealRead(use)) {
+                            used = true;
+                            break;
+                        }
                     }
-                }
-                if (used) {
-                    break;
                 }
             }
 
-            if (!used) {
+            if (defined && !used) {
                 unusedPart = MemoryLocation::merge(unusedPart, chunk.location());
             }
         }
