@@ -394,7 +394,8 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             _[
                 regizter(sp) = regizter(sp) - constant(ip->size() / CHAR_BIT),
                 *regizter(sp) = regizter(ip),
-                call(operand(0))
+                call(operand(0)),
+                regizter(sp) = regizter(sp) + constant(ip->size() / CHAR_BIT)
             ];
             break;
         }
