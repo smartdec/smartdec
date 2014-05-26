@@ -722,15 +722,15 @@ operator<=(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>
+inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>
 operator>(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>(right.derived(), left.derived(), 1);
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>(right.derived(), left.derived(), 1);
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>
+inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>
 operator>=(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>(right.derived(), left.derived(), 1);
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>(right.derived(), left.derived(), 1);
 }
 
 template<class L, class R>
