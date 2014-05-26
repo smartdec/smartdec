@@ -122,6 +122,9 @@ void StructureAnalyzer::analyze(Region *region) {
     } while (changed);
 }
 
+// TODO: Generally, before reduction check that we do not reduce
+// a subregion which contains region's entry, but not as an entry.
+
 bool StructureAnalyzer::reduceBlock(Node *entry) {
     Node *uniquePredecessor = entry->uniquePredecessor();
 
