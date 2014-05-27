@@ -414,11 +414,19 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call
 
     foreach (const auto &chunk, dataflow.getDefinitions(callHook->snapshotTerm()).chunks()) {
         foreach (const Term *term, chunk.definitions()) {
-            if (uses.getUses(term).empty() && isRealWrite(term)) {
-                if (auto memoryLocation = fixer.removeStackOffset(chunk.location())) {
-                    result.push_back(memoryLocation);
+            if (isRealWrite(term)) {
+                bool used = false;
+                foreach (const Term *use, uses.getUses(term)) {
+                    if (isRealRead(use)) {
+                        used = true;
+                        break;
+                    }
                 }
-                break;
+                if (!used) {
+                    if (auto memoryLocation = fixer.removeStackOffset(chunk.location())) {
+                        result.push_back(memoryLocation);
+                    }
+                }
             }
         }
     }
@@ -587,6 +595,7 @@ void SignatureAnalyzer::computeSignatures(const CalleeId &calleeId) {
         foreach (const auto &memoryLocation, nc::find(call2extraArguments_, call)) {
             if (auto term = argumentFactory(memoryLocation)) {
                 callSignature->arguments().push_back(term);
+                functionSignature->setVariadic();
             }
         }
         callSignature->setReturnValue(functionSignature->returnValue());
