@@ -12,6 +12,7 @@
 
 # Core dumps.
 core
+core.*
 !core/
 vgcore.*
 
