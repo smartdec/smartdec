@@ -16,7 +16,7 @@ set(SOURCES
     Exception.cpp
     Exception.h
     Foreach.h
-    GitSHA1.h
+    GitRevision.h
     Kinds.h
     LogToken.h
     Logger.h
@@ -40,9 +40,15 @@ qt4_wrap_cpp(SOURCES ${MOC_HEADERS})
 # Find out current revision.
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+git_describe(GIT_DESCRIPTION)
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GitSHA1.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/GitSHA1.cpp" @ONLY)
-list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/GitSHA1.cpp")
+string(SUBSTRING ${GIT_SHA1} 1 7 GIT_REVISION)
+if (GIT_DESCRIPTION)
+    set(GIT_REVISION "${GIT_DESCRIPTION} (${GIT_REVISION})")
+endif()
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GitRevision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/GitRevision.cpp" @ONLY)
+list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/GitRevision.cpp")
 
 add_library(nc-common ${SOURCES})
 target_link_libraries(nc-common ${Boost_LIBRARIES} ${QT_LIBRARIES})

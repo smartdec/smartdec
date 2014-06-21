@@ -24,7 +24,7 @@
 #pragma once
 
 namespace nc {
-    extern const char git_sha1[];
+    extern const char git_revision[];
 } // namespace nc
 
 /* vim:set et sts=4 sw=4: */

@@ -27,7 +27,7 @@
 #include <nc/common/Conversions.h>
 #include <nc/common/Exception.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/GitSHA1.h>
+#include <nc/common/GitRevision.h>
 #include <nc/common/StreamLogger.h>
 #include <nc/common/Unreachable.h>
 
@@ -155,7 +155,7 @@ void help() {
     qout << "name is '-' or omitted, stdout is used." << endl;
     qout << endl;
 
-    qout << "Revision: " << QString(QLatin1String(nc::git_sha1)).left(7) << endl;
+    qout << "Version: " << nc::git_revision << endl;
     qout << "Available architectures:";
     foreach (auto architecture, nc::core::arch::ArchitectureRepository::instance()->architectures()) {
         qout << " " << architecture->name();

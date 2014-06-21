@@ -30,7 +30,7 @@
 #include <QStackedLayout>
 
 #include <nc/common/Foreach.h>
-#include <nc/common/GitSHA1.h>
+#include <nc/common/GitRevision.h>
 #include <nc/common/make_unique.h>
 #include <nc/core/Context.h>
 #include <nc/core/arch/Instruction.h>
@@ -100,7 +100,7 @@ SmartDecPlugin::SmartDecPlugin():
         "SmartDec plugin (revision %1) loaded.\n"
         "  Press %2 to decompile the function under cursor, %3 to decompile the whole program.\n"
         "  Press %2 (%3) again to jump to the address under cursor.\n")
-        .arg(QString(git_sha1).left(5)).arg(decompileFunctionHotkey).arg(decompileProgramHotkey));
+        .arg(git_revision).arg(decompileFunctionHotkey).arg(decompileProgramHotkey));
 }
 
 SmartDecPlugin::~SmartDecPlugin() {

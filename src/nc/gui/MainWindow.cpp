@@ -41,7 +41,7 @@
 
 #include <nc/common/Exception.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/GitSHA1.h>
+#include <nc/common/GitRevision.h>
 #include <nc/common/SignalLogger.h>
 #include <nc/common/make_unique.h>
 
@@ -594,7 +594,7 @@ void MainWindow::about() {
         "</ul></p>"
         "<p>Report bugs to <a href=\"mailto:yegor.derevenets@gmail.com\">yegor.derevenets@gmail.com</a>.</p>"
         "<p>SmartDec home page: <a href=\"http://decompilation.info/\">decompilation.info</a>.</p>"
-        ).arg(QString(QLatin1String(git_sha1)).left(7)));
+        ).arg(QString(QLatin1String(git_revision)).left(7)));
 }
 
 }} // namespace nc::gui
