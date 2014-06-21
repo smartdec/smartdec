@@ -956,7 +956,11 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case MOVSX: case MOVSXD: {
-            _[operand(0) = sign_extend(operand(1))];
+            if (instr->operand(0)->size() == instr->operand(1)->size()) {
+                _[operand(0) = operand(1)];
+            } else {
+                _[operand(0) = sign_extend(operand(1))];
+            }
             break;
         }
         case MOVZX: {
