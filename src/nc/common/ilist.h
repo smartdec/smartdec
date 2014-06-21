@@ -81,14 +81,13 @@ private:
  * \tparam T Element type as exposed to the user.
  */
 template<class T>
-class ilist_iterator: public std::iterator<std::bidirectional_iterator_tag, T> {
-    typedef std::iterator<std::bidirectional_iterator_tag, T> super;
-
+class ilist_iterator {
 public:
-    typedef typename super::value_type value_type;
-    typedef typename super::difference_type difference_type;
-    typedef typename super::pointer pointer;
-    typedef typename super::reference reference;
+    typedef std::bidirectional_iterator_tag iterator_category;
+    typedef T *value_type;
+    typedef ptrdiff_t difference_type;
+    typedef T *pointer;
+    typedef T *reference;
 
 private:
     /** Pointer to the element the iterator points to. */
