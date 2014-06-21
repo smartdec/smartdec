@@ -168,6 +168,15 @@ public:
      * \param context Context.
      */
     virtual void decompile(Context &context) const;
+
+protected:
+    /**
+     * \param context Context.
+     * \param function Valid pointer to a function.
+     *
+     * \return Name of the function that can be shown to the user.
+     */
+    virtual QString getFunctionName(Context &context, const ir::Function *function) const;
 };
 
 } // namespace core

@@ -26,8 +26,6 @@
 
 #include <QObject> /* For QObject::tr() */
 
-#include <cstdint> /* uintptr_t */
-
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
@@ -113,7 +111,7 @@ void MasterAnalyzer::dataflowAnalysis(Context &context) const {
 }
 
 void MasterAnalyzer::dataflowAnalysis(Context &context, ir::Function *function) const {
-    context.logToken() << tr("Dataflow analysis of %1.").arg(reinterpret_cast<uintptr_t>(function), 0, 16);
+    context.logToken() << tr("Dataflow analysis of %1.").arg(getFunctionName(context, function));
 
     std::unique_ptr<ir::dflow::Dataflow> dataflow(new ir::dflow::Dataflow());
 
@@ -154,7 +152,7 @@ void MasterAnalyzer::livenessAnalysis(Context &context) const {
 }
 
 void MasterAnalyzer::livenessAnalysis(Context &context, const ir::Function *function) const {
-    context.logToken() << tr("Liveness analysis of %1.").arg(reinterpret_cast<uintptr_t>(function), 0, 16);
+    context.logToken() << tr("Liveness analysis of %1.").arg(getFunctionName(context, function));
 
     std::unique_ptr<ir::liveness::Liveness> liveness(new ir::liveness::Liveness());
 
@@ -191,7 +189,7 @@ void MasterAnalyzer::structuralAnalysis(Context &context) const {
 }
 
 void MasterAnalyzer::structuralAnalysis(Context &context, const ir::Function *function) const {
-    context.logToken() << tr("Structural analysis of %1.").arg(reinterpret_cast<uintptr_t>(function), 0, 16);
+    context.logToken() << tr("Structural analysis of %1.").arg(getFunctionName(context, function));
 
     std::unique_ptr<ir::cflow::Graph> graph(new ir::cflow::Graph());
 
@@ -251,6 +249,22 @@ void MasterAnalyzer::decompile(Context &context) const {
     context.cancellationToken().poll();
 
     context.logToken() << tr("Decompilation completed.");
+}
+
+QString MasterAnalyzer::getFunctionName(Context &context, const ir::Function *function) const {
+    if (function->entry() && function->entry()->address()) {
+        ir::calling::FunctionSignature *signature = NULL;
+        if (context.signatures()) {
+            signature = context.signatures()->getSignature(function).get();
+        }
+        if (signature) {
+            return tr("function at address %1 (%2)").arg(*function->entry()->address(), 0, 16).arg(signature->name());
+        } else {
+            return tr("function at address %1").arg(*function->entry()->address(), 0, 16);
+        }
+    } else {
+        return tr("function with unknown address");
+    }
 }
 
 } // namespace core

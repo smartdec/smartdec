@@ -57,7 +57,7 @@ void Driver::parse(Context &context, const QString &filename) {
 }
 
 void Driver::disassemble(Context &context) {
-    context.logToken() << tr("Disassembling code sections...");
+    context.logToken() << tr("Disassemble code sections.");
 
     foreach (auto section, context.image()->sections()->all()) {
         if (section->isCode()) {
@@ -69,7 +69,7 @@ void Driver::disassemble(Context &context) {
 void Driver::disassemble(Context &context, const image::Section *section) {
     assert(section != NULL);
 
-    context.logToken() << tr("Disassembling section %1...").arg(section->name());
+    context.logToken() << tr("Disassemble section %1...").arg(section->name());
 
     disassemble(context, section, section->addr(), section->endAddr());
 }
@@ -77,7 +77,7 @@ void Driver::disassemble(Context &context, const image::Section *section) {
 void Driver::disassemble(Context &context, const image::ByteSource *source, ByteAddr begin, ByteAddr end) {
     assert(source != NULL);
 
-    context.logToken() << tr("Disassembling addresses from 0x%2 to 0x%3...").arg(begin, 0, 16).arg(end, 0, 16);
+    context.logToken() << tr("Disassemble addresses from 0x%2 to 0x%3...").arg(begin, 0, 16).arg(end, 0, 16);
 
     try {
         auto newInstructions = std::make_shared<arch::Instructions>(*context.instructions());

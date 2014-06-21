@@ -121,7 +121,7 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
 }
 
 void IntelMasterAnalyzer::dataflowAnalysis(core::Context &context, core::ir::Function *function) const {
-    context.logToken() << tr("Dataflow analysis of %1.").arg(reinterpret_cast<uintptr_t>(function), 0, 16);
+    context.logToken() << tr("Dataflow analysis of %1.").arg(getFunctionName(context, function));
 
     std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
 
