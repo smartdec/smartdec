@@ -24,8 +24,6 @@
 
 #include "MasterAnalyzer.h"
 
-#include <QObject> /* For QObject::tr() */
-
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
