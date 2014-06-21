@@ -58,7 +58,7 @@ private:
     BitSize firstArgumentOffset_; ///< Offset of the first argument in a function's stack frame.
     BitSize argumentAlignment_; ///< Alignment of stack arguments in bits.
 
-    std::vector<MemoryLocation> argumentLocations_; ///< Possible locations of arguments.
+    std::vector<std::vector<MemoryLocation>> argumentGroups_; ///< Groups of locations through which arguments of different kinds can be passed.
     std::vector<std::unique_ptr<const Term>> returnValueTerms_; ///< Terms denoting where return values may be kept.
 
     bool calleeCleanup_; ///< Callee cleans up arguments.
@@ -108,7 +108,7 @@ public:
     /**
      * \return List of possible argument locations.
      */
-    const std::vector<MemoryLocation> &argumentLocations() const { return argumentLocations_; }
+    const std::vector<std::vector<MemoryLocation>> &argumentGroups() const { return argumentGroups_; }
 
     /**
      * \param memoryLocation A memory location.
@@ -119,7 +119,15 @@ public:
     MemoryLocation getArgumentLocationCovering(const MemoryLocation &memoryLocation) const;
 
     /**
-     * Sorts the argument locations in the way they are described in the convention.
+     * Sorts the given list of argument locations. In the resulting sequence
+     * first follow the arguments located withing the memory locations of
+     * the first group, in the order in which corresponding memory locations
+     * are enumerated in the group. Then, the arguments from the second group,
+     * and so on. If some memory location in a certain group does not have
+     * a corresponding argument, then the arguments that belong to subsequent
+     * locations in the same group are not copied into the resulting sequence.
+     * Moreover, stack arguments are copied into the result only if any group
+     * has all its memory locations filled with arguments.
      *
      * \param arguments List of memory locations.
      *
@@ -164,11 +172,12 @@ protected:
     void setArgumentAlignment(BitSize argumentAlignment) { argumentAlignment_ = argumentAlignment; };
 
     /**
-     * Adds a possible argument location.
+     * Adds a list of locations which can contain arguments of a certain kind,
+     * e.g. integer arguments or floating-point arguments.
      *
-     * \param[in] memoryLocation Valid memory location.
+     * \param[in] memoryLocations Possible locations of the arguments in the group.
      */
-    void addArgumentLocation(const MemoryLocation &memoryLocation);
+    void addArgumentGroup(std::vector<MemoryLocation> memoryLocations);
 
     /**
      * Adds a term in which return values may be kept.

@@ -47,22 +47,26 @@ AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architec
     setArgumentAlignment(64);
 
     /* Used for integer and pointer arguments. */
-    addArgumentLocation(IntelRegisters::rdi()->memoryLocation());
-    addArgumentLocation(IntelRegisters::rsi()->memoryLocation());
-    addArgumentLocation(IntelRegisters::rdx()->memoryLocation());
-    addArgumentLocation(IntelRegisters::rcx()->memoryLocation());
-    addArgumentLocation(IntelRegisters::r8()->memoryLocation());
-    addArgumentLocation(IntelRegisters::r9()->memoryLocation());
+    std::vector<core::ir::MemoryLocation> scalarArgs;
+    scalarArgs.push_back(IntelRegisters::rdi()->memoryLocation());
+    scalarArgs.push_back(IntelRegisters::rsi()->memoryLocation());
+    scalarArgs.push_back(IntelRegisters::rdx()->memoryLocation());
+    scalarArgs.push_back(IntelRegisters::rcx()->memoryLocation());
+    scalarArgs.push_back(IntelRegisters::r8()->memoryLocation());
+    scalarArgs.push_back(IntelRegisters::r9()->memoryLocation());
+    addArgumentGroup(std::move(scalarArgs));
 
     /* Used for floating-point arguments. */
-    addArgumentLocation(IntelRegisters::xmm0()->memoryLocation());
-    addArgumentLocation(IntelRegisters::xmm1()->memoryLocation());
-    addArgumentLocation(IntelRegisters::xmm2()->memoryLocation());
-    addArgumentLocation(IntelRegisters::xmm3()->memoryLocation());
-    addArgumentLocation(IntelRegisters::xmm4()->memoryLocation());
-    addArgumentLocation(IntelRegisters::xmm5()->memoryLocation());
-    addArgumentLocation(IntelRegisters::xmm6()->memoryLocation());
-    addArgumentLocation(IntelRegisters::xmm7()->memoryLocation());
+    std::vector<core::ir::MemoryLocation> fpArgs;
+    fpArgs.push_back(IntelRegisters::xmm0()->memoryLocation());
+    fpArgs.push_back(IntelRegisters::xmm1()->memoryLocation());
+    fpArgs.push_back(IntelRegisters::xmm2()->memoryLocation());
+    fpArgs.push_back(IntelRegisters::xmm3()->memoryLocation());
+    fpArgs.push_back(IntelRegisters::xmm4()->memoryLocation());
+    fpArgs.push_back(IntelRegisters::xmm5()->memoryLocation());
+    fpArgs.push_back(IntelRegisters::xmm6()->memoryLocation());
+    fpArgs.push_back(IntelRegisters::xmm7()->memoryLocation());
+    addArgumentGroup(std::move(fpArgs));
 
     auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
     addReturnValueTerm(analyzer->createTerm(IntelRegisters::rax()));
@@ -86,16 +90,20 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitectu
     setArgumentAlignment(64);
 
     /* Used for integer and pointer arguments. */
-    addArgumentLocation(IntelRegisters::rcx()->memoryLocation());
-    addArgumentLocation(IntelRegisters::rdx()->memoryLocation());
-    addArgumentLocation(IntelRegisters::r8()->memoryLocation());
-    addArgumentLocation(IntelRegisters::r9()->memoryLocation());
+    std::vector<core::ir::MemoryLocation> scalarArgs;
+    scalarArgs.push_back(IntelRegisters::rcx()->memoryLocation());
+    scalarArgs.push_back(IntelRegisters::rdx()->memoryLocation());
+    scalarArgs.push_back(IntelRegisters::r8()->memoryLocation());
+    scalarArgs.push_back(IntelRegisters::r9()->memoryLocation());
+    addArgumentGroup(std::move(scalarArgs));
 
     /* Used for floating-point arguments. */
-    addArgumentLocation(IntelRegisters::xmm0()->memoryLocation());
-    addArgumentLocation(IntelRegisters::xmm1()->memoryLocation());
-    addArgumentLocation(IntelRegisters::xmm2()->memoryLocation());
-    addArgumentLocation(IntelRegisters::xmm3()->memoryLocation());
+    std::vector<core::ir::MemoryLocation> fpArgs;
+    fpArgs.push_back(IntelRegisters::xmm0()->memoryLocation());
+    fpArgs.push_back(IntelRegisters::xmm1()->memoryLocation());
+    fpArgs.push_back(IntelRegisters::xmm2()->memoryLocation());
+    fpArgs.push_back(IntelRegisters::xmm3()->memoryLocation());
+    addArgumentGroup(std::move(fpArgs));
 
     auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
     addReturnValueTerm(analyzer->createTerm(IntelRegisters::rax()));

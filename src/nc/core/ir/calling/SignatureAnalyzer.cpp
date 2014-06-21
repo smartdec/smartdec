@@ -94,7 +94,7 @@ void SignatureAnalyzer::computeArgumentsAndReturnValues(const CancellationToken 
             }
         }
 
-        if (++niterations > 5) {
+        if (++niterations > 3) {
             ncWarning("Fixpoint was not reached after %1 iterations while reconstructing arguments. Giving up.", niterations);
             break;
         }
@@ -224,9 +224,18 @@ bool SignatureAnalyzer::computeArguments(const CalleeId &calleeId) {
         }
     }
 
-    arguments = convention->sortArguments(arguments);
+    arguments = convention->sortArguments(std::move(arguments));
+
     foreach (auto &callAndLocations, extraArguments) {
-        callAndLocations.second = convention->sortArguments(callAndLocations.second);
+        auto &callArguments = callAndLocations.second;
+        callArguments.insert(callArguments.end(), arguments.begin(), arguments.end());
+        callArguments = convention->sortArguments(std::move(callArguments));
+        callArguments.erase(
+            std::remove_if(callArguments.begin(), callArguments.end(),
+                [&](const MemoryLocation &location) {
+                    return !nc::contains(arguments, location);
+                }),
+            callArguments.end());
     }
 
     bool changed = false;

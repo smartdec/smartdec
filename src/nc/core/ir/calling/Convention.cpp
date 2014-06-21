@@ -127,9 +127,11 @@ MemoryLocation Convention::getArgumentLocationCovering(const MemoryLocation &mem
         }
     }
 
-    foreach (const auto &argumentLocation, argumentLocations()) {
-        if (argumentLocation.covers(memoryLocation)) {
-            return argumentLocation;
+    foreach (const auto &argumentLocations, argumentGroups()) {
+        foreach (const auto &argumentLocation, argumentLocations) {
+            if (argumentLocation.covers(memoryLocation)) {
+                return argumentLocation;
+            }
         }
     }
 
@@ -137,31 +139,69 @@ MemoryLocation Convention::getArgumentLocationCovering(const MemoryLocation &mem
 }
 
 std::vector<MemoryLocation> Convention::sortArguments(std::vector<MemoryLocation> arguments) const {
+    assert(!nc::contains(arguments, MemoryLocation()));
+
     std::vector<MemoryLocation> result;
     result.reserve(arguments.size());
 
     /* Copy non-stack arguments in the order. */
-    foreach (const auto &argumentLocation, argumentLocations()) {
-        auto predicate = [&argumentLocation](const MemoryLocation &memoryLocation) {
-            return argumentLocation.covers(memoryLocation);
-        };
+    bool someGroupIsFilled = argumentGroups().empty();
 
-        std::copy_if(arguments.begin(), arguments.end(), std::back_inserter(result), predicate);
-        arguments.erase(std::remove_if(arguments.begin(), arguments.end(), predicate), arguments.end());
+    foreach (const auto &argumentLocations, argumentGroups()) {
+        bool groupIsFilled = true;
+
+        foreach (const auto &argumentLocation, argumentLocations) {
+            bool argumentFound = false;
+
+            foreach (MemoryLocation &memoryLocation, arguments) {
+                if (argumentLocation.covers(memoryLocation)) {
+                    result.push_back(memoryLocation);
+                    memoryLocation = MemoryLocation();
+                    argumentFound = true;
+                }
+            }
+
+            if (!argumentFound) {
+                groupIsFilled = false;
+                break;
+            }
+        }
+
+        groupIsFilled = groupIsFilled || someGroupIsFilled;
     }
 
-    /* What is left are stack arguments. Sort and add them. */
-    std::sort(arguments.begin(), arguments.end());
-    result.insert(result.end(), arguments.begin(), arguments.end());
+    /* If some group was completely filled, copy the stack arguments. */
+    if (someGroupIsFilled) {
+        arguments.erase(
+            std::remove_if(arguments.begin(), arguments.end(),
+                [](const MemoryLocation &memoryLocation) {
+                    return memoryLocation.domain() != MemoryDomain::STACK;
+                }),
+            arguments.end());
+
+        if (!arguments.empty()) {
+            std::sort(arguments.begin(), arguments.end());
+
+            BitAddr nextArgumentOffset = firstArgumentOffset();
+
+            foreach (const auto &memoryLocation, arguments) {
+                if (nextArgumentOffset <= memoryLocation.addr() &&
+                    memoryLocation.addr() < nextArgumentOffset + argumentAlignment())
+                {
+                    result.push_back(memoryLocation);
+                    nextArgumentOffset = getArgumentLocationCovering(memoryLocation).endAddr();
+                } else {
+                    break;
+                }
+            }
+        }
+    }
 
     return result;
 }
 
-void Convention::addArgumentLocation(const MemoryLocation &memoryLocation) {
-    assert(memoryLocation);
-    assert(!nc::contains(argumentLocations_, memoryLocation));
-
-    argumentLocations_.push_back(memoryLocation);
+void Convention::addArgumentGroup(std::vector<MemoryLocation> memoryLocations) {
+    argumentGroups_.push_back(std::move(memoryLocations));
 }
 
 void Convention::addReturnValueTerm(std::unique_ptr<Term> term) {
