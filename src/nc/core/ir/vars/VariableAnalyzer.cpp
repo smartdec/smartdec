@@ -69,7 +69,7 @@ void VariableAnalyzer::analyze() {
 
             if ((term->isRead() || term->isWrite()) && location) {
                 if (architecture_->isGlobalMemory(location)) {
-                    globalMemoryAccesses.emplace_back(term, location);
+                    globalMemoryAccesses.push_back(Variable::TermAndLocation(term, location));
                 } else {
                     term2set[term] = std::make_unique<TermSet>();
                 }
@@ -102,7 +102,7 @@ void VariableAnalyzer::analyze() {
             const Term *term = termAndSet.first;
             TermSet *set = termAndSet.second->findSet();
 
-            set2termsAndLocations[set].emplace_back(term, dataflow.getMemoryLocation(term));
+            set2termsAndLocations[set].push_back(Variable::TermAndLocation(term, dataflow.getMemoryLocation(term)));
         }
 
         /*

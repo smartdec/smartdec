@@ -387,7 +387,8 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
             auto makeStatementsButLast = [&](const BasicBlock *basicBlock) {
                 addLabels(basicBlock, block, switchContext);
 
-                for (auto i = basicBlock->statements().begin(), iend = --basicBlock->statements().end(); i != iend; ++i) {
+                auto iend = --basicBlock->statements().end();
+                for (auto i = basicBlock->statements().begin(); i != iend; ++i) {
                     /* We do not care about breakBB and others: we will not create gotos. */
                     if (auto likecStatement = makeStatement(*i, NULL, NULL, NULL)) {
                         block->addStatement(std::move(likecStatement));
@@ -1008,7 +1009,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
 
 #ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
     if (type->pointee() && type->pointee()->size() == 1) {
-        auto isAscii = [](const QString &string) {
+        auto isAscii = [](const QString &string) -> bool {
             foreach (QChar c, string) {
                 if (c >= 0x80) {
                     return false;

@@ -57,7 +57,7 @@ void TypeAnalyzer::analyze(const CancellationToken &canceled) {
     analyzers.reserve(functions_.list().size());
 
     foreach (auto function, functions_.list()) {
-        analyzers.emplace_back(types_, function, *dataflows_.at(function), *livenesses_.at(function));
+        analyzers.push_back(FunctionAnalyzer(types_, function, *dataflows_.at(function), *livenesses_.at(function)));
     }
 
     /*
