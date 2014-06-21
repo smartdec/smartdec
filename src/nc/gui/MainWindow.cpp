@@ -583,7 +583,7 @@ void MainWindow::about() {
     QMessageBox::about(this, tr("About SmartDec"), tr(
         "<h3>About SmartDec</h3>"
         "<p>SmartDec is a retargetable native code to C/C++ decompiler.</p>"
-        "<p>This is revision %1 built on %2.</p>"
+        "<p>This is revision %1.</p>"
         "<p>SmartDec supports the following architectures:<ul>"
         "<li>Intel x86,</li>"
         "<li>Intel x86-64.</li>"
@@ -594,7 +594,7 @@ void MainWindow::about() {
         "</ul></p>"
         "<p>Report bugs to <a href=\"mailto:yegor.derevenets@gmail.com\">yegor.derevenets@gmail.com</a>.</p>"
         "<p>SmartDec home page: <a href=\"http://decompilation.info/\">decompilation.info</a>.</p>"
-        ).arg(QString(QLatin1String(git_sha1)).left(7)).arg(__DATE__));
+        ).arg(QString(QLatin1String(git_sha1)).left(7)));
 }
 
 }} // namespace nc::gui
