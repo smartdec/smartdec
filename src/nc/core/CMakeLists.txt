@@ -245,8 +245,8 @@ set(SOURCES
     likec/VariableIdentifier.h
     likec/While.cpp
     likec/While.h
-    mangling/CxxFiltDemangler.cpp
-    mangling/CxxFiltDemangler.h
+    mangling/ExternalDemangler.cpp
+    mangling/ExternalDemangler.h
     mangling/Demangler.h
     mangling/GnuDemangler.cpp
     mangling/GnuDemangler.h

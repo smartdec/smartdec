@@ -29,7 +29,7 @@
 #include <nc/core/arch/ArchitectureRepository.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/mangling/Demangler.h>
-#include <nc/core/mangling/CxxFiltDemangler.h>
+#include <nc/core/mangling/ExternalDemangler.h>
 
 #include "Sections.h"
 #include "Symbols.h"
@@ -87,7 +87,7 @@ void Image::setDemangler(const QString &format) {
     }
 #endif
 
-    setDemangler(std::make_unique<mangling::CxxFiltDemangler>(format));
+    setDemangler(std::make_unique<mangling::ExternalDemangler>(QLatin1String("c++filt"), QStringList() << QLatin1String("-s") << format));
 }
 
 }}} // namespace nc::core::image
