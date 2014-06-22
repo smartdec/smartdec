@@ -20,6 +20,8 @@ BundledDemangler::BundledDemangler() {
     locations << (QCoreApplication::applicationDirPath() + QLatin1String("/demangler.exe"));
     locations << (QCoreApplication::applicationDirPath() + QLatin1String("/../demangler/demangler"));
     locations << (QCoreApplication::applicationDirPath() + QLatin1String("/../demangler/demangler.exe"));
+    locations << (QCoreApplication::applicationDirPath() + QLatin1String("/../../demangler/Release/demangler.exe"));
+    locations << (QCoreApplication::applicationDirPath() + QLatin1String("/../../demangler/Debug/demangler.exe"));
     
     foreach (const QString &filename, locations) {
         QFileInfo fileInfo(filename);
