@@ -25,12 +25,6 @@
 /** Use threads. */
 #cmakedefine NC_USE_THREADS
 
-/** Use __cxa_demangle from libiberty (GPL). */
-#cmakedefine NC_WITH_LIBIBERTY
-
-/** Use undname() implementation from Wine (LGPL). */
-#cmakedefine NC_WITH_UNDNAME
-
 // -------------------------------------------------------------------------- //
 // Globals. Do not change.
 // -------------------------------------------------------------------------- //
