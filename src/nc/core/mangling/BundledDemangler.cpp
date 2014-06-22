@@ -16,13 +16,14 @@ namespace mangling {
 
 BundledDemangler::BundledDemangler() {
     QStringList locations;
-    locations << (QCoreApplication::applicationDirPath() + "/demangler");
-    locations << (QCoreApplication::applicationDirPath() + "/demangler.exe");
-    locations << (QCoreApplication::applicationDirPath() + "/../demangler/demangler");
-    locations << (QCoreApplication::applicationDirPath() + "/../demangler/demangler.exe");
+    locations << (QCoreApplication::applicationDirPath() + QLatin1String("/demangler"));
+    locations << (QCoreApplication::applicationDirPath() + QLatin1String("/demangler.exe"));
+    locations << (QCoreApplication::applicationDirPath() + QLatin1String("/../demangler/demangler"));
+    locations << (QCoreApplication::applicationDirPath() + QLatin1String("/../demangler/demangler.exe"));
     
     foreach (const QString &filename, locations) {
-        if (QFileInfo(filename).isExecutable()) {
+        QFileInfo fileInfo(filename);
+        if (fileInfo.isFile() && fileInfo.isExecutable()) {
             demangler_.reset(new ExternalDemangler(filename));
             break;
         }
