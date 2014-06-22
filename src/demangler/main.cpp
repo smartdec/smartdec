@@ -17,7 +17,7 @@ void help() {
     std::cout << "Usage: " << self << std::endl;
     std::cout << std::endl;
     std::cout << "The program reads the standard input line by line and tries to demangle" << std::endl;
-    std::cout << "each line as if it was a mangled symbol. The result of demangling is" << std::endl;
+    std::cout << "each line as if it were a mangled symbol. The result of demangling is" << std::endl;
     std::cout << "printed to the standard output, also line by line. Currently supported" << std::endl;
     std::cout << "mangling schemes are GNU V3 (via __cxa_demangle from GCC's libiberty)" << std::endl;
     std::cout << "and MSVC (via Wine's undname function). If a line cannot be demangled," << std::endl;
