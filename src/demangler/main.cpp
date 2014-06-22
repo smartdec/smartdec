@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <string> /* getline() */
 
 #include <undname/undname.h>
 
