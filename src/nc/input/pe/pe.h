@@ -232,7 +232,7 @@ BOOST_STATIC_ASSERT(sizeof(IMAGE_SECTION_HEADER) == IMAGE_SIZEOF_SECTION_HEADER)
 
 #define IMAGE_SCN_SCALE_INDEX 0x00000001
 
-#include "pshpack2.h"
+#pragma pack(push,2)
 
 typedef struct _IMAGE_SYMBOL {
   union {
@@ -250,7 +250,7 @@ typedef struct _IMAGE_SYMBOL {
   BYTE NumberOfAuxSymbols;
 } IMAGE_SYMBOL;
 
-#include "poppack.h"
+#pragma pack(pop)
 
 #define IMAGE_SIZEOF_SYMBOL 18
 

@@ -2,8 +2,6 @@ set(SOURCES
     PeParser.cpp
     PeParser.h
     pe.h
-    poppack.h
-    pshpack2.h
 )
 
 add_library(nc-input-pe ${SOURCES})
