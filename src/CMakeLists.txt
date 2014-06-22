@@ -102,12 +102,6 @@ endif()
 # Option for making multithreaded builds.
 set(NC_USE_THREADS ${IDA_PLUGIN_DISABLED} CACHE BOOL "Enable threads.")
 
-# Use __cxa_demangle from libiberty (GPL).
-set(NC_WITH_LIBIBERTY ON CACHE BOOL "Build libiberty.")
-
-# Use undname() implementation from Wine (LGPL).
-set(NC_WITH_UNDNAME ON CACHE BOOL "Build undname.")
-
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/nc/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/nc/config.h")
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 

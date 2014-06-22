@@ -17,7 +17,7 @@ namespace core {
 namespace mangling {
 
 /**
- * Demangler using c++filt.
+ * Demangler using an external program.
  */
 class ExternalDemangler: public Demangler {
     /** Demangler program. */

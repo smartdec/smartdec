@@ -245,39 +245,17 @@ set(SOURCES
     likec/VariableIdentifier.h
     likec/While.cpp
     likec/While.h
+    mangling/BundledDemangler.cpp
+    mangling/BundledDemangler.h
+    mangling/Demangler.h
     mangling/ExternalDemangler.cpp
     mangling/ExternalDemangler.h
-    mangling/Demangler.h
-    mangling/GnuDemangler.cpp
-    mangling/GnuDemangler.h
-    mangling/MsvcDemangler.cpp
-    mangling/MsvcDemangler.h
     ${MOC_HEADERS}
 )
-
-if(${NC_WITH_LIBIBERTY})
-    list(APPEND SOURCES
-        mangling/GnuDemangler.cpp
-    )
-endif()
-
-if(${NC_WITH_UNDNAME})
-    list(APPEND SOURCES
-        mangling/MsvcDemangler.cpp
-    )
-endif()
 
 qt4_wrap_cpp(SOURCES ${MOC_HEADERS})
 
 add_library(nc-core ${SOURCES})
 target_link_libraries(nc-core nc-common nc-arch-intel nc-input-elf nc-input-pe ${Boost_LIBRARIES} ${QT_LIBRARIES})
-
-if(${NC_WITH_LIBIBERTY})
-    target_link_libraries(nc-core iberty)
-endif()
-
-if(${NC_WITH_UNDNAME})
-    target_link_libraries(nc-core undname)
-endif()
 
 # vim:set et sts=4 sw=4 nospell:

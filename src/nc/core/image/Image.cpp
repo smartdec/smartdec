@@ -29,18 +29,10 @@
 #include <nc/core/arch/ArchitectureRepository.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/mangling/Demangler.h>
-#include <nc/core/mangling/ExternalDemangler.h>
+#include <nc/core/mangling/BundledDemangler.h>
 
 #include "Sections.h"
 #include "Symbols.h"
-
-#ifdef NC_WITH_LIBIBERTY
-    #include <nc/core/mangling/GnuDemangler.h>
-#endif
-
-#ifdef NC_WITH_UNDNAME
-    #include <nc/core/mangling/MsvcDemangler.h>
-#endif
 
 namespace nc { namespace core { namespace image {
 
@@ -48,7 +40,7 @@ Image::Image():
     architecture_(NULL),
     sections_(new Sections()),
     symbols_(new Symbols()),
-    demangler_(new mangling::Demangler())
+    demangler_(new mangling::BundledDemangler())
 {}
 
 Image::~Image() {}
@@ -70,24 +62,8 @@ void Image::setDemangler(std::unique_ptr<mangling::Demangler> demangler) {
     demangler_ = std::move(demangler);
 }
 
-void Image::setDemangler(const QString &format) {
-    // TODO: ideally, there should be a DemanglerRepository.
-
-#ifdef NC_WITH_LIBIBERTY
-    if (format == QLatin1String("gnu-v3")) {
-        setDemangler(std::make_unique<mangling::GnuDemangler>());
-        return;
-    }
-#endif
-
-#ifdef NC_WITH_UNDNAME
-    if (format == QLatin1String("msvc")) {
-        setDemangler(std::make_unique<mangling::MsvcDemangler>());
-        return;
-    }
-#endif
-
-    setDemangler(std::make_unique<mangling::ExternalDemangler>(QLatin1String("c++filt"), QStringList() << QLatin1String("-s") << format));
+void Image::setDemangler(const QString &) {
+    /* Currently only the bundled demangler is supported. */
 }
 
 }}} // namespace nc::core::image
