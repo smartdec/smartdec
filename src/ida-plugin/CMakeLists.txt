@@ -40,6 +40,6 @@ qt4_wrap_cpp(SOURCES ${MOC_HEADERS})
 add_library(ida-plugin SHARED ${SOURCES})
 target_link_libraries(ida-plugin nc-gui nc-core ${Boost_LIBRARIES} ${QT_LIBRARIES} ${IDA_LIBRARIES})
 set_target_properties(ida-plugin PROPERTIES OUTPUT_NAME smartdec PREFIX "" SUFFIX ${IDA_PLUGIN_EXT})
-install(TARGETS ida-plugin RUNTIME DESTINATION bin LIBRARY DESTINATION lib COMPONENT ida-plugin)
+install(TARGETS ida-plugin RUNTIME DESTINATION bin LIBRARY DESTINATION lib)
 
 # vim:set et sts=4 sw=4 nospell:

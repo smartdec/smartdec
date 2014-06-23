@@ -8,9 +8,11 @@ if(MSVC)
     set_target_properties(smartdec PROPERTIES LINK_FLAGS /ENTRY:mainCRTStartup)
 endif()
 
-install(TARGETS smartdec RUNTIME DESTINATION bin COMPONENT standalone)
-if(WIN32)
-    install_qt4_executable("bin/smartdec.exe")
+if (NOT ${IDA_PLUGIN_ENABLED})
+    install(TARGETS smartdec RUNTIME DESTINATION bin)
+    if(WIN32)
+        install_qt4_executable("bin/smartdec.exe")
+    endif()
 endif()
 
 # vim:set et sts=4 sw=4 nospell:
