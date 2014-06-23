@@ -105,6 +105,9 @@ set(NC_USE_THREADS ${IDA_PLUGIN_DISABLED} CACHE BOOL "Enable threads.")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/nc/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/nc/config.h")
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+# This is used to produce standalone bundles on Windows.
+include(DeployQt4)
+
 add_subdirectory(3rd-party)
 add_subdirectory(demangler)
 add_subdirectory(nc)
