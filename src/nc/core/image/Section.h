@@ -48,7 +48,7 @@ class Section: public ByteSource {
     ByteAddr addr_; ///< Linear address of section start.
     ByteSize size_; ///< Size of the section.
 
-    bool isAllocated_; ///< True if the section occupies memory.
+    bool isAllocated_; ///< True if the section is mapped to the memory when the program is executed.
 
     bool isReadable_; ///< True if the section is readable.
     bool isWritable_; ///< True if the section is writable.
@@ -120,7 +120,7 @@ public:
     /**
      * Sets whether the section is readable.
      *
-     * \param[in] isAllocated          Whether the section occupies memort.
+     * \param[in] isAllocated          Whether the section is mapped to the memory when the program is executed.
      */
     void setAllocated(bool isAllocated = true) { isAllocated_ = isAllocated; }
 

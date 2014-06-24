@@ -129,6 +129,7 @@ void IdaFrontend::createSections(core::image::Image *image) {
         section->setCode(idaSegment->type == SEG_CODE);
         section->setData(idaSegment->type == SEG_DATA);
         section->setBss(idaSegment->type == SEG_BSS);
+        section->setAllocated(section->isCode() || section->isData() || section->isBss());
 
         image->sections()->add(std::move(section));
     }
