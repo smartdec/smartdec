@@ -42,9 +42,10 @@ include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 git_describe(GIT_DESCRIPTION)
 
-string(SUBSTRING ${GIT_SHA1} 1 7 NC_VERSION)
 if (GIT_DESCRIPTION)
-    set(NC_VERSION "${GIT_DESCRIPTION} (${NC_VERSION})")
+    set(NC_VERSION "${GIT_DESCRIPTION}")
+else()
+    string(SUBSTRING ${GIT_SHA1} 1 7 NC_VERSION)
 endif()
 
 set(NC_REPORT_BUGS_TO "yegor.derevenets@gmail.com" CACHE STRING "Address for reporting bugs.")
