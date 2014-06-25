@@ -1,0 +1,11 @@
+#define NC_VERSION "@NC_VERSION@"
+#define NC_REPORT_BUGS_TO "@NC_REPORT_BUGS_TO@"
+
+namespace nc {
+
+extern const char version[] = NC_VERSION;
+extern const char reportBugsTo[] = NC_REPORT_BUGS_TO;
+
+} // namespace nc
+
+/* vim:set et sts=4 sw=4: */

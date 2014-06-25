@@ -24,10 +24,10 @@
 
 #include <nc/config.h>
 
+#include <nc/common/Branding.h>
 #include <nc/common/Conversions.h>
 #include <nc/common/Exception.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/GitRevision.h>
 #include <nc/common/StreamLogger.h>
 #include <nc/common/Unreachable.h>
 
@@ -150,12 +150,14 @@ void help() {
     qout << "  --print-regions[=FILE]      Print results of structural analysis in DOT language to the file." << endl;
     qout << "  --print-cxx[=FILE]          Print reconstructed program into given file." << endl;
     qout << endl;
+    qout << "Nocode is a command-line decompiler developed within the SmartDec project." << endl;
     qout << "The program parses given files, decompiles them, and prints the requested" << endl;
     qout << "information (by default, C++ code) to the specified files. When a file" << endl;
     qout << "name is '-' or omitted, stdout is used." << endl;
     qout << endl;
 
-    qout << "Version: " << nc::git_revision << endl;
+    qout << "Version: " << nc::version << endl;
+    qout << "Report bugs to: " << nc::reportBugsTo << endl;
     qout << "Available architectures:";
     foreach (auto architecture, nc::core::arch::ArchitectureRepository::instance()->architectures()) {
         qout << " " << architecture->name();

@@ -39,9 +39,9 @@
 #include <QTextStream>
 #include <QTreeView>
 
+#include <nc/common/Branding.h>
 #include <nc/common/Exception.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/GitRevision.h>
 #include <nc/common/SignalLogger.h>
 #include <nc/common/make_unique.h>
 
@@ -583,7 +583,7 @@ void MainWindow::about() {
     QMessageBox::about(this, tr("About SmartDec"), tr(
         "<h3>About SmartDec</h3>"
         "<p>SmartDec is a retargetable native code to C/C++ decompiler.</p>"
-        "<p>This is revision %1.</p>"
+        "<p>This is version %1.</p>"
         "<p>SmartDec supports the following architectures:<ul>"
         "<li>Intel x86,</li>"
         "<li>Intel x86-64.</li>"
@@ -592,9 +592,8 @@ void MainWindow::about() {
         "<li>ELF (32 and 64-bit),</li>"
         "<li>PE (32 and 64-bit).</li>"
         "</ul></p>"
-        "<p>Report bugs to <a href=\"mailto:yegor.derevenets@gmail.com\">yegor.derevenets@gmail.com</a>.</p>"
-        "<p>SmartDec home page: <a href=\"http://decompilation.info/\">decompilation.info</a>.</p>"
-        ).arg(QString(QLatin1String(git_revision)).left(7)));
+        "<p>Report bugs to <a href=\"%2\">%2</a>.</p>"
+        ).arg(QLatin1String(version)).arg(QLatin1String(reportBugsTo)));
 }
 
 }} // namespace nc::gui

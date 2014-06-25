@@ -4,6 +4,7 @@ set(MOC_HEADERS
 
 set(SOURCES
     BitTwiddling.h
+    Branding.h
     ByteOrder.h
     CancellationToken.cpp
     CancellationToken.h
@@ -16,7 +17,6 @@ set(SOURCES
     Exception.cpp
     Exception.h
     Foreach.h
-    GitRevision.h
     Kinds.h
     LogToken.h
     Logger.h
@@ -42,13 +42,15 @@ include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 git_describe(GIT_DESCRIPTION)
 
-string(SUBSTRING ${GIT_SHA1} 1 7 GIT_REVISION)
+string(SUBSTRING ${GIT_SHA1} 1 7 NC_VERSION)
 if (GIT_DESCRIPTION)
-    set(GIT_REVISION "${GIT_DESCRIPTION} (${GIT_REVISION})")
+    set(NC_VERSION "${GIT_DESCRIPTION} (${NC_VERSION})")
 endif()
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GitRevision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/GitRevision.cpp" @ONLY)
-list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/GitRevision.cpp")
+set(NC_REPORT_BUGS_TO "yegor.derevenets@gmail.com" CACHE STRING "Address for reporting bugs.")
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Branding.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/Branding.cpp" @ONLY)
+list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/Branding.cpp")
 
 add_library(nc-common ${SOURCES})
 target_link_libraries(nc-common ${Boost_LIBRARIES} ${QT_LIBRARIES})
