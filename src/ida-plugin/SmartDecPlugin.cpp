@@ -29,8 +29,8 @@
 #include <QMessageBox>
 #include <QStackedLayout>
 
+#include <nc/common/Branding.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/GitRevision.h>
 #include <nc/common/make_unique.h>
 #include <nc/core/Context.h>
 #include <nc/core/arch/Instruction.h>
@@ -97,10 +97,10 @@ SmartDecPlugin::SmartDecPlugin():
         &decompileFunctionCallback);
 
     IdaFrontend::print(tr(
-        "SmartDec plugin (revision %1) loaded.\n"
+        "SmartDec plugin %1 loaded.\n"
         "  Press %2 to decompile the function under cursor, %3 to decompile the whole program.\n"
         "  Press %2 (%3) again to jump to the address under cursor.\n")
-        .arg(git_revision).arg(decompileFunctionHotkey).arg(decompileProgramHotkey));
+        .arg(version).arg(decompileFunctionHotkey).arg(decompileProgramHotkey));
 }
 
 SmartDecPlugin::~SmartDecPlugin() {
