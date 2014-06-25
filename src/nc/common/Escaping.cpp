@@ -81,6 +81,9 @@ QString escapeCString(const QString &string) {
             case '\v':
                 result += "\\v";
                 break;
+            case '"':
+                result += "\\\"";
+                break;
             default:
                 result += c;
                 break;
