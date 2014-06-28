@@ -34,7 +34,7 @@ namespace image {
 ByteSize BufferByteSource::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
     assert(size >= 0);
 
-    if (addr >= buffer().size()) {
+    if (addr < 0 || addr >= buffer().size()) {
         return 0;
     }
     if (addr + size > buffer().size()) {
