@@ -276,6 +276,13 @@ private Q_SLOTS:
     void populateSectionsContextMenu(QMenu *menu);
 
     /**
+     * Populates context menu of symbols view with actions.
+     *
+     * \param menu Valid pointer to the context menu.
+     */
+    void populateSymbolsContextMenu(QMenu *menu);
+
+    /**
      * Export CFG in DOT format.
      */
     void exportCfg();
@@ -338,7 +345,12 @@ private Q_SLOTS:
     /**
      * Jumps to the address under cursor in C++ view.
      */
-    void jumpToAddress();
+    void jumpToSelectedAddress();
+
+    /**
+     * Jumps to the address of the symbol under cursor in the symbols view.
+     */
+    void jumpToSymbolAddress();
 
     /**
      * Shows 'About SmartDec' dialog.

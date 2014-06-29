@@ -51,6 +51,7 @@
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
 #include <nc/core/image/Sections.h>
+#include <nc/core/image/Symbol.h>
 #include <nc/core/ir/Program.h>
 
 #include "Command.h"
@@ -141,6 +142,8 @@ void MainWindow::createWidgets() {
     symbolsView_->setObjectName("SymbolsView");
     addDockWidget(Qt::RightDockWidgetArea, symbolsView_);
     symbolsView_->hide();
+
+    connect(symbolsView_, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateSymbolsContextMenu(QMenu *)));
 
     inspectorView_ = new InspectorView(this);
     inspectorView_->setModel(new InspectorModel(this));
@@ -422,7 +425,7 @@ void MainWindow::populateInstructionsContextMenu(QMenu *menu) {
 
 void MainWindow::populateCxxContextMenu(QMenu *menu) {
     if (auto address = cxxView_->getSelectedInteger()) {
-        menu->addAction(tr("Jump to address %1").arg(*address, 0, 16), this, SLOT(jumpToAddress()));
+        menu->addAction(tr("Jump to address %1").arg(*address, 0, 16), this, SLOT(jumpToSelectedAddress()));
     }
 }
 
@@ -430,6 +433,12 @@ void MainWindow::populateSectionsContextMenu(QMenu *menu) {
     if (sectionsView_->selectedSection()) {
         menu->addSeparator();
         menu->addAction(tr("Disassemble..."), this, SLOT(disassembleSelectedSection()));
+    }
+}
+
+void MainWindow::populateSymbolsContextMenu(QMenu *menu) {
+    if (auto symbol = symbolsView_->selectedSymbol()) {
+        menu->addAction(tr("Jump to address %1").arg(symbol->value(), 0, 16), this, SLOT(jumpToSymbolAddress()));
     }
 }
 
@@ -568,9 +577,17 @@ void MainWindow::highlightCxxInTree() {
     }
 }
 
-void MainWindow::jumpToAddress() {
+void MainWindow::jumpToSelectedAddress() {
     if (auto address = cxxView_->getSelectedInteger()) {
         if (jumpToAddress(*address)) {
+            instructionsView_->show();
+        }
+    }
+}
+
+void MainWindow::jumpToSymbolAddress() {
+    if (auto symbol = symbolsView_->selectedSymbol()) {
+        if (jumpToAddress(symbol->value())) {
             instructionsView_->show();
         }
     }

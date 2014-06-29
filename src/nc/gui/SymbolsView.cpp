@@ -29,6 +29,10 @@ void SymbolsView::setModel(SymbolsModel *model) {
     }
 }
 
+const core::image::Symbol *SymbolsView::selectedSymbol() const {
+    return model_->getSymbol(treeView()->currentIndex());
+}
+
 } // namespace gui
 } // namespace nc
 

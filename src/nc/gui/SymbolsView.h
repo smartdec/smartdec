@@ -8,6 +8,13 @@
 #include "TreeView.h"
 
 namespace nc {
+
+namespace core {
+    namespace image {
+        class Symbol;
+    }
+}
+
 namespace gui {
 
 class SymbolsModel;
@@ -37,6 +44,11 @@ public:
      * \param model Pointer to the new model. Can be NULL.
      */
     void setModel(SymbolsModel *model);
+
+    /**
+     * \returns Pointer to the currently selected symbok. Can be NULL.
+     */
+    const core::image::Symbol *selectedSymbol() const;
 };
 
 } // namespace gui
