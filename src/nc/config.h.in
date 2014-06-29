@@ -22,6 +22,9 @@
 /** Generate references to global variables instead of constants. */
 //#define NC_PREFER_GLOBAL_VARIABLES_TO_CONSTANTS
 
+/** Generate function names instead of constants. */
+#define NC_PREFER_FUNCTIONS_TO_CONSTANTS
+
 /** Use threads. */
 #cmakedefine NC_USE_THREADS
 

@@ -1007,6 +1007,12 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const B
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term *term, const SizedValue &value) {
     const types::Type *type = parent().types().getType(term);
 
+#ifdef NC_PREFER_FUNCTIONS_TO_CONSTANTS
+    if (auto signature = parent().signatures().getSignature(value.value()).get()) {
+        return std::make_unique<likec::FunctionIdentifier>(tree(), parent().makeFunctionDeclaration(signature));
+    }
+#endif
+
 #ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
     if (!type->pointee() || type->pointee()->size() <= 1) {
         auto isAscii = [](const QString &string) -> bool {
