@@ -1050,13 +1050,10 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
     }
 #endif
 
-    return std::make_unique<likec::Typecast>(tree(),
-        parent().makeType(type),
-        std::make_unique<likec::IntegerConstant>(
-            tree(),
-            value,
-            tree().makeIntegerType(type->size(), type->isUnsigned())
-        ));
+    return std::make_unique<likec::IntegerConstant>(tree(),
+        value,
+        tree().makeIntegerType(type->size(), type->isUnsigned())
+    );
 }
 
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const Term *term) {
