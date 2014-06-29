@@ -1,5 +1,6 @@
 Building SmartDec
 =================
+:toc:
 Yegor Derevenets <yegor.derevenets@gmail.com>
 
 Prerequisites
