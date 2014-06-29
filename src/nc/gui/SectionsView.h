@@ -27,10 +27,6 @@
 
 #include "TreeView.h"
 
-QT_BEGIN_NAMESPACE
-class QTreeView;
-QT_END_NAMESPACE
-
 namespace nc {
 
 namespace core {

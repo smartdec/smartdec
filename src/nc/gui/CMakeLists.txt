@@ -23,6 +23,8 @@ set(MOC_HEADERS
     SearchWidget.h
     SectionsModel.h
     SectionsView.h
+    SymbolsModel.h
+    SymbolsView.h
     TextEditSearcher.h
     TextView.h
     TreeView.h
@@ -56,6 +58,8 @@ set(SOURCES
     SearchWidget.cpp
     SectionsModel.cpp
     SectionsView.cpp
+    SymbolsModel.cpp
+    SymbolsView.cpp
     TextEditSearcher.cpp
     TextView.cpp
     TreeView.cpp

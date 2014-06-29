@@ -66,6 +66,8 @@
 #include "Project.h"
 #include "SectionsModel.h"
 #include "SectionsView.h"
+#include "SymbolsModel.h"
+#include "SymbolsView.h"
 
 namespace nc { namespace gui {
 
@@ -134,6 +136,12 @@ void MainWindow::createWidgets() {
 
     connect(sectionsView_, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateSectionsContextMenu(QMenu *)));
 
+    symbolsView_ = new SymbolsView(this);
+    symbolsView_->setModel(new SymbolsModel(this));
+    symbolsView_->setObjectName("SymbolsView");
+    addDockWidget(Qt::RightDockWidgetArea, symbolsView_);
+    symbolsView_->hide();
+
     inspectorView_ = new InspectorView(this);
     inspectorView_->setModel(new InspectorModel(this));
     inspectorView_->setObjectName("InspectorView");
@@ -197,6 +205,10 @@ void MainWindow::createActions() {
     sectionsViewAction_->setText(tr("&Sections"));
     sectionsViewAction_->setShortcut(Qt::ALT + Qt::Key_S);
 
+    symbolsViewAction_ = symbolsView_->toggleViewAction();
+    symbolsViewAction_->setText(tr("S&ymbols"));
+    symbolsViewAction_->setShortcut(Qt::ALT + Qt::Key_Y);
+
     inspectorViewAction_ = inspectorView_->toggleViewAction();
     inspectorViewAction_->setText(tr("Inspec&tor"));
     inspectorViewAction_->setShortcut(Qt::ALT + Qt::Key_T);
@@ -243,6 +255,7 @@ void MainWindow::createMenus() {
     QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
     viewMenu->addAction(instructionsViewAction_);
     viewMenu->addAction(sectionsViewAction_);
+    viewMenu->addAction(symbolsViewAction_);
     viewMenu->addAction(inspectorViewAction_);
     viewMenu->addAction(logViewAction_);
 
@@ -353,6 +366,7 @@ void MainWindow::open(std::unique_ptr<Project> project) {
     project_ = std::move(project);
 
     sectionsView_->model()->setImage();
+    symbolsView_->model()->setImage();
     disassemblyDialog_->setImage();
     instructionsView_->model()->setInstructions();
     cxxView_->document()->setContext();
@@ -384,6 +398,7 @@ void MainWindow::open(std::unique_ptr<Project> project) {
 
 void MainWindow::imageChanged() {
     sectionsView_->model()->setImage(project()->image());
+    symbolsView_->model()->setImage(project()->image());
     disassemblyDialog_->setImage(project()->image());
 }
 

@@ -55,6 +55,7 @@ class InstructionsView;
 class LogView;
 class Project;
 class SectionsView;
+class SymbolsView;
 
 /**
  * Main window of the decompiler.
@@ -65,6 +66,7 @@ class MainWindow: public QMainWindow {
     InstructionsView *instructionsView_; ///< Instructions view.
     CxxView *cxxView_; ///< C++ view.
     SectionsView *sectionsView_; ///< Sections view.
+    SymbolsView *symbolsView_; ///< Symbols view.
     InspectorView *inspectorView_; ///< Inspector view.
     LogView *logView_; ///< Log window.
     DisassemblyDialog *disassemblyDialog_; ///< Disassembly dialog.
@@ -80,7 +82,8 @@ class MainWindow: public QMainWindow {
     QAction *cancelAllAction_; ///< Action for cancelling all scheduled commands.
     QAction *decompileAutomaticallyAction_; ///< Action for toggling automatic decompilation.
     QAction *instructionsViewAction_; ///< Action for showing/hiding the instructions window.
-    QAction *sectionsViewAction_; ///< Action for showing/hiding the sections' window.
+    QAction *sectionsViewAction_; ///< Action for showing/hiding the sections window.
+    QAction *symbolsViewAction_; ///< Action for showing/hiding the symbols window.
     QAction *inspectorViewAction_; ///< Action for showing/hiding the tree inspector.
     QAction *logViewAction_; ///< Action for showing/hiding the log window.
     QAction *aboutAction_; ///< Action for showing 'About SmartDec' dialog.
