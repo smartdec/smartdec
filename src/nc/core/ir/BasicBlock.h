@@ -75,6 +75,13 @@ public:
     const boost::optional<ByteAddr> &address() const { return address_; }
 
     /**
+     * Sets the address of this basic block.
+     *
+     * \param address New address.
+     */
+    void setAddress(const boost::optional<ByteAddr> &address);
+
+    /**
      * \return Address of the basic block's successor.
      */
     const boost::optional<ByteAddr> &successorAddress() const { return successorAddress_; }

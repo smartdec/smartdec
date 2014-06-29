@@ -43,6 +43,13 @@ BasicBlock::BasicBlock(const boost::optional<ByteAddr> &address):
 
 BasicBlock::~BasicBlock() {}
 
+void BasicBlock::setAddress(const boost::optional<ByteAddr> &address) {
+    address_ = address;
+    if (!address_) {
+        setSuccessorAddress(boost::none);
+    }
+}
+
 void BasicBlock::setSuccessorAddress(const boost::optional<ByteAddr> &successorAddress) {
     assert((!successorAddress || address()) && "A non-memory-bound basic block cannot have a successor address.");
     successorAddress_ = successorAddress;

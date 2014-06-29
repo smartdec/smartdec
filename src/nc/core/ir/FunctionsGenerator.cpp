@@ -69,6 +69,31 @@ void FunctionsGenerator::makeFunctions(const Program &program, Functions &functi
 
     CFG cfg(program.basicBlocks());
 
+    auto addFunction = [&](const std::vector<const BasicBlock *> basicBlocks, const BasicBlock *entry) {
+        auto function = makeFunction(basicBlocks, entry);
+        if (function->isEmpty()) {
+            return;
+        }
+
+        /*
+         * If the function's entry starts with some no-ops, move the function's
+         * entry's address to the first meaningful instruction, unless somebody
+         * calls it using current address.
+         */
+        if (function->entry() && function->entry()->address() &&
+            function->entry()->statements().front() &&
+            function->entry()->statements().front()->instruction() &&
+            *function->entry()->address() != function->entry()->statements().front()->instruction()->addr())
+        {
+            assert(*function->entry()->address() < function->entry()->statements().front()->instruction()->addr());
+            if (!program.isCalledAddress(*function->entry()->address())) {
+                function->entry()->setAddress(function->entry()->statements().front()->instruction()->addr());
+            }
+        }
+
+        functions.addFunction(std::move(function));
+    };
+
     /* Generate all functions being called. */
     foreach (const BasicBlock *basicBlock, program.basicBlocks()) {
         if (basicBlock->address() && program.isCalledAddress(*basicBlock->address())) {
@@ -76,12 +101,7 @@ void FunctionsGenerator::makeFunctions(const Program &program, Functions &functi
             std::vector<const BasicBlock *> trace;
 
             dfs(cfg, basicBlock, visited, trace);
-
-            auto function = makeFunction(trace, basicBlock);
-            if (!function->isEmpty()) {
-                functions.addFunction(std::move(function));
-            }
-
+            addFunction(trace, basicBlock);
             processed.insert(trace.begin(), trace.end());
         }
     }
@@ -92,11 +112,7 @@ void FunctionsGenerator::makeFunctions(const Program &program, Functions &functi
             std::vector<const BasicBlock *> trace;
 
             dfs(cfg, basicBlock, processed, trace);
-
-            auto function = makeFunction(trace, basicBlock);
-            if (!function->isEmpty()) {
-                functions.addFunction(std::move(function));
-            }
+            addFunction(trace, basicBlock);
         }
     }
 
@@ -106,11 +122,7 @@ void FunctionsGenerator::makeFunctions(const Program &program, Functions &functi
             std::vector<const BasicBlock *> trace;
 
             dfs(cfg, basicBlock, processed, trace);
-
-            auto function = makeFunction(trace, basicBlock);
-            if (!function->isEmpty()) {
-                functions.addFunction(std::move(function));
-            }
+            addFunction(trace, basicBlock);
         }
     }
 }
