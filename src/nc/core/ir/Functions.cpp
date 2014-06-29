@@ -54,6 +54,7 @@ const std::vector<Function *> &Functions::getFunctionsAtAddress(ByteAddr address
 
 void Functions::print(QTextStream &out) const {
     out << "digraph Functions" << this << " {" << endl;
+    out << "compound = true" << endl;
     
     foreach (auto function, list()) {
         out << *function;
