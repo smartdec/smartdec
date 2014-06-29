@@ -1,135 +1,155 @@
-Prerequisites
-=============
+Building SmartDec
+=================
+Yegor Derevenets <yegor.derevenets@gmail.com>
 
-SmartDec is written in C++. The following compilers are known to be
+Prerequisites
+-------------
+
+SmartDec is written in $$C++$$. The following compilers are known to be
 capable of building it:
 
-    * GCC >= 4.6 <http://gcc.gnu.org/>
-    * Clang >= 3.1 <http://llvm.clang.org>
-    * MinGW GCC >= 4.6 <http://mingw.org/> (do install the `C++
-      Compiler' option)
-    * MinGW-w64 GCC >= 4.6 <http://mingw-w64.sourceforge.net/>
-    * Microsoft Visual Studio 2010 <http://www.microsoft.com/>
-    * Microsoft Visual Studio 2012 <http://www.microsoft.com/>
-    * Microsoft Visual Studio 2013 <http://www.microsoft.com/>
+    * http://gcc.gnu.org/[GCC] >= 4.6
+    * http://llvm.clang.org[Clang] >= 3.1
+    * http://mingw.org/[MinGW GCC] >= 4.6
+    * http://mingw-w64.sourceforge.net/[MinGW-w64 GCC] >= 4.6
+    * http://www.microsoft.com/[Microsoft Visual Studio] >= 2010
 
 The following software packages must be installed before SmartDec can be
 built:
 
-    * CMake >= 2.8 <http://cmake.org/>
-    * Boost >= 1.49 <http://www.boost.org/> (headers only)
-    * Qt >= 4.7 <http://qt.nokia.com/>
+    * http://cmake.org/[CMake] >= 2.8
+    * http://www.boost.org/[Boost] >= 1.49 (headers only)
+    * http://qt-project.org/[Qt] >= 4.7
 
-For package installation instructions, refer to the respective web pages
-and/or your operating system's manual.
+For installation instructions for the above packages, please refer to
+the respective web pages and/or your operating system's manual.
 
-Note: you have to install Visual Studio 2012 Update 1 or later to be
-able to build applications that would run under Windows XP. For
-targeting Windows XP, choose the `v110_xp' toolset, e.g. by CMake's `-T'
-switch (available since CMake 2.8.11, known to work with `Visual Studio'
-generators).
+[NOTE]
+If you want to use Visual Studio 2012 to build applications that would
+run on Windows XP, you have to install Visual Studio 2012 Update 1 or
+later and at <<configuration_step,configuration step>> choose `v110_xp`
+toolset in CMake using `-T` switch (support since CMake 2.8.11, known to
+work with `Visual Studio` generators).
 
 Notes on Building IDA Pro Plug-In
-=================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. The following additional package is required for IDA Pro plug-in:
+1. The following additional package is required to build IDA Pro
+plug-in:
 
-    * IDA Pro SDK >= 6.1 <http://www.hex-rays.com/products/ida/>
+    * http://www.hex-rays.com/products/ida/[IDA Pro SDK] >= 6.1
 
 2. You must use the same compiler as the one used by IDA Pro and the
-   same version of Qt (although different patch levels of the same
-   major.minor version should be binary compatible):
+   same version of Qt (different patch levels of the same major.minor
+   version are binary compatible and work too):
 
-   * IDA Pro 6.1 — MSVC 2010 — Qt 4.7.2.
-   * IDA Pro 6.3 — MSVC 2010 — Qt 4.8.1.
-   * IDA Pro 6.4 — MSVC 2010 — Qt 4.8.1.
-   * IDA Pro 6.5 — MSVC 2010 — Qt 4.8.4.
+    * IDA Pro 6.1 — MSVC 2010 — Qt 4.7.2.
+    * IDA Pro 6.3 — MSVC 2010 — Qt 4.8.1.
+    * IDA Pro 6.4 — MSVC 2010 — Qt 4.8.1.
+    * IDA Pro 6.5 — MSVC 2010 — Qt 4.8.4.
 
-3. Qt must be built in namespace `QT', e.g.:
+3. Qt must be built in namespace `QT`, e.g.:
 
-    * `configure.exe -qtnamespace QT -platform win32-msvc2010
-       -debug-and-release -opensource -no-qt3support -no-multimedia
-       -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools
-       -nomake demos -nomake examples && nmake'
+   configure.exe -qtnamespace QT -platform win32-msvc2010 -debug-and-release -opensource -no-qt3support -no-multimedia -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools -nomake demos -nomake examples && nmake
 
-4. You must use the same build mode as the one used by IDA Pro, i.e.
-   Release.
+4. You must must build decompiler in +Release+ mode, because this is the
+one used by IDA Pro.
 
-Building the Easy Way (UNIX only)
-=================================
+Building
+--------
+SmartDec is built using a tool called CMake. The build process consists
+of two steps: <<configuration_step,configuration>> and
+<<build_step,build>>.
 
-The simplest way to compile SmartDec on UNIX is:
+Setting up the Environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    1. `cd' to the directory containing the package's source code.
+You can help your system to find CMake and CMake to find the compiler
+and required libraries at non-standard locations by setting the
+following environment variables. Alternatively, you may specify these
+locations at <<configuration_step,configuration step>>.
 
-    2. Type `make' to configure and build the package. The package will
-       be built in the subdirectory called `build'.
+    1. Add CMake and the compiler to your `PATH`.
+    2. Set `BOOST_ROOT` to the path to Boost installation directory (it
+       should contain `boost` subdirectory with header files).
+    3. Set `QTDIR` to the path to the Qt installation directory (it
+       should contain `include` and `lib` subdirectories).
+    4. Set `IDA_SDK_DIR` to the IDA Pro SDK installation directory
+       (it should contain `include` and `lib`) subdirectories.
 
-Building the Long Way (UNIX and Windows)
-========================================
+[[configuration_step]]
+Configuration Step
+~~~~~~~~~~~~~~~~~~
+CMake authors are advocates of out-of-tree builds, so a separate
+directory for compilation results must be created:
 
-The normal way to compile SmartDec on UNIX and Windows is:
+    cd /path/to/decompiler && mkdir build && cd build && cmake ../src
 
-    1. Make sure that CMake executable is in your PATH. If you are going
-       to use MinGW GCC, add to the PATH the `bin' directory of MinGW,
-       so that `g++' executable could be found.
+You can specify a toolchain using CMake's `-G` switch, e.g.:
 
-    2. Open a terminal (on UNIX) or a command prompt (on Windows).
+    * `-G "Visual Studio 10"` — generate a Visual Studio 2010 solution
+      for building 32-bit application.
+    * `-G "Visual Studio 11 Win64"` — generate a Visual Studio 2012
+      solution for building 64-bit application.
+    * `-G "MinGW Makefiles"` — generate Makefiles for building by
+      MinGW GCC and `mingw32-make`.
 
-    3. `cd' to the directory containing the package's source code.
+You can choose a build mode (`Debug`, `Release`, `RelWithDebInfo`, or
+`MinSizeRel`):
 
-SmartDec is built using a build tool called CMake. The build process
-consists of two phases: configuration and compilation. Also, CMake
-authors are advocates of out-of-tree builds, so a separate directory for
-compilation results must be created.
+    * `-D CMAKE_BUILD_TYPE=Release`
 
-    4. Type `mkdir build` to create the build directory; `cd' to it.
+If you have built Qt in a namespace, do not forget to specify this,
+e.g.:
 
-During configuration step CMake will be using the following environment
-variables to find required libraries:
+    * `-D QT_NAMESPACE=QT`
 
-    * BOOST_ROOT — the preferred installation prefix for searching for
-      Boost (it should contain `boost' subdirectory with include files).
-    * QTDIR — path to the root Qt directory containing the `include' and
-      `lib' subdirectories.
-    * IDA_SDK_DIR — path to the IDA Pro SDK directory containing
-      the `include' and `lib' subdirectories.
+You can choose whether to build the IDA Pro plug-in and which one to
+build:
 
-Set aforementioned environment variables if corresponding libraries
-cannot be found by CMake automatically. On Windows you may need to
-restart command prompt in order for the changes to take effect.
+    * `-D IDA_PLUGIN_ENABLED=YES` (or `NO`, defaults to `YES` when IDA
+      Pro SDK is found).
+    * `-D IDA_64_BIT_EA_T=YES` (`YES` to build `.p64` version for
+      handling 64-bit code, `NO` for building `.plw` version for
+      handling 32-bit code).
 
-On UNIX, CMake will generate Makefiles for you by default. On Windows,
-you should specify the build system explicitly, e.g.:
+You can set the installation prefix:
 
-    * `-G "Visual Studio 10"' — generate a Visual Studio 2010 solution
-      for building 32-bit application using the IDE or MSBuild.
-    * `-G "Visual Studio 11 Win64"' — generate a Visual Studio 2012
-      solution for building 64-bit application using the IDE or MSBuild.
-    * `-G "MinGW Makefiles"' — generate Makefiles for building by
-      MinGW G++ and `mingw32-make'.
+    * `-D CMAKE_INSTALL_PREFIX=/install/prefix`
 
-If you use Makefiles, you can choose a build mode at the configuration
-step by using the following CMake options:
+[NOTE]
+The build mode specified at the configuration step will not have any
+effect for builds by Visual Studio. There you can choose the build mode
+using `--config` option of CMake directly at <<build_step,build>> and
+<<installation,installation>> steps.
 
-    * `-D CMAKE_BUILD_TYPE:STRING=Release'
-    * `-D CMAKE_BUILD_TYPE:STRING=Debug'
-
-If you built Qt in a namespace, do not forget to specify this, e.g.:
-
-    * `-D QT_NAMESPACE:STRING=QT'
-
+[NOTE]
 On Windows, when choosing release or debug mode, make sure that Qt and
 Boost libraries have been built in this mode too. If they were not, the
 build may fail, or even succeed but produce non-working executables.
 
-    5. Type `cmake [additional options] ../src'. If some library has
-       not been found, type `ccmake .' (on UNIX) or `cmake-gui .' (on
-       Windows) to run interactive configuration utility where you can
-       set the paths to the libraries manually and repeat configuration
-       and generation steps.
+[[build_step]]
+Build Step
+~~~~~~~~~~
+    cmake --build .
 
-    6. Type `cmake --build .' to compile SmartDec. In case you use
-       MSBuild, you can choose the build mode using `--config' option.
+Installation Step
+~~~~~~~~~~~~~~~~~
+    cmake --build . --target install
 
+[NOTE]
+On Windows it will install to the same directory all non-system `.dll`
+files on which the decompiler executables depend, so that the
+installation can be painlessly moved to any other machine and remain
+workable.
+
+[NOTE]
+When IDA Pro plug-in is enabled, it is the only target which is
+installed. The rationale is that IDA Pro is thread-unsafe, and
+multithreading is disabled in the builds with plug-in enabled.
+This gives you less chances to install single-threaded standalone
+version of the decompiler (which you should not normally want).
+
+//////////////////////////////
 # vim:set et sts=4 sw=4 tw=72:
+//////////////////////////////
