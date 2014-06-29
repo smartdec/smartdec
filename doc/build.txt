@@ -1,13 +1,13 @@
-Building SmartDec
-=================
+SmartDec: Build Instructions
+============================
 :toc:
 Yegor Derevenets <yegor.derevenets@gmail.com>
 
 Prerequisites
 -------------
 
-SmartDec is written in $$C++$$. The following compilers are known to be
-capable of building it:
+SmartDec is written in $$C++$$. So, you will need a C++ compiler to
+build it. The following compilers are known to work:
 
     * http://gcc.gnu.org/[GCC] >= 4.6
     * http://llvm.clang.org[Clang] >= 3.1
@@ -50,11 +50,15 @@ plug-in:
     * IDA Pro 6.5 — MSVC 2010 — Qt 4.8.4.
 
 3. Qt must be built in namespace `QT`, e.g.:
-
-   configure.exe -qtnamespace QT -platform win32-msvc2010 -debug-and-release -opensource -no-qt3support -no-multimedia -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools -nomake demos -nomake examples && nmake
++
+------------------------------------------------------------------------
+configure.exe -qtnamespace QT -platform win32-msvc2010 -debug-and-release -opensource -no-qt3support -no-multimedia -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools -nomake demos -nomake examples && nmake
+------------------------------------------------------------------------
 
 4. You must must build decompiler in +Release+ mode, because this is the
-one used by IDA Pro.
+one used by IDA Pro. Otherwise, you will end up linked against debug Qt
+library, while IDA uses the release version. Nothing good comes out of
+this.
 
 Building
 --------
@@ -84,7 +88,9 @@ Configuration Step
 CMake authors are advocates of out-of-tree builds, so a separate
 directory for compilation results must be created:
 
-    cd /path/to/decompiler && mkdir build && cd build && cmake ../src
+-----------------------------------------------------------------
+cd /path/to/decompiler && mkdir build && cd build && cmake ../src
+-----------------------------------------------------------------
 
 You can specify a toolchain using CMake's `-G` switch, e.g.:
 
@@ -132,11 +138,15 @@ build may fail, or even succeed but produce non-working executables.
 [[build_step]]
 Build Step
 ~~~~~~~~~~
-    cmake --build .
+---------------
+cmake --build .
+---------------
 
 Installation Step
 ~~~~~~~~~~~~~~~~~
-    cmake --build . --target install
+--------------------------------
+cmake --build . --target install
+--------------------------------
 
 [NOTE]
 On Windows it will install to the same directory all non-system `.dll`
