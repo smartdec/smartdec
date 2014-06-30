@@ -179,7 +179,11 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
 
         if (variable->memoryLocation().domain() == MemoryDomain::MEMORY) {
             ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
-            if (auto symbol = image().symbols()->find(image::Symbol::Function, addr)) {
+            auto symbol = image().symbols()->find(image::Symbol::Data, addr);
+            if (!symbol) {
+                symbol = image().symbols()->find(image::Symbol::None, addr);
+            }
+            if (symbol) {
                 name = likec::Tree::cleanName(symbol->name());
                 if (name != symbol->name()) {
                     comment = symbol->name();
