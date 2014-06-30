@@ -143,40 +143,43 @@ private:
             }
         }
 
-        if (const core::image::Section *symtab = image_->sections()->getSectionByName(".symtab")) {
-            if (const core::image::Section *strtab = image_->sections()->getSectionByName(".strtab")) {
-                core::image::Reader strtabReader(strtab);
+        parseSymbols<Sym>(image_->sections()->getSectionByName(".symtab"), image_->sections()->getSectionByName(".strtab"));
+        parseSymbols<Sym>(image_->sections()->getSectionByName(".dynsym"), image_->sections()->getSectionByName(".dynstr"));
+    }
 
-                Sym sym;
-                for (ByteAddr addr = symtab->addr(); addr < symtab->endAddr(); addr += sizeof(sym)) {
-                    if (symtab->readBytes(addr, &sym, sizeof(sym)) != sizeof(sym)) {
-                        break;
-                    }
+    template<class Sym>
+    void parseSymbols(const core::image::Section *symtab, const core::image::Section *strtab) {
+        if (!strtab || !symtab) {
+            return;
+        }
 
-                    using core::image::Symbol;
+        core::image::Reader strtabReader(strtab);
 
-                    Symbol::Type type;
-                    /*
-                     * Type information is the lower 4 bits.
-                     * The higher 4 bits is the binding information.
-                     */
-                    switch (sym.st_info & 0xf) {
-                        case STT_OBJECT:
-                            type = Symbol::Data;
-                            break;
-                        case STT_FUNC:
-                            type = Symbol::Function;
-                            break;
-                        default:
-                            type = Symbol::None;
-                            break;
-                    }
-
-                    auto name = strtabReader.readAsciizString(sym.st_name, strtab->size());
-
-                    image_->symbols()->add(std::make_unique<Symbol>(type, std::move(name), sym.st_value));
-                }
+        Sym sym;
+        for (ByteAddr addr = symtab->addr(); addr < symtab->endAddr(); addr += sizeof(sym)) {
+            if (symtab->readBytes(addr, &sym, sizeof(sym)) != sizeof(sym)) {
+                break;
             }
+
+            using core::image::Symbol;
+
+            Symbol::Type type;
+            /* ELF64_ST_TYPE is the same. */
+            switch (ELF32_ST_TYPE(sym.st_info)) {
+                case STT_OBJECT:
+                    type = Symbol::Data;
+                    break;
+                case STT_FUNC:
+                    type = Symbol::Function;
+                    break;
+                default:
+                    type = Symbol::None;
+                    break;
+            }
+
+            auto name = strtabReader.readAsciizString(strtab->addr() + sym.st_name, strtab->size());
+
+            image_->symbols()->add(std::make_unique<Symbol>(type, std::move(name), sym.st_value));
         }
     }
 };
