@@ -154,11 +154,14 @@ QString Tree::cleanName(const QString &name) {
     QString result;
     result.reserve(name.size());
 
+    bool skipped = true;
     foreach (QChar c, name) {
-        if (c.isLetterOrNumber()) {
+        if (c.isLetterOrNumber() || c == '_') {
             result += c;
-        } else if (!result.isEmpty() && result[result.size() - 1] != '_') {
+            skipped = false;
+        } else if (!skipped) {
             result += '_';
+            skipped = true;
         }
     }
 
