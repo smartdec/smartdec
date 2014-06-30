@@ -1333,6 +1333,14 @@ std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::createFpuTerm(int inde
 
 std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::doCreateTerm(const core::arch::Operand *operand) const {
     switch (operand->kind()) {
+    case core::arch::Operand::REGISTER: {
+        auto reg = operand->as<core::arch::RegisterOperand>()->regizter();
+        if (reg == mArchitecture->instructionPointer()) {
+            return std::make_unique<core::ir::Intrinsic>(core::ir::Intrinsic::NEXT_INSTRUCTION_ADDRESS, reg->size());
+        } else {
+            return core::arch::irgen::InstructionAnalyzer::doCreateTerm(operand);
+        }
+    }
     case IntelOperands::FPU_STACK: {
         return createFpuTerm(operand->as<FpuOperand>()->index());
     }

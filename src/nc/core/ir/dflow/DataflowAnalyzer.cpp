@@ -236,6 +236,20 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
                     dataflow_.getDefinitions(intrinsic) = context.definitions();
                     break;
                 }
+                case Intrinsic::INSTRUCTION_ADDRESS: {
+                    auto instruction = intrinsic->statement()->instruction();
+                    value->setAbstractValue(SizedValue(term->size(), instruction->addr()));
+                    value->makeNotStackOffset();
+                    value->makeNotProduct();
+                    break;
+                }
+                case Intrinsic::NEXT_INSTRUCTION_ADDRESS: {
+                    auto instruction = intrinsic->statement()->instruction();
+                    value->setAbstractValue(SizedValue(term->size(), instruction->addr() + instruction->size()));
+                    value->makeNotStackOffset();
+                    value->makeNotProduct();
+                    break;
+                }
                 default: {
                     ncWarning("Unknown kind of intrinsic: '%1'", intrinsic->intrinsicKind());
                     break;
@@ -246,16 +260,6 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
         case Term::MEMORY_LOCATION_ACCESS: {
             auto access = term->asMemoryLocationAccess();
             setMemoryLocation(access, access->memoryLocation(), context);
-
-            /* The value of instruction pointer is always easy to guess. */
-            if (architecture()->instructionPointer() &&
-                access->memoryLocation() == architecture()->instructionPointer()->memoryLocation() &&
-                access->statement() &&
-                access->statement()->instruction())
-            {
-                dataflow().getValue(access)->setAbstractValue(
-                    SizedValue(term->size(), access->statement()->instruction()->addr()));
-            }
             break;
         }
         case Term::DEREFERENCE: {
