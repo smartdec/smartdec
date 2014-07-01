@@ -154,6 +154,7 @@ void TextView::populateContextMenu(QMenu *menu) {
     menu->addAction(findPreviousAction_);
     menu->addSeparator();
     menu->addAction(openGotoLineAction_);
+    menu->addSeparator();
 }
 
 void TextView::highlight(const std::vector<TextRange> &ranges, bool ensureVisible) {

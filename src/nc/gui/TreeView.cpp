@@ -122,6 +122,8 @@ void TreeView::populateContextMenu(QMenu *menu) {
     menu->addAction(openSearchAction_);
     menu->addAction(findNextAction_);
     menu->addAction(findPreviousAction_);
+
+    menu->addSeparator();
 }
 
 void TreeView::copy() {
