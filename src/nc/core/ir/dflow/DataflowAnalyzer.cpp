@@ -245,7 +245,7 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
                 }
                 case Intrinsic::NEXT_INSTRUCTION_ADDRESS: {
                     auto instruction = intrinsic->statement()->instruction();
-                    value->setAbstractValue(SizedValue(term->size(), instruction->addr() + instruction->size()));
+                    value->setAbstractValue(SizedValue(term->size(), instruction->endAddr()));
                     value->makeNotStackOffset();
                     value->makeNotProduct();
                     break;
