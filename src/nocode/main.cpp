@@ -111,20 +111,26 @@ void printSymbols(nc::core::Context &context, QTextStream &out) {
 
         QString type;
         switch (symbol->type()) {
-            case Symbol::None:
+            case Symbol::NOTYPE:
                 type = QLatin1String("none");
                 break;
-            case Symbol::Function:
+            case Symbol::FUNCTION:
                 type = QLatin1String("function");
                 break;
-            case Symbol::Data:
-                type = QLatin1String("data");
+            case Symbol::OBJECT:
+                type = QLatin1String("object");
+                break;
+            case Symbol::SECTION:
+                type = QLatin1String("section");
                 break;
             default:
                 unreachable();
         }
 
-        out << QString("symbol name = '%1', type = %2, value = 0x%3").arg(symbol->name()).arg(type).arg(symbol->value(), 0, 16) << endl;
+        out << QString("symbol name = '%1', type = %2, value = 0x%3, section = %4")
+            .arg(symbol->name())
+            .arg(type).arg(symbol->value(), 0, 16)
+            .arg(symbol->section() ? symbol->section()->name() : QString()) << endl;
     }
 }
 

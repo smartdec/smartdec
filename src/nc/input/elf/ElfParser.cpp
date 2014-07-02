@@ -28,11 +28,14 @@
 #include <QIODevice>
 
 #include <nc/common/Foreach.h>
+#include <nc/common/Range.h>
+#include <nc/common/Warnings.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
+#include <nc/core/image/Relocations.h>
 #include <nc/core/image/Section.h>
 #include <nc/core/image/Sections.h>
 #include <nc/core/image/Symbols.h>
@@ -47,54 +50,121 @@ namespace elf {
 
 namespace {
 
-class ElfParserPrivate {
+class Elf32 {
+public:
+    static const unsigned char elfclass = ELFCLASS32;
+    typedef Elf32_Ehdr Ehdr;
+    typedef Elf32_Shdr Shdr;
+    typedef Elf32_Sym Sym;
+    typedef Elf32_Rel Rel;
+    typedef Elf32_Rela Rela;
+
+    static unsigned char st_type(unsigned char info) { return ELF32_ST_TYPE(info); }
+    static Elf32_Addr r_sym(Elf32_Addr offset) { return ELF32_R_SYM(offset); }
+};
+
+class Elf64 {
+public:
+    static const unsigned char elfclass = ELFCLASS64;
+    typedef Elf64_Ehdr Ehdr;
+    typedef Elf64_Shdr Shdr;
+    typedef Elf64_Sym Sym;
+    typedef Elf64_Rel Rel;
+    typedef Elf64_Rela Rela;
+
+    static unsigned char st_type(unsigned char info) { return ELF64_ST_TYPE(info); }
+    static Elf64_Addr r_sym(Elf64_Addr offset) { return ELF64_R_SYM(offset); }
+};
+
+template<class Elf>
+class RelWithoutAddend {
+public:
+    typedef typename Elf::Rel Rel;
+    static void convertFrom(const ByteOrder &byteOrder, Rel &rel) {
+        byteOrder.convertFrom(rel.r_offset);
+        byteOrder.convertFrom(rel.r_info);
+    }
+    static ByteSize addend(const Rel &) { return 0; }
+};
+
+template<class Elf>
+class RelWithAddend {
+public:
+    typedef typename Elf::Rela Rel;
+    static void convertFrom(const ByteOrder &byteOrder, Rel &rel) {
+        byteOrder.convertFrom(rel.r_offset);
+        byteOrder.convertFrom(rel.r_info);
+        byteOrder.convertFrom(rel.r_addend);
+    }
+    static ByteSize addend(const Rel &rel) { return rel.r_addend; }
+};
+
+template<class Elf>
+class RealElfParser {
     Q_DECLARE_TR_FUNCTIONS(ElfParserPrivate)
 
     QIODevice *source_;
     core::image::Image *image_;
 
-    public:
+    typename Elf::Ehdr ehdr_;
+    ByteOrder byteOrder_ = ByteOrder::Current;
+    std::vector<typename Elf::Shdr> shdrs_;
+    std::vector<std::unique_ptr<core::image::Section>> sections_;
+    boost::unordered_map<std::size_t, std::vector<std::unique_ptr<core::image::Symbol>>> symbolTables_;
+    boost::unordered_map<std::size_t, std::vector<std::unique_ptr<core::image::Relocation>>> relocationTables_;
 
-    ElfParserPrivate(QIODevice *source, core::image::Image *image):
+public:
+    RealElfParser(QIODevice *source, core::image::Image *image):
         source_(source), image_(image)
     {}
 
     void parse() {
-        union {
-            Elf32_Ehdr ehdr32;
-            Elf64_Ehdr ehdr64;
-        } ehdr;
+        parseElfHeader();
+        parseSections();
+        parseSymbols();
+        parseRelocations();
 
-        std::size_t bytesRead = source_->read(reinterpret_cast<char *>(&ehdr), sizeof(ehdr));
-        if (bytesRead < sizeof(ehdr.ehdr32.e_ident) || !IS_ELF(ehdr.ehdr32)) {
-            throw core::input::ParseError(tr("ELF signature doesn't match."));
+        foreach (auto &section, sections_) {
+            image_->sections()->add(std::move(section));
         }
-
-        switch (ehdr.ehdr32.e_ident[EI_CLASS]) {
-            case ELFCLASS32: {
-                if (bytesRead < sizeof(ehdr.ehdr32)) {
-                    throw core::input::ParseError(tr("Cannot read ELF32 header."));
-                }
-                parseHeaders<Elf32_Ehdr, Elf32_Shdr, Elf32_Sym>(ehdr.ehdr32);
-                break;
+        foreach (auto &indexAndTable, symbolTables_) {
+            foreach (auto &symbol, indexAndTable.second) {
+                image_->symbols()->add(std::move(symbol));
             }
-            case ELFCLASS64: {
-                if (bytesRead < sizeof(ehdr.ehdr64)) {
-                    throw core::input::ParseError(tr("Cannot read ELF64 header."));
-                }
-                parseHeaders<Elf64_Ehdr, Elf64_Shdr, Elf64_Sym>(ehdr.ehdr64);
-                break;
-            }
-            default: {
-                throw core::input::ParseError(tr("Unknown ELF class: %1.").arg(ehdr.ehdr32.e_ident[EI_CLASS]));
+        }
+        foreach (auto &indexAndTable, relocationTables_) {
+            foreach (auto &relocation, indexAndTable.second) {
+                image_->relocations()->add(std::move(relocation));
             }
         }
     }
 
 private:
-    template<class Ehdr, class Shdr, class Sym>
-    void parseHeaders(const Ehdr &ehdr) {
-        switch (ehdr.e_machine) {
+    void parseElfHeader() {
+        source_->seek(0);
+
+        if (source_->read(reinterpret_cast<char *>(&ehdr_), sizeof(ehdr_)) != sizeof(ehdr_)) {
+            throw core::input::ParseError(tr("Could not read ELF header."));
+        }
+
+        if (ehdr_.e_ident[EI_CLASS] != Elf::elfclass) {
+            throw core::input::ParseError(tr("The instantiation of the parser class does not match the ELF class."));
+        }
+
+        if (ehdr_.e_ident[EI_DATA] == ELFDATA2LSB) {
+            byteOrder_ = ByteOrder::LittleEndian;
+        } else if (ehdr_.e_ident[EI_DATA] == ELFDATA2MSB) {
+            byteOrder_ = ByteOrder::BigEndian;
+        } else {
+            ncWarning("Invalid byte order in ELF file: %1. Assuming host byte order.", ehdr_.e_ident[EI_DATA]);
+        }
+
+        byteOrder_.convertFrom(ehdr_.e_machine);
+        byteOrder_.convertFrom(ehdr_.e_shoff);
+        byteOrder_.convertFrom(ehdr_.e_shnum);
+        byteOrder_.convertFrom(ehdr_.e_shstrndx);
+
+        switch (ehdr_.e_machine) {
             case EM_386:
                 image_->setArchitecture(QLatin1String("i386"));
                 break;
@@ -102,19 +172,36 @@ private:
                 image_->setArchitecture(QLatin1String("x86-64"));
                 break;
             default:
-                throw core::input::ParseError(tr("Unknown machine id: %1.").arg(ehdr.e_machine));
+                throw core::input::ParseError(tr("Unknown machine id: %1.").arg(ehdr_.e_machine));
         }
+    }
 
-        source_->seek(ehdr.e_shoff);
+    void parseSections() {
+        source_->seek(ehdr_.e_shoff);
 
-        std::vector<Shdr> shdrs(ehdr.e_shnum);
-        if (source_->read(reinterpret_cast<char *>(&shdrs[0]), sizeof(Shdr) * shdrs.size()) != static_cast<qint64>(sizeof(Shdr) * shdrs.size())) {
+        /*
+         * Read section headers.
+         */
+        shdrs_.resize(ehdr_.e_shnum);
+        if (source_->read(reinterpret_cast<char *>(&shdrs_[0]), sizeof(typename Elf::Shdr) * shdrs_.size())
+            != static_cast<qint64>(sizeof(typename Elf::Shdr) * shdrs_.size()))
+        {
             throw core::input::ParseError(tr("Cannot read section headers."));
         }
 
-        std::size_t initialSectionsCount = image_->sections()->all().size();
+        /*
+         * Read section contents.
+         */
+        sections_.reserve(shdrs_.size());
 
-        foreach (const Shdr &shdr, shdrs) {
+        foreach (typename Elf::Shdr &shdr, shdrs_) {
+            byteOrder_.convertFrom(shdr.sh_addr);
+            byteOrder_.convertFrom(shdr.sh_size);
+            byteOrder_.convertFrom(shdr.sh_flags);
+            byteOrder_.convertFrom(shdr.sh_type);
+            byteOrder_.convertFrom(shdr.sh_offset);
+            byteOrder_.convertFrom(shdr.sh_link);
+
             auto section = std::make_unique<core::image::Section>(QString(), shdr.sh_addr, shdr.sh_size);
 
             section->setAllocated(shdr.sh_flags & SHF_ALLOC);
@@ -130,56 +217,134 @@ private:
                 section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(source_->read(shdr.sh_size)));
             }
 
-            image_->sections()->add(std::move(section));
+            sections_.push_back(std::move(section));
         }
 
-        if (ehdr.e_shstrndx < shdrs.size()) {
-            auto shstrtab = image_->sections()->all()[initialSectionsCount + ehdr.e_shstrndx];
+        /*
+         * Read names of the sections.
+         */
+        if (ehdr_.e_shstrndx < shdrs_.size()) {
+            auto shstrtab = sections_[ehdr_.e_shstrndx].get();
             core::image::Reader reader(shstrtab);
 
-            for (std::size_t i = 0; i < shdrs.size(); ++i) {
-                image_->sections()->all()[initialSectionsCount + i]->setName(
-                    reader.readAsciizString(shdrs[i].sh_name, shstrtab->size()));
+            for (std::size_t i = 0; i < shdrs_.size(); ++i) {
+                sections_[i]->setName(reader.readAsciizString(shdrs_[i].sh_name, shstrtab->size()));
             }
         }
-
-        parseSymbols<Sym>(image_->sections()->getSectionByName(".symtab"), image_->sections()->getSectionByName(".strtab"));
-        parseSymbols<Sym>(image_->sections()->getSectionByName(".dynsym"), image_->sections()->getSectionByName(".dynstr"));
     }
 
-    template<class Sym>
-    void parseSymbols(const core::image::Section *symtab, const core::image::Section *strtab) {
-        if (!strtab || !symtab) {
+    void parseSymbols() {
+        for (std::size_t i = 0; i < sections_.size(); ++i) {
+            if (shdrs_[i].sh_type == SHT_SYMTAB || shdrs_[i].sh_type == SHT_DYNSYM) {
+                parseSymbols(i);
+            }
+        }
+    }
+
+    void parseSymbols(std::size_t symtabIndex) {
+        assert(symtabIndex < sections_.size());
+
+        auto strtabIndex = shdrs_[symtabIndex].sh_link;
+        if (strtabIndex >= shdrs_.size()) {
+            ncWarning("Symbol table %1 uses invalid string table %2.", symtabIndex, strtabIndex);
             return;
         }
 
+        auto symtab = sections_[symtabIndex].get();
+        auto strtab = sections_[strtabIndex].get();
+
         core::image::Reader strtabReader(strtab);
 
-        Sym sym;
+        auto &result = symbolTables_[symtabIndex];
+
+        typename Elf::Sym sym;
         for (ByteAddr addr = symtab->addr(); addr < symtab->endAddr(); addr += sizeof(sym)) {
             if (symtab->readBytes(addr, &sym, sizeof(sym)) != sizeof(sym)) {
                 break;
             }
 
+            byteOrder_.convertFrom(sym.st_name);
+            byteOrder_.convertFrom(sym.st_value);
+            byteOrder_.convertFrom(sym.st_info);
+            byteOrder_.convertFrom(sym.st_shndx);
+
             using core::image::Symbol;
 
             Symbol::Type type;
-            /* ELF64_ST_TYPE is the same. */
-            switch (ELF32_ST_TYPE(sym.st_info)) {
+            switch (Elf::st_type(sym.st_info)) {
                 case STT_OBJECT:
-                    type = Symbol::Data;
+                    type = Symbol::OBJECT;
                     break;
                 case STT_FUNC:
-                    type = Symbol::Function;
+                    type = Symbol::FUNCTION;
+                    break;
+                case STT_SECTION:
+                    type = Symbol::SECTION;
                     break;
                 default:
-                    type = Symbol::None;
+                    type = Symbol::NOTYPE;
                     break;
             }
 
-            auto name = strtabReader.readAsciizString(strtab->addr() + sym.st_name, strtab->size());
+            const core::image::Section *section = NULL;
+            if (sym.st_shndx < sections_.size() && sym.st_shndx != SHN_UNDEF) {
+                section = sections_[sym.st_shndx].get();
+            }
 
-            image_->symbols()->add(std::make_unique<Symbol>(type, std::move(name), sym.st_value));
+            auto name = strtabReader.readAsciizString(strtab->addr() + sym.st_name, strtab->size());
+            auto symbol = std::make_unique<Symbol>(type, std::move(name), sym.st_value, section);
+
+            result.push_back(std::move(symbol));
+        }
+    }
+
+    void parseRelocations() {
+        for (std::size_t i = 0; i < shdrs_.size(); ++i) {
+            if (shdrs_[i].sh_type == SHT_RELA) {
+                parseRelocations<RelWithAddend<Elf>>(i);
+            } else if (shdrs_[i].sh_type == SHT_REL) {
+                parseRelocations<RelWithoutAddend<Elf>>(i);
+            }
+        }
+    }
+
+    template<class Relocation>
+    void parseRelocations(std::size_t reltabIndex) {
+        assert(reltabIndex < sections_.size());
+
+        auto reltab = sections_[reltabIndex].get();
+
+        std::size_t symIndex = shdrs_[reltabIndex].sh_link;
+        if (symIndex >= sections_.size()) {
+            ncWarning("Relocations table %1 uses invalid symbol table %2.", reltabIndex, symIndex);
+            return;
+        }
+
+        if (!nc::contains(symbolTables_, symIndex)) {
+            parseSymbols(symIndex);
+        }
+
+        const auto &symbolTable = nc::find(symbolTables_, symIndex);
+
+        auto &result = relocationTables_[reltabIndex];
+
+        typename Relocation::Rel rel;
+
+        for (ByteAddr addr = reltab->addr(); addr < reltab->endAddr(); addr += sizeof(rel)) {
+            if (reltab->readBytes(addr, &rel, sizeof(rel)) != sizeof(rel)) {
+                break;
+            }
+
+            Relocation::convertFrom(byteOrder_, rel);
+
+            auto symbolIndex = Elf::r_sym(rel.r_info);
+
+            if (symbolIndex < symbolTable.size()) {
+                result.push_back(std::make_unique<core::image::Relocation>(
+                    rel.r_offset, symbolTable[symbolIndex].get(), Relocation::addend(rel)));
+            } else {
+                ncWarning("Symbol index %1 is out of range, symbol table has %2 elements.", symbolIndex, symbolTable.size());
+            }
         }
     }
 };
@@ -199,9 +364,26 @@ bool ElfParser::doCanParse(QIODevice *source) const {
 }
 
 void ElfParser::doParse(QIODevice *source, core::image::Image *image) const {
-    ElfParserPrivate parser(source, image);
-    parser.parse();
-    image->setDemangler("gnu-v3");
+    Elf32_Ehdr ehdr;
+
+    std::size_t bytesRead = source->read(reinterpret_cast<char *>(&ehdr), sizeof(ehdr));
+    if (bytesRead < sizeof(ehdr.e_ident) || !IS_ELF(ehdr)) {
+        throw core::input::ParseError(tr("ELF signature doesn't match."));
+    }
+
+    switch (ehdr.e_ident[EI_CLASS]) {
+        case ELFCLASS32: {
+            RealElfParser<Elf32>(source, image).parse();
+            break;
+        }
+        case ELFCLASS64: {
+            RealElfParser<Elf64>(source, image).parse();
+            break;
+        }
+        default: {
+            throw core::input::ParseError(tr("Unknown ELF class: %1.").arg(ehdr.e_ident[EI_CLASS]));
+        }
+    }
 }
 
 } // namespace elf

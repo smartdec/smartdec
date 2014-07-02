@@ -145,9 +145,9 @@ public:
                  * -- http://www.kishorekumar.net/pecoff_v8.1.htm
                  */
                 if (symbol.Type == 0x20) {
-                    type = Symbol::Function;
+                    type = Symbol::FUNCTION;
                 } else {
-                    type = Symbol::None;
+                    type = Symbol::NOTYPE;
                 }
 
                 QString name;

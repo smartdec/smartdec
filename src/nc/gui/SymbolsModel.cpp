@@ -18,6 +18,7 @@ enum SymbolsModelColumns {
     SMC_NAME,
     SMC_TYPE,
     SMC_VALUE,
+    SMC_SECTION,
     SMC_COUNT
 };
 
@@ -84,19 +85,21 @@ QVariant SymbolsModel::data(const QModelIndex &index, int role) const {
                 using core::image::Symbol;
 
                 switch (symbol->type()) {
-                    case Symbol::None:
+                    case Symbol::NOTYPE:
                         return tr("None");
-                    case Symbol::Function:
+                    case Symbol::FUNCTION:
                         return tr("Function");
-                    case Symbol::Data:
-                        return tr("Data");
+                    case Symbol::OBJECT:
+                        return tr("Object");
+                    case Symbol::SECTION:
+                        return tr("Section");
+                    default:
+                        ncWarning("Unknown symbol type: %1.", symbol->type());
+                        return tr("Unknown");
                 }
-
-                ncWarning("Unknown symbol type: %1.", symbol->type());
-
-                return tr("Unknown");
             }
             case SMC_VALUE: return QString("%1").arg(symbol->value(), 0, 16);
+            case SMC_SECTION: return symbol->section() ? symbol->section()->name() : QString();
             default:
                 unreachable();
         }
@@ -111,6 +114,7 @@ QVariant SymbolsModel::headerData(int section, Qt::Orientation orientation, int 
                 case SMC_NAME: return tr("Name");
                 case SMC_TYPE: return tr("Type");
                 case SMC_VALUE: return tr("Value");
+                case SMC_SECTION: return tr("Section");
                 default: unreachable();
             }
         }

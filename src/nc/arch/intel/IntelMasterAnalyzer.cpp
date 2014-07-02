@@ -93,7 +93,7 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
 
     if (architecture->bitness() == 32) {
         if (auto addr = calleeId.entryAddress()) {
-            if (auto symbol = context.image()->symbols()->find(core::image::Symbol::Function, *addr)) {
+            if (auto symbol = context.image()->symbols()->find(core::image::Symbol::FUNCTION, *addr)) {
                 int index = symbol->name().lastIndexOf(QChar('@'));
                 if (index != -1) {
                     ByteSize argumentsSize;

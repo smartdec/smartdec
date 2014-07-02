@@ -42,6 +42,9 @@ set(SOURCES
     image/Image.h
     image/Reader.cpp
     image/Reader.h
+    image/Relocation.h
+    image/Relocations.h
+    image/Relocations.cpp
     image/Section.cpp
     image/Section.h
     image/Sections.cpp

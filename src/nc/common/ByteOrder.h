@@ -63,8 +63,17 @@ class ByteOrder {
         }
     }
 
-    private:
+    /**
+     * Converts the contents of buf from *this byte order to the Current byte order.
+     *
+     * \param[in,out] buf   Buffer to be converted.
+     */
+    template<class T>
+    void convertFrom(T &buf) const {
+        convert(&buf, sizeof(buf), *this, Current);
+    }
 
+private:
     /** Actual value. */
     Type value_;
 };

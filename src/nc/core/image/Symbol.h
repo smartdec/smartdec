@@ -13,21 +13,25 @@ namespace nc {
 namespace core {
 namespace image {
 
+class Section;
+
 class Symbol {
 public:
     /**
      * Symbol type.
      */
     enum Type {
-        None,     ///< Not specified or unknown.
-        Function, ///< Function.
-        Data      ///< Data object.
+        NOTYPE,   ///< Not specified or unknown.
+        FUNCTION, ///< Function.
+        OBJECT,   ///< Data object.
+        SECTION   ///< Section object.
     };
 
 private:
     Type type_; ///< Type of the symbol.
     QString name_; ///< Name of the symbol.
     ConstantValue value_; ///< Value of the symbol.
+    const Section *section_; ///< Section referenced by the symbol.
 
 public:
     /**
@@ -36,9 +40,10 @@ public:
      * \param type Type of the symbol.
      * \param name Name of the symbol.
      * \param value Value of the symbol.
+     * \param section Pointer to the section referenced by the symbol.
      */
-    Symbol(Type type, QString name, ConstantValue value):
-        type_(type), name_(std::move(name)), value_(value)
+    Symbol(Type type, QString name, ConstantValue value, const Section *section = NULL):
+        type_(type), name_(std::move(name)), value_(value), section_(section)
     {}
 
     /**
@@ -55,6 +60,11 @@ public:
      * \return Value of the symbol.
      */
     ConstantValue value() const { return value_; }
+
+    /**
+     * \return Pointer to the section references by the symbol. Can be NULL.
+     */
+    const Section *section() const { return section_; }
 };
 
 } // namespace image

@@ -43,6 +43,7 @@ namespace image {
 
 class Sections;
 class Symbols;
+class Relocations;
 
 /**
  * An executable image.
@@ -51,6 +52,7 @@ class Image {
     const arch::Architecture *architecture_; ///< Architecture.
     std::unique_ptr<Sections> sections_; ///< Sections.
     std::unique_ptr<Symbols> symbols_; ///< Symbols.
+    std::unique_ptr<Relocations> relocations_; ///< Relocations.
     std::unique_ptr<mangling::Demangler> demangler_; ///< Demangler.
 
 public:
@@ -104,6 +106,16 @@ public:
      * \return Valid pointer to the symbols of the image.
      */
     const Symbols *symbols() const { return symbols_.get(); }
+
+    /**
+     * \return Valid pointer to the information about relocations.
+     */
+    Relocations *relocations() { return relocations_.get(); }
+
+    /**
+     * \return Valid pointer to the information about relocations.
+     */
+    const Relocations *relocations() const { return relocations_.get(); }
 
     /**
      * \return Valid pointer to a demangler.

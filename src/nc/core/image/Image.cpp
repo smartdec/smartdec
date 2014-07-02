@@ -31,6 +31,7 @@
 #include <nc/core/mangling/Demangler.h>
 #include <nc/core/mangling/BundledDemangler.h>
 
+#include "Relocations.h"
 #include "Sections.h"
 #include "Symbols.h"
 
@@ -40,6 +41,7 @@ Image::Image():
     architecture_(NULL),
     sections_(new Sections()),
     symbols_(new Symbols()),
+    relocations_(new Relocations()),
     demangler_(new mangling::BundledDemangler())
 {}
 

@@ -179,9 +179,9 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
 
         if (variable->memoryLocation().domain() == MemoryDomain::MEMORY) {
             ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
-            auto symbol = image().symbols()->find(image::Symbol::Data, addr);
+            auto symbol = image().symbols()->find(image::Symbol::OBJECT, addr);
             if (!symbol) {
-                symbol = image().symbols()->find(image::Symbol::None, addr);
+                symbol = image().symbols()->find(image::Symbol::NOTYPE, addr);
             }
             if (symbol) {
                 name = likec::Tree::cleanName(symbol->name());
