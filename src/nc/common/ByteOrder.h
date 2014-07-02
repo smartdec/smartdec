@@ -18,8 +18,7 @@ namespace nc {
  * Byte order of an architecture.
  */
 class ByteOrder {
-    public:
-
+public:
     /**
      * Enum with the byte orders.
      */
@@ -33,16 +32,16 @@ class ByteOrder {
     /**
      * Constructor from the enum.
      *
-     * \param value Value of the byte order.
+     * \param type Type of the byte order.
      */
-    ByteOrder(Type value): value_(value) {}
+    ByteOrder(Type type): type_(type) {}
 
     /**
      * Implicit cast operator to enum.
      *
-     * \return Byte order value contained in the object.
+     * \return Byte order type.
      */
-    operator Type() const { return value_; }
+    operator Type() const { return type_; }
 
     /**
      * Converts a sequence of bytes representing an integer value in 'from'
@@ -74,8 +73,8 @@ class ByteOrder {
     }
 
 private:
-    /** Actual value. */
-    Type value_;
+    /** Byte order type. */
+    Type type_;
 };
 
 } // namespace nc
