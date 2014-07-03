@@ -29,7 +29,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 #
-# Options for GNU C++ compiler.
+# Options for GCC.
 #
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
     execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
@@ -58,11 +58,19 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
 endif()
 
 #
-# Options for CLang++ compiler.
+# Options for CLang.
 #
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
     add_definitions(-Wall -Wextra)
+endif()
+
+#
+# Options for MSVC.
+#
+if(${MSVC})
+    # Target Windows XP.
+    add_definitions(-DWINVER=0x0501)
 endif()
 
 # Add source dir to includes.
