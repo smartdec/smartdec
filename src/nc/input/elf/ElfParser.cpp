@@ -37,7 +37,6 @@
 #include <nc/core/image/Reader.h>
 #include <nc/core/image/Relocations.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Sections.h>
 #include <nc/core/image/Symbols.h>
 #include <nc/core/input/ParseError.h>
 
@@ -125,7 +124,7 @@ public:
         parseRelocations();
 
         foreach (auto &section, sections_) {
-            image_->sections()->add(std::move(section));
+            image_->addSection(std::move(section));
         }
         foreach (auto &indexAndTable, symbolTables_) {
             foreach (auto &symbol, indexAndTable.second) {

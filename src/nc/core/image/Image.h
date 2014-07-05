@@ -29,6 +29,8 @@
 
 #include <QString>
 
+#include "ByteSource.h"
+
 namespace nc { namespace core {
 
 namespace arch {
@@ -41,16 +43,17 @@ namespace mangling {
 
 namespace image {
 
-class Sections;
+class Section;
 class Symbols;
 class Relocations;
 
 /**
  * An executable image.
  */
-class Image {
+class Image: public ByteSource {
     const arch::Architecture *architecture_; ///< Architecture.
-    std::unique_ptr<Sections> sections_; ///< Sections.
+    std::vector<std::unique_ptr<Section>> sections_; ///< The list of sections.
+
     std::unique_ptr<Symbols> symbols_; ///< Symbols.
     std::unique_ptr<Relocations> relocations_; ///< Relocations.
     std::unique_ptr<mangling::Demangler> demangler_; ///< Demangler.
@@ -88,14 +91,47 @@ public:
     void setArchitecture(const QString &name);
 
     /**
-     * \return Valid pointer to the sections of the executable file.
+     * Adds a new section.
+     *
+     * \param section Valid pointer to the section.
      */
-    Sections *sections() { return sections_.get(); }
+    void addSection(std::unique_ptr<Section> section);
 
     /**
-     * \return Valid pointer to the sections of the executable file.
+     * \return List of all sections.
      */
-    const Sections *sections() const { return sections_.get(); }
+    const std::vector<Section *> &sections() {
+        return reinterpret_cast<const std::vector<Section *> &>(sections_);
+    }
+
+    /**
+     * \return List of all sections.
+     */
+    const std::vector<const Section *> &sections() const {
+        return reinterpret_cast<const std::vector<const Section *> &>(sections_);
+    }
+
+    /**
+     * \param[in] addr Linear address.
+     *
+     * \return A valid pointer to allocated section containing given
+     *         virtual address or NULL if there is no such section.
+     */
+    const Section *getSectionContainingAddress(ByteAddr addr) const;
+
+    /**
+     * \param[in] name Section name.
+     *
+     * \return Valid pointer to a section with the given name,
+     *         NULL if there is no such section.
+     */
+    const Section *getSectionByName(const QString &name) const;
+
+    /**
+     * Reads a sequence of bytes from the section containing
+     * the given address and allocated during program execution.
+     */
+    ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 
     /**
      * \return Valid pointer to the symbols of the image.

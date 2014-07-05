@@ -24,7 +24,6 @@
 
 #include "Section.h"
 
-#include "Sections.h"
 #include "ZeroByteSource.h"
 
 namespace nc {
@@ -43,8 +42,6 @@ ByteSize Section::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
         return externalByteSource()->readBytes(addr - addr_, buf, size);
     } else if (isBss()) {
         return ZeroByteSource(this->size()).readBytes(addr - addr_, buf, size);
-    } else if (sections_ && sections_->externalByteSource()) {
-        return sections_->externalByteSource()->readBytes(addr, buf, size);
     } else {
         return 0;
     }

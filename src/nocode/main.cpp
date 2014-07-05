@@ -39,7 +39,6 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Sections.h>
 #include <nc/core/image/Symbols.h>
 #include <nc/core/input/Parser.h>
 #include <nc/core/input/ParserRepository.h>
@@ -80,7 +79,7 @@ void openFileForWritingAndCall(const QString &filename, T functor) {
 }
 
 void printSections(nc::core::Context &context, QTextStream &out) {
-    foreach (auto section, context.image()->sections()->all()) {
+    foreach (auto section, context.image()->sections()) {
         QString flags;
         if (section->isReadable()) {
             flags += QLatin1String("r");

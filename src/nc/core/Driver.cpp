@@ -13,7 +13,6 @@
 #include <nc/core/arch/disasm/Disassembler.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Sections.h>
 #include <nc/core/input/Parser.h>
 #include <nc/core/input/ParserRepository.h>
 #include <nc/core/ir/Function.h>
@@ -59,7 +58,7 @@ void Driver::parse(Context &context, const QString &filename) {
 void Driver::disassemble(Context &context) {
     context.logToken() << tr("Disassemble code sections.");
 
-    foreach (auto section, context.image()->sections()->all()) {
+    foreach (auto section, context.image()->sections()) {
         if (section->isCode()) {
             disassemble(context, section);
         }

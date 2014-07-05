@@ -42,7 +42,7 @@ public:
     virtual ~ByteSource() {}
 
     /**
-     * Reads a sequence of bytes from the image.
+     * Reads a sequence of bytes.
      *
      * \param[in] addr  Linear address of the first byte to read.
      * \param[out] buf  Valid pointer to the buffer to read into.

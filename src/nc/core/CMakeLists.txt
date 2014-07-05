@@ -47,8 +47,6 @@ set(SOURCES
     image/Relocations.cpp
     image/Section.cpp
     image/Section.h
-    image/Sections.cpp
-    image/Sections.h
     image/Symbol.h
     image/Symbols.cpp
     image/Symbols.h

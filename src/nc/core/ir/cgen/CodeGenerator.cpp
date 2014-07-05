@@ -32,7 +32,6 @@
 #include <nc/core/arch/Registers.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
-#include <nc/core/image/Sections.h>
 #include <nc/core/image/Symbols.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
@@ -221,7 +220,7 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
             ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
             ByteSize size = variable->memoryLocation().size() / CHAR_BIT;
 
-            if (auto value = image::Reader(image().sections()).readInt<ConstantValue>(addr, size, image().architecture()->byteOrder())) {
+            if (auto value = image::Reader(&image()).readInt<ConstantValue>(addr, size, image().architecture()->byteOrder())) {
                 initialValue = std::make_unique<likec::Typecast>(tree(),
                     type,
                     std::make_unique<likec::IntegerConstant>(tree(), *value, tree().makeIntegerType(type->size(), true)));

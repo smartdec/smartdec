@@ -33,7 +33,6 @@
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/arch/Registers.h>
 #include <nc/core/image/Image.h>
-#include <nc/core/image/Sections.h>
 #ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
 #include <nc/core/image/Reader.h>
 #include <nc/core/image/Section.h>
@@ -1024,7 +1023,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
             return true;
         };
 
-        QString string = image::Reader(parent().image().sections()).readAsciizString(value.value(), 1024);
+        QString string = image::Reader(&parent().image()).readAsciizString(value.value(), 1024);
 
         if (!string.isNull() && isAscii(string)) {
             return std::make_unique<likec::String>(tree(), string);

@@ -33,7 +33,6 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
-#include <nc/core/image/Sections.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
@@ -179,7 +178,7 @@ std::vector<ByteAddr> IRGenerator::getJumpTableEntries(const ir::Term *target, c
     const std::size_t maxTableEntries = 65536;
     const ByteSize entrySize = target->size() / CHAR_BIT;
 
-    image::Reader reader(image_->sections());
+    image::Reader reader(image_);
 
     ByteAddr address = arrayAccess.base();
     while (auto entry = reader.readInt<ByteAddr>(address, entrySize, image_->architecture()->byteOrder())) {

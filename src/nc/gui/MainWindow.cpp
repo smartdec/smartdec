@@ -50,7 +50,6 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Sections.h>
 #include <nc/core/image/Symbol.h>
 #include <nc/core/ir/Program.h>
 
@@ -471,7 +470,7 @@ void MainWindow::disassemble() {
     if (!project()) {
         return;
     }
-    if (project()->image()->sections()->all().empty()) {
+    if (project()->image()->sections().empty()) {
         QMessageBox::critical(this, tr("Error"), tr("Sorry, the file you are currently working on does not contain any information about sections. There is nothing I could disassemble."));
         return;
     }

@@ -33,7 +33,6 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Sections.h>
 
 #include "CommandQueue.h"
 #include "Decompile.h"
@@ -101,7 +100,7 @@ void Project::deleteInstructions(const std::vector<const core::arch::Instruction
 }
 
 void Project::disassemble() {
-    foreach (const core::image::Section *section, image()->sections()->all()) {
+    foreach (const core::image::Section *section, image()->sections()) {
         if (section->isCode()) {
             disassemble(section, section->addr(), section->endAddr());
         }

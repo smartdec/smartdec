@@ -31,11 +31,7 @@ namespace core {
 namespace image {
 
 ByteSize Reader::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
-    if (externalByteSource()) {
-        return externalByteSource()->readBytes(addr, buf, size);
-    } else {
-        return 0;
-    }
+    return externalByteSource_->readBytes(addr, buf, size);
 }
 
 QString Reader::readAsciizString(ByteAddr addr, ByteSize maxSize) const {

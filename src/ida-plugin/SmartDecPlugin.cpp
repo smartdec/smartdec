@@ -40,7 +40,6 @@
 #include <nc/gui/MainWindow.h>
 #include <nc/gui/Project.h>
 
-#include "IdaByteSource.h"
 #include "IdaDemangler.h"
 #include "IdaFrontend.h"
 #include "NavigationHelper.h"
@@ -215,9 +214,6 @@ std::unique_ptr<gui::Project> SmartDecPlugin::createIdaProject() const {
 
     /* Set demangler. */
     image->setDemangler(std::make_unique<IdaDemangler>());
-
-    /* Set image byte source. */
-    image->sections()->setExternalByteSource(std::make_unique<IdaByteSource>());
 
     /* Create sections. */
     IdaFrontend::createSections(image);

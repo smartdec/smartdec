@@ -30,7 +30,6 @@
 
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Sections.h>
 
 namespace nc { namespace gui {
 
@@ -70,7 +69,7 @@ int SectionsModel::rowCount(const QModelIndex &parent) const {
         return 0;
     }
     if (parent == QModelIndex()) {
-        return static_cast<int>(image()->sections()->all().size());
+        return static_cast<int>(image()->sections().size());
     } else {
         return 0;
     }
@@ -85,7 +84,7 @@ QModelIndex SectionsModel::index(int row, int column, const QModelIndex &parent)
         return QModelIndex();
     }
     if (row < rowCount(parent)) {
-        return createIndex(row, column, (void *)image()->sections()->all()[row]);
+        return createIndex(row, column, (void *)image()->sections()[row]);
     } else {
         return QModelIndex();
     }

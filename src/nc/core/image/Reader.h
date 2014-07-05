@@ -48,23 +48,18 @@ namespace image {
 class Reader: public ByteSource {
     const ByteSource *externalByteSource_; ///< External byte source.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
      * \param externalByteSource Valid pointer to the byte source to take bytes from.
      */
+    explicit
     Reader(const ByteSource *externalByteSource):
         externalByteSource_(externalByteSource)
     {
         assert(externalByteSource_ != NULL);
     }
-
-    /**
-     * \return Valid pointer to the external byte source.
-     */
-    const ByteSource *externalByteSource() const { return externalByteSource_; }
 
     /**
      * Reads a sequence of bytes from the external byte source.
@@ -75,7 +70,7 @@ class Reader: public ByteSource {
      *
      * \return Number of bytes actually read and copied into the buffer.
      */
-    virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
+    ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 
     /**
      * Reads an integer value.
@@ -117,10 +112,10 @@ class Reader: public ByteSource {
     /**
      * Reads an ASCIIZ string.
      *
-     * \param[in] addr                 Linear address of the first byte to read.
-     * \param[in] maxSize              Max number of bytes to read.
+     * \param[in] addr      Linear address of the first byte to read.
+     * \param[in] maxSize   Max number of bytes to read.
      *
-     * \return                         ASCIIZ string without zero char terminator on success, NULL string on failure.
+     * \return ASCIIZ string without zero char terminator on success, NULL string on failure.
      */
     QString readAsciizString(ByteAddr addr, ByteSize maxSize) const;
 };

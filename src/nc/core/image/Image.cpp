@@ -24,6 +24,7 @@
 
 #include "Image.h"
 
+#include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/arch/ArchitectureRepository.h>
@@ -32,14 +33,13 @@
 #include <nc/core/mangling/BundledDemangler.h>
 
 #include "Relocations.h"
-#include "Sections.h"
+#include "Section.h"
 #include "Symbols.h"
 
 namespace nc { namespace core { namespace image {
 
 Image::Image():
     architecture_(NULL),
-    sections_(new Sections()),
     symbols_(new Symbols()),
     relocations_(new Relocations()),
     demangler_(new mangling::BundledDemangler())
@@ -56,6 +56,37 @@ void Image::setArchitecture(const arch::Architecture *architecture) {
 
 void Image::setArchitecture(const QString &name) {
     setArchitecture(arch::ArchitectureRepository::instance()->getArchitecture(name));
+}
+
+void Image::addSection(std::unique_ptr<Section> section) {
+    assert(section != NULL);
+    sections_.push_back(std::move(section));
+}
+
+const Section *Image::getSectionContainingAddress(ByteAddr addr) const {
+    foreach (auto section, sections()) {
+        if (section->isAllocated() && section->containsAddress(addr)) {
+            return section;
+        }
+    }
+    return NULL;
+}
+
+const Section *Image::getSectionByName(const QString &name) const {
+    foreach (auto section, sections()) {
+        if (section->name() == name) {
+            return section;
+        }
+    }
+    return NULL;
+}
+
+ByteSize Image::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
+    if (const Section *section = getSectionContainingAddress(addr)) {
+        return section->readBytes(addr, buf, size);
+    } else {
+        return 0;
+    }
 }
 
 void Image::setDemangler(std::unique_ptr<mangling::Demangler> demangler) {

@@ -37,8 +37,6 @@ namespace nc {
 namespace core {
 namespace image {
 
-class Sections;
-
 /**
  * Section of an executable file.
  */
@@ -60,12 +58,9 @@ class Section: public ByteSource {
 
     std::unique_ptr<ByteSource> externalByteSource_; ///< External source of this section's bytes.
 
-    const Sections *sections_; ///< List of sections.
-
 public:
-
     /**
-     * Class constructor.
+     * Constructor.
      *
      * \param[in] name  Name of the section.
      * \param[in] addr  Linear address of the section's start.
@@ -91,11 +86,6 @@ public:
     ByteAddr addr() const { return addr_; }
 
     /**
-     * \return Virtual address of the section's end.
-     */
-    ByteAddr endAddr() const { return addr_ + size_; }
-
-    /**
      * Sets a new virtual address of the section's start.
      *
      * \param[in] addr New address.
@@ -113,6 +103,18 @@ public:
      * \param[in] size New size of the section.
      */
     void setSize(ByteSize size) { size_ = size; }
+
+    /**
+     * \return Virtual address of the section's end.
+     */
+    ByteAddr endAddr() const { return addr_ + size_; }
+
+    /**
+     * \param[in] addr Virtual address.
+     *
+     * \return True if this section contains given virtual address.
+     */
+    bool containsAddress(ByteAddr addr) const { return addr_ <= addr && addr < addr_ + size_; }
 
     /**
      * \return True if the section occupied memory.
@@ -197,32 +199,21 @@ public:
     void setBss(bool isBss = true) { isBss_ = isBss; }
 
     /**
-     * \param[in] addr Virtual address.
-     *
-     * \return True if this section contains given virtual address.
-     */
-    bool containsAddress(ByteAddr addr) const { return addr_ <= addr && addr < addr_ + size_; }
-
-    /**
      * \return Pointer to the external byte source. Can be NULL.
      */
     ByteSource *externalByteSource() const { return externalByteSource_.get(); }
 
     /**
-     * Sets the external byte source.
+     * Sets the external byte source with the content of the section.
      *
      * \param byteSource Pointer to the new external byte source. Can be NULL.
      */
     void setExternalByteSource(std::unique_ptr<ByteSource> byteSource) { externalByteSource_ = std::move(byteSource); }
 
     /**
-     * Sets the list of sections this section belongs to.
-     *
-     * \param sections Pointer to the sections. Can be NULL.
+     * Reads a sequence of bytes from the section.
      */
-    void setSections(const Sections *sections) { sections_ = sections; }
-
-    virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
+    ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 };
 
 } // namespace image

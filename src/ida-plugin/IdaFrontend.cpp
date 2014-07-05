@@ -40,7 +40,8 @@
 #include <nc/common/make_unique.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Sections.h>
+
+#include "IdaByteSource.h"
 
 namespace nc { namespace ida {
  
@@ -123,15 +124,16 @@ void IdaFrontend::createSections(core::image::Image *image) {
             checked_cast<ByteSize>(idaSegment->size())
         );
 
-        section->setReadable((idaSegment->perm & SEGPERM_READ) != 0);
-        section->setWritable((idaSegment->perm & SEGPERM_WRITE) != 0);
-        section->setExecutable((idaSegment->perm & SEGPERM_EXEC) != 0);
+        section->setReadable(idaSegment->perm & SEGPERM_READ);
+        section->setWritable(idaSegment->perm & SEGPERM_WRITE);
+        section->setExecutable(idaSegment->perm & SEGPERM_EXEC);
         section->setCode(idaSegment->type == SEG_CODE);
         section->setData(idaSegment->type == SEG_DATA);
         section->setBss(idaSegment->type == SEG_BSS);
         section->setAllocated(section->isCode() || section->isData() || section->isBss());
+        section->setByteSource(std::make_unique<IdaByteSource>());
 
-        image->sections()->add(std::move(section));
+        image->addSection(std::move(section));
     }
 }
 

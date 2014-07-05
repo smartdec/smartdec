@@ -34,7 +34,6 @@
 #include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Sections.h>
 #include <nc/core/image/Symbols.h>
 #include <nc/core/input/ParseError.h>
 
@@ -160,7 +159,7 @@ public:
                 image_->symbols()->add(std::make_unique<Symbol>(type, name, symbol.Value));
             }
 
-            foreach (auto section, image_->sections()->all()) {
+            foreach (auto section, image_->sections()) {
                 if (section->name().startsWith('/')) {
                     uint32_t offset;
                     if (stringToInt(section->name().mid(1), &offset)) {
@@ -211,7 +210,7 @@ public:
             }
             source_->seek(pos);
 
-            image_->sections()->add(std::move(section));
+            image_->addSection(std::move(section));
         }
     }
 

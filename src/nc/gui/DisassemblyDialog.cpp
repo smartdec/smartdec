@@ -35,7 +35,6 @@
 
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Sections.h>
 
 Q_DECLARE_METATYPE(const nc::core::image::Section *)
 
@@ -87,7 +86,7 @@ void DisassemblyDialog::updateSectionsList() {
     sectionComboBox_->clear();
 
     if (image()) {
-        foreach (auto section, image()->sections()->all()) {
+        foreach (auto section, image()->sections()) {
             sectionComboBox_->addItem(section->name(), QVariant::fromValue(section));
         }
     }
