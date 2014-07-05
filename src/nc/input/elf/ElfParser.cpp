@@ -107,7 +107,7 @@ class RealElfParser {
     core::image::Image *image_;
 
     typename Elf::Ehdr ehdr_;
-    ByteOrder byteOrder_ = ByteOrder::Current;
+    ByteOrder byteOrder_;
     std::vector<typename Elf::Shdr> shdrs_;
     std::vector<std::unique_ptr<core::image::Section>> sections_;
     boost::unordered_map<std::size_t, std::vector<std::unique_ptr<core::image::Symbol>>> symbolTables_;
@@ -115,7 +115,7 @@ class RealElfParser {
 
 public:
     RealElfParser(QIODevice *source, core::image::Image *image):
-        source_(source), image_(image)
+        source_(source), image_(image), byteOrder_(ByteOrder::Current)
     {}
 
     void parse() {
