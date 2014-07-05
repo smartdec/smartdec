@@ -6,6 +6,7 @@
 #include <nc/config.h>
 
 #include <vector>
+#include <memory>
 
 #include <boost/unordered_map.hpp>
 
