@@ -5,12 +5,12 @@
 
 #include <QStringList>
 
+#include <nc/common/CheckedCast.h>
 #include <nc/common/Unreachable.h>
 #include <nc/common/Warnings.h>
 
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Symbols.h>
 
 namespace nc { namespace gui {
 
@@ -49,7 +49,7 @@ int SymbolsModel::rowCount(const QModelIndex &parent) const {
         return 0;
     }
     if (parent == QModelIndex()) {
-        return static_cast<int>(image()->symbols()->all().size());
+        return checked_cast<int>(image()->symbols().size());
     } else {
         return 0;
     }
@@ -64,7 +64,7 @@ QModelIndex SymbolsModel::index(int row, int column, const QModelIndex &parent) 
         return QModelIndex();
     }
     if (row < rowCount(parent)) {
-        return createIndex(row, column, (void *)image()->symbols()->all()[row]);
+        return createIndex(row, column, (void *)image()->symbols()[row]);
     } else {
         return QModelIndex();
     }

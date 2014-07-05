@@ -225,14 +225,14 @@ std::unique_ptr<gui::Project> SmartDecPlugin::createIdaProject() const {
         QString name = IdaFrontend::functionName(address);
 
         if (!name.isEmpty()) {
-            image->symbols()->add(std::make_unique<Symbol>(Symbol::Function, name, address));
+            image->addSymbol(std::make_unique<Symbol>(Symbol::Function, name, address));
         }
     }
 
     /* Add imported function names. */
     typedef std::pair<ByteAddr, QString> Import;
     foreach(const Import &import, IdaFrontend::importedFunctions()) {
-        image->symbols()->add(std::make_unique<Symbol>(Symbol::Function, import.second, import.first));
+        image->addSymbol(std::make_unique<Symbol>(Symbol::Function, import.second, import.first));
     }
 
     return project;

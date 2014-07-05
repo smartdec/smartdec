@@ -37,7 +37,6 @@
 #include <nc/core/image/Reader.h>
 #include <nc/core/image/Relocations.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Symbols.h>
 #include <nc/core/input/ParseError.h>
 
 #include "elf32.h"
@@ -128,7 +127,7 @@ public:
         }
         foreach (auto &indexAndTable, symbolTables_) {
             foreach (auto &symbol, indexAndTable.second) {
-                image_->symbols()->add(std::move(symbol));
+                image_->addSymbol(std::move(symbol));
             }
         }
         foreach (auto &indexAndTable, relocationTables_) {

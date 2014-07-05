@@ -13,7 +13,6 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/core/image/Image.h>
-#include <nc/core/image/Symbols.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
@@ -618,9 +617,9 @@ void SignatureAnalyzer::computeName(const CalleeId &calleeId, FunctionSignature 
 
     if (calleeId.entryAddress()) {
         /* Take the name of the corresponding symbol, if possible. */
-        auto symbol = image_.symbols()->find(image::Symbol::FUNCTION, *calleeId.entryAddress());
+        auto symbol = image_.getSymbol(*calleeId.entryAddress(), image::Symbol::FUNCTION);
         if (!symbol) {
-            symbol = image_.symbols()->find(image::Symbol::NOTYPE, *calleeId.entryAddress());
+            symbol = image_.getSymbol(*calleeId.entryAddress(), image::Symbol::NOTYPE);
         }
         if (symbol) {
             signature.setName(likec::Tree::cleanName(symbol->name()));

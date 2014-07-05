@@ -25,6 +25,7 @@
 #include "Image.h"
 
 #include <nc/common/Foreach.h>
+#include <nc/common/Range.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/arch/ArchitectureRepository.h>
@@ -34,13 +35,11 @@
 
 #include "Relocations.h"
 #include "Section.h"
-#include "Symbols.h"
 
 namespace nc { namespace core { namespace image {
 
 Image::Image():
     architecture_(NULL),
-    symbols_(new Symbols()),
     relocations_(new Relocations()),
     demangler_(new mangling::BundledDemangler())
 {}
@@ -87,6 +86,15 @@ ByteSize Image::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
     } else {
         return 0;
     }
+}
+
+void Image::addSymbol(std::unique_ptr<Symbol> symbol) {
+    value2symbol_[std::make_pair(symbol->value(), symbol->type())] = symbol.get();
+    symbols_.push_back(std::move(symbol));
+}
+
+const Symbol *Image::getSymbol(ConstantValue value, Symbol::Type type) const {
+    return nc::find(value2symbol_, std::make_pair(value, type));
 }
 
 void Image::setDemangler(std::unique_ptr<mangling::Demangler> demangler) {

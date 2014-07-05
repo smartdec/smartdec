@@ -48,8 +48,6 @@ set(SOURCES
     image/Section.cpp
     image/Section.h
     image/Symbol.h
-    image/Symbols.cpp
-    image/Symbols.h
     image/ZeroByteSource.cpp
     image/ZeroByteSource.h
     input/ParseError.cpp

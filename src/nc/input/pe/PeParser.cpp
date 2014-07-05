@@ -34,7 +34,6 @@
 #include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Symbols.h>
 #include <nc/core/input/ParseError.h>
 
 #include "pe.h"
@@ -156,7 +155,7 @@ public:
                     name = getStringFromTable(symbol.N.Name.Long);
                 }
 
-                image_->symbols()->add(std::make_unique<Symbol>(type, name, symbol.Value));
+                image_->addSymbol(std::make_unique<Symbol>(type, name, symbol.Value));
             }
 
             foreach (auto section, image_->sections()) {

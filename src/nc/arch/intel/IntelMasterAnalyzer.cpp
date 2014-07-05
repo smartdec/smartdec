@@ -30,7 +30,6 @@
 
 #include <nc/core/Context.h>
 #include <nc/core/image/Image.h>
-#include <nc/core/image/Symbols.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
@@ -93,7 +92,7 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
 
     if (architecture->bitness() == 32) {
         if (auto addr = calleeId.entryAddress()) {
-            if (auto symbol = context.image()->symbols()->find(core::image::Symbol::FUNCTION, *addr)) {
+            if (auto symbol = context.image()->getSymbol(*addr, core::image::Symbol::FUNCTION)) {
                 int index = symbol->name().lastIndexOf(QChar('@'));
                 if (index != -1) {
                     ByteSize argumentsSize;

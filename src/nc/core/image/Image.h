@@ -26,10 +26,14 @@
 #include <nc/config.h>
 
 #include <memory>
+#include <vector>
+
+#include <boost/unordered_map.hpp>
 
 #include <QString>
 
 #include "ByteSource.h"
+#include "Symbol.h"
 
 namespace nc { namespace core {
 
@@ -44,7 +48,6 @@ namespace mangling {
 namespace image {
 
 class Section;
-class Symbols;
 class Relocations;
 
 /**
@@ -53,8 +56,8 @@ class Relocations;
 class Image: public ByteSource {
     const arch::Architecture *architecture_; ///< Architecture.
     std::vector<std::unique_ptr<Section>> sections_; ///< The list of sections.
-
-    std::unique_ptr<Symbols> symbols_; ///< Symbols.
+    std::vector<std::unique_ptr<Symbol>> symbols_; ///< The list of symbols.
+    boost::unordered_map<std::pair<ConstantValue, Symbol::Type>, Symbol *> value2symbol_; ///< Mapping from value and symbol type to a symbol with this value and type.
     std::unique_ptr<Relocations> relocations_; ///< Relocations.
     std::unique_ptr<mangling::Demangler> demangler_; ///< Demangler.
 
@@ -134,14 +137,28 @@ public:
     ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 
     /**
-     * \return Valid pointer to the symbols of the image.
+     * Adds a symbol.
+     *
+     * \param symbol Valid pointer to the symbol.
      */
-    Symbols *symbols() { return symbols_.get(); }
+    void addSymbol(std::unique_ptr<Symbol> symbol);
 
     /**
-     * \return Valid pointer to the symbols of the image.
+     * \return List of all symbols.
      */
-    const Symbols *symbols() const { return symbols_.get(); }
+    const std::vector<const Symbol *> &symbols() const {
+        return reinterpret_cast<const std::vector<const Symbol *> &>(symbols_);
+    }
+
+    /**
+     * Finds a symbol with a given type and value.
+     *
+     * \param value Value of the symbol.
+     * \param type Type of the symbol.
+     *
+     * \return Pointer to a symbol with the given type and value. Can be NULL.
+     */
+    const Symbol *getSymbol(ConstantValue value, Symbol::Type type) const;
 
     /**
      * \return Valid pointer to the information about relocations.

@@ -32,7 +32,6 @@
 #include <nc/core/arch/Registers.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
-#include <nc/core/image/Symbols.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/calling/Hooks.h>
@@ -184,9 +183,9 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
             variable->memoryLocation().addr() % CHAR_BIT == 0)
         {
             ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
-            auto symbol = image().symbols()->find(image::Symbol::OBJECT, addr);
+            auto symbol = image().getSymbol(addr, image::Symbol::OBJECT);
             if (!symbol) {
-                symbol = image().symbols()->find(image::Symbol::NOTYPE, addr);
+                symbol = image().getSymbol(addr, image::Symbol::NOTYPE);
             }
             if (symbol) {
                 name = likec::Tree::cleanName(symbol->name());

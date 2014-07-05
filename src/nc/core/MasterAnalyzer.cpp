@@ -30,7 +30,6 @@
 #include <nc/core/Context.h>
 #include <nc/core/arch/irgen/IRGenerator.h>
 #include <nc/core/image/Image.h>
-#include <nc/core/image/Symbols.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>

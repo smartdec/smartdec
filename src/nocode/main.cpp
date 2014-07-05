@@ -39,7 +39,6 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/Symbols.h>
 #include <nc/core/input/Parser.h>
 #include <nc/core/input/ParserRepository.h>
 #include <nc/core/ir/BasicBlock.h>
@@ -105,7 +104,7 @@ void printSections(nc::core::Context &context, QTextStream &out) {
 }
 
 void printSymbols(nc::core::Context &context, QTextStream &out) {
-    foreach (const auto *symbol, context.image()->symbols()->all()) {
+    foreach (const auto *symbol, context.image()->symbols()) {
         using nc::core::image::Symbol;
 
         QString type;
