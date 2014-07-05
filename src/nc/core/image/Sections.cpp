@@ -8,7 +8,6 @@
 #include <nc/common/Foreach.h>
 
 #include "Section.h"
-#include "Symbols.h"
 
 namespace nc {
 namespace core {
