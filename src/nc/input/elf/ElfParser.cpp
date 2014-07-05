@@ -35,7 +35,7 @@
 #include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
-#include <nc/core/image/Relocations.h>
+#include <nc/core/image/Relocation.h>
 #include <nc/core/image/Section.h>
 #include <nc/core/input/ParseError.h>
 
@@ -132,7 +132,7 @@ public:
         }
         foreach (auto &indexAndTable, relocationTables_) {
             foreach (auto &relocation, indexAndTable.second) {
-                image_->relocations()->add(std::move(relocation));
+                image_->addRelocation(std::move(relocation));
             }
         }
     }

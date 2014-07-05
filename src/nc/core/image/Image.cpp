@@ -33,14 +33,13 @@
 #include <nc/core/mangling/Demangler.h>
 #include <nc/core/mangling/BundledDemangler.h>
 
-#include "Relocations.h"
+#include "Relocation.h"
 #include "Section.h"
 
 namespace nc { namespace core { namespace image {
 
 Image::Image():
     architecture_(NULL),
-    relocations_(new Relocations()),
     demangler_(new mangling::BundledDemangler())
 {}
 
@@ -95,6 +94,15 @@ void Image::addSymbol(std::unique_ptr<Symbol> symbol) {
 
 const Symbol *Image::getSymbol(ConstantValue value, Symbol::Type type) const {
     return nc::find(value2symbol_, std::make_pair(value, type));
+}
+
+void Image::addRelocation(std::unique_ptr<Relocation> relocation) {
+    address2relocation_[relocation->address()] = relocation.get();
+    relocations_.push_back(std::move(relocation));
+}
+
+const Relocation *Image::getRelocation(ByteAddr address) const {
+    return nc::find(address2relocation_, address);
 }
 
 void Image::setDemangler(std::unique_ptr<mangling::Demangler> demangler) {

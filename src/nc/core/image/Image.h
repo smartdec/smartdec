@@ -48,7 +48,7 @@ namespace mangling {
 namespace image {
 
 class Section;
-class Relocations;
+class Relocation;
 
 /**
  * An executable image.
@@ -58,7 +58,8 @@ class Image: public ByteSource {
     std::vector<std::unique_ptr<Section>> sections_; ///< The list of sections.
     std::vector<std::unique_ptr<Symbol>> symbols_; ///< The list of symbols.
     boost::unordered_map<std::pair<ConstantValue, Symbol::Type>, Symbol *> value2symbol_; ///< Mapping from value and symbol type to a symbol with this value and type.
-    std::unique_ptr<Relocations> relocations_; ///< Relocations.
+    std::vector<std::unique_ptr<Relocation>> relocations_; ///< The list of relocations.
+    boost::unordered_map<ByteAddr, Relocation *> address2relocation_; ///< Mapping from an address to the relocation with this address.
     std::unique_ptr<mangling::Demangler> demangler_; ///< Demangler.
 
 public:
@@ -161,14 +162,18 @@ public:
     const Symbol *getSymbol(ConstantValue value, Symbol::Type type) const;
 
     /**
-     * \return Valid pointer to the information about relocations.
+     * Adds an information about relocation.
+     *
+     * \param relocation Valid pointer to a relocation information.
      */
-    Relocations *relocations() { return relocations_.get(); }
+    void addRelocation(std::unique_ptr<Relocation> relocation);
 
     /**
-     * \return Valid pointer to the information about relocations.
+     * \param address Virtual address.
+     *
+     * \return Pointer to a relocation for this address. Can be NULL.
      */
-    const Relocations *relocations() const { return relocations_.get(); }
+    const Relocation *getRelocation(ByteAddr address) const;
 
     /**
      * \return Valid pointer to a demangler.
