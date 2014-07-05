@@ -34,6 +34,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
+class Expression;
+
 /**
  * Case label.
  */

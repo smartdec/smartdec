@@ -203,7 +203,12 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
             name = QString("g%1").arg(variable->memoryLocation().addr() / CHAR_BIT, 0, 16);
         }
 
-        auto declaration = std::make_unique<likec::VariableDeclaration>(tree(), name, makeVariableType(variable));
+        auto type = makeVariableType(variable);
+
+        std::unique_ptr<likec::Expression> initialValue;
+        // TODO
+
+        auto declaration = std::make_unique<likec::VariableDeclaration>(tree(), name, type, std::move(initialValue));
         declaration->setComment(comment);
         result = declaration.get();
 

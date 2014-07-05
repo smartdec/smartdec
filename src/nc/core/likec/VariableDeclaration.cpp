@@ -31,10 +31,22 @@ namespace nc {
 namespace core {
 namespace likec {
 
+VariableDeclaration *VariableDeclaration::rewrite() {
+    if (initialValue_) {
+        rewriteChild(initialValue_);
+    }
+    return this;
+}
+
 void VariableDeclaration::doPrint(PrintContext &context) const {
     printComment(context);
 
-    context.out() << *type() << ' ' << identifier() << ';';
+    context.out() << *type() << ' ' << identifier();
+    if (initialValue_) {
+        context.out() << " = ";
+        initialValue_->print(context);
+    }
+    context.out() << ';';
 }
 
 } // namespace likec

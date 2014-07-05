@@ -33,6 +33,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
+class Expression;
+
 /**
  * Do-While loop.
  */

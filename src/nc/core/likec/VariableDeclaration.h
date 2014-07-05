@@ -25,8 +25,12 @@
 
 #include <nc/config.h>
 
+#include <cassert>
+#include <memory>
+
 #include "Commentable.h"
 #include "Declaration.h"
+#include "Expression.h"
 
 namespace nc {
 namespace core {
@@ -39,6 +43,7 @@ class Type;
  */
 class VariableDeclaration: public Declaration, public Commentable {
     const Type *type_; ///< Type of this variable.
+    std::unique_ptr<Expression> initialValue_; ///< Initial value of this variable.
 
 public:
     /**
@@ -46,18 +51,26 @@ public:
      *
      * \param[in] tree Owning tree.
      * \param[in] identifier Name of this variable.
-     * \param[in] type Type of this variable.
+     * \param[in] type Valid pointer to the type of this variable.
+     * \param[in] initialValue Pointer to the expression representing the initial value. Can be NULL.
      */
-    VariableDeclaration(Tree &tree, const QString &identifier, const Type *type):
-        Declaration(tree, VARIABLE_DECLARATION, identifier), type_(type)
-    {}
+    VariableDeclaration(Tree &tree, QString identifier, const Type *type, std::unique_ptr<Expression> initialValue = NULL):
+        Declaration(tree, VARIABLE_DECLARATION, std::move(identifier)), type_(type), initialValue_(std::move(initialValue))
+    {
+        assert(type != NULL);
+    }
 
     /**
-     * \return Type of this variable.
+     * \return Valid pointer to the type of this variable.
      */
     const Type *type() const { return type_; }
 
-    virtual VariableDeclaration *rewrite() override { return this; }
+    /**
+     * \return Pointer to the expression representing the initial value. Can be NULL.
+     */
+    const Expression *initialValue() const { return initialValue_.get(); }
+
+    virtual VariableDeclaration *rewrite() override;
 
     virtual void doPrint(PrintContext &context) const override;
 };

@@ -33,6 +33,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
+class Expression;
+
 /**
  * Return statement with optional returned value.
  */

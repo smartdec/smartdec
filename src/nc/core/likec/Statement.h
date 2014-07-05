@@ -41,8 +41,6 @@ namespace ir {
 
 namespace likec {
 
-class Expression;
-
 /**
  * Base class for statement node.
  */
