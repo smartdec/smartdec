@@ -65,7 +65,8 @@ public:
     /**
      * \param[in] addr Linear address.
      *
-     * \return Section containing given virtual address, or NULL if there is no such section.
+     * \return A valid pointer to allocated section containing given virtual address
+     *         or NULL if there is no such section.
      */
     const Section *getSectionContainingAddress(ByteAddr addr) const;
     

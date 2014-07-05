@@ -32,7 +32,9 @@ namespace likec {
 
 IntegerConstant::IntegerConstant(Tree &tree, const SizedValue &value, const IntegerType *type):
     Expression(tree, INTEGER_CONSTANT), value_(value), type_(type)
-{}
+{
+    assert(value.size() == type->size());
+}
 
 IntegerConstant::IntegerConstant(Tree &tree, ConstantValue value, const IntegerType *type):
     Expression(tree, INTEGER_CONSTANT), value_(SizedValue(type->size(), value)), type_(type)

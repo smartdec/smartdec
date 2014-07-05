@@ -49,7 +49,7 @@ class IntegerConstant: public Expression {
      *
      * \param[in] tree Owning tree.
      * \param[in] value Value of the constant.
-     * \param[in] type Type of the constant.
+     * \param[in] type Type of the constant. The type size must be equal to the value size.
      */
     IntegerConstant(Tree &tree, const SizedValue &value, const IntegerType *type);
 

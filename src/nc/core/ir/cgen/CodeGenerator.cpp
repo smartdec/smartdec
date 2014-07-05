@@ -31,6 +31,8 @@
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Registers.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Reader.h>
+#include <nc/core/image/Sections.h>
 #include <nc/core/image/Symbols.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
@@ -40,9 +42,11 @@
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/ir/vars/Variable.h>
 #include <nc/core/likec/FunctionDefinition.h>
+#include <nc/core/likec/IntegerConstant.h>
 #include <nc/core/likec/StructType.h>
 #include <nc/core/likec/StructTypeDeclaration.h>
 #include <nc/core/likec/Tree.h>
+#include <nc/core/likec/Typecast.h>
 
 #include "DefinitionGenerator.h"
 
@@ -177,7 +181,9 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
         QString name;
         QString comment;
 
-        if (variable->memoryLocation().domain() == MemoryDomain::MEMORY) {
+        if (variable->memoryLocation().domain() == MemoryDomain::MEMORY &&
+            variable->memoryLocation().addr() % CHAR_BIT == 0)
+        {
             ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
             auto symbol = image().symbols()->find(image::Symbol::OBJECT, addr);
             if (!symbol) {
@@ -206,7 +212,21 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
         auto type = makeVariableType(variable);
 
         std::unique_ptr<likec::Expression> initialValue;
-        // TODO
+
+        if (variable->memoryLocation().domain() == MemoryDomain::MEMORY &&
+            variable->memoryLocation().addr() % CHAR_BIT == 0 &&
+            variable->memoryLocation().size() % CHAR_BIT == 0 &&
+            type->isScalar())
+        {
+            ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
+            ByteSize size = variable->memoryLocation().size() / CHAR_BIT;
+
+            if (auto value = image::Reader(image().sections()).readInt<ConstantValue>(addr, size, image().architecture()->byteOrder())) {
+                initialValue = std::make_unique<likec::Typecast>(tree(),
+                    type,
+                    std::make_unique<likec::IntegerConstant>(tree(), *value, tree().makeIntegerType(type->size(), true)));
+            }
+        }
 
         auto declaration = std::make_unique<likec::VariableDeclaration>(tree(), name, type, std::move(initialValue));
         declaration->setComment(comment);

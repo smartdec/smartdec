@@ -26,7 +26,7 @@ void Sections::add(std::unique_ptr<Section> section) {
 
 const Section *Sections::getSectionContainingAddress(ByteAddr addr) const {
     foreach (auto section, all()) {
-        if (section->containsAddress(addr)) {
+        if (section->isAllocated() && section->containsAddress(addr)) {
             return section;
         }
     }
