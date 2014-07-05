@@ -204,8 +204,10 @@ public:
             section->setBss(sectionHeader.Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA);
 
             auto pos = source_->pos();
-            if (source_->seek(sectionHeader.PointerToRawData)) {
-                section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(source_->read(sectionHeader.SizeOfRawData)));
+            if (!section->isBss()) {
+                if (source_->seek(sectionHeader.PointerToRawData)) {
+                    section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(source_->read(sectionHeader.SizeOfRawData)));
+                }
             }
             source_->seek(pos);
 

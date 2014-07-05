@@ -43,9 +43,7 @@ const Section *Sections::getSectionByName(const QString &name) const {
 }
 
 ByteSize Sections::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
-    if (externalByteSource()) {
-        return externalByteSource()->readBytes(addr, buf, size);
-    } else if (const Section *section = getSectionContainingAddress(addr)) {
+    if (const Section *section = getSectionContainingAddress(addr)) {
         return section->readBytes(addr, buf, size);
     } else {
         return 0;

@@ -81,94 +81,96 @@ public:
     /**
      * Sets name of the section.
      *
-     * \param name                     New name of the section.
+     * \param name New name of the section.
      */
     void setName(const QString &name) { name_ = name; }
 
     /**
-     * \return                         Start linear address of the section.
+     * \return Virtual address of the section's start.
      */
     ByteAddr addr() const { return addr_; }
 
     /**
-     * \return                         End linear address of the section.
+     * \return Virtual address of the section's end.
      */
     ByteAddr endAddr() const { return addr_ + size_; }
 
     /**
-     * \param[in] addr                 New address of section start.
+     * Sets a new virtual address of the section's start.
+     *
+     * \param[in] addr New address.
      */
     void setAddr(ByteAddr addr) { addr_ = addr; }
 
     /**
-     * \return                         Size of the section.
+     * \return Size of the section.
      */
     ByteSize size() const { return size_; }
 
     /**
-     * Sets size of the section.
+     * Sets the size of the section.
      *
-     * \param[in] size                 New size of the section.
+     * \param[in] size New size of the section.
      */
     void setSize(ByteSize size) { size_ = size; }
 
     /**
-     * \return                         True if the section occupied memory.
+     * \return True if the section occupied memory.
      */
     bool isAllocated() const { return isAllocated_; }
 
     /**
      * Sets whether the section is readable.
      *
-     * \param[in] isAllocated          Whether the section is mapped to the memory when the program is executed.
+     * \param[in] isAllocated Whether the section is mapped to the memory when the program is executed.
      */
     void setAllocated(bool isAllocated = true) { isAllocated_ = isAllocated; }
 
     /**
-     * \return                         True if the section is readable.
+     * \return True if the section is readable.
      */
     bool isReadable() const { return isReadable_; }
 
     /**
      * Sets whether the section is readable.
      *
-     * \param[in] isReadable           Whether the section is readable.
+     * \param[in] isReadable Whether the section is readable.
      */
     void setReadable(bool isReadable = true) { isReadable_ = isReadable; }
 
     /**
-     * \return                         True if the section is writable.
+     * \return True if the section is writable.
      */
     bool isWritable() const { return isWritable_; }
 
     /**
      * Sets whether the section is writable.
      *
-     * \param[in] isWritable           Whether the section is writable.
+     * \param[in] isWritable Whether the section is writable.
      */
     void setWritable(bool isWritable = true) { isWritable_ = isWritable; }
 
     /**
-     * \return                         True if the section is writable.
+     * \return True if the section is writable.
      */
     bool isExecutable() const { return isExecutable_; }
 
     /**
      * Sets whether the section is executable.
      *
-     * \param[in] isExecutable         Whether the section is executable.
+     * \param[in] isExecutable Whether the section is executable.
      */
     void setExecutable(bool isExecutable = true) { isExecutable_ = isExecutable; }
 
     /**
-     * \return                         True if the section contains code.
+     * \return True if the section contains code.
      */
     bool isCode() const { return isCode_; }
 
     /**
      * Sets whether the section contains code.
      *
-     * \param[in] isCode               Whether section contains code.
+     * \param[in] isCode Whether section contains code.
      */
     void setCode(bool isCode = true) { isCode_ = isCode; }
 
@@ -180,24 +182,24 @@ public:
     /**
      * Sets whether the section contains data.
      *
-     * \param[in] isData               Whether section contains code.
+     * \param[in] isData Whether section contains code.
      */
     void setData(bool isData = true) { isData_ = isData; }
 
     /**
-     * \return                         True if the section is .bss (and contains zeroes by default).
+     * \return True if the section contains no data.
      */
     bool isBss() const { return isBss_; }
 
     /**
-     * Sets whether the section is .bss (and contains zeroes by default).
+     * Sets whether the section contains no data).
      */
     void setBss(bool isBss = true) { isBss_ = isBss; }
 
     /**
-     * \param[in] addr                 Linear address.
+     * \param[in] addr Virtual address.
      *
-     * \return                         True if this section contains given linear address.
+     * \return True if this section contains given virtual address.
      */
     bool containsAddress(ByteAddr addr) const { return addr_ <= addr && addr < addr_ + size_; }
 

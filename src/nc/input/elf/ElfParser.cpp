@@ -213,8 +213,10 @@ private:
             section->setBss(shdr.sh_type == SHT_NOBITS);
             section->setData(section->isAllocated() && !section->isCode() && !section->isBss());
 
-            if (source_->seek(shdr.sh_offset)) {
-                section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(source_->read(shdr.sh_size)));
+            if (!section->isBss()) {
+                if (source_->seek(shdr.sh_offset)) {
+                    section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(source_->read(shdr.sh_size)));
+                }
             }
 
             sections_.push_back(std::move(section));

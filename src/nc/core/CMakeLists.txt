@@ -52,6 +52,8 @@ set(SOURCES
     image/Symbol.h
     image/Symbols.cpp
     image/Symbols.h
+    image/ZeroByteSource.cpp
+    image/ZeroByteSource.h
     input/ParseError.cpp
     input/ParseError.h
     input/Parser.cpp

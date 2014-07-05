@@ -34,7 +34,7 @@ namespace core {
 namespace image {
 
 /**
- * ByteSource reading the bytes from a QIODevice.
+ * ByteSource reading the bytes from a QByteArray.
  */
 class BufferByteSource: public ByteSource {
     QByteArray buffer_; ///< Buffer to read from.
