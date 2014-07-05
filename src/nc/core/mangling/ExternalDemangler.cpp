@@ -3,6 +3,8 @@
 
 #include "ExternalDemangler.h"
 
+#include <QProcess>
+
 namespace nc {
 namespace core {
 namespace mangling {
@@ -11,35 +13,35 @@ ExternalDemangler::ExternalDemangler(QString program, QStringList arguments):
     program_(std::move(program)), arguments_(std::move(arguments))
 {}
 
-ExternalDemangler::~ExternalDemangler() {
-    process_.kill();
-    process_.waitForFinished();
-}
+ExternalDemangler::~ExternalDemangler() {}
 
 QString ExternalDemangler::demangle(const QString &symbol) const {
-    QMutexLocker lock(&mutex_);
+    /*
+     * Create a new process for each request. This is stupid, but works.
+     * If one tries to share the same QProcess among multiple requests
+     * (and, consequently, among multiple threads), one gets the following
+     * messages:
+     *
+     * [Warning] QObject: Cannot create children for a parent that is in a different thread.
+     * (Parent is QProcess(0xe26a18), parent's thread is QThread(0xd04090), current thread is QThread(0xf0db10)
+     */
 
-    if (process_.state() == QProcess::NotRunning) {
-        process_.start(program_, arguments_);
-    }
-    if (process_.state() == QProcess::Starting) {
-        process_.waitForStarted();
-    }
-    if (process_.state() != QProcess::Running) {
+    QProcess process;
+    process.start(program_, arguments_);
+
+    if (!process.waitForStarted()) {
         return QString();
     }
 
-    process_.write(symbol.toAscii().append('\n'));
+    process.write(symbol.toAscii().append('\n'));
+    process.closeWriteChannel();
 
-    QByteArray response;
-    while (process_.waitForReadyRead()) {
-        response += process_.readLine();
-        if (response.endsWith('\n')) {
-            break;
-        }
+    if (!process.waitForFinished()) {
+        process.kill();
+        return QString();
     }
 
-    QString result = response.trimmed();
+    auto result = QString(process.readAllStandardOutput()).trimmed();
 
     if (result != symbol.trimmed()) {
         return result;

@@ -5,8 +5,6 @@
 
 #include <nc/config.h>
 
-#include <QMutex>
-#include <QProcess>
 #include <QString>
 #include <QStringList>
 
@@ -26,12 +24,6 @@ class ExternalDemangler: public Demangler {
     /** Arguments for the demangler program. */
     QStringList arguments_;
 
-    /** Demangler process. */
-    mutable QProcess process_;
-
-    /** Mutex for handling queries in parallel. */
-    mutable QMutex mutex_;
-
 public:
     /**
      * Constructor.
@@ -46,7 +38,7 @@ public:
      *
      * Kills the demangler process.
      */
-    ~ExternalDemangler();
+    ~ExternalDemangler() override;
 
     virtual QString demangle(const QString &symbol) const override;
 };
