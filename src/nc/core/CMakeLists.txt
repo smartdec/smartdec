@@ -172,8 +172,6 @@ set(SOURCES
     likec/CallOperator.h
     likec/CaseLabel.cpp
     likec/CaseLabel.h
-    likec/CommentStatement.cpp
-    likec/CommentStatement.h
     likec/Commentable.cpp
     likec/Commentable.h
     likec/CompilationUnit.cpp

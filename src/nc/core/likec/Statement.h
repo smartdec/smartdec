@@ -62,7 +62,6 @@ public:
         RETURN,                         ///< Return.
         WHILE,                          ///< While loop.
         INLINE_ASSEMBLY,                ///< Inline assembly.
-        COMMENT,                        ///< Comment statement.
         SWITCH,                         ///< Switch.
         CASE_LABEL,                     ///< Case label.
         DEFAULT_LABEL,                  ///< Default case label.

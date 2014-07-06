@@ -65,7 +65,6 @@
 #include <nc/core/likec/Break.h>
 #include <nc/core/likec/CallOperator.h>
 #include <nc/core/likec/CaseLabel.h>
-#include <nc/core/likec/CommentStatement.h>
 #include <nc/core/likec/Continue.h>
 #include <nc/core/likec/DefaultLabel.h>
 #include <nc/core/likec/DoWhile.h>
