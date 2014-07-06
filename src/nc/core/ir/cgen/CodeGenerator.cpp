@@ -220,9 +220,13 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
             ByteSize size = variable->memoryLocation().size() / CHAR_BIT;
 
             if (auto value = image::Reader(&image()).readInt<ConstantValue>(addr, size, image().architecture()->byteOrder())) {
-                initialValue = std::make_unique<likec::Typecast>(tree(),
-                    type,
-                    std::make_unique<likec::IntegerConstant>(tree(), *value, tree().makeIntegerType(type->size(), true)));
+                if (auto integerType = type->as<likec::IntegerType>()) {
+                    initialValue = std::make_unique<likec::IntegerConstant>(tree(), *value, integerType);
+                } else {
+                    initialValue = std::make_unique<likec::Typecast>(tree(),
+                        type,
+                        std::make_unique<likec::IntegerConstant>(tree(), *value, tree().makeIntegerType(type->size(), true)));
+                }
             }
         }
 
