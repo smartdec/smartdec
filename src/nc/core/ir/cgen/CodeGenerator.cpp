@@ -32,6 +32,7 @@
 #include <nc/core/arch/Registers.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
+#include <nc/core/image/Relocation.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/calling/Hooks.h>
@@ -45,6 +46,7 @@
 #include <nc/core/likec/StructTypeDeclaration.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/likec/Typecast.h>
+#include <nc/core/mangling/Demangler.h>
 
 #include "DefinitionGenerator.h"
 
@@ -183,25 +185,38 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
             variable->memoryLocation().addr() % CHAR_BIT == 0)
         {
             ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
+
+            if (auto relocation = image().getRelocation(addr)) {
+                if (name.isEmpty()) {
+                    name = relocation->symbol()->name();
+                }
+
+                auto demangledName = image().demangler()->demangle(relocation->symbol()->name());
+                if (demangledName.contains('(')) {
+                    comment += '\n';
+                    comment += demangledName;
+                }
+            }
+
             auto symbol = image().getSymbol(addr, image::Symbol::OBJECT);
             if (!symbol) {
                 symbol = image().getSymbol(addr, image::Symbol::NOTYPE);
             }
             if (symbol) {
-                name = likec::Tree::cleanName(symbol->name());
-                if (name != symbol->name()) {
-                    comment = symbol->name();
+                if (name.isEmpty()) {
+                    name = symbol->name();
+                } else {
+                    comment += '\n';
+                    comment += symbol->name();
                 }
             }
         }
 
-#ifdef NC_REGISTER_VARIABLE_NAMES
         if (name.isEmpty()) {
             if (auto reg = image().architecture()->registers()->getRegister(variable->memoryLocation())) {
                 name = reg->lowercaseName();
             }
         }
-#endif
 
         if (name.isEmpty()) {
             name = QString("g%1").arg(variable->memoryLocation().addr() / CHAR_BIT, 0, 16);
@@ -230,8 +245,11 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
             }
         }
 
-        auto declaration = std::make_unique<likec::VariableDeclaration>(tree(), name, type, std::move(initialValue));
-        declaration->setComment(comment);
+        auto declaration = std::make_unique<likec::VariableDeclaration>(tree(),
+            likec::Tree::cleanName(name),
+            type,
+            std::move(initialValue));
+        declaration->setComment(comment.simplified());
         result = declaration.get();
 
         tree().root()->addDeclaration(std::move(declaration));

@@ -629,7 +629,7 @@ void SignatureAnalyzer::computeName(const CalleeId &calleeId, FunctionSignature 
             }
 
             QString demangledName = image_.demangler()->demangle(symbol->name());
-            if (demangledName.contains('(') && demangledName != symbol->name()) {
+            if (demangledName.contains('(')) {
                 signature.addComment(demangledName);
             }
         }

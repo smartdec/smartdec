@@ -163,14 +163,12 @@ likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(co
     if (!result) {
         QString name(QLatin1String("v"));
 
-#ifdef NC_REGISTER_VARIABLE_NAMES
         if (auto reg = parent().image().architecture()->registers()->getRegister(variable->memoryLocation())) {
             name = reg->lowercaseName();
             if (name.isEmpty() || name[name.size() - 1].isDigit()) {
                 name.push_back('_');
             }
         }
-#endif
 
         name = QString(QLatin1String("%1%2")).arg(name).arg(variableDeclarations_.size());
 

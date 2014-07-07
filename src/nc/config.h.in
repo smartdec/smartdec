@@ -10,9 +10,6 @@
 /** Perform naive recovery of structural types. */
 #define NC_STRUCT_RECOVERY
 
-/** Give variables names based on the names of the registers they originate from. */
-#define NC_REGISTER_VARIABLE_NAMES
-
 /** Generate constants for constant expressions whenever possible. */
 #define NC_PREFER_CONSTANTS_TO_EXPRESSIONS
 

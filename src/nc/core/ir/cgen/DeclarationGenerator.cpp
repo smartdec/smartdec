@@ -85,13 +85,11 @@ const likec::Type *DeclarationGenerator::makeReturnType() {
 likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const Term *term) {
     QString name;
 
-#ifdef NC_REGISTER_VARIABLE_NAMES
     if (auto access = term->asMemoryLocationAccess()) {
         if (auto reg = parent().image().architecture()->registers()->getRegister(access->memoryLocation())) {
             name = reg->lowercaseName();
         }
     }
-#endif
 
     if (name.isEmpty()) {
         name = QString("a%1").arg(declaration()->arguments().size() + 1);
