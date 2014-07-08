@@ -27,6 +27,7 @@
 #include <QCoreApplication> /* For Q_DECLARE_TR_FUNCTIONS. */
 #include <QIODevice>
 
+#include <nc/common/ByteOrder.h>
 #include <nc/common/Conversions.h>
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
@@ -44,12 +45,17 @@ namespace pe {
 
 namespace {
 
+const ByteOrder peByteOrder(ByteOrder::LittleEndian);
+
 bool seekFileHeader(QIODevice *source) {
     IMAGE_DOS_HEADER dosHeader;
 
     if (source->read(reinterpret_cast<char *>(&dosHeader), sizeof(dosHeader)) != sizeof(dosHeader)) {
         return false;
     }
+
+    peByteOrder.convertFrom(dosHeader.e_magic);
+    peByteOrder.convertFrom(dosHeader.e_lfanew);
 
     if (dosHeader.e_magic != IMAGE_DOS_SIGNATURE) {
         return false;
@@ -63,6 +69,7 @@ bool seekFileHeader(QIODevice *source) {
     if (source->read(reinterpret_cast<char *>(&signature), sizeof(signature)) != sizeof(signature)) {
         return false;
     }
+    peByteOrder.convertFrom(signature);
 
     if (signature != IMAGE_NT_SIGNATURE) {
         return false;
@@ -94,6 +101,10 @@ public:
         if (source_->read(reinterpret_cast<char *>(&fileHeader), sizeof(fileHeader)) != sizeof(fileHeader)) {
             throw core::input::ParseError(tr("Cannot read the file header."));
         }
+        peByteOrder.convertFrom(fileHeader.Machine);
+        peByteOrder.convertFrom(fileHeader.PointerToSymbolTable);
+        peByteOrder.convertFrom(fileHeader.NumberOfSymbols);
+        peByteOrder.convertFrom(fileHeader.NumberOfSections);
 
         switch (fileHeader.Machine) {
             case IMAGE_FILE_MACHINE_I386:
@@ -134,7 +145,10 @@ public:
                 throw core::input::ParseError(tr("Cannot read the string table."));
             }
 
-            foreach (const IMAGE_SYMBOL &symbol, symbols) {
+            foreach (IMAGE_SYMBOL &symbol, symbols) {
+                peByteOrder.convertFrom(symbol.Type);
+                peByteOrder.convertFrom(symbol.Value);
+
                 using core::image::Symbol;
 
                 Symbol::Type type;
@@ -178,6 +192,7 @@ public:
         if (source_->read(reinterpret_cast<char *>(&optionalHeader), sizeof(optionalHeader)) != sizeof(optionalHeader)) {
             throw core::input::ParseError(tr("Cannot read the optional header."));
         }
+        peByteOrder.convertFrom(optionalHeader.Magic);
         if (optionalHeader.Magic != OptionalHeaderMagic) {
             throw core::input::ParseError(tr("Magic of the optional header doesn't match."));
         }
@@ -187,6 +202,11 @@ public:
             if (source_->read(reinterpret_cast<char *>(&sectionHeader), sizeof(sectionHeader)) != sizeof(sectionHeader)) {
                 throw core::input::ParseError(tr("Cannot read section header #%1.").arg(i));
             }
+            peByteOrder.convertFrom(sectionHeader.VirtualAddress);
+            peByteOrder.convertFrom(sectionHeader.SizeOfRawData);
+            peByteOrder.convertFrom(sectionHeader.Characteristics);
+            peByteOrder.convertFrom(sectionHeader.PointerToRawData);
+            peByteOrder.convertFrom(sectionHeader.SizeOfRawData);
 
             auto section = std::make_unique<core::image::Section>(
                 getString(sectionHeader.Name), sectionHeader.VirtualAddress, sectionHeader.SizeOfRawData
