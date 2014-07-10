@@ -1043,7 +1043,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
 
     return std::make_unique<likec::IntegerConstant>(tree(),
         value,
-        tree().makeIntegerType(type->size(), type->isUnsigned())
+        tree().makeIntegerType(value.size(), type->isUnsigned())
     );
 }
 
