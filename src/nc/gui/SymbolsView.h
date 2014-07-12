@@ -7,6 +7,10 @@
 
 #include "TreeView.h"
 
+QT_BEGIN_NAMESPACE
+class QSortFilterProxyModel;
+QT_END_NAMESPACE
+
 namespace nc {
 
 namespace core {
@@ -22,8 +26,11 @@ class SymbolsModel;
 class SymbolsView: public TreeView {
     Q_OBJECT
 
-    /** The model being shown. */
+    /** The model being the source of the data. */
     SymbolsModel *model_;
+
+    /** The model being given to QTreeView. */
+    QSortFilterProxyModel *proxyModel_;
 
 public:
     /**

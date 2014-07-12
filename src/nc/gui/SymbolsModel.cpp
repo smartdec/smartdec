@@ -15,11 +15,11 @@
 namespace nc { namespace gui {
 
 enum SymbolsModelColumns {
-    SMC_NAME,
-    SMC_TYPE,
-    SMC_VALUE,
-    SMC_SECTION,
-    SMC_COUNT
+    COL_NAME,
+    COL_TYPE,
+    COL_VALUE,
+    COL_SECTION,
+    COL_COUNT
 };
 
 SymbolsModel::SymbolsModel(QObject *parent):
@@ -56,7 +56,7 @@ int SymbolsModel::rowCount(const QModelIndex &parent) const {
 }
 
 int SymbolsModel::columnCount(const QModelIndex & /*parent*/) const {
-    return SMC_COUNT;
+    return COL_COUNT;
 }
 
 QModelIndex SymbolsModel::index(int row, int column, const QModelIndex &parent) const {
@@ -75,13 +75,13 @@ QModelIndex SymbolsModel::parent(const QModelIndex & /*index*/) const {
 }
 
 QVariant SymbolsModel::data(const QModelIndex &index, int role) const {
-    if (role == Qt::DisplayRole) {
+    if (role == Qt::DisplayRole || role == SortRole) {
         auto symbol = getSymbol(index);
         assert(symbol);
 
         switch (index.column()) {
-            case SMC_NAME: return symbol->name();
-            case SMC_TYPE: {
+            case COL_NAME: return symbol->name();
+            case COL_TYPE: {
                 using core::image::Symbol;
 
                 switch (symbol->type()) {
@@ -98,8 +98,14 @@ QVariant SymbolsModel::data(const QModelIndex &index, int role) const {
                         return tr("Unknown");
                 }
             }
-            case SMC_VALUE: return QString("%1").arg(symbol->value(), 0, 16);
-            case SMC_SECTION: return symbol->section() ? symbol->section()->name() : QString();
+            case COL_VALUE: {
+                if (role == Qt::DisplayRole) {
+                    return QString("%1").arg(symbol->value(), 0, 16);
+                } else {
+                    return static_cast<qlonglong>(symbol->value());
+                }
+            }
+            case COL_SECTION: return symbol->section() ? symbol->section()->name() : QString();
             default:
                 unreachable();
         }
@@ -111,10 +117,10 @@ QVariant SymbolsModel::headerData(int section, Qt::Orientation orientation, int 
     if (orientation == Qt::Horizontal) {
         if (role == Qt::DisplayRole) {
             switch (section) {
-                case SMC_NAME: return tr("Name");
-                case SMC_TYPE: return tr("Type");
-                case SMC_VALUE: return tr("Value");
-                case SMC_SECTION: return tr("Section");
+                case COL_NAME: return tr("Name");
+                case COL_TYPE: return tr("Type");
+                case COL_VALUE: return tr("Value");
+                case COL_SECTION: return tr("Section");
                 default: unreachable();
             }
         }

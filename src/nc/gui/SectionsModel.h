@@ -47,6 +47,10 @@ class SectionsModel: public QAbstractItemModel {
     Q_OBJECT
 
 public:
+    enum {
+        SortRole = Qt::UserRole
+    };
+
     /**
      * Constructor.
      *

@@ -27,6 +27,10 @@
 
 #include "TreeView.h"
 
+QT_BEGIN_NAMESPACE
+class QSortFilterProxyModel;
+QT_END_NAMESPACE
+
 namespace nc {
 
 namespace core {
@@ -42,11 +46,13 @@ class SectionsModel;
 class SectionsView: public TreeView {
     Q_OBJECT
 
-    /** The model being shown. */
+    /** The model being the source of the data. */
     SectionsModel *model_;
 
-    public:
+    /** The model being given to QTreeView. */
+    QSortFilterProxyModel *proxyModel_;
 
+public:
     /**
      * Constructor.
      *

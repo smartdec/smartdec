@@ -25,6 +25,7 @@
 #include "SectionsView.h"
 
 #include <QMenu>
+#include <QSortFilterProxyModel>
 #include <QTreeView>
 
 #include "SectionsModel.h"
@@ -41,17 +42,22 @@ SectionsView::SectionsView(QWidget *parent):
     treeView()->setSelectionBehavior(QAbstractItemView::SelectRows);
     treeView()->setSelectionMode(QAbstractItemView::ExtendedSelection);
     treeView()->setUniformRowHeights(true);
+    treeView()->setSortingEnabled(true);
+
+    proxyModel_ = new QSortFilterProxyModel(this);
+    proxyModel_->setSortRole(SectionsModel::SortRole);
+    treeView()->setModel(proxyModel_);
 }
 
 void SectionsView::setModel(SectionsModel *model) {
     if (model != model_) {
         model_ = model;
-        treeView()->setModel(model);
+        proxyModel_->setSourceModel(model);
     }
 }
 
 const core::image::Section *SectionsView::selectedSection() const {
-    return model_->getSection(treeView()->currentIndex());
+    return model_->getSection(proxyModel_->mapToSource(treeView()->currentIndex()));
 }
 
 } // namespace gui
