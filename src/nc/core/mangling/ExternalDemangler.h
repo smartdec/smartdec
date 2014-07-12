@@ -33,13 +33,6 @@ public:
      */
     ExternalDemangler(QString program, QStringList arguments = QStringList());
 
-    /**
-     * Destructor.
-     *
-     * Kills the demangler process.
-     */
-    ~ExternalDemangler() override;
-
     virtual QString demangle(const QString &symbol) const override;
 };
 

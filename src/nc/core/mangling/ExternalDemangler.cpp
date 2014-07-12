@@ -13,8 +13,6 @@ ExternalDemangler::ExternalDemangler(QString program, QStringList arguments):
     program_(std::move(program)), arguments_(std::move(arguments))
 {}
 
-ExternalDemangler::~ExternalDemangler() {}
-
 QString ExternalDemangler::demangle(const QString &symbol) const {
     /*
      * Create a new process for each request. This is stupid, but works.

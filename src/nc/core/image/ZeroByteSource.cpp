@@ -6,6 +6,8 @@
 #include <cassert>
 #include <cstring> /* memset */
 
+#include <nc/common/CheckedCast.h>
+
 namespace nc {
 namespace core {
 namespace image {
@@ -20,7 +22,7 @@ ByteSize ZeroByteSource::readBytes(ByteAddr addr, void *buf, ByteSize size) cons
         size = size_ - addr;
     }
 
-    memset(buf, 0, size);
+    memset(buf, 0, checked_cast<size_t>(size));
 
     return size;
 }
