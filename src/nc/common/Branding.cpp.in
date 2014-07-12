@@ -1,10 +1,9 @@
-#define NC_VERSION "@NC_VERSION@"
-#define NC_REPORT_BUGS_TO "@NC_REPORT_BUGS_TO@"
-
 namespace nc {
 
-extern const char version[] = NC_VERSION;
-extern const char reportBugsTo[] = NC_REPORT_BUGS_TO;
+extern const char version[] = "@NC_VERSION@";
+extern const char reportBugsTo[] = "@NC_REPORT_BUGS_TO@";
+extern const char licenseName[] = "@NC_LICENSE_NAME@";
+extern const char licenseURL[] = "@NC_LICENSE_URL@";
 
 } // namespace nc
 

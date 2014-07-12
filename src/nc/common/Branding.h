@@ -11,6 +11,12 @@ extern const char version[];
 /** Address for reporting bugs. */
 extern const char reportBugsTo[];
 
+/** Name of the license. */
+extern const char licenseName[];
+
+/** License URL. */
+extern const char licenseURL[];
+
 } // namespace nc
 
 /* vim:set et sts=4 sw=4: */

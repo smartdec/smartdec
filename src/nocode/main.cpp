@@ -161,18 +161,18 @@ void help() {
     qout << endl;
 
     qout << "Version: " << nc::version << endl;
-    qout << "Report bugs to: " << nc::reportBugsTo << endl;
     qout << "Available architectures:";
     foreach (auto architecture, nc::core::arch::ArchitectureRepository::instance()->architectures()) {
         qout << " " << architecture->name();
     }
     qout << endl;
-
     qout << "Available parsers:";
     foreach(auto parser, nc::core::input::ParserRepository::instance()->parsers()) {
         qout << " " << parser->name();
     }
     qout << endl;
+    qout << "Report bugs to: " << nc::reportBugsTo << endl;
+    qout << "License: " << nc::licenseName << " <" << nc::licenseURL << ">" << endl;
 }
 
 int main(int argc, char *argv[]) {

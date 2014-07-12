@@ -624,7 +624,11 @@ void MainWindow::about() {
         "<li>PE (32 and 64-bit).</li>"
         "</ul></p>"
         "<p>Report bugs to <a href=\"%2\">%2</a>.</p>"
-        ).arg(QLatin1String(version)).arg(QLatin1String(reportBugsTo)));
+        "<p>The software is distributed under the <a href=\"%4\">%3</a> license.</p>")
+        .arg(QLatin1String(version))
+        .arg(QLatin1String(reportBugsTo))
+        .arg(QLatin1String(licenseName))
+        .arg(QLatin1String(licenseURL)));
 }
 
 }} // namespace nc::gui
