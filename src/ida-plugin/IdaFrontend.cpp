@@ -131,7 +131,7 @@ void IdaFrontend::createSections(core::image::Image *image) {
         section->setData(idaSegment->type == SEG_DATA);
         section->setBss(idaSegment->type == SEG_BSS);
         section->setAllocated(section->isCode() || section->isData() || section->isBss());
-        section->setByteSource(std::make_unique<IdaByteSource>());
+        section->setExternalByteSource(std::make_unique<IdaByteSource>());
 
         image->addSection(std::move(section));
     }

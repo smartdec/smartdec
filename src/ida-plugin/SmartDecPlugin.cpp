@@ -35,8 +35,6 @@
 #include <nc/core/Context.h>
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/image/Image.h>
-#include <nc/core/image/Sections.h>
-#include <nc/core/image/Symbols.h>
 #include <nc/gui/MainWindow.h>
 #include <nc/gui/Project.h>
 
@@ -128,7 +126,7 @@ void SmartDecPlugin::decompileFunction() {
     window->project()->setName(IdaFrontend::functionName(functionAddress));
 
     foreach (const AddressRange &range, functionRanges) {
-        window->project()->disassemble(window->project()->image()->sections(), range.start(), range.end());
+        window->project()->disassemble(window->project()->image().get(), range.start(), range.end());
     }
 
     if (window->decompileAutomatically()) {
@@ -225,14 +223,14 @@ std::unique_ptr<gui::Project> SmartDecPlugin::createIdaProject() const {
         QString name = IdaFrontend::functionName(address);
 
         if (!name.isEmpty()) {
-            image->addSymbol(std::make_unique<Symbol>(Symbol::Function, name, address));
+            image->addSymbol(std::make_unique<Symbol>(Symbol::FUNCTION, name, address));
         }
     }
 
     /* Add imported function names. */
     typedef std::pair<ByteAddr, QString> Import;
     foreach(const Import &import, IdaFrontend::importedFunctions()) {
-        image->addSymbol(std::make_unique<Symbol>(Symbol::Function, import.second, import.first));
+        image->addSymbol(std::make_unique<Symbol>(Symbol::FUNCTION, import.second, import.first));
     }
 
     return project;

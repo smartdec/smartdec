@@ -213,7 +213,8 @@ private:
 
             if (!section->isBss()) {
                 if (source_->seek(shdr.sh_offset)) {
-                    section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(source_->read(shdr.sh_size)));
+                    section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(
+                        section->addr(), source_->read(shdr.sh_size)));
                 }
             }
 

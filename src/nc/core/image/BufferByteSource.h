@@ -37,21 +37,23 @@ namespace image {
  * ByteSource reading the bytes from a QByteArray.
  */
 class BufferByteSource: public ByteSource {
+    ByteAddr address_; ///< Virtual address of the first byte.
     QByteArray buffer_; ///< Buffer to read from.
 
-    public:
-
-    /**
-     * Default constructor.
-     */
-    BufferByteSource() {}
-
+public:
     /**
      * Constructor.
      *
+     * \param address Virtual address of the buffer's beginning.
      * \param buffer Buffer to read from.
      */
-    BufferByteSource(const QByteArray &buffer): buffer_(buffer) {}
+    explicit
+    BufferByteSource(ByteAddr address, const QByteArray &buffer = QByteArray()): address_(address), buffer_(buffer) {}
+
+    /**
+     * \return Virtual address of the buffer's beginning.
+     */
+    ByteAddr address() const { return address_; }
 
     /**
      * Buffer to read from.

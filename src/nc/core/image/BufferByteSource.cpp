@@ -34,14 +34,16 @@ namespace image {
 ByteSize BufferByteSource::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
     assert(size >= 0);
 
-    if (addr < 0 || addr >= buffer().size()) {
+    addr -= address_;
+
+    if (addr < 0 || addr >= buffer_.size()) {
         return 0;
     }
-    if (addr + size > buffer().size()) {
-        size = buffer().size() - addr;
+    if (addr + size > buffer_.size()) {
+        size = buffer_.size() - addr;
     }
 
-    memcpy(buf, buffer().constData() + addr, size);
+    memcpy(buf, buffer_.constData() + addr, size);
 
     return size;
 }

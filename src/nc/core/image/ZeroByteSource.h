@@ -15,20 +15,17 @@ namespace image {
  * ByteSource reading only zeroes.
  */
 class ZeroByteSource: public ByteSource {
-    ByteSize size_;
+    ByteAddr address_; ///< Virtual address of the first byte.
+    ByteSize size_; ///< Size of the zero zone.
 
 public:
     /**
-     * Default constructor.
-     */
-    ZeroByteSource() {}
-
-    /**
      * Constructor.
      *
+     * \param address Virtual address of the buffer's beginning.
      * \param size Size of the zero memory region.
      */
-    ZeroByteSource(ByteSize size): size_(size) {}
+    ZeroByteSource(ByteAddr address, ByteSize size): address_(address), size_(size) {}
 
     virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 };

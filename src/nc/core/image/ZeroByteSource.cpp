@@ -15,6 +15,8 @@ namespace image {
 ByteSize ZeroByteSource::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
     assert(size >= 0);
 
+    addr -= address_;
+
     if (addr < 0 || addr >= size_) {
         return 0;
     }

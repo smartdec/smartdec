@@ -155,7 +155,8 @@ private:
             auto pos = source_->pos();
             if (!section->isBss()) {
                 if (source_->seek(sectionHeader.PointerToRawData)) {
-                    section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(source_->read(sectionHeader.SizeOfRawData)));
+                    section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(
+                        section->addr(), source_->read(sectionHeader.SizeOfRawData)));
                 }
             }
             source_->seek(pos);
