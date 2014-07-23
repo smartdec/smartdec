@@ -75,9 +75,6 @@ class IntelInstructionDisassemblerPrivate {
 
         std::unique_ptr<IntelInstruction> result(new IntelInstruction(architecture_->bitness(), pc, instructionSize, buffer, mnemonic));
 
-        result->setOperandSize(ud_obj_.opr_mode);
-        result->setAddressSize(ud_obj_.adr_mode);
-
         SmallBitSize lastOperandSize = 0;
         foreach (auto &ud_operand, ud_obj_.operand) {
             if (core::arch::Operand *operand = getOperand(ud_operand, lastOperandSize)) {

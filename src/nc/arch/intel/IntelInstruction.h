@@ -46,13 +46,8 @@ public:
     static const SmallByteSize MAX_SIZE = 15;
 
 private:
+    /** Copy of architecture's bitness value. */
     SmallBitSize bitness_;
-
-    /** Operand size of the instruction. */
-    SmallBitSize operandSize_;
-
-    /** Address size of the instruction. */
-    SmallBitSize addressSize_;
 
     /** Binary representation of the instruction. */
     std::array<uint8_t, MAX_SIZE> bytes_;
@@ -68,9 +63,7 @@ public:
      */
     IntelInstruction(SmallBitSize bitness, ByteAddr addr, SmallByteSize size, const void *bytes, const core::arch::Mnemonic *mnemonic):
         core::arch::Instruction(mnemonic, addr, size), 
-        bitness_(bitness),
-        operandSize_(0),
-        addressSize_(0)
+        bitness_(bitness)
     {
         assert(size > 0);
         assert(size <= MAX_SIZE);
@@ -78,34 +71,10 @@ public:
     }
 
     /**
-     * \return Operand size.
-     */
-    SmallBitSize operandSize() const { return operandSize_; }
-
-    /**
-     * Sets the operand size.
-     *
-     * \param operandSize New operand size.
-     */
-    void setOperandSize(SmallBitSize operandSize) { operandSize_ = operandSize; }
-
-    /**
-     * \return Address size.
-     */
-    SmallBitSize addressSize() const { return addressSize_; }
-
-    /**
-     * Sets the address size.
-     *
-     * \param addressSize New address size.
-     */
-    void setAddressSize(SmallBitSize addressSize) { addressSize_ = addressSize; }
-
-    /**
      * \return Valid pointer to the buffer containing the binary
      *         representation of the instruction.
      */
-    const unsigned char *bytes() const { return &bytes_[0]; }
+    const uint8_t *bytes() const { return &bytes_[0]; }
 
     virtual void print(QTextStream &out) const override;
 };

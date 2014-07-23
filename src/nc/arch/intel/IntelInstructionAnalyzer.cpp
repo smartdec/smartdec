@@ -471,11 +471,11 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
                     unreachable();
             }
 
-            auto di = resizedRegister(IntelRegisters::di(), instr->addressSize());
-            auto si = resizedRegister(IntelRegisters::si(), instr->addressSize());
-            auto cx = resizedRegister(IntelRegisters::cx(), instr->operandSize());
+            auto di = resizedRegister(IntelRegisters::di(), ud_obj.adr_mode);
+            auto si = resizedRegister(IntelRegisters::si(), ud_obj.adr_mode);
+            auto cx = resizedRegister(IntelRegisters::cx(), ud_obj.opr_mode);
 
-            auto increment = temporary(instr->addressSize());
+            auto increment = temporary(ud_obj.adr_mode);
             _[
                 increment = constant(accessSize / CHAR_BIT) - constant(2 * accessSize / CHAR_BIT, si.memoryLocation().size()) * zero_extend(df())
             ];
@@ -929,7 +929,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
         case LOOP:
         case LOOPE:
         case LOOPNE: {
-            auto cx = resizedRegister(IntelRegisters::cx(), instr->addressSize());
+            auto cx = resizedRegister(IntelRegisters::cx(), ud_obj.adr_mode);
 
             _[cx = cx - constant(1)];
 
