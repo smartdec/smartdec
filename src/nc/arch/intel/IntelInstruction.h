@@ -25,6 +25,7 @@
 
 #include <nc/config.h>
 
+#include <array>
 #include <cassert>
 #include <cstring>
 
