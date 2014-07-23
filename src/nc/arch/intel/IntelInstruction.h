@@ -61,9 +61,8 @@ public:
      * \param[in] addr Instruction address in bytes.
      * \param[in] size Instruction size in bytes.
      */
-    IntelInstruction(SmallBitSize bitness, ByteAddr addr, SmallByteSize size, const void *bytes, const core::arch::Mnemonic *mnemonic):
-        core::arch::Instruction(mnemonic, addr, size), 
-        bitness_(bitness)
+    IntelInstruction(SmallBitSize bitness, ByteAddr addr, SmallByteSize size, const void *bytes):
+        core::arch::Instruction(addr, size), bitness_(bitness)
     {
         assert(size > 0);
         assert(size <= MAX_SIZE);

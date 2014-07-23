@@ -33,22 +33,16 @@
 #include <nc/common/Printable.h>
 #include <nc/common/Types.h>
 
-#include "Mnemonic.h"
-
 namespace nc {
 namespace core {
 namespace arch {
 
 class Operand;
-class Mnemonic;
 
 /**
  * Base class for instructions.
  */
 class Instruction: public Printable {
-    /** Mnemonic of this instruction. */
-    const Mnemonic *mnemonic_;
-
     /** Instruction's address in bytes. */
     ByteAddr addr_;
 
@@ -62,14 +56,12 @@ public:
     /**
      * Constructor.
      *
-     * \param[in] mnemonic  Valid pointer to the mnemonic of this instruction.
      * \param[in] addr      Instruction's address in bytes.
      * \param[in] size      Instruction's size in bytes.
      */
-    Instruction(const Mnemonic *mnemonic, ByteAddr addr = 0, SmallByteSize size = 0):
-        mnemonic_(mnemonic), addr_(addr), size_(size)
+    Instruction(ByteAddr addr = 0, SmallByteSize size = 0):
+        addr_(addr), size_(size)
     {
-        assert(mnemonic != NULL);
         assert(size >= 0);
     }
 
@@ -77,18 +69,6 @@ public:
      * Virtual destructor
      */
     virtual ~Instruction();
-
-    /**
-     * \return Valid pointer to the mnemonic of this instruction.
-     */
-    const Mnemonic *mnemonic() const { return mnemonic_; }
-
-    /**
-     * Sets mnemonic of this instruction.
-     *
-     * \param[in] mnemonic Instruction mnemonic.
-     */
-    void setMnemonic(const Mnemonic *mnemonic) { assert(mnemonic != NULL); mnemonic_ = mnemonic; }
 
     /**
      * \return Instruction's operands.

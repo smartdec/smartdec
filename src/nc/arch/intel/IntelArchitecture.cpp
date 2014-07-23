@@ -35,7 +35,6 @@
 #include "IntelMasterAnalyzer.h"
 #include "IntelRegisters.h"
 #include "IntelOperands.h"
-#include "IntelMnemonics.h"
 
 namespace nc {
 namespace arch {
@@ -46,7 +45,6 @@ IntelArchitecture::IntelArchitecture(Mode mode) {
     setMasterAnalyzer(&masterAnalyzer);
 
     setRegisters(IntelRegisters::instance());
-    setMnemonics(IntelMnemonics::instance());
 
     switch(mode) {
     case REAL_MODE:

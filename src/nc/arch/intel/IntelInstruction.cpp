@@ -28,10 +28,6 @@
 
 #include <libudis86/udis86.h>
 
-#include <nc/common/Foreach.h>
-
-#include "IntelMnemonics.h"
-
 namespace nc {
 namespace arch {
 namespace intel {

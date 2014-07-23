@@ -16,8 +16,6 @@ set(SOURCES
     arch/Instruction.h
     arch/Instructions.cpp
     arch/Instructions.h
-    arch/Mnemonic.h
-    arch/Mnemonics.h
     arch/Operand.h
     arch/OperandCache.cpp
     arch/OperandCache.h

@@ -37,7 +37,6 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 
-#include "IntelMnemonics.h"
 #include "IntelArchitecture.h"
 #include "IntelInstruction.h"
 #include "IntelRegisters.h"
@@ -115,9 +114,6 @@ temporary(SmallBitSize size) {
 void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) const {
     assert(instruction != NULL);
 
-    using namespace mnemonics;
-    using namespace intel;
-
     const IntelInstruction *instr = checked_cast<const IntelInstruction *>(instruction);
 
     ud_t ud_obj;
@@ -125,193 +121,9 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
     ud_set_mode(&ud_obj, architecture_->bitness());
     ud_set_pc(&ud_obj, instr->addr());
     ud_set_input_buffer(&ud_obj, const_cast<uint8_t *>(instr->bytes()), checked_cast<std::size_t>(instr->size()));
+    ud_disassemble(&ud_obj);
 
-    /* Sanity checks */
-    switch (instr->mnemonic()->number()) {
-        case CLD:
-        case CBW:
-        case CWDE:
-        case CDQE:
-        case CMPSB:
-        case CMPSW:
-        case CMPSD:
-        case CMPSQ:
-        case CPUID:
-        case INT3:
-        case LEAVEW:
-        case LEAVE:
-        case LEAVED:
-        case LEAVEQ:
-        case MOVSB:
-        case MOVSW:
-        case MOVSD:
-        case MOVSQ:
-        case POPFW:
-        case POPFD:
-        case POPFQ:
-        case PUSHFW:
-        case PUSHFD:
-        case PUSHFQ:
-        case SCASB:
-        case SCASW:
-        case SCASD:
-        case SCASQ:
-        case STD:
-        case STOSB:
-        case STOSW:
-        case STOSD:
-        case STOSQ:
-            if (instr->operands().size() != 0) {
-                throw core::arch::irgen::InvalidInstructionException("instruction takes no arguments");
-            }
-            break;
-        case RET:
-            if(instr->operands().size() > 1) {
-                throw core::arch::irgen::InvalidInstructionException("instruction takes zero or one argument");
-            }
-            break;
-        case CALL:
-        case DEC:
-        case DIV:
-        case IDIV:
-        case INC:
-        case INT:
-        case JA:
-        case JAE:
-        case JB:
-        case JBE:
-        case JC:
-        case JCXZ:
-        case JECXZ:
-        case JRCXZ:
-        case JE:
-        case JG:
-        case JGE:
-        case JL:
-        case JLE:
-        case JNA:
-        case JNAE:
-        case JNB:
-        case JNBE:
-        case JNC:
-        case JNE:
-        case JNG:
-        case JNGE:
-        case JNL:
-        case JNLE:
-        case JNO:
-        case JNP:
-        case JNS:
-        case JNZ:
-        case JO:
-        case JP:
-        case JPE:
-        case JPO:
-        case JS:
-        case JZ:
-        case JMP:
-        case JMPFI:
-        case JMPNI:
-        case JMPSHORT:
-        case LOOP:
-        case LOOPE:
-        case LOOPNE:
-        case MUL:
-        case NEG:
-        case NOT:
-        case POP:
-        case PUSH:
-        case SETA:
-        case SETAE:
-        case SETB:
-        case SETBE:
-        case SETC:
-        case SETE:
-        case SETG:
-        case SETGE:
-        case SETL:
-        case SETLE:
-        case SETNA:
-        case SETNAE:
-        case SETNB:
-        case SETNBE:
-        case SETNC:
-        case SETNE:
-        case SETNG:
-        case SETNGE:
-        case SETNL:
-        case SETNLE:
-        case SETNO:
-        case SETNP:
-        case SETNS:
-        case SETNZ:
-        case SETO:
-        case SETP:
-        case SETPE:
-        case SETPO:
-        case SETS:
-        case SETZ:
-            if (instr->operands().size() != 1) {
-                throw core::arch::irgen::InvalidInstructionException("instruction takes exactly one operand");
-            }
-            break;
-        case ADC:
-        case ADD:
-        case AND:
-        case BOUND:
-        case BT:
-        case CMOVA:
-        case CMOVAE:
-        case CMOVB:
-        case CMOVBE:
-        case CMOVE:
-        case CMOVG:
-        case CMOVGE:
-        case CMOVL:
-        case CMOVLE:
-        case CMOVNB:
-        case CMOVNE:
-        case CMOVNO:
-        case CMOVNP:
-        case CMOVNS:
-        case CMOVNZ:
-        case CMOVO:
-        case CMOVP:
-        case CMOVS:
-        case CMOVZ:
-        case CMP:
-        case CMPXCHG:
-        case LEA:
-        case MOV:
-        case MOVSX:
-        case MOVZX:
-        case SBB:
-        case SUB:
-        case TEST:
-        case OR:
-        case XCHG:
-        case XOR:
-            if (instr->operands().size() != 2) {
-                throw core::arch::irgen::InvalidInstructionException("instruction takes exactly two operands");
-            }
-            break;
-        case SAL:
-        case SAR:
-        case SHL:
-        case SHR:
-            if (instr->operands().size() != 1 && instr->operands().size() != 2) {
-                throw core::arch::irgen::InvalidInstructionException("instruction takes one or two operands");
-            }
-            break;
-        case IMUL:
-            if (instr->operands().size() < 1 || instr->operands().size() > 3) {
-                throw core::arch::irgen::InvalidInstructionException("instruction takes one, two, or three operands");
-            }
-            break;
-        case NOP:
-            /* No checks. */
-            break;
-    }
+    assert(ud_obj.mnemonic != UD_Iinvalid);
 
     core::ir::BasicBlock *cachedDirectSuccessor = NULL;
     auto directSuccessor = [&]() -> core::ir::BasicBlock * {
@@ -324,15 +136,165 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
     IntelExpressionFactory factory(architecture_, instr);
     IntelExpressionFactoryCallback _(factory, program->getBasicBlockForInstruction(instr));
 
-    /* Using '_' as variable name for expression factory callback to type less. 
-     * Don't get surprised. And remember that expression trees are fed to
-     * the callback via operator[]. */
+    /* Sanity checks */
+    switch (ud_obj.mnemonic) {
+        case UD_Icld:
+        case UD_Icbw:
+        case UD_Icwde:
+        case UD_Icdqe:
+        case UD_Icmpsb:
+        case UD_Icmpsw:
+        case UD_Icmpsd:
+        case UD_Icmpsq:
+        case UD_Icpuid:
+        case UD_Iint3:
+        case UD_Ileave:
+        case UD_Imovsb:
+        case UD_Imovsw:
+        case UD_Imovsd:
+        case UD_Imovsq:
+        case UD_Ipopfw:
+        case UD_Ipopfd:
+        case UD_Ipopfq:
+        case UD_Ipushfw:
+        case UD_Ipushfd:
+        case UD_Ipushfq:
+        case UD_Iscasb:
+        case UD_Iscasw:
+        case UD_Iscasd:
+        case UD_Iscasq:
+        case UD_Istd:
+        case UD_Istosb:
+        case UD_Istosw:
+        case UD_Istosd:
+        case UD_Istosq:
+            if (instr->operands().size() != 0) {
+                throw core::arch::irgen::InvalidInstructionException("instruction takes no arguments");
+            }
+            break;
+        case UD_Iret:
+            if(instr->operands().size() > 1) {
+                throw core::arch::irgen::InvalidInstructionException("instruction takes zero or one argument");
+            }
+            break;
+        case UD_Icall:
+        case UD_Idec:
+        case UD_Idiv:
+        case UD_Iidiv:
+        case UD_Iinc:
+        case UD_Iint:
+        case UD_Ija:
+        case UD_Ijae:
+        case UD_Ijb:
+        case UD_Ijbe:
+        case UD_Ijcxz:
+        case UD_Ijecxz:
+        case UD_Ijg:
+        case UD_Ijge:
+        case UD_Ijl:
+        case UD_Ijle:
+        case UD_Ijmp:
+        case UD_Ijno:
+        case UD_Ijnp:
+        case UD_Ijns:
+        case UD_Ijnz:
+        case UD_Ijo:
+        case UD_Ijp:
+        case UD_Ijrcxz:
+        case UD_Ijs:
+        case UD_Ijz:
+        case UD_Iloop:
+        case UD_Iloope:
+        case UD_Iloopnz:
+        case UD_Imul:
+        case UD_Ineg:
+        case UD_Inot:
+        case UD_Ipop:
+        case UD_Ipush:
+        case UD_Iseta:
+        case UD_Isetb:
+        case UD_Isetbe:
+        case UD_Isetg:
+        case UD_Isetge:
+        case UD_Isetl:
+        case UD_Isetle:
+        case UD_Isetnb:
+        case UD_Isetno:
+        case UD_Isetnp:
+        case UD_Isetns:
+        case UD_Isetnz:
+        case UD_Iseto:
+        case UD_Isetp:
+        case UD_Isets:
+        case UD_Isetz:
+            if (instr->operands().size() != 1) {
+                throw core::arch::irgen::InvalidInstructionException("instruction takes exactly one operand");
+            }
+            break;
+        case UD_Iadc:
+        case UD_Iadd:
+        case UD_Iand:
+        case UD_Ibound:
+        case UD_Ibt:
+        case UD_Icmova:
+        case UD_Icmovae:
+        case UD_Icmovb:
+        case UD_Icmovbe:
+        case UD_Icmovg:
+        case UD_Icmovge:
+        case UD_Icmovl:
+        case UD_Icmovle:
+        case UD_Icmovno:
+        case UD_Icmovnp:
+        case UD_Icmovns:
+        case UD_Icmovnz:
+        case UD_Icmovo:
+        case UD_Icmovp:
+        case UD_Icmovs:
+        case UD_Icmovz:
+        case UD_Icmp:
+        case UD_Icmpxchg:
+        case UD_Ilea:
+        case UD_Imov:
+        case UD_Imovsx:
+        case UD_Imovzx:
+        case UD_Ior:
+        case UD_Isbb:
+        case UD_Isub:
+        case UD_Itest:
+        case UD_Ixchg:
+        case UD_Ixor:
+            if (instr->operands().size() != 2) {
+                throw core::arch::irgen::InvalidInstructionException("instruction takes exactly two operands");
+            }
+            break;
+        case UD_Isar:
+        case UD_Ishl:
+        case UD_Ishr:
+            if (instr->operands().size() != 1 && instr->operands().size() != 2) {
+                throw core::arch::irgen::InvalidInstructionException("instruction takes one or two operands");
+            }
+            break;
+        case UD_Iimul:
+            if (instr->operands().size() < 1 || instr->operands().size() > 3) {
+                throw core::arch::irgen::InvalidInstructionException("instruction takes one, two, or three operands");
+            }
+            break;
+        case UD_Inop:
+            /* No checks. */
+            break;
+        default: {
+            /* Unsupported instruction. */
+            _(std::make_unique<core::ir::InlineAssembly>());
+            return;
+        }
+    }
 
     using namespace core::arch::irgen::expressions;
 
     /* Describing semantics */
-    switch (instr->mnemonic()->number()) {
-        case ADC: {
+    switch (ud_obj.mnemonic) {
+        case UD_Iadc: {
             _[
                 operand(0) = operand(0) + operand(1) + zero_extend(cf()),
                 cf() = intrinsic(),
@@ -345,7 +307,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case ADD: {
+        case UD_Iadd: {
             _[
                 operand(0) = operand(0) + operand(1),
                 cf() = intrinsic(),
@@ -358,7 +320,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case AND: {
+        case UD_Iand: {
             if (instr->operand(0) == instr->operand(1)) {
                 _[operand(0) = operand(0)];
             } else {
@@ -376,11 +338,11 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case BOUND: {
+        case UD_Ibound: {
             /* Deprecated, used mostly for debugging, it's better to generate no IR code at all. */
             break;
         }
-        case BT: {
+        case UD_Ibt: {
             _[
                 cf() = truncate(unsigned_(operand(0)) >> operand(1)),
                 of() = undefined(),
@@ -392,7 +354,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case CALL: {
+        case UD_Icall: {
             auto sp = architecture_->stackPointer();
             auto ip = architecture_->instructionPointer();
 
@@ -404,31 +366,31 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case CBW: {
+        case UD_Icbw: {
             _[
                 regizter(IntelRegisters::ax()) = sign_extend(regizter(IntelRegisters::al()))
             ];
             break;
         }
-        case CWDE: {
+        case UD_Icwde: {
             _[
                 regizter(IntelRegisters::eax()) = sign_extend(regizter(IntelRegisters::ax()))
             ];
             break;
         }
-        case CDQE: {
+        case UD_Icdqe: {
             _[
                 regizter(IntelRegisters::rax()) = sign_extend(regizter(IntelRegisters::eax()))
             ];
             break;
         }
-        case CLD: {
+        case UD_Icld: {
             _[
                 df() = constant(0)
             ];
             break;
         }
-        case CMP: {
+        case UD_Icmp: {
             _[
                 cf() = intrinsic(),
                 pf() = intrinsic(),
@@ -448,23 +410,23 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case CMPSB: case CMPSW: case CMPSD: case CMPSQ:
-        case MOVSB: case MOVSW: case MOVSD: case MOVSQ:
-        case SCASB: case SCASW: case SCASD: case SCASQ:
-        case STOSB: case STOSW: case STOSD: case STOSQ: {
+        case UD_Icmpsb: case UD_Icmpsw: case UD_Icmpsd: case UD_Icmpsq:
+        case UD_Imovsb: case UD_Imovsw: case UD_Imovsd: case UD_Imovsq:
+        case UD_Iscasb: case UD_Iscasw: case UD_Iscasd: case UD_Iscasq:
+        case UD_Istosb: case UD_Istosw: case UD_Istosd: case UD_Istosq: {
             SmallBitSize accessSize;
 
-            switch (instr->mnemonic()->number()) {
-                case CMPSB: case MOVSB: case SCASB: case STOSB:
+            switch (ud_obj.mnemonic) {
+                case UD_Icmpsb: case UD_Imovsb: case UD_Iscasb: case UD_Istosb:
                     accessSize = 8;
                     break;
-                case CMPSW: case MOVSW: case SCASW: case STOSW:
+                case UD_Icmpsw: case UD_Imovsw: case UD_Iscasw: case UD_Istosw:
                     accessSize = 16;
                     break;
-                case CMPSD: case MOVSD: case SCASD: case STOSD:
+                case UD_Icmpsd: case UD_Imovsd: case UD_Iscasd: case UD_Istosd:
                     accessSize = 32;
                     break;
-                case CMPSQ: case MOVSQ: case SCASQ: case STOSQ:
+                case UD_Icmpsq: case UD_Imovsq: case UD_Iscasq: case UD_Istosq:
                     accessSize = 64;
                     break;
                 default:
@@ -494,8 +456,8 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             }
 
             bool repPrefixIsValid = false;
-            switch (instr->mnemonic()->number()) {
-                case CMPSB: case CMPSW: case CMPSD: case CMPSQ: {
+            switch (ud_obj.mnemonic) {
+                case UD_Icmpsb: case UD_Icmpsw: case UD_Icmpsd: case UD_Icmpsq: {
                     auto left = dereference(si, accessSize);
                     auto right = dereference(di, accessSize);
 
@@ -517,12 +479,12 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
                         above_or_equal()   = unsigned_(left) >= right
                     ];
                 }
-                case MOVSB: case MOVSW: case MOVSD: case MOVSQ: {
+                case UD_Imovsb: case UD_Imovsw: case UD_Imovsd: case UD_Imovsq: {
                     repPrefixIsValid = true;
                     body[dereference(di, accessSize) = *si];
                     break;
                 }
-                case SCASB: case SCASW: case SCASD: case SCASQ: {
+                case UD_Iscasb: case UD_Iscasw: case UD_Iscasd: case UD_Iscasq: {
                     auto left = dereference(di, accessSize);
                     auto right = resizedRegister(IntelRegisters::ax(), accessSize);
 
@@ -545,7 +507,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
                     ];
                     break;
                 }
-                case STOSB: case STOSW: case STOSD: case STOSQ: {
+                case UD_Istosb: case UD_Istosw: case UD_Istosd: case UD_Istosq: {
                     repPrefixIsValid = true;
                     body[dereference(di, accessSize) = resizedRegister(IntelRegisters::ax(), accessSize)];
                     break;
@@ -571,7 +533,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             }
             break;
         }
-        case CMPXCHG: {
+        case UD_Icmpxchg: {
             IntelExpressionFactoryCallback then(factory, program->createBasicBlock());
 
             _[
@@ -596,7 +558,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
 
             break;
         }
-        case CPUID: {
+        case UD_Icpuid: {
             _[
                 regizter(IntelRegisters::eax()) = intrinsic(),
                 regizter(IntelRegisters::ebx()) = intrinsic(),
@@ -605,7 +567,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case DEC: {
+        case UD_Idec: {
             _[
                 operand(0) = operand(0) - constant(1),
                 pf() = intrinsic(),
@@ -617,7 +579,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case DIV: {
+        case UD_Idiv: {
             auto size = std::max(instr->operand(0)->size(), 16);
             auto ax = resizedRegister(IntelRegisters::ax(), size);
             auto dx = resizedRegister(IntelRegisters::dx(), size);
@@ -635,7 +597,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             }
             break;
         }
-        case IDIV: {
+        case UD_Iidiv: {
 #if 0
             /* A correct implementation, however, generating complicated code. */
 
@@ -677,7 +639,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case INT: {
+        case UD_Iint: {
             if (const core::arch::ConstantOperand *constant = instr->operand(0)->asConstant()) {
                 if (constant->value().value() == 3) {
                     /* int 3 is debug break, remove it. */
@@ -687,11 +649,11 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             _(std::make_unique<core::ir::InlineAssembly>());
             break;
         }
-        case INT3: {
+        case UD_Iint3: {
             /* int 3 is a debug break, remove it. */
             break;
         }
-        case IMUL: case MUL: {
+        case UD_Iimul: case UD_Imul: {
             /* All compilers always use IMUL, not MUL. Even for unsigned operands.
              * See http://stackoverflow.com/questions/4039378/x86-mul-instruction-from-vs-2008-2010
              *
@@ -752,7 +714,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case INC: {
+        case UD_Iinc: {
             _[
                 operand(0) = operand(0) + constant(1),
                 pf() = intrinsic(),
@@ -764,132 +726,124 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case JA: case JNBE: {
+        case UD_Ija: {
             _[jump(choice(above(), ~cf() & ~zf()), operand(0), directSuccessor())];
             break;
         }
-        case JAE: case JNB: {
+        case UD_Ijae: {
             _[jump(choice(above_or_equal(), ~cf()), operand(0), directSuccessor())];
             break;
         }
-        case JB: case JNAE: {
+        case UD_Ijb: {
             _[jump(choice(below(), cf()), operand(0), directSuccessor())];
             break;
         }
-        case JBE: case JNA: {
+        case UD_Ijbe: {
             _[jump(choice(below_or_equal(), cf() | zf()), operand(0), directSuccessor())];
             break;
         }
-        case JC: {
-            _[jump(cf(), operand(0), directSuccessor())];
-            break;
-        }
-        case JCXZ: {
+        case UD_Ijcxz: {
             _[jump(~(cx() == constant(0)), operand(0), directSuccessor())];
             break;
         }
-        case JECXZ: {
+        case UD_Ijecxz: {
             _[jump(~(ecx() == constant(0)), operand(0), directSuccessor())];
             break;
         }
-        case JRCXZ: {
+        case UD_Ijrcxz: {
             _[jump(~(rcx() == constant(0)), operand(0), directSuccessor())];
             break;
         }
-        case JE: case JZ: {
+        case UD_Ijz: {
             _[jump(zf(), operand(0), directSuccessor())];
             break;
         }
-        case JG: case JNLE: {
+        case UD_Ijg: {
             _[jump(choice(greater(), ~zf() | (sf() == of())), operand(0), directSuccessor())];
             break;
         }
-        case JGE: case JNL: {
+        case UD_Ijge: {
             _[jump(choice(greater_or_equal(), sf() == of()), operand(0), directSuccessor())];
             break;
         }
-        case JL: case JNGE: {
+        case UD_Ijl: {
             _[jump(choice(less(), ~(sf() == of())), operand(0), directSuccessor())];
             break;
         }
-        case JLE: case JNG: {
+        case UD_Ijle: {
             _[jump(choice(less_or_equal(), zf() | ~(sf() == of())), operand(0), directSuccessor())];
             break;
         }
-        case JNC: {
-            _[jump(~cf(), operand(0), directSuccessor())];
-            break;
-        }
-        case JNE: case JNZ: {
+        case UD_Ijnz: {
             _[jump(~zf(), operand(0), directSuccessor())];
             break;
         }
-        case JNO: {
+        case UD_Ijno: {
             _[jump(~of(), operand(0), directSuccessor())];
             break;
         }
-        case JNP: case JPO: {
+        case UD_Ijnp: {
             _[jump(~pf(), operand(0), directSuccessor())];
             break;
         }
-        case JNS: {
+        case UD_Ijns: {
             _[jump(~sf(), operand(0), directSuccessor())];
             break;
         }
-        case JO: {
+        case UD_Ijo: {
             _[jump(of(), operand(0), directSuccessor())];
             break;
         }
-        case JP: case JPE: {
+        case UD_Ijp: {
             _[jump(pf(), operand(0), directSuccessor())];
             break;
         }
-        case JS: {
+        case UD_Ijs: {
             _[jump(sf(), operand(0), directSuccessor())];
             break;
         }
-        case JMP: {
+        case UD_Ijmp: {
             _[jump(operand(0))];
             break;
         }
-        case CMOVA: case CMOVAE: case CMOVB: case CMOVBE: case CMOVE:
-        case CMOVG: case CMOVGE: case CMOVL: case CMOVLE: case CMOVNB:
-        case CMOVNE: case CMOVNO: case CMOVNP: case CMOVNS: case CMOVNZ:
-        case CMOVO: case CMOVP: case CMOVS: case CMOVZ: {
+        case UD_Icmova: case UD_Icmovae: case UD_Icmovb: case UD_Icmovbe: 
+        case UD_Icmovz: case UD_Icmovg: case UD_Icmovge: case UD_Icmovl:
+        case UD_Icmovle: case UD_Icmovnz: case UD_Icmovno: case UD_Icmovnp:
+        case UD_Icmovns: case UD_Icmovo: case UD_Icmovp: case UD_Icmovs: {
             IntelExpressionFactoryCallback then(factory, program->createBasicBlock());
 
-            switch (instruction->mnemonic()->number()) {
-                case CMOVA:
+            switch (ud_obj.mnemonic) {
+                case UD_Icmova:
                     _[jump(choice(above(), ~cf() & ~zf()), then.basicBlock(), directSuccessor())]; break;
-                case CMOVAE: case CMOVNB:
+                case UD_Icmovae:
                     _[jump(choice(above_or_equal(), ~cf()), then.basicBlock(), directSuccessor())]; break;
-                case CMOVB:
+                case UD_Icmovb:
                     _[jump(choice(below(), cf()), then.basicBlock(), directSuccessor())]; break;
-                case CMOVBE:
+                case UD_Icmovbe:
                     _[jump(choice(below_or_equal(), cf() | zf()), then.basicBlock(), directSuccessor())]; break;
-                case CMOVE: case CMOVZ:
+                case UD_Icmovz:
                     _[jump(zf(), then.basicBlock(), directSuccessor())]; break;
-                case CMOVG:
+                case UD_Icmovg:
                     _[jump(choice(greater(), ~zf() | (sf() == of())), then.basicBlock(), directSuccessor())]; break;
-                case CMOVGE:
+                case UD_Icmovge:
                     _[jump(choice(greater_or_equal(), sf() == of()), then.basicBlock(), directSuccessor())]; break;
-                case CMOVL:
+                case UD_Icmovl:
                     _[jump(choice(less(), ~(sf() == of())), then.basicBlock(), directSuccessor())]; break;
-                case CMOVLE:
+                case UD_Icmovle:
                     _[jump(choice(less_or_equal(), zf() | ~(sf() == of())), then.basicBlock(), directSuccessor())]; break;
-                case CMOVNE: case CMOVNZ:
+                case UD_Icmovnz:
                     _[jump(~zf(), then.basicBlock(), directSuccessor())]; break;
-                case CMOVNO:
+                case UD_Icmovno:
                     _[jump(~of(), then.basicBlock(), directSuccessor())]; break;
-                case CMOVNP:
+                case UD_Icmovnp:
                     _[jump(~pf(), then.basicBlock(), directSuccessor())]; break;
-                case CMOVNS:
+                case UD_Icmovns:
                     _[jump(~sf(), then.basicBlock(), directSuccessor())]; break;
-                case CMOVO:
+                case UD_Icmovo:
                     _[jump(of(), then.basicBlock(), directSuccessor())]; break;
-                case CMOVP:
+                case UD_Icmovp:
                     _[jump(pf(), then.basicBlock(), directSuccessor())]; break;
-                case CMOVS:
+                case UD_Icmovs:
                     _[jump(sf(), then.basicBlock(), directSuccessor())]; break;
                 default: unreachable();
             }
@@ -901,7 +855,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
 
             break;
         }
-        case LEA: {
+        case UD_Ilea: {
             if (const core::arch::DereferenceOperand *dereference = instr->operand(1)->asDereference()) {
                 if (instr->operand(0)->size() == dereference->operand()->size()) {
                     _[operand(0) = operand(dereference->operand())];
@@ -915,7 +869,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             }
             break;
         }
-        case LEAVEW: case LEAVE: case LEAVED: case LEAVEQ: {
+        case UD_Ileave: {
             auto sp = architecture_->stackPointer();
             auto bp = architecture_->basePointer();
 
@@ -926,21 +880,21 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case LOOP:
-        case LOOPE:
-        case LOOPNE: {
+        case UD_Iloop:
+        case UD_Iloope:
+        case UD_Iloopnz: {
             auto cx = resizedRegister(IntelRegisters::cx(), ud_obj.adr_mode);
 
             _[cx = cx - constant(1)];
 
-            switch (instr->mnemonic()->number()) {
-                case LOOP:
+            switch (ud_obj.mnemonic) {
+                case UD_Iloop:
                     _[jump(~(cx == constant(0)), operand(0), directSuccessor())];
                     break;
-                case LOOPE:
+                case UD_Iloope:
                     _[jump(~(cx == constant(0)) & zf(), operand(0), directSuccessor())];
                     break;
-                case LOOPNE:
+                case UD_Iloopnz:
                     _[jump(~(cx == constant(0)) & ~zf(), operand(0), directSuccessor())];
                     break;
                 default:
@@ -948,7 +902,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             }
             break;
         }
-        case MOV: {
+        case UD_Imov: {
             if (instr->operand(0)->size() == instr->operand(1)->size()) {
                 _[operand(0) = operand(1)];
             } else if (instr->operand(0)->size() > instr->operand(1)->size()) {
@@ -960,7 +914,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             }
             break;
         }
-        case MOVSX: case MOVSXD: {
+        case UD_Imovsx: {
             if (instr->operand(0)->size() == instr->operand(1)->size()) {
                 _[operand(0) = operand(1)];
             } else {
@@ -968,11 +922,11 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             }
             break;
         }
-        case MOVZX: {
+        case UD_Imovzx: {
             _[operand(0) = zero_extend(operand(1))];
             break;
         }
-        case NEG: {
+        case UD_Ineg: {
             _[
                 cf() = ~(operand(0) == constant(0)),
                 operand(0) = -operand(0),
@@ -985,14 +939,14 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case NOP: {
+        case UD_Inop: {
             break;
         }
-        case NOT: {
+        case UD_Inot: {
             _[operand(0) = ~operand(0)];
             break;
         }
-        case OR: {
+        case UD_Ior: {
             if (instr->operand(0) == instr->operand(1)) {
                 _[operand(0) = operand(0)];
             } else {
@@ -1010,7 +964,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case POP: {
+        case UD_Ipop: {
             auto sp = architecture_->stackPointer();
             _[
                 operand(0) = *regizter(sp),
@@ -1018,7 +972,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case PUSH: {
+        case UD_Ipush: {
             auto sp = architecture_->stackPointer();
             _[
                 regizter(sp) = regizter(sp) - constant(instr->operand(0)->size() / CHAR_BIT),
@@ -1026,7 +980,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case POPFW: {
+        case UD_Ipopfw: {
             auto sp = architecture_->stackPointer();
             _[
                 *regizter(sp) = flags(),
@@ -1034,7 +988,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case POPFD: {
+        case UD_Ipopfd: {
             auto sp = architecture_->stackPointer();
             _[
                 eflags() = *regizter(sp),
@@ -1042,7 +996,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case POPFQ: {
+        case UD_Ipopfq: {
             auto sp = architecture_->stackPointer();
             _[
                 rflags() = *regizter(sp),
@@ -1050,7 +1004,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case PUSHFW: {
+        case UD_Ipushfw: {
             auto sp = architecture_->stackPointer();
             _[
                 regizter(sp) = regizter(sp) - constant(2),
@@ -1058,7 +1012,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case PUSHFD: {
+        case UD_Ipushfd: {
             auto sp = architecture_->stackPointer();
             _[
                 regizter(sp) = regizter(sp) - constant(4),
@@ -1066,7 +1020,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case PUSHFQ: {
+        case UD_Ipushfq: {
             auto sp = architecture_->stackPointer();
             _[
                 regizter(sp) = regizter(sp) - constant(8),
@@ -1074,7 +1028,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case RET: {
+        case UD_Iret: {
             auto sp = architecture_->stackPointer();
             auto ip = architecture_->instructionPointer();
 
@@ -1090,7 +1044,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             _[return_()];
             break;
         }
-        case SAL: case SHL: {
+        case UD_Ishl: {
             if (instr->operands().size() == 1) {
                 _[operand(0) = operand(0) << constant(1)];
             } else {
@@ -1105,7 +1059,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case SAR: {
+        case UD_Isar: {
             if (instr->operands().size() == 1) {
                 _[operand(0) = signed_(operand(0)) >> constant(1)];
             } else {
@@ -1120,7 +1074,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case SBB: {
+        case UD_Isbb: {
             _[
                 less()             = signed_(operand(0))   <  operand(1) + zero_extend(cf()),
                 less_or_equal()    = signed_(operand(0))   <= operand(1) + zero_extend(cf()),
@@ -1142,79 +1096,71 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case SETA: case SETNBE: {
+        case UD_Iseta: {
             _[operand(0) = zero_extend(choice(above(), ~cf() & ~zf()))];
             break;
         }
-        case SETAE: case SETNB: {
+        case UD_Isetnb: {
             _[operand(0) = zero_extend(choice(above_or_equal(), ~cf()))];
             break;
         }
-        case SETB: case SETNAE: {
+        case UD_Isetb: {
             _[operand(0) = zero_extend(choice(below(), cf()))];
             break;
         }
-        case SETBE: case SETNA: {
+        case UD_Isetbe: {
             _[operand(0) = zero_extend(choice(below_or_equal(), cf() | zf()))];
             break;
         }
-        case SETC: {
-            _[operand(0) = zero_extend(cf())];
-            break;
-        }
-        case SETE: case SETZ: {
+        case UD_Isetz: {
             _[operand(0) = zero_extend(zf())];
             break;
         }
-        case SETG: case SETNLE: {
+        case UD_Isetg: {
             _[operand(0) = zero_extend(choice(greater(), ~zf() | (sf() == of())))];
             break;
         }
-        case SETGE: case SETNL: {
+        case UD_Isetge: {
             _[operand(0) = zero_extend(choice(greater_or_equal(), sf() == of()))];
             break;
         }
-        case SETL: case SETNGE: {
+        case UD_Isetl: {
             _[operand(0) = zero_extend(choice(less(), ~(sf() == of())))];
             break;
         }
-        case SETLE: case SETNG: {
+        case UD_Isetle: {
             _[operand(0) = zero_extend(choice(less_or_equal(), zf() | ~(sf() == of())))];
             break;
         }
-        case SETNC: {
-            _[operand(0) = zero_extend(~cf())];
-            break;
-        }
-        case SETNE: case SETNZ: {
+        case UD_Isetnz: {
             _[operand(0) = zero_extend(~zf())];
             break;
         }
-        case SETNO: {
+        case UD_Isetno: {
             _[operand(0) = zero_extend(~of())];
             break;
         }
-        case SETNP: case SETPO: {
+        case UD_Isetnp: {
             _[operand(0) = zero_extend(~pf())];
             break;
         }
-        case SETNS: {
+        case UD_Isetns: {
             _[operand(0) = zero_extend(~sf())];
             break;
         }
-        case SETO: {
+        case UD_Iseto: {
             _[operand(0) = zero_extend(of())];
             break;
         }
-        case SETP: case SETPE: {
+        case UD_Isetp: {
             _[operand(0) = zero_extend(pf())];
             break;
         }
-        case SETS: {
+        case UD_Isets: {
             _[operand(0) = zero_extend(sf())];
             break;
         }
-        case SHR: {
+        case UD_Ishr: {
             if(instr->operands().size() == 1) {
                 _[operand(0) = unsigned_(operand(0)) >> constant(1)];
             } else {
@@ -1229,13 +1175,13 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case STD: {
+        case UD_Istd: {
             _[
                 df() = constant(1)
             ];
             break;
         }
-        case SUB: {
+        case UD_Isub: {
             _[
                 less()             = signed_(operand(0)) < operand(1),
                 less_or_equal()    = signed_(operand(0)) <= operand(1),
@@ -1257,7 +1203,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case TEST: {
+        case UD_Itest: {
             _[
                 cf() = constant(0),
                 pf() = intrinsic()
@@ -1277,7 +1223,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case XCHG: {
+        case UD_Ixchg: {
             auto tmp = temporary(instr->operand(0)->size());
 
             _[
@@ -1287,7 +1233,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
             break;
         }
-        case XOR: {
+        case UD_Ixor: {
             if (instr->operand(0) == instr->operand(1)) {
                 _[operand(0) = constant(0)];
             } else {
@@ -1306,8 +1252,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         default: {
-            _(std::make_unique<core::ir::InlineAssembly>());
-            break;
+            unreachable();
         }
     }
 }
