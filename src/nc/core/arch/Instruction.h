@@ -86,7 +86,7 @@ public:
 
     /**
      * Adds the given operand to the list of operands for this instruction.
-     * 
+     *
      * \param[in] operand Valid pointer to the operand to add.
      */
     void addOperand(Operand *operand) {
@@ -97,7 +97,7 @@ public:
     /**
      * Inserts the given operand into the list of operands for this instruction
      * at given position.
-     * 
+     *
      * \param[in] index                Position to insert operand at.
      * \param[in] operand              Operand to insert.
      */
@@ -115,7 +115,7 @@ public:
 
     /**
      * Replaces an operand at given position.
-     * 
+     *
      * \param[in] index                Position to replace operand at.
      * \param[in] operand              Operand to replace by.
      */
@@ -152,7 +152,7 @@ public:
 
     /**
      * \return Address of the next instruction in memory.
-     */ 
+     */
     ByteAddr endAddr() const { return addr_ + size_; }
 };
 

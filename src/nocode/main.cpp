@@ -31,7 +31,7 @@
 #include <nc/common/StreamLogger.h>
 #include <nc/common/Unreachable.h>
 
-#include <nc/core/Context.h> 
+#include <nc/core/Context.h>
 #include <nc/core/Driver.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/ArchitectureRepository.h>
