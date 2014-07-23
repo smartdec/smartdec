@@ -24,6 +24,8 @@
 
 #include "IntelInstructionAnalyzer.h"
 
+#include <libudis86/udis86.h>
+
 #include <nc/common/CheckedCast.h>
 #include <nc/common/Unreachable.h>
 
@@ -110,13 +112,6 @@ temporary(SmallBitSize size) {
 } // anonymous namespace
 
 
-IntelInstructionAnalyzer::IntelInstructionAnalyzer(IntelArchitecture *architecture): mArchitecture(architecture) {
-    assert(architecture != NULL);
-
-    ud_init(&ud_obj_);
-    ud_set_mode(&ud_obj_, architecture->bitness());
-}
-
 void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) const {
     assert(instruction != NULL);
 
@@ -125,8 +120,11 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
 
     const IntelInstruction *instr = checked_cast<const IntelInstruction *>(instruction);
 
-    ud_set_pc(&ud_obj_, instr->addr());
-    ud_set_input_buffer(&ud_obj_, const_cast<uint8_t *>(instr->bytes()), checked_cast<std::size_t>(instr->size()));
+    ud_t ud_obj;
+    ud_init(&ud_obj);
+    ud_set_mode(&ud_obj, architecture_->bitness());
+    ud_set_pc(&ud_obj, instr->addr());
+    ud_set_input_buffer(&ud_obj, const_cast<uint8_t *>(instr->bytes()), checked_cast<std::size_t>(instr->size()));
 
     /* Sanity checks */
     switch (instr->mnemonic()->number()) {
@@ -323,7 +321,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
         return cachedDirectSuccessor;
     };
 
-    IntelExpressionFactory factory(mArchitecture, instr);
+    IntelExpressionFactory factory(architecture_, instr);
     IntelExpressionFactoryCallback _(factory, program->getBasicBlockForInstruction(instr));
 
     /* Using '_' as variable name for expression factory callback to type less. 
@@ -395,8 +393,8 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case CALL: {
-            auto sp = mArchitecture->stackPointer();
-            auto ip = mArchitecture->instructionPointer();
+            auto sp = architecture_->stackPointer();
+            auto ip = architecture_->instructionPointer();
 
             _[
                 regizter(sp) = regizter(sp) - constant(ip->size() / CHAR_BIT),
@@ -487,7 +485,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
 
             _[jump(condition.basicBlock())];
 
-            if (ud_obj_.pfx_rep != UD_NONE || ud_obj_.pfx_repe != UD_NONE || ud_obj_.pfx_repne != UD_NONE) {
+            if (ud_obj.pfx_rep != UD_NONE || ud_obj.pfx_repe != UD_NONE || ud_obj.pfx_repne != UD_NONE) {
                 condition[jump(cx, body.basicBlock(), directSuccessor())];
 
                 body[cx = cx - constant(1)];
@@ -562,11 +560,11 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
 
             /* libudis86 sets REP prefix together with REPZ/REPNZ. */
-            if (ud_obj_.pfx_rep != UD_NONE && repPrefixIsValid) {
+            if (ud_obj.pfx_rep != UD_NONE && repPrefixIsValid) {
                 body[jump(condition.basicBlock())];
-            } else if (ud_obj_.pfx_repe != UD_NONE) {
+            } else if (ud_obj.pfx_repe != UD_NONE) {
                 body[jump(zf(), condition.basicBlock(), directSuccessor())];
-            } else if (ud_obj_.pfx_repne != UD_NONE) {
+            } else if (ud_obj.pfx_repne != UD_NONE) {
                 body[jump(~zf(), condition.basicBlock(), directSuccessor())];
             } else {
                 body[jump(directSuccessor())];
@@ -918,8 +916,8 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case LEAVEW: case LEAVE: case LEAVED: case LEAVEQ: {
-            auto sp = mArchitecture->stackPointer();
-            auto bp = mArchitecture->basePointer();
+            auto sp = architecture_->stackPointer();
+            auto bp = architecture_->basePointer();
 
             _[
                 regizter(sp) = regizter(bp),
@@ -1013,7 +1011,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case POP: {
-            auto sp = mArchitecture->stackPointer();
+            auto sp = architecture_->stackPointer();
             _[
                 operand(0) = *regizter(sp),
                 regizter(sp) = regizter(sp) + constant(instr->operand(0)->size() / CHAR_BIT)
@@ -1021,7 +1019,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case PUSH: {
-            auto sp = mArchitecture->stackPointer();
+            auto sp = architecture_->stackPointer();
             _[
                 regizter(sp) = regizter(sp) - constant(instr->operand(0)->size() / CHAR_BIT),
                 *regizter(sp) = operand(0)
@@ -1029,7 +1027,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case POPFW: {
-            auto sp = mArchitecture->stackPointer();
+            auto sp = architecture_->stackPointer();
             _[
                 *regizter(sp) = flags(),
                 regizter(sp) = regizter(sp) + constant(2)
@@ -1037,7 +1035,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case POPFD: {
-            auto sp = mArchitecture->stackPointer();
+            auto sp = architecture_->stackPointer();
             _[
                 eflags() = *regizter(sp),
                 regizter(sp) = regizter(sp) + constant(4)
@@ -1045,7 +1043,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case POPFQ: {
-            auto sp = mArchitecture->stackPointer();
+            auto sp = architecture_->stackPointer();
             _[
                 rflags() = *regizter(sp),
                 regizter(sp) = regizter(sp) + constant(8)
@@ -1053,7 +1051,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case PUSHFW: {
-            auto sp = mArchitecture->stackPointer();
+            auto sp = architecture_->stackPointer();
             _[
                 regizter(sp) = regizter(sp) - constant(2),
                 *regizter(sp) = flags()
@@ -1061,7 +1059,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case PUSHFD: {
-            auto sp = mArchitecture->stackPointer();
+            auto sp = architecture_->stackPointer();
             _[
                 regizter(sp) = regizter(sp) - constant(4),
                 *regizter(sp) = eflags() & constant(0x00fcffff)
@@ -1069,7 +1067,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case PUSHFQ: {
-            auto sp = mArchitecture->stackPointer();
+            auto sp = architecture_->stackPointer();
             _[
                 regizter(sp) = regizter(sp) - constant(8),
                 *regizter(sp) = rflags() & constant(0x00fcffff)
@@ -1077,8 +1075,8 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             break;
         }
         case RET: {
-            auto sp = mArchitecture->stackPointer();
-            auto ip = mArchitecture->instructionPointer();
+            auto sp = architecture_->stackPointer();
+            auto ip = architecture_->instructionPointer();
 
             _[
                 regizter(ip) = *regizter(sp),
@@ -1342,7 +1340,7 @@ std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::doCreateTerm(const cor
     switch (operand->kind()) {
     case core::arch::Operand::REGISTER: {
         auto reg = operand->as<core::arch::RegisterOperand>()->regizter();
-        if (reg == mArchitecture->instructionPointer()) {
+        if (reg == architecture_->instructionPointer()) {
             return std::make_unique<core::ir::Intrinsic>(core::ir::Intrinsic::NEXT_INSTRUCTION_ADDRESS, reg->size());
         } else {
             return core::arch::irgen::InstructionAnalyzer::doCreateTerm(operand);

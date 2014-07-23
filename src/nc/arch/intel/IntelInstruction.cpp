@@ -26,6 +26,8 @@
 
 #include <QTextStream>
 
+#include <libudis86/udis86.h>
+
 #include <nc/common/Foreach.h>
 
 #include "IntelMnemonics.h"
@@ -35,20 +37,14 @@ namespace arch {
 namespace intel {
 
 void IntelInstruction::print(QTextStream &out) const {
-    // TODO: move this to IntelInstructionAnalyzer
-
-    out << mnemonic()->lowercaseName();
-
-    bool comma = false;
-    foreach (const core::arch::Operand *operand, operands()) {
-        if (comma) {
-            out << ", ";
-        } else {
-            out << "\t";
-            comma = true;
-        }
-        out << *operand;
-    }
+    ud_t ud_obj;
+    ud_init(&ud_obj);
+    ud_set_mode(&ud_obj, bitness_);
+    ud_set_syntax(&ud_obj, UD_SYN_INTEL);
+    ud_set_pc(&ud_obj, addr());
+    ud_set_input_buffer(&ud_obj, const_cast<uint8_t *>(bytes()), size());
+    ud_disassemble(&ud_obj);
+    out << ud_insn_asm(&ud_obj);
 }
 
 } // namespace intel

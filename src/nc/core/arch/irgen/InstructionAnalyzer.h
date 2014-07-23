@@ -30,7 +30,6 @@
 #include <nc/common/Types.h>
 
 namespace nc {
-
 namespace core {
 
 namespace ir {

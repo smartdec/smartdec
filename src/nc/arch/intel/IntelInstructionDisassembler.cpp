@@ -73,7 +73,7 @@ class IntelInstructionDisassemblerPrivate {
             return NULL;
         }
 
-        std::unique_ptr<IntelInstruction> result(new IntelInstruction(pc, instructionSize, buffer, mnemonic));
+        std::unique_ptr<IntelInstruction> result(new IntelInstruction(architecture_->bitness(), pc, instructionSize, buffer, mnemonic));
 
         result->setOperandSize(ud_obj_.opr_mode);
         result->setAddressSize(ud_obj_.adr_mode);

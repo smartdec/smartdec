@@ -46,6 +46,8 @@ public:
     static const SmallByteSize MAX_SIZE = 15;
 
 private:
+    SmallBitSize bitness_;
+
     /** Operand size of the instruction. */
     SmallBitSize operandSize_;
 
@@ -64,8 +66,9 @@ public:
      * \param[in] addr Instruction address in bytes.
      * \param[in] size Instruction size in bytes.
      */
-    IntelInstruction(ByteAddr addr, SmallByteSize size, const void *bytes, const core::arch::Mnemonic *mnemonic):
+    IntelInstruction(SmallBitSize bitness, ByteAddr addr, SmallByteSize size, const void *bytes, const core::arch::Mnemonic *mnemonic):
         core::arch::Instruction(mnemonic, addr, size), 
+        bitness_(bitness),
         operandSize_(0),
         addressSize_(0)
     {
