@@ -25,6 +25,9 @@
 
 #include <nc/config.h>
 
+#include <cassert>
+#include <cstring>
+
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/arch/Operands.h>
 
@@ -41,6 +44,11 @@ typedef int Prefixes; ///< Prefix bit mask.
  * An instruction of Intel x86 platform.
  */
 class IntelInstruction: public core::arch::Instruction {
+public:
+    /** Max size of an instruction. */
+    static const SmallByteSize MAX_SIZE = 15;
+
+private:
     /** Bit mask of prefixes. */
     Prefixes prefixes_;
 
@@ -50,21 +58,29 @@ class IntelInstruction: public core::arch::Instruction {
     /** Address size of the instruction. */
     SmallBitSize addressSize_;
 
+    /** Binary representation of the instruction. */
+    std::array<char, MAX_SIZE> bytes_;
+
 public:
     /**
      * Class constructor.
      *
-     * \param[in] mnemonic Instruction mnemoic.
+     * \param[in] bytes Valid pointer to the bytes of the instruction.
+     * \param[in] mnemonic Instruction mnemonic.
      * \param[in] addr Instruction address in bytes.
      * \param[in] size Instruction size in bytes.
      * \param[in] prefixes Bit mask of instruction prefixes.
      */
-    IntelInstruction(const core::arch::Mnemonic *mnemonic, ByteAddr addr = 0, SmallByteSize size = 0, Prefixes prefixes = 0):
+    IntelInstruction(ByteAddr addr, SmallByteSize size, const void *bytes, const core::arch::Mnemonic *mnemonic, Prefixes prefixes = 0):
         core::arch::Instruction(mnemonic, addr, size), 
         prefixes_(prefixes),
         operandSize_(0),
         addressSize_(0)
-    {}
+    {
+        assert(size > 0);
+        assert(size <= MAX_SIZE);
+        memcpy(&bytes_, bytes, size);
+    }
 
     /**
      * \return Bit mask of instruction prefixes.

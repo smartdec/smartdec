@@ -29,6 +29,7 @@
 #include <nc/common/make_unique.h>
 
 #include "CallingConventions.h"
+#include "IntelInstruction.h"
 #include "IntelInstructionAnalyzer.h"
 #include "IntelInstructionDisassembler.h"
 #include "IntelMasterAnalyzer.h"
@@ -83,7 +84,7 @@ IntelArchitecture::IntelArchitecture(Mode mode) {
 
     setByteOrder(ByteOrder::LittleEndian);
 
-    setMaxInstructionSize(15);
+    setMaxInstructionSize(IntelInstruction::MAX_SIZE);
 
     mInstructionDisassembler.reset(new IntelInstructionDisassembler(this));
     setInstructionDisassembler(mInstructionDisassembler.get());

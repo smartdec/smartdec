@@ -75,7 +75,7 @@ class IntelInstructionDisassemblerPrivate {
 
         Prefixes prefixes = getPrefixes();
 
-        std::unique_ptr<IntelInstruction> result(new IntelInstruction(mnemonic, pc, instructionSize, prefixes));
+        std::unique_ptr<IntelInstruction> result(new IntelInstruction(pc, instructionSize, buffer, mnemonic, prefixes));
 
         result->setOperandSize(ud_obj_.opr_mode);
         result->setAddressSize(ud_obj_.adr_mode);
