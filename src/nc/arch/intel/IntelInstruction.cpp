@@ -34,14 +34,10 @@ namespace nc {
 namespace arch {
 namespace intel {
 
-const QString &IntelInstruction::name() const {
-    return mnemonic()->lowercaseName();
-}
-
 void IntelInstruction::print(QTextStream &out) const {
     // TODO: move this to IntelInstructionAnalyzer
 
-    out << name();
+    out << mnemonic()->lowercaseName();
 
     bool comma = false;
     foreach (const core::arch::Operand *operand, operands()) {

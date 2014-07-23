@@ -104,8 +104,6 @@ public:
      */
     const unsigned char *bytes() const { return &bytes_[0]; }
 
-    virtual const QString &name() const override;
-
     virtual void print(QTextStream &out) const override;
 };
 

@@ -147,11 +147,6 @@ public:
     void clearOperands();
 
     /**
-     * \return Name of this instruction.
-     */
-    virtual const QString &name() const = 0;
-
-    /**
      * \return Instruction's address in bytes.
      */
     ByteAddr addr() const { return addr_; }
