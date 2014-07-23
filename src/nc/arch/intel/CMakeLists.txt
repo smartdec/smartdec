@@ -21,8 +21,6 @@ set(SOURCES
     IntelOperands.h
     IntelRegisters.cpp
     IntelRegisters.h
-    Prefixes.cpp
-    Prefixes.h
 )
 
 add_library(nc-arch-intel ${SOURCES})

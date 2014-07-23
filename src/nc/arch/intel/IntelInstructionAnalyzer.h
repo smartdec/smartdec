@@ -27,6 +27,8 @@
 
 #include <cassert>
 
+#include <libudis86/udis86.h>
+
 #include <nc/core/arch/irgen/InstructionAnalyzer.h>
 
 namespace nc {
@@ -36,11 +38,16 @@ namespace intel {
 class IntelArchitecture;
 
 class IntelInstructionAnalyzer: public core::arch::irgen::InstructionAnalyzer {
-public:
+    IntelArchitecture *mArchitecture;
+    mutable ud_t ud_obj_;
 
-    IntelInstructionAnalyzer(IntelArchitecture *architecture): mArchitecture(architecture) {
-        assert(architecture != NULL);
-    }
+public:
+    /**
+     * Constructor.
+     *
+     * \param architecture Valid pointer to the architecture.
+     */
+    IntelInstructionAnalyzer(IntelArchitecture *architecture);
 
     /**
      * \param[in] index FPU stack operand index.
@@ -51,14 +58,9 @@ public:
     std::unique_ptr<core::ir::Term> createFpuTerm(int index) const;
 
 protected:
-
     virtual void doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) const override;
 
     virtual std::unique_ptr<core::ir::Term> doCreateTerm(const core::arch::Operand *operand) const override;
-
-private:
-
-    IntelArchitecture *mArchitecture;
 };
 
 

@@ -73,9 +73,7 @@ class IntelInstructionDisassemblerPrivate {
             return NULL;
         }
 
-        Prefixes prefixes = getPrefixes();
-
-        std::unique_ptr<IntelInstruction> result(new IntelInstruction(pc, instructionSize, buffer, mnemonic, prefixes));
+        std::unique_ptr<IntelInstruction> result(new IntelInstruction(pc, instructionSize, buffer, mnemonic));
 
         result->setOperandSize(ud_obj_.opr_mode);
         result->setAddressSize(ud_obj_.adr_mode);
@@ -99,19 +97,6 @@ class IntelInstructionDisassemblerPrivate {
             /* This is actually MOVSD_SSE. */
             result->setMnemonic(IntelMnemonics::mnemonic(mnemonics::MOVSD_SSE));
         }
-
-        return result;
-    }
-
-    Prefixes getPrefixes() {
-        Prefixes result = 0;
-
-        #define PREFIX(ud_name, nc_name) if (ud_obj_.pfx_##ud_name != UD_NONE) { result |= prefixes::nc_name; }
-        PREFIX(lock, LOCK)
-        PREFIX(rep, REP)
-        PREFIX(repe, REPZ)
-        PREFIX(repne, REPNZ)
-        #undef PREFIX
 
         return result;
     }

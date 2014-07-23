@@ -39,11 +39,7 @@ const QString &IntelInstruction::name() const {
 }
 
 void IntelInstruction::print(QTextStream &out) const {
-    for (std::size_t i = 0; i < prefixes::prefixCount; ++i) {
-        if (prefixes() & prefixes::prefixes[i]) {
-            out << prefixes::getPrefixLowercaseName(prefixes::prefixes[i]) << " ";
-        }
-    }
+    // TODO: move this to IntelInstructionAnalyzer
 
     out << name();
 

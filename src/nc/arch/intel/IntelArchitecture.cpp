@@ -42,9 +42,6 @@ namespace arch {
 namespace intel {
 
 IntelArchitecture::IntelArchitecture(Mode mode) {
-    mInstructionAnalyzer.reset(new IntelInstructionAnalyzer(this));
-    setInstructionAnalyzer(mInstructionAnalyzer.get());
-
     static IntelMasterAnalyzer masterAnalyzer;
     setMasterAnalyzer(&masterAnalyzer);
 
@@ -85,6 +82,9 @@ IntelArchitecture::IntelArchitecture(Mode mode) {
     setByteOrder(ByteOrder::LittleEndian);
 
     setMaxInstructionSize(IntelInstruction::MAX_SIZE);
+
+    mInstructionAnalyzer.reset(new IntelInstructionAnalyzer(this));
+    setInstructionAnalyzer(mInstructionAnalyzer.get());
 
     mInstructionDisassembler.reset(new IntelInstructionDisassembler(this));
     setInstructionDisassembler(mInstructionDisassembler.get());

@@ -32,13 +32,10 @@
 #include <nc/core/arch/Operands.h>
 
 #include "IntelOperands.h"
-#include "Prefixes.h"
 
 namespace nc {
 namespace arch {
 namespace intel {
-
-typedef int Prefixes; ///< Prefix bit mask.
 
 /**
  * An instruction of Intel x86 platform.
@@ -49,9 +46,6 @@ public:
     static const SmallByteSize MAX_SIZE = 15;
 
 private:
-    /** Bit mask of prefixes. */
-    Prefixes prefixes_;
-
     /** Operand size of the instruction. */
     SmallBitSize operandSize_;
 
@@ -59,7 +53,7 @@ private:
     SmallBitSize addressSize_;
 
     /** Binary representation of the instruction. */
-    std::array<char, MAX_SIZE> bytes_;
+    std::array<uint8_t, MAX_SIZE> bytes_;
 
 public:
     /**
@@ -69,11 +63,9 @@ public:
      * \param[in] mnemonic Instruction mnemonic.
      * \param[in] addr Instruction address in bytes.
      * \param[in] size Instruction size in bytes.
-     * \param[in] prefixes Bit mask of instruction prefixes.
      */
-    IntelInstruction(ByteAddr addr, SmallByteSize size, const void *bytes, const core::arch::Mnemonic *mnemonic, Prefixes prefixes = 0):
+    IntelInstruction(ByteAddr addr, SmallByteSize size, const void *bytes, const core::arch::Mnemonic *mnemonic):
         core::arch::Instruction(mnemonic, addr, size), 
-        prefixes_(prefixes),
         operandSize_(0),
         addressSize_(0)
     {
@@ -81,18 +73,6 @@ public:
         assert(size <= MAX_SIZE);
         memcpy(&bytes_, bytes, size);
     }
-
-    /**
-     * \return Bit mask of instruction prefixes.
-     */
-    Prefixes prefixes() const { return prefixes_; }
-
-    /**
-     * Sets instruction prefixes.
-     *
-     * \arg prefixes Bit mask of prefixes.
-     */
-    void setPrefixes(Prefixes prefixes) { prefixes_ = prefixes; }
 
     /**
      * \return Operand size.
@@ -117,6 +97,12 @@ public:
      * \param addressSize New address size.
      */
     void setAddressSize(SmallBitSize addressSize) { addressSize_ = addressSize; }
+
+    /**
+     * \return Valid pointer to the buffer containing the binary
+     *         representation of the instruction.
+     */
+    const unsigned char *bytes() const { return &bytes_[0]; }
 
     virtual const QString &name() const override;
 

@@ -110,9 +110,13 @@ temporary(SmallBitSize size) {
 } // anonymous namespace
 
 
-// -------------------------------------------------------------------------- //
-// IntelInstructionAnalyzer
-// -------------------------------------------------------------------------- //
+IntelInstructionAnalyzer::IntelInstructionAnalyzer(IntelArchitecture *architecture): mArchitecture(architecture) {
+    assert(architecture != NULL);
+
+    ud_init(&ud_obj_);
+    ud_set_mode(&ud_obj_, architecture->bitness());
+}
+
 void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) const {
     assert(instruction != NULL);
 
@@ -120,6 +124,9 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
     using namespace intel;
 
     const IntelInstruction *instr = checked_cast<const IntelInstruction *>(instruction);
+
+    ud_set_pc(&ud_obj_, instr->addr());
+    ud_set_input_buffer(&ud_obj_, const_cast<uint8_t *>(instr->bytes()), checked_cast<std::size_t>(instr->size()));
 
     /* Sanity checks */
     switch (instr->mnemonic()->number()) {
@@ -480,7 +487,7 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
 
             _[jump(condition.basicBlock())];
 
-            if (instr->prefixes() & (prefixes::REP | prefixes::REPZ | prefixes::REPNZ)) {
+            if (ud_obj_.pfx_rep != UD_NONE || ud_obj_.pfx_repe != UD_NONE || ud_obj_.pfx_repne != UD_NONE) {
                 condition[jump(cx, body.basicBlock(), directSuccessor())];
 
                 body[cx = cx - constant(1)];
@@ -555,11 +562,11 @@ void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction 
             ];
 
             /* libudis86 sets REP prefix together with REPZ/REPNZ. */
-            if ((instr->prefixes() & prefixes::REP) && repPrefixIsValid) {
+            if (ud_obj_.pfx_rep != UD_NONE && repPrefixIsValid) {
                 body[jump(condition.basicBlock())];
-            } else if (instr->prefixes() & prefixes::REPZ) {
+            } else if (ud_obj_.pfx_repe != UD_NONE) {
                 body[jump(zf(), condition.basicBlock(), directSuccessor())];
-            } else if (instr->prefixes() & prefixes::REPNZ) {
+            } else if (ud_obj_.pfx_repne != UD_NONE) {
                 body[jump(~zf(), condition.basicBlock(), directSuccessor())];
             } else {
                 body[jump(directSuccessor())];
