@@ -54,6 +54,7 @@ public:
      *
      * \param mode Processor mode.
      */
+    explicit
     IntelArchitecture(Mode mode);
 
     /**
