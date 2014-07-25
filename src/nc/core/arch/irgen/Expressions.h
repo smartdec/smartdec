@@ -294,6 +294,16 @@ public:
     explicit
     TermExpression(std::unique_ptr<ir::Term> term): base_type(term->size()), mTerm(std::move(term)) {}
 
+/*
+ * Ugly workaround for stupid compilers. Type-safety vanishes.
+ */
+#if defined(_MSC_VER) || defined(GCC_VERSION) && GCC_VERSION < 40900
+    TermExpression(const TermExpression &that):
+        base_type(that),
+        mTerm(const_cast<TermExpression &>(that).mTerm.release())
+    {}
+#endif
+
     std::unique_ptr<ir::Term> &term() { return mTerm; }
 
     const std::unique_ptr<ir::Term> &term() const { return mTerm; }
