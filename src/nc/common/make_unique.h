@@ -30,6 +30,7 @@
  */
 
 #include <nc/config.h>
+#include <boost/config.hpp>
 #include <memory>
 
 namespace std {
