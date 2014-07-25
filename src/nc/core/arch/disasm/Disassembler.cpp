@@ -80,7 +80,7 @@ void Disassembler::disassemble(const image::ByteSource *source, ByteAddr begin, 
     }
 }
 
-std::unique_ptr<Instruction> Disassembler::disassembleInstruction(ByteAddr pc, const void *buffer, SmallByteSize size) {
+std::shared_ptr<Instruction> Disassembler::disassembleInstruction(ByteAddr pc, const void *buffer, SmallByteSize size) {
     if (!architecture()->instructionDisassembler()) {
         ncWarning("Architecture does not define a disassembler for a single instruction.");
         return NULL;
@@ -89,7 +89,7 @@ std::unique_ptr<Instruction> Disassembler::disassembleInstruction(ByteAddr pc, c
     return architecture()->instructionDisassembler()->disassemble(pc, buffer, size);
 }
 
-void Disassembler::addInstruction(std::unique_ptr<Instruction> instruction) {
+void Disassembler::addInstruction(std::shared_ptr<Instruction> instruction) {
     assert(instruction);
     assert(instructions());
 

@@ -32,29 +32,23 @@ namespace arch {
 namespace intel {
 
 class IntelArchitecture;
-class IntelInstructionDisassemblerPrivate;
 
 /**
  * Disassembler for x86 instructions.
  */
 class IntelInstructionDisassembler: public core::arch::disasm::InstructionDisassembler {
-    std::unique_ptr<IntelInstructionDisassemblerPrivate> impl_;
+    const IntelArchitecture *architecture_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
-     * \param architecture Valid pointer to Intel architecture.
+     * \param architecture Valid pointer to the Intel architecture.
      */
-    IntelInstructionDisassembler(const IntelArchitecture *architecture);
+    explicit
+    IntelInstructionDisassembler(const IntelArchitecture *architecture): architecture_(architecture) {}
 
-    /**
-     * Virtual destructor.
-     */
-    virtual ~IntelInstructionDisassembler();
-
-    std::unique_ptr<core::arch::Instruction> disassemble(ByteAddr pc, const void *buffer, ByteSize size) const override;
+    std::shared_ptr<core::arch::Instruction> disassemble(ByteAddr pc, const void *buffer, ByteSize size) const override;
 };
 
 } // namespace intel

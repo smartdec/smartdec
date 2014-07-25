@@ -24,36 +24,11 @@
 
 #include "Instruction.h"
 
-#include <QTextStream>
-
-#include <nc/common/Foreach.h>
-
-#include "Operand.h"
-
 namespace nc {
 namespace core {
 namespace arch {
 
-Instruction::~Instruction() {
-    clearOperands();
-}
-
-void Instruction::clearOperands() {
-    foreach(Operand *operand, operands_) {
-        operand->dispose();
-    }
-    operands_.clear();
-}
-
-void Instruction::removeOperand(std::size_t index) {
-    operands_[index]->dispose();
-    operands_.erase(operands_.begin() + index);
-}
-
-void Instruction::replaceOperand(std::size_t index, Operand *operand) {
-    operands_[index]->dispose();
-    operands_[index] = operand;
-}
+Instruction::~Instruction() {}
 
 } // namespace arch
 } // namespace core

@@ -55,7 +55,7 @@ class InstructionDisassembler {
      *
      * \return Pointer to the instruction disassembled from the buffer, if disassembling succeeded, or NULL otherwise.
      */
-    virtual std::unique_ptr<Instruction> disassemble(ByteAddr pc, const void *buffer, ByteSize size) const = 0;
+    virtual std::shared_ptr<Instruction> disassemble(ByteAddr pc, const void *buffer, ByteSize size) const = 0;
 };
 
 } // namespace disasm

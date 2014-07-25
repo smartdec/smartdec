@@ -29,10 +29,9 @@
 #include <cassert>
 #include <cstring>
 
-#include <nc/core/arch/Instruction.h>
-#include <nc/core/arch/Operands.h>
+#include <nc/common/CheckedCast.h>
 
-#include "IntelOperands.h"
+#include <nc/core/arch/Instruction.h>
 
 namespace nc {
 namespace arch {
@@ -47,11 +46,11 @@ public:
     static const SmallByteSize MAX_SIZE = 15;
 
 private:
-    /** Copy of architecture's bitness value. */
-    SmallBitSize bitness_;
-
     /** Binary representation of the instruction. */
     std::array<uint8_t, MAX_SIZE> bytes_;
+
+    /** Copy of architecture's bitness value. */
+    uint8_t bitness_;
 
 public:
     /**
@@ -63,7 +62,7 @@ public:
      * \param[in] size Instruction size in bytes.
      */
     IntelInstruction(SmallBitSize bitness, ByteAddr addr, SmallByteSize size, const void *bytes):
-        core::arch::Instruction(addr, size), bitness_(bitness)
+        core::arch::Instruction(addr, size), bitness_(checked_cast<uint8_t>(bitness))
     {
         assert(size > 0);
         assert(size <= MAX_SIZE);

@@ -40,7 +40,6 @@ Architecture::Architecture():
     mInstructionDisassembler(NULL),
     mInstructionAnalyzer(NULL),
     mMasterAnalyzer(NULL),
-    mMnemonics(NULL),
     mRegisters(NULL),
     mInstructionPointer(NULL)
 {}
@@ -103,16 +102,9 @@ void Architecture::setMasterAnalyzer(const MasterAnalyzer *masterAnalyzer) {
     mMasterAnalyzer = masterAnalyzer;
 }
 
-void Architecture::setMnemonics(Mnemonics *mnemonics) {
-    assert(mnemonics != NULL);
-    assert(mMnemonics == NULL && "Instruction dictionary is already set.");
-
-    mMnemonics = mnemonics;
-}
-
 void Architecture::setRegisters(Registers *registers) {
     assert(registers != NULL);
-    assert(mMnemonics == NULL && "Register container is already set.");
+    assert(mRegisters == NULL && "Register container is already set.");
 
     mRegisters = registers;
 }

@@ -55,8 +55,7 @@ class Disassembler {
     const Architecture *architecture_; ///< Architecture.
     Instructions *instructions_; ///< Instructions.
 
-    public:
-
+public:
     /**
      * Constructor.
      * 
@@ -96,8 +95,7 @@ class Disassembler {
      */
     virtual void disassemble(const image::ByteSource *source, ByteAddr begin, ByteAddr end, const CancellationToken &canceled);
 
-    protected:
-
+protected:
     /**
      * Disassembles a single instruction.
      * By default, the method uses the InstructionDisassembler provided in the architecture.
@@ -108,7 +106,7 @@ class Disassembler {
      *
      * \return Pointer to the instruction disassembled from the buffer, if disassembling succeeded, or NULL otherwise.
      */
-    virtual std::unique_ptr<Instruction> disassembleInstruction(ByteAddr pc, const void *buffer, SmallByteSize size);
+    virtual std::shared_ptr<Instruction> disassembleInstruction(ByteAddr pc, const void *buffer, SmallByteSize size);
 
     /**
      * This method is called when a yet another instruction has been disassembled.
@@ -116,7 +114,7 @@ class Disassembler {
      *
      * \param instruction Valid pointer to the disassembled instruction.
      */
-    virtual void addInstruction(std::unique_ptr<Instruction> instruction);
+    virtual void addInstruction(std::shared_ptr<Instruction> instruction);
 };
 
 } // namespace disasm

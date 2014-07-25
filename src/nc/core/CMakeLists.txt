@@ -16,11 +16,6 @@ set(SOURCES
     arch/Instruction.h
     arch/Instructions.cpp
     arch/Instructions.h
-    arch/Operand.h
-    arch/OperandCache.cpp
-    arch/OperandCache.h
-    arch/Operands.cpp
-    arch/Operands.h
     arch/Register.h
     arch/Registers.h
     arch/disasm/Disassembler.cpp

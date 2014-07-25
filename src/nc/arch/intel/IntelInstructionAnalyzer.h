@@ -49,11 +49,10 @@ public:
      * \return Valid pointer to the intermediate representation of the fpu stack register
      *         operand with the given index.
      */
-    std::unique_ptr<core::ir::Term> createFpuTerm(int index) const;
+    static std::unique_ptr<core::ir::Term> createFpuTerm(int index);
 
 protected:
     virtual void doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) const override;
-    virtual std::unique_ptr<core::ir::Term> doCreateTerm(const core::arch::Operand *operand) const override;
 };
 
 

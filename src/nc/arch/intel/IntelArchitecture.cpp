@@ -34,7 +34,6 @@
 #include "IntelInstructionDisassembler.h"
 #include "IntelMasterAnalyzer.h"
 #include "IntelRegisters.h"
-#include "IntelOperands.h"
 
 namespace nc {
 namespace arch {

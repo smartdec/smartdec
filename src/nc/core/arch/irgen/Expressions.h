@@ -28,6 +28,7 @@
 #include <QCoreApplication> /* For Q_DECLARE_TR_FUNCTIONS. */
 
 #include <algorithm> /* std::max */
+#include <type_traits>
 
 #include <boost/mpl/int.hpp>
 
@@ -35,15 +36,12 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/core/arch/Architecture.h>
-#include <nc/core/arch/Instruction.h>
-#include <nc/core/arch/Operand.h>
-#include <nc/core/arch/Registers.h>
+#include <nc/core/arch/Register.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/Statements.h>
 
-#include "InstructionAnalyzer.h"
 #include "InvalidInstructionException.h"
 
 namespace nc { namespace core { namespace arch { namespace irgen { namespace expressions {
@@ -57,14 +55,12 @@ namespace nc { namespace core { namespace arch { namespace irgen { namespace exp
 template<class Derived>
 class StatementBase {
 public:
-    Derived &derived() {
-        return static_cast<Derived &>(*this);
-    }
-
-    const Derived &derived() const {
-        return static_cast<const Derived &>(*this);
-    }
+    Derived &derived() { return static_cast<Derived &>(*this); }
+    const Derived &derived() const { return static_cast<const Derived &>(*this); }
 };
+
+template<class T>
+struct IsStatement: public std::is_base_of<StatementBase<T>, T> {};
 
 /**
  * Base class for unary statements.
@@ -72,15 +68,13 @@ public:
 template<class E, class Derived>
 class UnaryStatementBase: public StatementBase<Derived> {
 public:
-    UnaryStatementBase(const E &expression): mExpression(expression) {}
+    explicit
+    UnaryStatementBase(E expression):
+        mExpression(std::move(expression))
+    {}
 
-    E &expression() {
-        return mExpression;
-    }
-
-    const E &expression() const {
-        return mExpression;
-    }
+    E &expression() { return mExpression; }
+    const E &expression() const { return mExpression; }
 
 private:
     E mExpression;
@@ -92,26 +86,16 @@ private:
 template<class L, class R, class Derived>
 class BinaryStatementBase: public StatementBase<Derived> {
 public:
-    BinaryStatementBase(const L &left, const R &right):
-        mLeft(left),
-        mRight(right)
+    BinaryStatementBase(L left, R right):
+        mLeft(std::move(left)),
+        mRight(std::move(right))
     {}
 
-    L &left() {
-        return mLeft;
-    }
+    L &left() { return mLeft; }
+    const L &left() const { return mLeft; }
 
-    const L &left() const {
-        return mLeft;
-    }
-
-    R &right() {
-        return mRight;
-    }
-
-    const R &right() const {
-        return mRight;
-    }
+    R &right() { return mRight; }
+    const R &right() const { return mRight; }
 
 private:
     L mLeft;
@@ -127,25 +111,23 @@ class ReturnStatement: public StatementBase<ReturnStatement> {};
  * Class for kill statements.
  */
 template<class E>
-class KillStatement: public UnaryStatementBase<E, KillStatement<E> > {
-    typedef UnaryStatementBase<E, KillStatement<E> > base_type;
+class KillStatement: public UnaryStatementBase<E, KillStatement<E>> {
+    typedef UnaryStatementBase<E, KillStatement<E>> base_type;
 public:
-    KillStatement(const E &expression): base_type(expression) {}
+    explicit
+    KillStatement(E expression): base_type(std::move(expression)) {}
 };
 
 /**
  * Class for jump statements.
  */
 template<class C, class A>
-class JumpStatement: public StatementBase<JumpStatement<C, A> > {
-    typedef StatementBase<JumpStatement<C, A> > base_type;
-    C mCondition;
-    A mAddress;
-    ir::BasicBlock *mThenBasicBlock;
-    ir::BasicBlock *mElseBasicBlock;
+class JumpStatement: public StatementBase<JumpStatement<C, A>> {
+    typedef StatementBase<JumpStatement<C, A>> base_type;
+
 public:
-    JumpStatement(const C &condition, const A &address, ir::BasicBlock *thenBasicBlock, ir::BasicBlock *elseBasicBlock):
-        mCondition(condition), mAddress(address), mThenBasicBlock(thenBasicBlock), mElseBasicBlock(elseBasicBlock)
+    JumpStatement(C condition, A address, ir::BasicBlock *thenBasicBlock, ir::BasicBlock *elseBasicBlock):
+        mCondition(std::move(condition)), mAddress(std::move(address)), mThenBasicBlock(thenBasicBlock), mElseBasicBlock(elseBasicBlock)
     {}
 
     C &condition() { return mCondition; }
@@ -156,36 +138,43 @@ public:
 
     ir::BasicBlock *thenBasicBlock() const { return mThenBasicBlock; }
     ir::BasicBlock *elseBasicBlock() const { return mElseBasicBlock; }
+
+private:
+    C mCondition;
+    A mAddress;
+    ir::BasicBlock *mThenBasicBlock;
+    ir::BasicBlock *mElseBasicBlock;
 };
 
 /**
  * Class for call statements.
  */
 template<class E>
-class CallStatement: public UnaryStatementBase<E, CallStatement<E> > {
-    typedef UnaryStatementBase<E, CallStatement<E> > base_type;
+class CallStatement: public UnaryStatementBase<E, CallStatement<E>> {
+    typedef UnaryStatementBase<E, CallStatement<E>> base_type;
 public:
-    CallStatement(const E &expression): base_type(expression) {}
+    explicit
+    CallStatement(E expression): base_type(std::move(expression)) {}
 };
 
 /**
  * Class for assignment statements.
  */
 template<class L, class R>
-class AssignmentStatement: public BinaryStatementBase<L, R, AssignmentStatement<L, R> > {
-    typedef BinaryStatementBase<L, R, AssignmentStatement<L, R> > base_type;
+class AssignmentStatement: public BinaryStatementBase<L, R, AssignmentStatement<L, R>> {
+    typedef BinaryStatementBase<L, R, AssignmentStatement<L, R>> base_type;
 public:
-    AssignmentStatement(const L &left, const R &right): base_type(left, right) {}
+    AssignmentStatement(L left, R right): base_type(std::move(left), std::move(right)) {}
 };
 
 /**
  * Class for sequential statements.
  */
 template<class L, class R>
-class SequenceStatement: public BinaryStatementBase<L, R, SequenceStatement<L, R> > {
-    typedef BinaryStatementBase<L, R, SequenceStatement<L, R> > base_type;
+class SequenceStatement: public BinaryStatementBase<L, R, SequenceStatement<L, R>> {
+    typedef BinaryStatementBase<L, R, SequenceStatement<L, R>> base_type;
 public:
-    SequenceStatement(const L &left, const R &right): base_type(left, right) {}
+    SequenceStatement(L left, R right): base_type(std::move(left), std::move(right)) {}
 };
 
 
@@ -200,6 +189,7 @@ class ExpressionBase {
 public:
     typedef Derived derived_type;
 
+    explicit
     ExpressionBase(SmallBitSize size = 0): mSize(size) {}
 
     SmallBitSize size() const { return mSize; }
@@ -214,45 +204,12 @@ public:
         return static_cast<const Derived &>(*this);
     }
 
-    AssignmentStatement<Derived, Derived>
-    operator=(const ExpressionBase &other) const {
-        return AssignmentStatement<Derived, Derived>(derived(), other.derived());
-    }
-
-    /**
-     * MSVC chokes if this function is defined out-of-line, so here is a full definition.
-     */
-    template<class OtherDerived>
-    AssignmentStatement<Derived, OtherDerived>
-    operator=(const ExpressionBase<OtherDerived> &other) const {
-        return AssignmentStatement<Derived, OtherDerived>(derived(), other.derived());
-    }
-
 private:
     SmallBitSize mSize;
 };
 
-/**
- * This macro is to be used inside a body of a leaf expression class to override
- * compiler-generated operator=.
- *
- * This macro expects a base_type typedef to be defined.
- *
- * @param CLASS                        Name of the class that this macro is
- *                                     used inside a body of.
- */
-#define NC_EXPRESSION(CLASS)                                                    \
-    template<class OtherE>                                                      \
-    AssignmentStatement<typename base_type::derived_type, OtherE>               \
-    operator=(const ExpressionBase<OtherE> &other) const {                      \
-        return base_type::operator=(other);                                     \
-    }                                                                           \
-                                                                                \
-    AssignmentStatement<typename base_type::derived_type, typename base_type::derived_type> \
-    operator=(const CLASS &other) const {                                       \
-        return base_type::operator=(other);                                     \
-    }                                                                           \
-
+template<class T>
+struct IsExpression: public std::is_base_of<ExpressionBase<T>, T> {};
 
 /**
  * Base class for unary expressions.
@@ -261,17 +218,14 @@ template<class E, class Derived>
 class UnaryExpressionBase: public ExpressionBase<Derived> {
     typedef ExpressionBase<Derived> base_type;
 public:
-    NC_EXPRESSION(UnaryExpressionBase);
+    explicit
+    UnaryExpressionBase(E operand, SmallBitSize size = 0):
+        base_type(size),
+        mOperand(std::move(operand))
+    {}
 
-    UnaryExpressionBase(const E &operand, SmallBitSize size = 0): base_type(size), mOperand(operand) {}
-
-    E &operand() {
-        return mOperand;
-    }
-
-    const E &operand() const {
-        return mOperand;
-    }
+    E &operand() { return mOperand; }
+    const E &operand() const { return mOperand; }
 
 private:
     E mOperand;
@@ -284,29 +238,17 @@ template<class L, class R, class Derived>
 class BinaryExpressionBase: public ExpressionBase<Derived> {
     typedef ExpressionBase<Derived> base_type;
 public:
-    NC_EXPRESSION(BinaryExpressionBase);
-
-    BinaryExpressionBase(const L &left, const R &right, SmallBitSize size = 0):
+    BinaryExpressionBase(L left, R right, SmallBitSize size = 0):
         base_type(size),
-        mLeft(left),
-        mRight(right)
+        mLeft(std::move(left)),
+        mRight(std::move(right))
     {}
 
-    L &left() {
-        return mLeft;
-    }
+    L &left() { return mLeft; }
+    const L &left() const { return mLeft; }
 
-    const L &left() const {
-        return mLeft;
-    }
-
-    R &right() {
-        return mRight;
-    }
-
-    const R &right() const {
-        return mRight;
-    }
+    R &right() { return mRight; }
+    const R &right() const { return mRight; }
 
 private:
     L mLeft;
@@ -319,8 +261,6 @@ private:
  */
 class IntrinsicExpression: public ExpressionBase<IntrinsicExpression> {
     typedef ExpressionBase<IntrinsicExpression> base_type;
-public:
-    NC_EXPRESSION(IntrinsicExpression);
 };
 
 /**
@@ -328,8 +268,6 @@ public:
  */
 class UndefinedExpression: public ExpressionBase<UndefinedExpression> {
     typedef ExpressionBase<UndefinedExpression> base_type;
-public:
-    NC_EXPRESSION(UndefinedExpression);
 };
 
 /**
@@ -338,73 +276,30 @@ public:
 class ConstantExpression: public ExpressionBase<ConstantExpression> {
     typedef ExpressionBase<ConstantExpression> base_type;
 public:
-    NC_EXPRESSION(ConstantExpression);
-
+    explicit
     ConstantExpression(ConstantValue value, SmallBitSize size = 0): base_type(size), mValue(value) {}
 
-    ConstantValue value() const {
-        return mValue;
-    }
+    ConstantValue value() const { return mValue; }
 
 private:
     ConstantValue mValue;
 };
 
 /**
- * Class for operand expressions.
- */
-class OperandExpression: public ExpressionBase<OperandExpression> {
-    typedef ExpressionBase<OperandExpression> base_type;
-public:
-    NC_EXPRESSION(OperandExpression);
-
-    explicit OperandExpression(const arch::Operand *operand): mOperand(operand) {}
-
-    const arch::Operand *operand() const {
-        return mOperand;
-    }
-
-private:
-    const arch::Operand *mOperand;
-};
-
-/**
  * Class for instruction operand expressions.
  */
-class InstructionOperandExpression: public ExpressionBase<InstructionOperandExpression> {
-    typedef ExpressionBase<InstructionOperandExpression> base_type;
+class TermExpression: public ExpressionBase<TermExpression> {
+    typedef ExpressionBase<TermExpression> base_type;
 public:
-    NC_EXPRESSION(InstructionOperandExpression);
+    explicit
+    TermExpression(std::unique_ptr<ir::Term> term): base_type(term->size()), mTerm(std::move(term)) {}
 
-    /**
-     * \param index                     Index of instruction's operand that this expression represents.
-     */
-    explicit InstructionOperandExpression(int index): mIndex(index) {}
+    std::unique_ptr<ir::Term> &term() { return mTerm; }
 
-    int index() const {
-        return mIndex;
-    }
+    const std::unique_ptr<ir::Term> &term() const { return mTerm; }
 
 private:
-    int mIndex;
-};
-
-/**
- * Class for register expressions.
- */
-class RegisterExpression: public ExpressionBase<RegisterExpression> {
-    typedef ExpressionBase<RegisterExpression> base_type;
-public:
-    NC_EXPRESSION(RegisterExpression);
-
-    explicit RegisterExpression(int number): mNumber(number) {}
-
-    int number() const {
-        return mNumber;
-    }
-
-private:
-    int mNumber;
+    std::unique_ptr<ir::Term> mTerm;
 };
 
 /**
@@ -413,13 +308,17 @@ private:
 class MemoryLocationExpression: public ExpressionBase<MemoryLocationExpression> {
     typedef ExpressionBase<MemoryLocationExpression> base_type;
 public:
-    NC_EXPRESSION(MemoryLocationExpression)
+    MemoryLocationExpression(const ir::MemoryLocation &memoryLocation):
+        base_type(memoryLocation.size()),
+        mMemoryLocation(memoryLocation)
+    {}
 
-    MemoryLocationExpression(const ir::MemoryLocation &memoryLocation): mMemoryLocation(memoryLocation) {}
+    MemoryLocationExpression(const MemoryLocationExpression &that):
+        base_type(that),
+        mMemoryLocation(that.memoryLocation())
+    {}
 
-    const ir::MemoryLocation &memoryLocation() const {
-        return mMemoryLocation;
-    }
+    const ir::MemoryLocation &memoryLocation() const { return mMemoryLocation; }
 private:
     ir::MemoryLocation mMemoryLocation;
 };
@@ -431,9 +330,7 @@ template<int operatorKind, class E>
 class UnaryExpression: public UnaryExpressionBase<E, UnaryExpression<operatorKind, E> > {
     typedef UnaryExpressionBase<E, UnaryExpression<operatorKind, E> > base_type;
 public:
-    NC_EXPRESSION(UnaryExpression);
-
-    UnaryExpression(const E &expression, SmallBitSize size = 0): base_type(expression, size) {}
+    UnaryExpression(E expression, SmallBitSize size = 0): base_type(std::move(expression), size) {}
 };
 
 /**
@@ -443,9 +340,7 @@ template<class E>
 class DereferenceExpression: public UnaryExpressionBase<E, DereferenceExpression<E> > {
     typedef UnaryExpressionBase<E, DereferenceExpression<E> > base_type;
 public:
-    NC_EXPRESSION(DereferenceExpression);
-
-    DereferenceExpression(const E &expression, SmallBitSize size = 0): base_type(expression, size) {}
+    DereferenceExpression(E expression, SmallBitSize size = 0): base_type(std::move(expression), size) {}
 };
 
 /**
@@ -455,9 +350,7 @@ template<int operatorKind, class L, class R>
 class BinaryExpression: public BinaryExpressionBase<L, R, BinaryExpression<operatorKind, L, R> > {
     typedef BinaryExpressionBase<L, R, BinaryExpression<operatorKind, L, R> > base_type;
 public:
-    NC_EXPRESSION(BinaryExpression);
-
-    BinaryExpression(const L &left, const R &right, SmallBitSize size = 0): base_type(left, right, size) {}
+    BinaryExpression(L left, R right, SmallBitSize size = 0): base_type(std::move(left), std::move(right), size) {}
 };
 
 /**
@@ -467,9 +360,7 @@ template<class L, class R>
 class ChoiceExpression: public BinaryExpressionBase<L, R, ChoiceExpression<L, R> > {
     typedef BinaryExpressionBase<L, R, ChoiceExpression<L, R> > base_type;
 public:
-    NC_EXPRESSION(ChoiceExpression);
-
-    ChoiceExpression(const L &left, const R &right): base_type(left, right) {}
+    ChoiceExpression(L left, R right): base_type(std::move(left), std::move(right)) {}
 };
 
 /**
@@ -484,9 +375,7 @@ template<int signedness, class E>
 class SignExpression: public UnaryExpressionBase<E, SignExpression<signedness, E> > {
     typedef UnaryExpressionBase<E, SignExpression<signedness, E> > base_type;
 public:
-    NC_EXPRESSION(SignExpression);
-
-    explicit SignExpression(const E &expression): base_type(expression) {}
+    explicit SignExpression(E expression): base_type(std::move(expression)) {}
 };
 
 /**
@@ -552,237 +441,375 @@ struct binary_expression_operator_kind: public binary_operator_kind<unsignedOper
 // -------------------------------------------------------------------------- //
 // Shortcuts
 // -------------------------------------------------------------------------- //
-inline IntrinsicExpression
+inline
+IntrinsicExpression
 intrinsic() {
     return IntrinsicExpression();
 }
 
-inline UndefinedExpression
+inline
+UndefinedExpression
 undefined() {
     return UndefinedExpression();
 }
 
-inline ConstantExpression
+inline
+ConstantExpression
 constant(ConstantValue value, SmallBitSize size = 0) {
     return ConstantExpression(value, size);
 }
 
-inline OperandExpression
-operand(const arch::Operand *operand) {
-    return OperandExpression(operand);
+inline
+TermExpression
+term(std::unique_ptr<ir::Term> term) {
+    return TermExpression(std::move(term));
 }
 
-inline InstructionOperandExpression
-operand(int index) {
-    return InstructionOperandExpression(index);
-}
-
-inline RegisterExpression
-regizter(int number) {
-    return RegisterExpression(number);
-}
-
-inline RegisterExpression
+inline
+MemoryLocationExpression
 regizter(const Register *reg) {
-    return regizter(reg->number());
+    return MemoryLocationExpression(reg->memoryLocation());
 }
 
 template<class E>
-inline SignExpression<ExpressionSignedness::SIGNED, E>
-signed_(const ExpressionBase<E> &expression) {
-    return SignExpression<ExpressionSignedness::SIGNED, E>(expression.derived());
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    SignExpression<ExpressionSignedness::SIGNED, E>
+>::type
+signed_(E expression) {
+    return SignExpression<ExpressionSignedness::SIGNED, E>(std::move(expression));
 }
 
 template<class E>
-inline SignExpression<ExpressionSignedness::UNSIGNED, E>
-unsigned_(const ExpressionBase<E> &expression) {
-    return SignExpression<ExpressionSignedness::UNSIGNED, E>(expression.derived());
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    SignExpression<ExpressionSignedness::UNSIGNED, E>
+>::type
+unsigned_(E expression) {
+    return SignExpression<ExpressionSignedness::UNSIGNED, E>(std::move(expression));
 }
 
 template<class E>
-inline DereferenceExpression<E>
-operator*(const ExpressionBase<E> &expression) {
-    return DereferenceExpression<E>(expression.derived());
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+        DereferenceExpression<E>
+>::type
+operator*(E expression) {
+    return DereferenceExpression<E>(std::move(expression));
 }
 
 template<class E>
-inline DereferenceExpression<E>
-dereference(const ExpressionBase<E> &expression, SmallBitSize size) {
-    DereferenceExpression<E> result(expression.derived());
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    DereferenceExpression<E>
+>::type
+dereference(E expression, SmallBitSize size) {
+    DereferenceExpression<E> result(std::move(expression));
     result.setSize(size);
     return result;
 }
 
 template<class E>
-inline UnaryExpression<ir::UnaryOperator::NOT, E>
-operator~(const ExpressionBase<E> &expression) {
-    return UnaryExpression<ir::UnaryOperator::NOT, E>(expression.derived());
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    UnaryExpression<ir::UnaryOperator::NOT, E>
+>::type
+operator~(E expression) {
+    return UnaryExpression<ir::UnaryOperator::NOT, E>(std::move(expression));
 }
 
 template<class E>
-inline UnaryExpression<ir::UnaryOperator::NEGATION,  E>
-operator-(const ExpressionBase<E> &expression) {
-    return UnaryExpression<ir::UnaryOperator::NEGATION, E>(expression.derived());
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    UnaryExpression<ir::UnaryOperator::NEGATION,  E>
+>::type
+operator-(E expression) {
+    return UnaryExpression<ir::UnaryOperator::NEGATION, E>(std::move(expression));
 }
 
 template<class E>
-inline UnaryExpression<ir::UnaryOperator::SIGN_EXTEND, E>
-sign_extend(const ExpressionBase<E> &expression, BitSize size = 0) {
-    return UnaryExpression<ir::UnaryOperator::SIGN_EXTEND, E>(expression.derived(), size);
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    UnaryExpression<ir::UnaryOperator::SIGN_EXTEND, E>
+>::type
+sign_extend(E expression, BitSize size = 0) {
+    return UnaryExpression<ir::UnaryOperator::SIGN_EXTEND, E>(std::move(expression), size);
 }
 
 template<class E>
-inline UnaryExpression<ir::UnaryOperator::ZERO_EXTEND, E>
-zero_extend(const ExpressionBase<E> &expression, BitSize size = 0) {
-    return UnaryExpression<ir::UnaryOperator::ZERO_EXTEND, E>(expression.derived(), size);
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    UnaryExpression<ir::UnaryOperator::ZERO_EXTEND, E>
+>::type
+zero_extend(E expression, BitSize size = 0) {
+    return UnaryExpression<ir::UnaryOperator::ZERO_EXTEND, E>(std::move(expression), size);
 }
 
 template<class E>
-inline UnaryExpression<ir::UnaryOperator::TRUNCATE, E>
-truncate(const ExpressionBase<E> &expression, SmallBitSize size = 0) {
-    return UnaryExpression<ir::UnaryOperator::TRUNCATE, E>(expression.derived(), size);
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    UnaryExpression<ir::UnaryOperator::TRUNCATE, E>
+>::type
+truncate(E expression, SmallBitSize size = 0) {
+    return UnaryExpression<ir::UnaryOperator::TRUNCATE, E>(std::move(expression), size);
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::ADD, L, R>
-operator+(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::ADD, L, R>(left.derived(), right.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<ir::BinaryOperator::ADD, L, R>
+>::type
+operator+(L left, R right) {
+    return BinaryExpression<ir::BinaryOperator::ADD, L, R>(std::move(left), std::move(right));
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::SUB, L, R>
-operator-(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::SUB, L, R>(left.derived(), right.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<ir::BinaryOperator::SUB, L, R>
+>::type
+operator-(L left, R right) {
+    return BinaryExpression<ir::BinaryOperator::SUB, L, R>(std::move(left), std::move(right));
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::MUL, L, R>
-operator*(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::MUL, L, R>(left.derived(), right.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<ir::BinaryOperator::MUL, L, R>
+>::type
+operator*(L left, R right) {
+    return BinaryExpression<ir::BinaryOperator::MUL, L, R>(std::move(left), std::move(right));
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_DIV, L>::value, L, R>
-operator/(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_DIV, L>::value, L, R>(left.derived(), right.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_DIV, L>::value, L, R>
+>::type
+operator/(L left, R right) {
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_DIV, L>::value, L, R>(
+        std::move(left), std::move(right));
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_REM, L>::value, L, R>
-operator%(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_REM, L>::value, L, R>(left.derived(), right.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_REM, L>::value, L, R>
+>::type
+operator%(L left, R right) {
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_REM, L>::value, L, R>(
+        std::move(left), std::move(right));
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::AND, L, R>
-operator&(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::AND, L, R>(left.derived(), right.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<ir::BinaryOperator::AND, L, R>
+>::type
+operator&(L left, R right) {
+    return BinaryExpression<ir::BinaryOperator::AND, L, R>(std::move(left), std::move(right));
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::OR, L, R>
-operator|(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::OR, L, R>(left.derived(), right.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<ir::BinaryOperator::OR, L, R>
+>::type
+operator|(L left, R right) {
+    return BinaryExpression<ir::BinaryOperator::OR, L, R>(std::move(left), std::move(right));
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::XOR, L, R>
-operator^(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::XOR, L, R>(left.derived(), right.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<ir::BinaryOperator::XOR, L, R>
+>::type
+operator^(L left, R right) {
+    return BinaryExpression<ir::BinaryOperator::XOR, L, R>(std::move(left), std::move(right));
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::SHL, L, R>
-operator<<(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::SHL, L, R>(left.derived(), right.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<ir::BinaryOperator::SHL, L, R>
+>::type
+operator<<(L left, R right) {
+    return BinaryExpression<ir::BinaryOperator::SHL, L, R>(std::move(left), std::move(right));
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::SHR, L>::value, L, R>
-operator>>(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::SHR, L>::value, L, R>(left.derived(), right.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::SHR, L>::value, L, R>
+>::type
+operator>>(L left, R right) {
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::SHR, L>::value, L, R>(
+        std::move(left), std::move(right));
 }
 
 template<class L, class R>
-inline BinaryExpression<ir::BinaryOperator::EQUAL, L, R>
-operator==(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<ir::BinaryOperator::EQUAL, L, R>(left.derived(), right.derived(), 1);
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<ir::BinaryOperator::EQUAL, L, R>
+>::type
+operator==(L left, R right) {
+    return BinaryExpression<ir::BinaryOperator::EQUAL, L, R>(std::move(left), std::move(right), 1);
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, L, R>
-operator<(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, L, R>(left.derived(), right.derived(), 1);
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, L, R>
+>::type
+operator<(L left, R right) {
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, L, R>(
+        std::move(left), std::move(right), 1);
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, L, R>
-operator<=(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, L, R>(left.derived(), right.derived(), 1);
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, L, R>
+>::type
+operator<=(L left, R right) {
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, L, R>(
+        std::move(left), std::move(right), 1);
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>
-operator>(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>(right.derived(), left.derived(), 1);
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>
+>::type
+operator>(L left, R right) {
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS, L>::value, R, L>(
+        std::move(right), std::move(left), 1);
 }
 
 template<class L, class R>
-inline BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>
-operator>=(const ExpressionBase<L> &left, const ExpressionBase<R> &right) {
-    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>(right.derived(), left.derived(), 1);
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>
+>::type
+operator>=(L left, R right) {
+    return BinaryExpression<binary_expression_operator_kind<ir::BinaryOperator::UNSIGNED_LESS_OR_EQUAL, L>::value, R, L>(
+        std::move(right), std::move(left), 1);
 }
 
 template<class L, class R>
-inline ChoiceExpression<L, R>
-choice(const ExpressionBase<L> &first, const ExpressionBase<R> &second) {
-    return ChoiceExpression<L, R>(first.derived(), second.derived());
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    ChoiceExpression<L, R>
+>::type
+choice(L first, R second) {
+    return ChoiceExpression<L, R>(std::move(first), std::move(second));
+}
+
+template<class L, class R>
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    AssignmentStatement<L, R>
+>::type
+operator^=(L left, R right) {
+    return AssignmentStatement<L, R>(std::move(left), std::move(right));
 }
 
 template<class E>
-inline KillStatement<E>
-kill(const ExpressionBase<E> &expression) {
-    return KillStatement<E>(expression.derived());
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    KillStatement<E>
+>::type
+kill(E expression) {
+    return KillStatement<E>(std::move(expression));
 }
 
 template<class E>
-inline JumpStatement<NullExpression, E>
-jump(const ExpressionBase<E> &thenAddress) {
-    return JumpStatement<NullExpression, E>(NullExpression(), thenAddress.derived(), NULL, NULL);
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    JumpStatement<NullExpression, E>
+>::type
+jump(E thenAddress) {
+    return JumpStatement<NullExpression, E>(NullExpression(), std::move(thenAddress), NULL, NULL);
 }
 
-inline JumpStatement<NullExpression, NullExpression>
+inline
+JumpStatement<NullExpression, NullExpression>
 jump(ir::BasicBlock *targetBasicBlock) {
     return JumpStatement<NullExpression, NullExpression>(NullExpression(), NullExpression(), targetBasicBlock, NULL);
 }
 
 template<class L, class R>
-inline JumpStatement<L, R>
-jump(const ExpressionBase<L> &condition, const ExpressionBase<R> &thenAddress, ir::BasicBlock *elseTarget) {
-    return JumpStatement<L, R>(condition.derived(), thenAddress.derived(), NULL, elseTarget);
+inline
+typename std::enable_if<
+    IsExpression<L>::value && IsExpression<R>::value,
+    JumpStatement<L, R>
+>::type
+jump(L condition, R thenAddress, ir::BasicBlock *elseTarget) {
+    return JumpStatement<L, R>(std::move(condition), std::move(thenAddress), NULL, elseTarget);
 }
 
 template<class E>
-inline JumpStatement<E, NullExpression>
-jump(const ExpressionBase<E> &condition, ir::BasicBlock *thenBasicBlock, ir::BasicBlock *elseTarget) {
-    return JumpStatement<E, NullExpression>(condition.derived(), NullExpression(), thenBasicBlock, elseTarget);
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    JumpStatement<E, NullExpression>
+>::type
+jump(E condition, ir::BasicBlock *thenBasicBlock, ir::BasicBlock *elseTarget) {
+    return JumpStatement<E, NullExpression>(std::move(condition), NullExpression(), thenBasicBlock, elseTarget);
 }
 
 template<class E>
-inline CallStatement<E>
-call(const ExpressionBase<E> &target) {
-    return CallStatement<E>(target.derived());
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    CallStatement<E>
+>::type
+call(E target) {
+    return CallStatement<E>(std::move(target));
 }
 
-inline ReturnStatement
+inline
+ReturnStatement
 return_() {
     return ReturnStatement();
 }
 
 template<class L, class R>
-inline SequenceStatement<L, R>
-operator,(const StatementBase<L> &first, const StatementBase<R> &second) {
-    return SequenceStatement<L, R>(first.derived(), second.derived());
+inline
+typename std::enable_if<
+    IsStatement<L>::value && IsStatement<R>::value,
+    SequenceStatement<L, R>
+>::type
+operator,(L first, R second) {
+    return SequenceStatement<L, R>(std::move(first), std::move(second));
 }
 
 
@@ -797,22 +824,13 @@ template<class Derived>
 class ExpressionFactory {
     Q_DECLARE_TR_FUNCTIONS(ExpressionFactory)
 public:
-    ExpressionFactory(arch::Architecture *architecture, const arch::Instruction *instruction):
-        mArchitecture(architecture),
-        mInstructionAnalyzer(architecture->instructionAnalyzer()),
-        mInstruction(instruction)
+    explicit
+    ExpressionFactory(const arch::Architecture *architecture):
+        mArchitecture(architecture)
     {}
 
-    arch::Architecture *architecture() const {
+    const arch::Architecture *architecture() const {
         return mArchitecture;
-    }
-
-    const InstructionAnalyzer *instructionAnalyzer() const {
-        return mInstructionAnalyzer;
-    }
-
-    const Instruction *instruction() const {
-        return mInstruction;
     }
 
     /**
@@ -821,11 +839,11 @@ public:
      *                                 with expression size determined automatically.
      */
     template<class E>
-    std::unique_ptr<ir::Term> createTerm(const ExpressionBase<E> &expression) const {
+    std::unique_ptr<ir::Term> createTerm(ExpressionBase<E> &expression) const {
         auto result(derived().doCreateTerm(expression.derived()));
 
         if (result && result->size() != expression.size()) {
-            throw InvalidInstructionException(tr("term %1 created from expression of size %2 has completely different size %3")
+            throw InvalidInstructionException(tr("Term %1 created from expression of size %2 has completely different size %3")
                 .arg(result->toString()).arg(expression.size()).arg(result->size()));
         }
 
@@ -860,11 +878,11 @@ protected:
      * \param expression               Intrinsic expression to create term from.
      * \returns                        Newly created term for the given expression.
      */
-    std::unique_ptr<ir::Term> doCreateTerm(const IntrinsicExpression &expression) const {
+    std::unique_ptr<ir::Term> doCreateTerm(IntrinsicExpression &expression) const {
         NC_UNUSED(expression);
 
         if (!expression.size()) {
-            throw InvalidInstructionException(tr("size of an intrinsic expression is unknown"));
+            throw InvalidInstructionException(tr("Size of the intrinsic expression is unknown"));
         }
 
         return std::make_unique<ir::Intrinsic>(ir::Intrinsic::UNKNOWN, expression.size());
@@ -874,11 +892,11 @@ protected:
      * \param expression               Undefined expression to create term from.
      * \returns                        Newly created term for the given expression.
      */
-    std::unique_ptr<ir::Term> doCreateTerm(const UndefinedExpression &expression) const {
+    std::unique_ptr<ir::Term> doCreateTerm(UndefinedExpression &expression) const {
         NC_UNUSED(expression);
 
         if (!expression.size()) {
-            throw InvalidInstructionException(tr("size of an undefined expression is unknown"));
+            throw InvalidInstructionException(tr("Size of the undefined expression is unknown"));
         }
 
         return std::make_unique<ir::Intrinsic>(ir::Intrinsic::UNDEFINED, expression.size());
@@ -888,44 +906,27 @@ protected:
      * \param expression               Constant expression to create term from.
      * \returns                        Newly created term for the given expression.
      */
-    std::unique_ptr<ir::Term> doCreateTerm(const ConstantExpression &expression) const {
+    std::unique_ptr<ir::Term> doCreateTerm(ConstantExpression &expression) const {
         if (!expression.size()) {
-            throw InvalidInstructionException(tr("size of a constant expression is unknown"));
+            throw InvalidInstructionException(tr("Size of the constant expression is unknown"));
         }
 
         return std::make_unique<ir::Constant>(SizedValue(expression.size(), expression.value()));
     }
 
     /**
-     * \param expression               Operand expression to create term from.
-     * \returns                        Newly created term for the given expression.
-     */
-    std::unique_ptr<ir::Term> doCreateTerm(const OperandExpression &expression) const {
-        return mInstructionAnalyzer->createTerm(expression.operand());
-    }
-
-    /**
      * \param expression               Instruction operand expression to create term from.
      * \returns                        Newly created term for the given expression.
      */
-    std::unique_ptr<ir::Term> doCreateTerm(const InstructionOperandExpression &expression) const {
-        return mInstructionAnalyzer->createTerm(mInstruction->operand(expression.index()));
-    }
-
-    /**
-     * \param expression               Register expression to create term from.
-     * \returns                        Newly created term for the given expression.
-     */
-    std::unique_ptr<ir::Term> doCreateTerm(const RegisterExpression &expression) const {
-        return std::make_unique<ir::MemoryLocationAccess>(
-            mArchitecture->registers()->getRegister(expression.number())->memoryLocation());
+    std::unique_ptr<ir::Term> doCreateTerm(TermExpression &expression) const {
+        return std::move(expression.term());
     }
 
     /**
      * \param expression               Memory location expression to create term from.
      * \returns                        Newly created term for the given expression.
      */
-    std::unique_ptr<ir::Term> doCreateTerm(const MemoryLocationExpression &expression) const {
+    std::unique_ptr<ir::Term> doCreateTerm(MemoryLocationExpression &expression) const {
         return std::make_unique<ir::MemoryLocationAccess>(expression.memoryLocation());
     }
 
@@ -934,9 +935,9 @@ protected:
      * \returns                        Newly created term for the given expression.
      */
     template<int operatorKind, class E>
-    std::unique_ptr<ir::Term> doCreateTerm(const UnaryExpression<operatorKind, E> &expression) const {
+    std::unique_ptr<ir::Term> doCreateTerm(UnaryExpression<operatorKind, E> &expression) const {
         if (!expression.size()) {
-            throw InvalidInstructionException(tr("size of a unary expression is unknown"));
+            throw InvalidInstructionException(tr("Size of the unary expression is unknown"));
         }
 
         return std::make_unique<ir::UnaryOperator>(operatorKind, createTerm(expression.operand()), expression.size());
@@ -947,9 +948,9 @@ protected:
      * \returns                        Newly created term for the given expression.
      */
     template<class E>
-    std::unique_ptr<ir::Term> doCreateTerm(const DereferenceExpression<E> &expression) const {
+    std::unique_ptr<ir::Term> doCreateTerm(DereferenceExpression<E> &expression) const {
         if (!expression.size()) {
-            throw InvalidInstructionException(tr("size of a dereference expression is unknown"));
+            throw InvalidInstructionException(tr("Size of the dereference expression is unknown"));
         }
 
         return std::make_unique<ir::Dereference>(createTerm(expression.operand()), ir::MemoryDomain::MEMORY, expression.size());
@@ -960,7 +961,7 @@ protected:
      * \returns                        Newly created term for the given expression.
      */
     template<int signedness, class E>
-    std::unique_ptr<ir::Term> doCreateTerm(const SignExpression<signedness, E> &expression) const {
+    std::unique_ptr<ir::Term> doCreateTerm(SignExpression<signedness, E> &expression) const {
         return createTerm(expression.operand());
     }
 
@@ -969,7 +970,7 @@ protected:
      * \returns                        Newly created term for the given expression.
      */
     template<int operatorKind, class L, class R>
-    std::unique_ptr<ir::Term> doCreateTerm(const BinaryExpression<operatorKind, L, R> &expression) const {
+    std::unique_ptr<ir::Term> doCreateTerm(BinaryExpression<operatorKind, L, R> &expression) const {
         return std::make_unique<ir::BinaryOperator>(operatorKind, createTerm(expression.left()), createTerm(expression.right()), expression.size());
     }
 
@@ -978,7 +979,7 @@ protected:
      * \returns                        Newly created term for the given expression.
      */
     template<class L, class R>
-    std::unique_ptr<ir::Term> doCreateTerm(const ChoiceExpression<L, R> &expression) const {
+    std::unique_ptr<ir::Term> doCreateTerm(ChoiceExpression<L, R> &expression) const {
         return std::make_unique<ir::Choice>(createTerm(expression.left()), createTerm(expression.right()));
     }
 
@@ -1071,7 +1072,7 @@ protected:
         }
 
         if (statement.left().size() != statement.right().size()) {
-            throw core::arch::irgen::InvalidInstructionException(tr("assigning expression of different sizes: %1 and %2")
+            throw core::arch::irgen::InvalidInstructionException(tr("Cannot assign expressions of different sizes: %1 and %2")
                 .arg(statement.left().size()).arg(statement.right().size()));
         }
 
@@ -1098,35 +1099,11 @@ protected:
      * \param expression               Operand expression.
      * \param suggestedSize            Suggested size of the expression.
      */
-    void doComputeSize(OperandExpression &expression, SmallBitSize suggestedSize) const {
+    void doComputeSize(TermExpression &expression, SmallBitSize suggestedSize) const {
         NC_UNUSED(suggestedSize);
 
         if (!expression.size()) {
-            expression.setSize(expression.operand()->size());
-        }
-    }
-
-    /**
-     * \param expression               Instruction operand expression.
-     * \param suggestedSize            Suggested size of the expression.
-     */
-    void doComputeSize(InstructionOperandExpression &expression, SmallBitSize suggestedSize) const {
-        NC_UNUSED(suggestedSize);
-
-        if (!expression.size()) {
-            expression.setSize(mInstruction->operand(expression.index())->size());
-        }
-    }
-
-    /**
-     * \param expression               Register expression.
-     * \param suggestedSize            Suggested size of the expression.
-     */
-    void doComputeSize(RegisterExpression &expression, SmallBitSize suggestedSize) const {
-        NC_UNUSED(suggestedSize);
-
-        if (!expression.size()) {
-            expression.setSize(mArchitecture->registers()->getRegister(expression.number())->memoryLocation().size());
+            expression.setSize(expression.term()->size());
         }
     }
 
@@ -1137,9 +1114,9 @@ protected:
     void doComputeSize(MemoryLocationExpression &expression, SmallBitSize suggestedSize) const {
         NC_UNUSED(suggestedSize);
 
-        if (!expression.size()) {
-            expression.setSize(expression.memoryLocation().size());
-        }
+        /* Initialized in the constructor. */
+        assert(expression.size());
+        assert(expression.size() == expression.memoryLocation().size());
     }
 
     /**
@@ -1236,9 +1213,7 @@ private:
         return static_cast<const Derived &>(*this);
     }
 
-    Architecture *mArchitecture;
-    const InstructionAnalyzer *mInstructionAnalyzer;
-    const Instruction *mInstruction;
+    const Architecture *mArchitecture;
 };
 
 
@@ -1255,12 +1230,14 @@ public:
     /**
      * Constructor.
      *
-     * \param factory                   Expression factory to use to create separate statements.
-     * \param basicBlock                Basic block to add statements to.
+     * \param factory       Expression factory to use to create separate statements.
+     * \param basicBlock    Basic block to add statements to.
+     * \param instruction   Instruction to set to the created statements.
      */
-    ExpressionFactoryCallback(ExpressionFactory &factory, ir::BasicBlock *basicBlock):
+    ExpressionFactoryCallback(ExpressionFactory &factory, ir::BasicBlock *basicBlock, const arch::Instruction *instruction):
         mFactory(factory),
-        mBasicBlock(basicBlock)
+        mBasicBlock(basicBlock),
+        mInstruction(instruction)
     {
         assert(basicBlock != NULL);
     }
@@ -1275,21 +1252,12 @@ public:
      *                                  Created statement will be added to the basic block.
      */
     template<class E>
-    void operator[](StatementBase<E> &statement) const {
-        doCallback(statement.derived());
-    }
-
-    /**
-     * \param statement                 Call statement to create IR statement from.
-     *                                  Created statement will be added to the basic block.
-     */
-    template<class E>
     void operator[](StatementBase<E> &&statement) const {
         doCallback(statement.derived());
     }
 
     void operator()(std::unique_ptr<ir::Statement> statement) const {
-        statement->setInstruction(mFactory.instruction());
+        statement->setInstruction(mInstruction);
         mBasicBlock->pushBack(std::move(statement));
     }
 
@@ -1303,13 +1271,14 @@ protected:
 
     template<class L, class R>
     void doCallback(SequenceStatement<L, R> &statement) const {
-        this->operator[](statement.left());
-        this->operator[](statement.right());
+        this->operator[](std::move(statement.left()));
+        this->operator[](std::move(statement.right()));
     }
 
 private:
     ExpressionFactory &mFactory;
     ir::BasicBlock *mBasicBlock;
+    const arch::Instruction *mInstruction;
 };
 
 

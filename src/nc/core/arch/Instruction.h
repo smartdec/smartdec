@@ -26,9 +26,6 @@
 #include <nc/config.h>
 
 #include <cassert>
-#include <vector>
-
-#include <QString>
 
 #include <nc/common/Printable.h>
 #include <nc/common/Types.h>
@@ -36,8 +33,6 @@
 namespace nc {
 namespace core {
 namespace arch {
-
-class Operand;
 
 /**
  * Base class for instructions.
@@ -49,15 +44,12 @@ class Instruction: public Printable {
     /** Instruction's size in bytes. */
     SmallByteSize size_;
 
-    /** Instruction's operands. */
-    std::vector<Operand *> operands_;
-
 public:
     /**
      * Constructor.
      *
-     * \param[in] addr      Instruction's address in bytes.
-     * \param[in] size      Instruction's size in bytes.
+     * \param[in] addr  Instruction's address in bytes.
+     * \param[in] size  Instruction's size in bytes.
      */
     Instruction(ByteAddr addr = 0, SmallByteSize size = 0):
         addr_(addr), size_(size)
@@ -66,65 +58,9 @@ public:
     }
 
     /**
-     * Virtual destructor
+     * Virtual destructor.
      */
     virtual ~Instruction();
-
-    /**
-     * \return Instruction's operands.
-     */
-    const std::vector<const Operand *> &operands() const {
-        return reinterpret_cast<const std::vector<const Operand *> &>(operands_);
-    }
-
-    /**
-     * \param[in] index Index of an operand.
-     *
-     * \return Operand for the given index.
-     */
-    const Operand *operand(std::size_t index) const { assert(index < operands_.size()); return operands_[index]; }
-
-    /**
-     * Adds the given operand to the list of operands for this instruction.
-     *
-     * \param[in] operand Valid pointer to the operand to add.
-     */
-    void addOperand(Operand *operand) {
-        assert(operand != NULL);
-        operands_.push_back(operand);
-    }
-
-    /**
-     * Inserts the given operand into the list of operands for this instruction
-     * at given position.
-     *
-     * \param[in] index                Position to insert operand at.
-     * \param[in] operand              Operand to insert.
-     */
-    void addOperand(std::size_t index, Operand *operand) {
-        assert(operand != NULL);
-        operands_.insert(operands_.begin() + index, operand);
-    }
-
-    /**
-     * Removes operand at given position.
-     *
-     * \param[in] index                 Position to remove operand at.
-     */
-    void removeOperand(std::size_t index);
-
-    /**
-     * Replaces an operand at given position.
-     *
-     * \param[in] index                Position to replace operand at.
-     * \param[in] operand              Operand to replace by.
-     */
-    void replaceOperand(std::size_t index, Operand *operand);
-
-    /**
-     * Clears the operands of this instruction.
-     */
-    void clearOperands();
 
     /**
      * \return Instruction's address in bytes.

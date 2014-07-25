@@ -26,7 +26,7 @@
 
 #include <QTextStream>
 
-#include <libudis86/udis86.h>
+#include "udis86.h"
 
 namespace nc {
 namespace arch {
@@ -34,12 +34,16 @@ namespace intel {
 
 void IntelInstruction::print(QTextStream &out) const {
     ud_t ud_obj;
+
     ud_init(&ud_obj);
     ud_set_mode(&ud_obj, bitness_);
     ud_set_syntax(&ud_obj, UD_SYN_INTEL);
     ud_set_pc(&ud_obj, addr());
     ud_set_input_buffer(&ud_obj, const_cast<uint8_t *>(bytes()), size());
     ud_disassemble(&ud_obj);
+
+    assert(ud_obj.mnemonic != UD_Iinvalid);
+
     out << ud_insn_asm(&ud_obj);
 }
 

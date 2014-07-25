@@ -13,12 +13,9 @@ set(SOURCES
     IntelInstructionDisassembler.h
     IntelMasterAnalyzer.cpp
     IntelMasterAnalyzer.h
-    IntelOperandCache.cpp
-    IntelOperandCache.h
-    IntelOperands.cpp
-    IntelOperands.h
     IntelRegisters.cpp
     IntelRegisters.h
+    udis86.h
 )
 
 add_library(nc-arch-intel ${SOURCES})

@@ -24,15 +24,9 @@
 
 #include "InstructionAnalyzer.h"
 
-#include <algorithm> /* For std::max. */
-
-#include <nc/common/Unreachable.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/arch/Instruction.h>
-#include <nc/core/arch/Operands.h>
-#include <nc/core/ir/Program.h>
-#include <nc/core/ir/Statement.h>
+#include <nc/core/arch/Register.h>
 #include <nc/core/ir/Terms.h>
 
 #include "InvalidInstructionException.h"
@@ -55,78 +49,8 @@ void InstructionAnalyzer::createStatements(const Instruction *instruction, ir::P
     }
 }
 
-void InstructionAnalyzer::doCreateStatements(const Instruction * /*instruction*/, ir::Program * /*program*/) const {
-    unreachable();
-}
-
-std::unique_ptr<ir::Term> InstructionAnalyzer::createTerm(const Operand *operand) const {
-    assert(operand != NULL);
-
-    return doCreateTerm(operand);
-}
-
-std::unique_ptr<ir::Term> InstructionAnalyzer::createTerm(const Register *reg) const {
+std::unique_ptr<ir::Term> InstructionAnalyzer::createTerm(const Register *reg) {
     return std::make_unique<ir::MemoryLocationAccess>(reg->memoryLocation());
-}
-
-std::unique_ptr<ir::Term> InstructionAnalyzer::doCreateTerm(const Operand *operand) const {
-    switch(operand->kind()) {
-    case Operand::REGISTER: {
-        return createTerm(operand->asRegister()->regizter());
-    }
-    case Operand::ADDITION: {
-        const AdditionOperand *addition = operand->asAddition();
-
-        auto left = createTerm(addition->left());
-        auto right = createTerm(addition->right());
-
-        SmallBitSize size = std::max(left->size(), right->size());
-
-        /* [ebx + 0xfd] --- 0xfd must be sign-extended. */
-        if (left->size() < size) {
-            left = std::make_unique<ir::UnaryOperator>(ir::UnaryOperator::SIGN_EXTEND, std::move(left), size);
-        }
-        if (right->size() < size) {
-            right = std::make_unique<ir::UnaryOperator>(ir::UnaryOperator::SIGN_EXTEND, std::move(right), size);
-        }
-
-        return std::make_unique<ir::BinaryOperator>(ir::BinaryOperator::ADD, std::move(left), std::move(right), size);
-    }
-    case Operand::MULTIPLICATION: {
-        const MultiplicationOperand *multiplication = operand->asMultiplication();
-
-        auto left = createTerm(multiplication->left());
-        auto right = createTerm(multiplication->right());
-
-        SmallBitSize size = std::max(left->size(), right->size());
-
-        /* [ebx + esi * 4] --- 4 must be zero-extended. */
-        if (left->size() < size) {
-            left = std::make_unique<ir::UnaryOperator>(ir::UnaryOperator::ZERO_EXTEND, std::move(left), size);
-        }
-        if (right->size() < size) {
-            right = std::make_unique<ir::UnaryOperator>(ir::UnaryOperator::ZERO_EXTEND, std::move(right), size);
-        }
-
-        return std::make_unique<ir::BinaryOperator>(ir::BinaryOperator::MUL, std::move(left), std::move(right), size);
-    }
-    case Operand::DEREFERENCE: {
-        const DereferenceOperand *dereference = operand->asDereference();
-
-        return std::make_unique<ir::Dereference>(
-            createTerm(dereference->operand()), 
-            ir::MemoryDomain::MEMORY, 
-            dereference->size()
-        );
-    }
-    case Operand::CONSTANT: {
-        const ConstantOperand *constant = operand->asConstant();
-
-        return std::make_unique<ir::Constant>(constant->value());
-    }
-    default:
-        unreachable();
-    }
 }
 
 } // namespace irgen

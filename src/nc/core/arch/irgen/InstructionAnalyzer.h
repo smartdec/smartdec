@@ -27,8 +27,6 @@
 
 #include <memory>
 
-#include <nc/common/Types.h>
-
 namespace nc {
 namespace core {
 
@@ -40,7 +38,6 @@ namespace ir {
 namespace arch {
 
 class Instruction;
-class Operand;
 class Register;
 
 namespace irgen {
@@ -60,33 +57,20 @@ public:
     void createStatements(const Instruction *instruction, ir::Program *program) const;
 
     /**
-     * \param[in] operand Valid pointer to an operand.
-     *
-     * \return Intermediate representation of the given operand as a term.
-     */
-    std::unique_ptr<ir::Term> createTerm(const Operand *operand) const;
-
-    /**
      * \param[in] reg Valid pointer to a register.
      *
      * \return Valid pointer to the intermediate representation of this register as a term.
      */
-    std::unique_ptr<ir::Term> createTerm(const Register *reg) const;
+    static std::unique_ptr<ir::Term> createTerm(const Register *reg);
 
 protected:
     /**
      * Actually creates intermediate representation of an instruction.
      *
-     * \param[in] instruction           Valid pointer to the instruction to generate intermediate representation for.
-     * \param[out] program              Valid pointer to the intermediate representation of a program.
+     * \param[in] instruction   Valid pointer to the instruction to generate intermediate representation for.
+     * \param[out] program      Valid pointer to the intermediate representation of a program.
      */
-    virtual void doCreateStatements(const Instruction *instruction, ir::Program *program) const;
-
-    /**
-     * \param[in] operand               Operand.
-     * \return                          Intermediate representation of the given operand.
-     */
-    virtual std::unique_ptr<ir::Term> doCreateTerm(const Operand *operand) const;
+    virtual void doCreateStatements(const Instruction *instruction, ir::Program *program) const = 0;
 };
 
 } // namespace irgen

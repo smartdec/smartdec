@@ -56,7 +56,6 @@ namespace irgen {
     class InstructionAnalyzer;
 }
 
-class Mnemonics;
 class Register;
 class Registers;
 
@@ -109,11 +108,6 @@ public:
      * \returns Valid pointer to the universal analyzer for this architecture.
      */
     const MasterAnalyzer *masterAnalyzer() const { return mMasterAnalyzer; }
-
-    /**
-     * \returns Valid pointer to the mnemonic container for this architecture.
-     */
-    const Mnemonics *mnemonics() const { return mMnemonics; }
 
     /**
      * \returns Valid pointer to the register container for this architecture.
@@ -190,11 +184,6 @@ protected:
     void setMasterAnalyzer(const MasterAnalyzer *masterAnalyzer);
 
     /**
-     * \param mnemonics Valid pointer to the mnemonics container for this architecture.
-     */
-    void setMnemonics(Mnemonics *mnemonics);
-
-    /**
      * \param registers Valid pointer to the registers container for this architecture.
      */
     void setRegisters(Registers *registers);
@@ -235,9 +224,6 @@ private:
 
     /** Master analyzer for this architecture. */
     const MasterAnalyzer *mMasterAnalyzer;
-
-    /** Instruction dictionary for this architecture. */
-    Mnemonics *mMnemonics;
 
     /** Register container for this architecture. */
     Registers *mRegisters;
