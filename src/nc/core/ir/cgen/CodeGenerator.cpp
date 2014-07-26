@@ -46,7 +46,6 @@
 #include <nc/core/likec/StructTypeDeclaration.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/likec/Typecast.h>
-#include <nc/core/mangling/Demangler.h>
 
 #include "DefinitionGenerator.h"
 
@@ -189,12 +188,6 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
             if (auto relocation = image().getRelocation(addr)) {
                 if (name.isEmpty()) {
                     name = relocation->symbol()->name();
-                }
-
-                auto demangledName = image().demangler()->demangle(relocation->symbol()->name());
-                if (demangledName.contains('(')) {
-                    comment += '\n';
-                    comment += demangledName;
                 }
             }
 
