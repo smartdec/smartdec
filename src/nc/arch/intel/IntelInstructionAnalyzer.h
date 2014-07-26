@@ -35,13 +35,24 @@ namespace intel {
 
 class IntelArchitecture;
 
+class IntelInstructionAnalyzerImpl;
+
 class IntelInstructionAnalyzer: public core::arch::irgen::InstructionAnalyzer {
-    IntelArchitecture *architecture_;
+    /** The object actually doing all the work. */
+    std::unique_ptr<IntelInstructionAnalyzerImpl> impl_;
 
 public:
-    IntelInstructionAnalyzer(IntelArchitecture *architecture): architecture_(architecture) {
-        assert(architecture != NULL);
-    }
+    /**
+     * Constructor.
+     *
+     * \param architecture Valid pointer to the architecture.
+     */
+    IntelInstructionAnalyzer(const IntelArchitecture *architecture);
+
+    /**
+     * Destructor.
+     */
+    ~IntelInstructionAnalyzer();
 
     /**
      * \param[in] index FPU stack operand index.
@@ -52,10 +63,12 @@ public:
     static std::unique_ptr<core::ir::Term> createFpuTerm(int index);
 
 protected:
-    virtual void doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) const override;
+    virtual void doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) override;
 };
 
 
 } // namespace intel
 } // namespace arch
 } // namespace nc
+
+/* vim:set et sts=4 sw=4: */

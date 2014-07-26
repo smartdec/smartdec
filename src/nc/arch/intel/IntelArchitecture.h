@@ -72,12 +72,20 @@ public:
      */
     const core::arch::Register *basePointer() const { return mBasePointer; }
 
+    /**
+     * \return Valid pointer to instruction pointer register.
+     */
+    const core::arch::Register *instructionPointer() const { return mInstructionPointer; }
+
+    std::unique_ptr<core::arch::disasm::InstructionDisassembler> createInstructionDisassembler() const override;
+
+    std::unique_ptr<core::arch::irgen::InstructionAnalyzer> createInstructionAnalyzer() const override;
+
 protected:
     friend class IntelRegisters;
 
 private:
     std::unique_ptr<IntelInstructionDisassembler> mInstructionDisassembler;
-    std::unique_ptr<IntelInstructionAnalyzer> mInstructionAnalyzer;
     std::unique_ptr<IntelMasterAnalyzer> mMasterAnalyzer;
 
     /** Stack pointer register. */
@@ -85,6 +93,9 @@ private:
 
     /** Stack frame base pointer register. */
     const core::arch::Register *mBasePointer;
+
+    /** Instruction pointer register. */
+    const core::arch::Register *mInstructionPointer;
 };
 
 } // namespace intel

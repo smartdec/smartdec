@@ -29,25 +29,25 @@
 #include "IntelArchitecture.h"
 #include "IntelInstruction.h"
 
-#include "udis86.h"
-
 namespace nc {
 namespace arch {
 namespace intel {
 
-std::shared_ptr<core::arch::Instruction> IntelInstructionDisassembler::disassemble(ByteAddr pc, const void *buffer, ByteSize size) const {
-    ud_t ud_obj;
-    ud_init(&ud_obj);
-    ud_set_mode(&ud_obj, architecture_->bitness());
-    ud_set_pc(&ud_obj, pc);
-    ud_set_input_buffer(&ud_obj, const_cast<uint8_t *>(static_cast<const uint8_t *>(buffer)), checked_cast<std::size_t>(size));
+IntelInstructionDisassembler::IntelInstructionDisassembler(const IntelArchitecture *architecture) {
+    ud_init(&ud_obj_);
+    ud_set_mode(&ud_obj_, architecture->bitness());
+}
 
-    auto instructionSize = ud_disassemble(&ud_obj);
-    if (!instructionSize || ud_obj.mnemonic == UD_Iinvalid) {
+std::shared_ptr<core::arch::Instruction> IntelInstructionDisassembler::disassemble(ByteAddr pc, const void *buffer, ByteSize size) {
+    ud_set_pc(&ud_obj_, pc);
+    ud_set_input_buffer(&ud_obj_, const_cast<uint8_t *>(static_cast<const uint8_t *>(buffer)), checked_cast<std::size_t>(size));
+
+    auto instructionSize = ud_disassemble(&ud_obj_);
+    if (!instructionSize || ud_obj_.mnemonic == UD_Iinvalid) {
         return NULL;
     }
 
-    return std::make_shared<IntelInstruction>(architecture_->bitness(), pc, instructionSize, buffer);
+    return std::make_shared<IntelInstruction>(ud_obj_.dis_mode, pc, instructionSize, buffer);
 }
 
 } // namespace intel

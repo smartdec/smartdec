@@ -37,11 +37,8 @@ Architecture::Architecture():
     mBitness(0),
     mByteOrder(ByteOrder::Unknown),
     mMaxInstructionSize(0),
-    mInstructionDisassembler(NULL),
-    mInstructionAnalyzer(NULL),
     mMasterAnalyzer(NULL),
-    mRegisters(NULL),
-    mInstructionPointer(NULL)
+    mRegisters(NULL)
 {}
 
 Architecture::~Architecture() {}
@@ -72,27 +69,6 @@ void Architecture::setMaxInstructionSize(SmallBitSize size) {
     assert(mMaxInstructionSize == 0 && "Maximal instruction size cannot be reset.");
 
     mMaxInstructionSize = size;
-}
-
-void Architecture::setInstructionDisassembler(disasm::InstructionDisassembler *disassembler) {
-    assert(disassembler != NULL);
-    assert(mInstructionDisassembler == NULL && "Instruction disassembler is already set.");
-
-    mInstructionDisassembler = disassembler;
-}
-
-void Architecture::setInstructionPointer(const Register *reg) {
-    assert(reg != NULL);
-    assert(mInstructionPointer == NULL && "Instruction pointer is already set.");
-
-    mInstructionPointer = reg;
-}
-
-void Architecture::setInstructionAnalyzer(irgen::InstructionAnalyzer *instructionAnalyzer) {
-    assert(instructionAnalyzer != NULL);
-    assert(mInstructionAnalyzer == NULL && "Instruction analyzer is already set.");
-
-    mInstructionAnalyzer = instructionAnalyzer;
 }
 
 void Architecture::setMasterAnalyzer(const MasterAnalyzer *masterAnalyzer) {

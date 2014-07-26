@@ -44,6 +44,8 @@ namespace disasm {
 void Disassembler::disassemble(const image::ByteSource *source, ByteAddr begin, ByteAddr end, const CancellationToken &canceled) {
     assert(source != NULL);
 
+    auto instructionDisassembler = architecture()->createInstructionDisassembler();
+
     SmallByteSize maxInstructionSize = architecture()->maxInstructionSize();
 
     const ByteSize bufferCapacity = std::max(4096, maxInstructionSize);
@@ -61,7 +63,7 @@ void Disassembler::disassemble(const image::ByteSource *source, ByteAddr begin, 
             break;
         }
 
-        auto instruction = disassembleInstruction(begin, buffer.get() + bufferOffset, bufferSize - bufferOffset);
+        auto instruction = instructionDisassembler->disassemble(begin, buffer.get() + bufferOffset, bufferSize - bufferOffset);
 
         ByteSize instructionSize = 1;
         if (instruction) {
@@ -78,15 +80,6 @@ void Disassembler::disassemble(const image::ByteSource *source, ByteAddr begin, 
 
         canceled.poll();
     }
-}
-
-std::shared_ptr<Instruction> Disassembler::disassembleInstruction(ByteAddr pc, const void *buffer, SmallByteSize size) {
-    if (!architecture()->instructionDisassembler()) {
-        ncWarning("Architecture does not define a disassembler for a single instruction.");
-        return NULL;
-    }
-
-    return architecture()->instructionDisassembler()->disassemble(pc, buffer, size);
 }
 
 void Disassembler::addInstruction(std::shared_ptr<Instruction> instruction) {

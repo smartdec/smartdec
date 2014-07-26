@@ -54,7 +54,7 @@ public:
      * \param[in] instruction   Valid pointer to the instruction to generate intermediate representation for.
      * \param[out] program      Valid pointer to the intermediate representation of a program.
      */
-    void createStatements(const Instruction *instruction, ir::Program *program) const;
+    void createStatements(const Instruction *instruction, ir::Program *program);
 
     /**
      * \param[in] reg Valid pointer to a register.
@@ -70,7 +70,7 @@ protected:
      * \param[in] instruction   Valid pointer to the instruction to generate intermediate representation for.
      * \param[out] program      Valid pointer to the intermediate representation of a program.
      */
-    virtual void doCreateStatements(const Instruction *instruction, ir::Program *program) const = 0;
+    virtual void doCreateStatements(const Instruction *instruction, ir::Program *program) = 0;
 };
 
 } // namespace irgen

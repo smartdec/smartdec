@@ -97,12 +97,12 @@ public:
     /**
      * \returns Valid pointer to the disassembler for a single instruction.
      */
-    const disasm::InstructionDisassembler *instructionDisassembler() const { return mInstructionDisassembler; }
+    virtual std::unique_ptr<disasm::InstructionDisassembler> createInstructionDisassembler() const = 0;
 
     /**
      * \returns Valid pointer to the instruction analyzer for this architecture.
      */
-    const irgen::InstructionAnalyzer *instructionAnalyzer() const { return mInstructionAnalyzer; }
+    virtual std::unique_ptr<irgen::InstructionAnalyzer> createInstructionAnalyzer() const = 0;
 
     /**
      * \returns Valid pointer to the universal analyzer for this architecture.
@@ -113,11 +113,6 @@ public:
      * \returns Valid pointer to the register container for this architecture.
      */
     const Registers *registers() const { return mRegisters; }
-
-    /**
-     * \return Pointer to instruction pointer register. Can be NULL.
-     */
-    const Register *instructionPointer() const { return mInstructionPointer; }
 
     /**
      * \param memoryLocation Memory location.
@@ -169,17 +164,7 @@ protected:
     void setMaxInstructionSize(SmallBitSize size);
 
     /**
-     * \param disassembler Valid pointer to the disassembler of a single instruction.
-     */
-    void setInstructionDisassembler(disasm::InstructionDisassembler *disassembler);
-
-    /**
-     * \param instructionAnalyzer Valid pointer to the instruction analyzer for this architecture.
-     */
-    void setInstructionAnalyzer(irgen::InstructionAnalyzer *instructionAnalyzer);
-
-    /**
-     * \param masterAnalyzer Valid pointer to the universal analyzer for this architecture.
+     * \param masterAnalyzer Valid pointer to the master analyzer for this architecture.
      */
     void setMasterAnalyzer(const MasterAnalyzer *masterAnalyzer);
 
@@ -187,13 +172,6 @@ protected:
      * \param registers Valid pointer to the registers container for this architecture.
      */
     void setRegisters(Registers *registers);
-
-    /**
-     * Sets the operand being the instruction pointer.
-     *
-     * \param reg Instruction pointer register operand.
-     */
-    void setInstructionPointer(const Register *reg);
 
     /**
      * Adds a calling convention.
@@ -216,20 +194,11 @@ private:
     /** Maximum length of an instruction on this architecture. */
     SmallBitSize mMaxInstructionSize;
 
-    /** Disassembler for parsing a single instruction. */
-    disasm::InstructionDisassembler *mInstructionDisassembler;
-
-    /** Instruction analyzer for this architecture. */
-    irgen::InstructionAnalyzer *mInstructionAnalyzer;
-
     /** Master analyzer for this architecture. */
     const MasterAnalyzer *mMasterAnalyzer;
 
     /** Register container for this architecture. */
     Registers *mRegisters;
-
-    /** Instruction pointer register. */
-    const Register *mInstructionPointer;
 
     /** Calling conventions. */
     std::vector<std::unique_ptr<ir::calling::Convention>> conventions_;

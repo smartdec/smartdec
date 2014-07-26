@@ -68,15 +68,14 @@ AMD64CallingConvention::AMD64CallingConvention(const IntelArchitecture *architec
     fpArgs.push_back(IntelRegisters::xmm7()->memoryLocation());
     addArgumentGroup(std::move(fpArgs));
 
-    auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::rax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::eax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::ax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::al()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::xmm0()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::rax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::eax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::ax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::al()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::xmm0()));
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
-        analyzer->createTerm(IntelRegisters::df()),
+        IntelInstructionAnalyzer::createTerm(IntelRegisters::df()),
         std::make_unique<core::ir::Constant>(SizedValue(IntelRegisters::df()->size(), 0))
     ));
 }
@@ -105,15 +104,14 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const IntelArchitectu
     fpArgs.push_back(IntelRegisters::xmm3()->memoryLocation());
     addArgumentGroup(std::move(fpArgs));
 
-    auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::rax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::eax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::ax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::al()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::xmm0()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::rax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::eax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::ax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::al()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::xmm0()));
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
-        analyzer->createTerm(IntelRegisters::df()),
+        IntelInstructionAnalyzer::createTerm(IntelRegisters::df()),
         std::make_unique<core::ir::Constant>(SizedValue(IntelRegisters::df()->size(), 0))
     ));
 }
@@ -126,14 +124,13 @@ Cdecl32CallingConvention::Cdecl32CallingConvention(const IntelArchitecture *arch
     setFirstArgumentOffset(32);
     setArgumentAlignment(32);
 
-    auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::eax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::ax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::al()));
-    addReturnValueTerm(analyzer->createFpuTerm(0));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::eax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::ax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::al()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createFpuTerm(0));
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
-        analyzer->createTerm(IntelRegisters::df()),
+        IntelInstructionAnalyzer::createTerm(IntelRegisters::df()),
         std::make_unique<core::ir::Constant>(SizedValue(IntelRegisters::df()->size(), 0))
     ));
 }
@@ -146,13 +143,12 @@ Cdecl16CallingConvention::Cdecl16CallingConvention(const IntelArchitecture *arch
     setFirstArgumentOffset(16);
     setArgumentAlignment(16);
 
-    auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::ax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::al()));
-    addReturnValueTerm(analyzer->createFpuTerm(0));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::ax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::al()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createFpuTerm(0));
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
-        analyzer->createTerm(IntelRegisters::df()),
+        IntelInstructionAnalyzer::createTerm(IntelRegisters::df()),
         std::make_unique<core::ir::Constant>(SizedValue(IntelRegisters::df()->size(), 0))
     ));
 }
@@ -166,14 +162,13 @@ Stdcall32CallingConvention::Stdcall32CallingConvention(const IntelArchitecture *
     setArgumentAlignment(32);
     setCalleeCleanup(true);
 
-    auto analyzer = checked_cast<const IntelInstructionAnalyzer *>(architecture->instructionAnalyzer());
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::eax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::ax()));
-    addReturnValueTerm(analyzer->createTerm(IntelRegisters::al()));
-    addReturnValueTerm(analyzer->createFpuTerm(0));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::eax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::ax()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createTerm(IntelRegisters::al()));
+    addReturnValueTerm(IntelInstructionAnalyzer::createFpuTerm(0));
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
-        analyzer->createTerm(IntelRegisters::df()),
+        IntelInstructionAnalyzer::createTerm(IntelRegisters::df()),
         std::make_unique<core::ir::Constant>(SizedValue(IntelRegisters::df()->size(), 0))
     ));
 }

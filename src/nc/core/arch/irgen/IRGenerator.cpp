@@ -52,10 +52,12 @@ namespace arch {
 namespace irgen {
 
 void IRGenerator::generate(const CancellationToken &canceled) {
+    auto instructionAnalyzer = image_->architecture()->createInstructionAnalyzer();
+
     /* Generate statements. */
     foreach (const auto &instr, instructions_->all()) {
         try {
-            image_->architecture()->instructionAnalyzer()->createStatements(instr.get(), program_);
+            instructionAnalyzer->createStatements(instr.get(), program_);
         } catch (const InvalidInstructionException &e) {
             /* Note: this is an AntiIdiom: http://c2.com/cgi/wiki?LoggingDiscussion */
             ncWarning(e.unicodeWhat());

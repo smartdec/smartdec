@@ -96,41 +96,45 @@ temporary(SmallBitSize size) {
     return resizedRegister(IntelRegisters::tmp64(), size);
 }
 
+} // anonymous namespace
+
 class IntelInstructionAnalyzerImpl {
     Q_DECLARE_TR_FUNCTIONS(IntelInstructionAnalyzerImpl)
 
     const IntelArchitecture *architecture_;
-    const IntelInstruction *instr_;
-    core::ir::Program *program_;
     ud_t ud_obj_;
 
 public:
-    IntelInstructionAnalyzerImpl(const IntelArchitecture *architecture, const IntelInstruction *instr, core::ir::Program *program):
-        architecture_(architecture), instr_(instr), program_(program)
+    explicit
+    IntelInstructionAnalyzerImpl(const IntelArchitecture *architecture):
+        architecture_(architecture)
     {
-        assert(instr != 0);
-        assert(program != 0);
+        assert(architecture != NULL);
 
         ud_init(&ud_obj_);
         ud_set_mode(&ud_obj_, architecture_->bitness());
+    }
+
+    void createStatements(const IntelInstruction *instr, core::ir::Program *program) {
+        assert(instr != NULL);
+        assert(program != NULL);
+
         ud_set_pc(&ud_obj_, instr->addr());
         ud_set_input_buffer(&ud_obj_, const_cast<uint8_t *>(instr->bytes()), checked_cast<std::size_t>(instr->size()));
         ud_disassemble(&ud_obj_);
 
         assert(ud_obj_.mnemonic != UD_Iinvalid);
-    }
 
-    void createStatements() {
         core::ir::BasicBlock *cachedDirectSuccessor = NULL;
         auto directSuccessor = [&]() -> core::ir::BasicBlock * {
             if (!cachedDirectSuccessor) {
-                cachedDirectSuccessor = program_->createBasicBlock(instr_->endAddr());
+                cachedDirectSuccessor = program->createBasicBlock(instr->endAddr());
             }
             return cachedDirectSuccessor;
         };
 
         IntelExpressionFactory factory(architecture_);
-        IntelExpressionFactoryCallback _(factory, program_->getBasicBlockForInstruction(instr_), instr_);
+        IntelExpressionFactoryCallback _(factory, program->getBasicBlockForInstruction(instr), instr);
 
         using namespace core::arch::irgen::expressions;
 
@@ -284,8 +288,8 @@ public:
                     increment ^= constant(accessSize / CHAR_BIT) - constant(2 * accessSize / CHAR_BIT, si.memoryLocation().size()) * zero_extend(df)
                 ];
 
-                IntelExpressionFactoryCallback condition(factory, program_->createBasicBlock(), instr_);
-                IntelExpressionFactoryCallback body(factory, program_->createBasicBlock(), instr_);
+                IntelExpressionFactoryCallback condition(factory, program->createBasicBlock(), instr);
+                IntelExpressionFactoryCallback body(factory, program->createBasicBlock(), instr);
 
                 _[jump(condition.basicBlock())];
 
@@ -376,7 +380,7 @@ public:
                 break;
             }
             case UD_Icmpxchg: {
-                IntelExpressionFactoryCallback then(factory, program_->createBasicBlock(), instr_);
+                IntelExpressionFactoryCallback then(factory, program->createBasicBlock(), instr);
 
                 _[
                     cf ^= intrinsic(),
@@ -445,7 +449,7 @@ public:
     #if 0
                 /* A correct implementation, however, generating complicated code. */
 
-                auto size = std::max(instr_->operand(0)->size(), 16);
+                auto size = std::max(instr->operand(0)->size(), 16);
                 auto ax = resizedRegister(IntelRegisters::ax(), size);
                 auto dx = resizedRegister(IntelRegisters::dx(), size);
                 auto tmp = temporary(size * 2);
@@ -660,7 +664,7 @@ public:
             case UD_Icmovz: case UD_Icmovg: case UD_Icmovge: case UD_Icmovl:
             case UD_Icmovle: case UD_Icmovnz: case UD_Icmovno: case UD_Icmovnp:
             case UD_Icmovns: case UD_Icmovo: case UD_Icmovp: case UD_Icmovs: {
-                IntelExpressionFactoryCallback then(factory, program_->createBasicBlock(), instr_);
+                IntelExpressionFactoryCallback then(factory, program->createBasicBlock(), instr);
 
                 switch (ud_obj_.mnemonic) {
                     case UD_Icmova:
@@ -1402,11 +1406,14 @@ public:
     }
 };
 
-} // anonymous namespace
+IntelInstructionAnalyzer::IntelInstructionAnalyzer(const IntelArchitecture *architecture):
+    impl_(std::make_unique<IntelInstructionAnalyzerImpl>(architecture))
+{}
 
+IntelInstructionAnalyzer::~IntelInstructionAnalyzer() {}
 
-void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) const {
-    IntelInstructionAnalyzerImpl(architecture_, checked_cast<const IntelInstruction *>(instruction), program).createStatements();
+void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) {
+    impl_->createStatements(checked_cast<const IntelInstruction *>(instruction), program);
 }
 
 std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::createFpuTerm(int index) {

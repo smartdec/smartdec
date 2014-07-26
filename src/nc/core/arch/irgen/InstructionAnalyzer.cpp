@@ -36,7 +36,7 @@ namespace core {
 namespace arch {
 namespace irgen {
 
-void InstructionAnalyzer::createStatements(const Instruction *instruction, ir::Program *program) const {
+void InstructionAnalyzer::createStatements(const Instruction *instruction, ir::Program *program) {
     assert(instruction);
 
     try {

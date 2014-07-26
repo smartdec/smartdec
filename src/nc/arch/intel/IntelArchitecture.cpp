@@ -49,7 +49,7 @@ IntelArchitecture::IntelArchitecture(Mode mode) {
     case REAL_MODE:
         setName("8086");
         setBitness(16);
-        setInstructionPointer(IntelRegisters::ip());
+        mInstructionPointer = IntelRegisters::ip();
         mStackPointer = IntelRegisters::sp();
         mBasePointer  = IntelRegisters::bp();
         addCallingConvention(std::make_unique<Cdecl16CallingConvention>(this));
@@ -57,7 +57,7 @@ IntelArchitecture::IntelArchitecture(Mode mode) {
     case PROTECTED_MODE:
         setName("i386");
         setBitness(32);
-        setInstructionPointer(IntelRegisters::eip());
+        mInstructionPointer = IntelRegisters::eip();
         mStackPointer = IntelRegisters::esp();
         mBasePointer  = IntelRegisters::ebp();
         addCallingConvention(std::make_unique<Cdecl32CallingConvention>(this));
@@ -66,7 +66,7 @@ IntelArchitecture::IntelArchitecture(Mode mode) {
     case LONG_MODE:
         setName("x86-64");
         setBitness(64);
-        setInstructionPointer(IntelRegisters::rip());
+        mInstructionPointer = IntelRegisters::rip();
         mStackPointer = IntelRegisters::rsp();
         mBasePointer  = IntelRegisters::rbp();
         addCallingConvention(std::make_unique<AMD64CallingConvention>(this));
@@ -79,15 +79,17 @@ IntelArchitecture::IntelArchitecture(Mode mode) {
     setByteOrder(ByteOrder::LittleEndian);
 
     setMaxInstructionSize(IntelInstruction::MAX_SIZE);
-
-    mInstructionAnalyzer.reset(new IntelInstructionAnalyzer(this));
-    setInstructionAnalyzer(mInstructionAnalyzer.get());
-
-    mInstructionDisassembler.reset(new IntelInstructionDisassembler(this));
-    setInstructionDisassembler(mInstructionDisassembler.get());
 }
 
 IntelArchitecture::~IntelArchitecture() {}
+
+std::unique_ptr<core::arch::disasm::InstructionDisassembler> IntelArchitecture::createInstructionDisassembler() const {
+    return std::make_unique<IntelInstructionDisassembler>(this);
+}
+
+std::unique_ptr<core::arch::irgen::InstructionAnalyzer> IntelArchitecture::createInstructionAnalyzer() const {
+    return std::make_unique<IntelInstructionAnalyzer>(this);
+}
 
 } // namespace intel
 } // namespace arch

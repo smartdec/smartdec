@@ -27,6 +27,8 @@
 
 #include <nc/core/arch/disasm/InstructionDisassembler.h>
 
+#include "udis86.h"
+
 namespace nc {
 namespace arch {
 namespace intel {
@@ -37,7 +39,7 @@ class IntelArchitecture;
  * Disassembler for x86 instructions.
  */
 class IntelInstructionDisassembler: public core::arch::disasm::InstructionDisassembler {
-    const IntelArchitecture *architecture_;
+    ud_t ud_obj_;
 
 public:
     /**
@@ -46,9 +48,9 @@ public:
      * \param architecture Valid pointer to the Intel architecture.
      */
     explicit
-    IntelInstructionDisassembler(const IntelArchitecture *architecture): architecture_(architecture) {}
+    IntelInstructionDisassembler(const IntelArchitecture *architecture);
 
-    std::shared_ptr<core::arch::Instruction> disassemble(ByteAddr pc, const void *buffer, ByteSize size) const override;
+    std::shared_ptr<core::arch::Instruction> disassemble(ByteAddr pc, const void *buffer, ByteSize size) override;
 };
 
 } // namespace intel

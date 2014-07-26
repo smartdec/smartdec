@@ -97,18 +97,6 @@ public:
 
 protected:
     /**
-     * Disassembles a single instruction.
-     * By default, the method uses the InstructionDisassembler provided in the architecture.
-     *
-     * \param[in] pc Program counter value at the beginning of the buffer.
-     * \param[in] buffer Valid pointer to a buffer.
-     * \param[in] size Buffer size.
-     *
-     * \return Pointer to the instruction disassembled from the buffer, if disassembling succeeded, or NULL otherwise.
-     */
-    virtual std::shared_ptr<Instruction> disassembleInstruction(ByteAddr pc, const void *buffer, SmallByteSize size);
-
-    /**
      * This method is called when a yet another instruction has been disassembled.
      * By default, the instruction is added to the set of instructions passed to the constructor.
      *

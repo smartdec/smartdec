@@ -41,8 +41,7 @@ namespace disasm {
  * Disassembler capable of parsing a single instruction.
  */
 class InstructionDisassembler {
-    public:
-
+public:
     /**
      * Virtual destructor.
      */
@@ -55,7 +54,7 @@ class InstructionDisassembler {
      *
      * \return Pointer to the instruction disassembled from the buffer, if disassembling succeeded, or NULL otherwise.
      */
-    virtual std::shared_ptr<Instruction> disassemble(ByteAddr pc, const void *buffer, ByteSize size) const = 0;
+    virtual std::shared_ptr<Instruction> disassemble(ByteAddr pc, const void *buffer, ByteSize size) = 0;
 };
 
 } // namespace disasm
