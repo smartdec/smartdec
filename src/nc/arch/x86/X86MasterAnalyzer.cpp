@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "IntelMasterAnalyzer.h"
+#include "X86MasterAnalyzer.h"
 
 #include <nc/common/Conversions.h>
 #include <nc/common/Foreach.h>
@@ -38,23 +38,23 @@
 #include <nc/core/ir/calling/Hooks.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 
-#include "IntelArchitecture.h"
-#include "IntelDataflowAnalyzer.h"
-#include "IntelRegisters.h"
+#include "X86Architecture.h"
+#include "X86DataflowAnalyzer.h"
+#include "X86Registers.h"
 
 namespace nc {
 namespace arch {
-namespace intel {
+namespace x86 {
 
-void IntelMasterAnalyzer::createProgram(core::Context &context) const {
+void X86MasterAnalyzer::createProgram(core::Context &context) const {
     MasterAnalyzer::createProgram(context);
 
     /*
      * Patch the IR to implement x86-64 implicit zero extend.
      */
     if (context.image()->architecture()->bitness() == 64) {
-        auto minDomain = IntelRegisters::rax()->memoryLocation().domain();
-        auto maxDomain = IntelRegisters::r15()->memoryLocation().domain();
+        auto minDomain = X86Registers::rax()->memoryLocation().domain();
+        auto maxDomain = X86Registers::r15()->memoryLocation().domain();
 
         auto program = const_cast<core::ir::Program *>(context.program());
 
@@ -83,7 +83,7 @@ void IntelMasterAnalyzer::createProgram(core::Context &context) const {
     }
 }
 
-void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::calling::CalleeId &calleeId) const {
+void X86MasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::calling::CalleeId &calleeId) const {
     auto architecture = context.image()->architecture();
 
     auto setConvention = [&](const char *name) {
@@ -119,20 +119,20 @@ void IntelMasterAnalyzer::detectCallingConvention(core::Context &context, const 
     }
 }
 
-void IntelMasterAnalyzer::dataflowAnalysis(core::Context &context, core::ir::Function *function) const {
+void X86MasterAnalyzer::dataflowAnalysis(core::Context &context, core::ir::Function *function) const {
     context.logToken() << tr("Dataflow analysis of %1.").arg(getFunctionName(context, function));
 
     std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
 
     context.hooks()->instrument(function, dataflow.get());
 
-    IntelDataflowAnalyzer(*dataflow, context.image()->architecture())
+    X86DataflowAnalyzer(*dataflow, context.image()->architecture())
         .analyze(function, context.cancellationToken());
 
     context.dataflows()->emplace(function, std::move(dataflow));
 }
 
-} // namespace intel
+} // namespace x86
 } // namespace arch
 } // namespace nc
 

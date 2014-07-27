@@ -35,12 +35,12 @@
 
 namespace nc {
 namespace arch {
-namespace intel {
+namespace x86 {
 
 /**
  * An instruction of Intel x86 platform.
  */
-class IntelInstruction: public core::arch::Instruction {
+class X86Instruction: public core::arch::Instruction {
 public:
     /** Max size of an instruction. */
     static const SmallByteSize MAX_SIZE = 15;
@@ -61,7 +61,7 @@ public:
      * \param[in] addr Instruction address in bytes.
      * \param[in] size Instruction size in bytes.
      */
-    IntelInstruction(SmallBitSize bitness, ByteAddr addr, SmallByteSize size, const void *bytes):
+    X86Instruction(SmallBitSize bitness, ByteAddr addr, SmallByteSize size, const void *bytes):
         core::arch::Instruction(addr, size), bitness_(checked_cast<uint8_t>(bitness))
     {
         assert(size > 0);
@@ -78,7 +78,7 @@ public:
     virtual void print(QTextStream &out) const override;
 };
 
-} // namespace intel
+} // namespace x86
 } // namespace arch
 } // namespace nc
 

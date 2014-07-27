@@ -25,23 +25,35 @@
 
 #include <nc/config.h>
 
-#include <nc/core/MasterAnalyzer.h>
+#include <nc/core/arch/disasm/InstructionDisassembler.h>
+
+#include "udis86.h"
 
 namespace nc {
 namespace arch {
-namespace intel {
+namespace x86 {
 
-class IntelMasterAnalyzer: public core::MasterAnalyzer {
-    public:
+class X86Architecture;
 
-    void createProgram(core::Context &context) const override;
+/**
+ * Disassembler for x86 instructions.
+ */
+class X86InstructionDisassembler: public core::arch::disasm::InstructionDisassembler {
+    ud_t ud_obj_;
 
-    void detectCallingConvention(core::Context &context, const core::ir::calling::CalleeId &id) const override;
+public:
+    /**
+     * Constructor.
+     *
+     * \param architecture Valid pointer to the architecture.
+     */
+    explicit
+    X86InstructionDisassembler(const X86Architecture *architecture);
 
-    void dataflowAnalysis(core::Context &context, core::ir::Function *function) const override;
+    std::shared_ptr<core::arch::Instruction> disassemble(ByteAddr pc, const void *buffer, ByteSize size) override;
 };
 
-} // namespace intel
+} // namespace x86
 } // namespace arch
 } // namespace nc
 

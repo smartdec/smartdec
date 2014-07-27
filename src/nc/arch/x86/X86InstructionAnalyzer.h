@@ -24,23 +24,51 @@
 #pragma once
 
 #include <nc/config.h>
-#include <nc/core/arch/Registers.h>
 
-#include <QString>
+#include <cassert>
 
-namespace nc { namespace arch { namespace intel {
+#include <nc/core/arch/irgen/InstructionAnalyzer.h>
 
-/**
- * Container class for intel registers.
- */
-class IntelRegisters: public core::arch::StaticRegisters<IntelRegisters> {
+namespace nc {
+namespace arch {
+namespace x86 {
+
+class X86Architecture;
+
+class X86InstructionAnalyzerImpl;
+
+class X86InstructionAnalyzer: public core::arch::irgen::InstructionAnalyzer {
+    /** The object actually doing all the work. */
+    std::unique_ptr<X86InstructionAnalyzerImpl> impl_;
+
 public:
-    IntelRegisters();
+    /**
+     * Constructor.
+     *
+     * \param architecture Valid pointer to the architecture.
+     */
+    X86InstructionAnalyzer(const X86Architecture *architecture);
 
-#define REGISTER_TABLE <nc/arch/intel/IntelRegisterTable.i>
-#include <nc/core/arch/Registers.i>
+    /**
+     * Destructor.
+     */
+    ~X86InstructionAnalyzer();
+
+    /**
+     * \param[in] index FPU stack operand index.
+     *
+     * \return Valid pointer to the intermediate representation of the fpu stack register
+     *         operand with the given index.
+     */
+    static std::unique_ptr<core::ir::Term> createFpuTerm(int index);
+
+protected:
+    virtual void doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) override;
 };
 
-}}} // namespace nc::arch::intel
+
+} // namespace x86
+} // namespace arch
+} // namespace nc
 
 /* vim:set et sts=4 sw=4: */

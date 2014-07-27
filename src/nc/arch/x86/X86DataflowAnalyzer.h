@@ -23,51 +23,26 @@
 
 #pragma once
 
-#include <nc/config.h>
-
-#include <cassert>
-
-#include <nc/core/arch/irgen/InstructionAnalyzer.h>
+#include <nc/core/ir/dflow/DataflowAnalyzer.h>
 
 namespace nc {
 namespace arch {
-namespace intel {
+namespace x86 {
 
-class IntelArchitecture;
+class X86DataflowAnalyzer: public core::ir::dflow::DataflowAnalyzer {
+    public:
 
-class IntelInstructionAnalyzerImpl;
+    X86DataflowAnalyzer(
+        core::ir::dflow::Dataflow &dataflow,
+        const core::arch::Architecture *architecture
+    ):
+        core::ir::dflow::DataflowAnalyzer(dataflow, architecture)
+    {}
 
-class IntelInstructionAnalyzer: public core::arch::irgen::InstructionAnalyzer {
-    /** The object actually doing all the work. */
-    std::unique_ptr<IntelInstructionAnalyzerImpl> impl_;
-
-public:
-    /**
-     * Constructor.
-     *
-     * \param architecture Valid pointer to the architecture.
-     */
-    IntelInstructionAnalyzer(const IntelArchitecture *architecture);
-
-    /**
-     * Destructor.
-     */
-    ~IntelInstructionAnalyzer();
-
-    /**
-     * \param[in] index FPU stack operand index.
-     *
-     * \return Valid pointer to the intermediate representation of the fpu stack register
-     *         operand with the given index.
-     */
-    static std::unique_ptr<core::ir::Term> createFpuTerm(int index);
-
-protected:
-    virtual void doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) override;
+    virtual void execute(const core::ir::Term *term, core::ir::dflow::ExecutionContext &context) override;
 };
 
-
-} // namespace intel
+} // namespace x86
 } // namespace arch
 } // namespace nc
 

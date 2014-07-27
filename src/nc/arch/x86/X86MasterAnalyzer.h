@@ -23,26 +23,22 @@
 
 #pragma once
 
-#include <nc/core/ir/dflow/DataflowAnalyzer.h>
+#include <nc/config.h>
+
+#include <nc/core/MasterAnalyzer.h>
 
 namespace nc {
 namespace arch {
-namespace intel {
+namespace x86 {
 
-class IntelDataflowAnalyzer: public core::ir::dflow::DataflowAnalyzer {
-    public:
-
-    IntelDataflowAnalyzer(
-        core::ir::dflow::Dataflow &dataflow,
-        const core::arch::Architecture *architecture
-    ):
-        core::ir::dflow::DataflowAnalyzer(dataflow, architecture)
-    {}
-
-    virtual void execute(const core::ir::Term *term, core::ir::dflow::ExecutionContext &context) override;
+class X86MasterAnalyzer: public core::MasterAnalyzer {
+public:
+    void createProgram(core::Context &context) const override;
+    void detectCallingConvention(core::Context &context, const core::ir::calling::CalleeId &id) const override;
+    void dataflowAnalysis(core::Context &context, core::ir::Function *function) const override;
 };
 
-} // namespace intel
+} // namespace x86
 } // namespace arch
 } // namespace nc
 

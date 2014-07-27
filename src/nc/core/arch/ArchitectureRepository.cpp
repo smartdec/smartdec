@@ -8,7 +8,7 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/arch/intel/IntelArchitecture.h>
+#include <nc/arch/x86/X86Architecture.h>
 
 #include "Architecture.h"
 
@@ -17,12 +17,12 @@ namespace nc { namespace core { namespace arch {
 namespace {
 
 ArchitectureRepository *createInstance() {
-    using nc::arch::intel::IntelArchitecture;
+    using nc::arch::x86::X86Architecture;
 
     static ArchitectureRepository result;
-    result.registerArchitecture(std::make_unique<IntelArchitecture>(IntelArchitecture::REAL_MODE));
-    result.registerArchitecture(std::make_unique<IntelArchitecture>(IntelArchitecture::PROTECTED_MODE));
-    result.registerArchitecture(std::make_unique<IntelArchitecture>(IntelArchitecture::LONG_MODE));
+    result.registerArchitecture(std::make_unique<X86Architecture>(X86Architecture::REAL_MODE));
+    result.registerArchitecture(std::make_unique<X86Architecture>(X86Architecture::PROTECTED_MODE));
+    result.registerArchitecture(std::make_unique<X86Architecture>(X86Architecture::LONG_MODE));
     return &result;
 }
 

@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "IntelInstruction.h"
+#include "X86Instruction.h"
 
 #include <QTextStream>
 
@@ -30,9 +30,9 @@
 
 namespace nc {
 namespace arch {
-namespace intel {
+namespace x86 {
 
-void IntelInstruction::print(QTextStream &out) const {
+void X86Instruction::print(QTextStream &out) const {
     ud_t ud_obj;
 
     ud_init(&ud_obj);
@@ -47,7 +47,7 @@ void IntelInstruction::print(QTextStream &out) const {
     out << ud_insn_asm(&ud_obj);
 }
 
-} // namespace intel
+} // namespace x86
 } // namespace arch
 } // namespace nc
 

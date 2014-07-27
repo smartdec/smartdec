@@ -29,9 +29,9 @@
 
 namespace nc {
 namespace arch {
-namespace intel {
+namespace x86 {
 
-class IntelArchitecture;
+class X86Architecture;
 
 /**
  * AMD64 calling convention.
@@ -41,7 +41,7 @@ public:
     /**
      * Class constructor.
      */
-    AMD64CallingConvention(const IntelArchitecture *architecture);
+    AMD64CallingConvention(const X86Architecture *architecture);
 };
 
 /**
@@ -52,7 +52,7 @@ public:
     /**
      * Class constructor.
      */
-    Microsoft64CallingConvention(const IntelArchitecture *architecture);
+    Microsoft64CallingConvention(const X86Architecture *architecture);
 };
 
 /**
@@ -63,7 +63,7 @@ public:
     /**
      * Class constructor.
      */
-    Cdecl32CallingConvention(const IntelArchitecture *architecture);
+    Cdecl32CallingConvention(const X86Architecture *architecture);
 };
 
 /**
@@ -74,7 +74,7 @@ public:
     /**
      * Class constructor.
      */
-    Cdecl16CallingConvention(const IntelArchitecture *architecture);
+    Cdecl16CallingConvention(const X86Architecture *architecture);
 };
 
 /**
@@ -85,10 +85,10 @@ public:
     /**
      * Class constructor.
      */
-    Stdcall32CallingConvention(const IntelArchitecture *architecture);
+    Stdcall32CallingConvention(const X86Architecture *architecture);
 };
 
-} // namespace intel
+} // namespace x86
 } // namespace arch
 } // namespace nc
 

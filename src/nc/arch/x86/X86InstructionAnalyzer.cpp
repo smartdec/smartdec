@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "IntelInstructionAnalyzer.h"
+#include "X86InstructionAnalyzer.h"
 
 #include <boost/range/size.hpp>
 
@@ -35,29 +35,29 @@
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 
-#include "IntelArchitecture.h"
-#include "IntelInstruction.h"
-#include "IntelRegisters.h"
+#include "X86Architecture.h"
+#include "X86Instruction.h"
+#include "X86Registers.h"
 
 #include "udis86.h"
 
 namespace nc {
 namespace arch {
-namespace intel {
+namespace x86 {
 
 namespace {
 
-class IntelExpressionFactory: public core::arch::irgen::expressions::ExpressionFactory<IntelExpressionFactory> {
+class X86ExpressionFactory: public core::arch::irgen::expressions::ExpressionFactory<X86ExpressionFactory> {
 public:
-    IntelExpressionFactory(const core::arch::Architecture *architecture):
-        core::arch::irgen::expressions::ExpressionFactory<IntelExpressionFactory>(architecture)
+    X86ExpressionFactory(const core::arch::Architecture *architecture):
+        core::arch::irgen::expressions::ExpressionFactory<X86ExpressionFactory>(architecture)
     {}
 };
 
-typedef core::arch::irgen::expressions::ExpressionFactoryCallback<IntelExpressionFactory> IntelExpressionFactoryCallback;
+typedef core::arch::irgen::expressions::ExpressionFactoryCallback<X86ExpressionFactory> X86ExpressionFactoryCallback;
 
 #define NC_DEFINE_REGISTER_EXPRESSION(lowercase) \
-const auto lowercase = core::arch::irgen::expressions::regizter(IntelRegisters::lowercase());
+const auto lowercase = core::arch::irgen::expressions::regizter(X86Registers::lowercase());
 
 NC_DEFINE_REGISTER_EXPRESSION(cf)
 NC_DEFINE_REGISTER_EXPRESSION(pf)
@@ -93,20 +93,20 @@ resizedRegister(const core::arch::Register *reg, SmallBitSize size) {
 
 core::arch::irgen::expressions::MemoryLocationExpression
 temporary(SmallBitSize size) {
-    return resizedRegister(IntelRegisters::tmp64(), size);
+    return resizedRegister(X86Registers::tmp64(), size);
 }
 
 } // anonymous namespace
 
-class IntelInstructionAnalyzerImpl {
-    Q_DECLARE_TR_FUNCTIONS(IntelInstructionAnalyzerImpl)
+class X86InstructionAnalyzerImpl {
+    Q_DECLARE_TR_FUNCTIONS(X86InstructionAnalyzerImpl)
 
-    const IntelArchitecture *architecture_;
+    const X86Architecture *architecture_;
     ud_t ud_obj_;
 
 public:
     explicit
-    IntelInstructionAnalyzerImpl(const IntelArchitecture *architecture):
+    X86InstructionAnalyzerImpl(const X86Architecture *architecture):
         architecture_(architecture)
     {
         assert(architecture != NULL);
@@ -115,7 +115,7 @@ public:
         ud_set_mode(&ud_obj_, architecture_->bitness());
     }
 
-    void createStatements(const IntelInstruction *instr, core::ir::Program *program) {
+    void createStatements(const X86Instruction *instr, core::ir::Program *program) {
         assert(instr != NULL);
         assert(program != NULL);
 
@@ -133,8 +133,8 @@ public:
             return cachedDirectSuccessor;
         };
 
-        IntelExpressionFactory factory(architecture_);
-        IntelExpressionFactoryCallback _(factory, program->getBasicBlockForInstruction(instr), instr);
+        X86ExpressionFactory factory(architecture_);
+        X86ExpressionFactoryCallback _(factory, program->getBasicBlockForInstruction(instr), instr);
 
         using namespace core::arch::irgen::expressions;
 
@@ -214,19 +214,19 @@ public:
             }
             case UD_Icbw: {
                 _[
-                    regizter(IntelRegisters::ax()) ^= sign_extend(regizter(IntelRegisters::al()))
+                    regizter(X86Registers::ax()) ^= sign_extend(regizter(X86Registers::al()))
                 ];
                 break;
             }
             case UD_Icwde: {
                 _[
-                    regizter(IntelRegisters::eax()) ^= sign_extend(regizter(IntelRegisters::ax()))
+                    regizter(X86Registers::eax()) ^= sign_extend(regizter(X86Registers::ax()))
                 ];
                 break;
             }
             case UD_Icdqe: {
                 _[
-                    regizter(IntelRegisters::rax()) ^= sign_extend(regizter(IntelRegisters::eax()))
+                    regizter(X86Registers::rax()) ^= sign_extend(regizter(X86Registers::eax()))
                 ];
                 break;
             }
@@ -279,17 +279,17 @@ public:
                         unreachable();
                 }
 
-                auto di = resizedRegister(IntelRegisters::di(), ud_obj_.adr_mode);
-                auto si = resizedRegister(IntelRegisters::si(), ud_obj_.adr_mode);
-                auto cx = resizedRegister(IntelRegisters::cx(), ud_obj_.opr_mode);
+                auto di = resizedRegister(X86Registers::di(), ud_obj_.adr_mode);
+                auto si = resizedRegister(X86Registers::si(), ud_obj_.adr_mode);
+                auto cx = resizedRegister(X86Registers::cx(), ud_obj_.opr_mode);
 
                 auto increment = temporary(ud_obj_.adr_mode);
                 _[
                     increment ^= constant(accessSize / CHAR_BIT) - constant(2 * accessSize / CHAR_BIT, si.memoryLocation().size()) * zero_extend(df)
                 ];
 
-                IntelExpressionFactoryCallback condition(factory, program->createBasicBlock(), instr);
-                IntelExpressionFactoryCallback body(factory, program->createBasicBlock(), instr);
+                X86ExpressionFactoryCallback condition(factory, program->createBasicBlock(), instr);
+                X86ExpressionFactoryCallback body(factory, program->createBasicBlock(), instr);
 
                 _[jump(condition.basicBlock())];
 
@@ -332,7 +332,7 @@ public:
                     }
                     case UD_Iscasb: case UD_Iscasw: case UD_Iscasd: case UD_Iscasq: {
                         auto left = dereference(di, accessSize);
-                        auto right = resizedRegister(IntelRegisters::ax(), accessSize);
+                        auto right = resizedRegister(X86Registers::ax(), accessSize);
 
                         body[
                             cf ^= intrinsic(),
@@ -355,7 +355,7 @@ public:
                     }
                     case UD_Istosb: case UD_Istosw: case UD_Istosd: case UD_Istosq: {
                         repPrefixIsValid = true;
-                        body[dereference(di, accessSize) ^= resizedRegister(IntelRegisters::ax(), accessSize)];
+                        body[dereference(di, accessSize) ^= resizedRegister(X86Registers::ax(), accessSize)];
                         break;
                     }
                     default:
@@ -380,7 +380,7 @@ public:
                 break;
             }
             case UD_Icmpxchg: {
-                IntelExpressionFactoryCallback then(factory, program->createBasicBlock(), instr);
+                X86ExpressionFactoryCallback then(factory, program->createBasicBlock(), instr);
 
                 _[
                     cf ^= intrinsic(),
@@ -407,10 +407,10 @@ public:
             }
             case UD_Icpuid: {
                 _[
-                    regizter(IntelRegisters::eax()) ^= intrinsic(),
-                    regizter(IntelRegisters::ebx()) ^= intrinsic(),
-                    regizter(IntelRegisters::ecx()) ^= intrinsic(),
-                    regizter(IntelRegisters::edx()) ^= intrinsic()
+                    regizter(X86Registers::eax()) ^= intrinsic(),
+                    regizter(X86Registers::ebx()) ^= intrinsic(),
+                    regizter(X86Registers::ecx()) ^= intrinsic(),
+                    regizter(X86Registers::edx()) ^= intrinsic()
                 ];
                 break;
             }
@@ -429,8 +429,8 @@ public:
             case UD_Idiv: {
                 auto operand0 = operand(0);
                 auto size = std::max(operand0.size(), 16);
-                auto ax = resizedRegister(IntelRegisters::ax(), size);
-                auto dx = resizedRegister(IntelRegisters::dx(), size);
+                auto ax = resizedRegister(X86Registers::ax(), size);
+                auto dx = resizedRegister(X86Registers::dx(), size);
 
                 if (operand0.size() >= 16) {
                     _[
@@ -450,8 +450,8 @@ public:
                 /* A correct implementation, however, generating complicated code. */
 
                 auto size = std::max(instr->operand(0)->size(), 16);
-                auto ax = resizedRegister(IntelRegisters::ax(), size);
-                auto dx = resizedRegister(IntelRegisters::dx(), size);
+                auto ax = resizedRegister(X86Registers::ax(), size);
+                auto dx = resizedRegister(X86Registers::dx(), size);
                 auto tmp = temporary(size * 2);
 
                 _[
@@ -463,8 +463,8 @@ public:
 
                 auto operand0 = operand(0);
                 auto size = std::max(operand0.size(), 16);
-                auto ax = resizedRegister(IntelRegisters::ax(), size);
-                auto dx = resizedRegister(IntelRegisters::dx(), size);
+                auto ax = resizedRegister(X86Registers::ax(), size);
+                auto dx = resizedRegister(X86Registers::dx(), size);
 
                 if (operand0.size() >= 16) {
                     _[
@@ -519,24 +519,24 @@ public:
                     auto operand0 = operand(0);
                     switch (operand0.size()) {
                         case 8:
-                            arg0 = IntelRegisters::al();
-                            result1 = IntelRegisters::ax();
+                            arg0 = X86Registers::al();
+                            result1 = X86Registers::ax();
                             result2 = 0;
                             break;
                         case 16:
-                            arg0 = IntelRegisters::ax();
-                            result1 = IntelRegisters::ax();
-                            result2 = IntelRegisters::dx();
+                            arg0 = X86Registers::ax();
+                            result1 = X86Registers::ax();
+                            result2 = X86Registers::dx();
                             break;
                         case 32:
-                            arg0 = IntelRegisters::eax();
-                            result1 = IntelRegisters::eax();
-                            result2 = IntelRegisters::edx();
+                            arg0 = X86Registers::eax();
+                            result1 = X86Registers::eax();
+                            result2 = X86Registers::edx();
                             break;
                         case 64:
-                            arg0 = IntelRegisters::rax();
-                            result1 = IntelRegisters::rax();
-                            result2 = IntelRegisters::rdx();
+                            arg0 = X86Registers::rax();
+                            result1 = X86Registers::rax();
+                            result2 = X86Registers::rdx();
                             break;
                         default:
                             throw core::arch::irgen::InvalidInstructionException("strange argument size");
@@ -664,7 +664,7 @@ public:
             case UD_Icmovz: case UD_Icmovg: case UD_Icmovge: case UD_Icmovl:
             case UD_Icmovle: case UD_Icmovnz: case UD_Icmovno: case UD_Icmovnp:
             case UD_Icmovns: case UD_Icmovo: case UD_Icmovp: case UD_Icmovs: {
-                IntelExpressionFactoryCallback then(factory, program->createBasicBlock(), instr);
+                X86ExpressionFactoryCallback then(factory, program->createBasicBlock(), instr);
 
                 switch (ud_obj_.mnemonic) {
                     case UD_Icmova:
@@ -736,7 +736,7 @@ public:
             case UD_Iloop:
             case UD_Iloope:
             case UD_Iloopnz: {
-                auto cx = resizedRegister(IntelRegisters::cx(), ud_obj_.adr_mode);
+                auto cx = resizedRegister(X86Registers::cx(), ud_obj_.adr_mode);
 
                 _[cx ^= cx - constant(1)];
 
@@ -1207,8 +1207,8 @@ public:
         switch (type) {
         case UD_NONE: return NULL;
 
-        #define REG(ud_name, nc_name) case UD_R_##ud_name: return IntelInstructionAnalyzer::createTerm(IntelRegisters::nc_name());
-        #define REG_ST(n) case UD_R_ST##n: return IntelInstructionAnalyzer::createFpuTerm(n);
+        #define REG(ud_name, nc_name) case UD_R_##ud_name: return X86InstructionAnalyzer::createTerm(X86Registers::nc_name());
+        #define REG_ST(n) case UD_R_ST##n: return X86InstructionAnalyzer::createFpuTerm(n);
 
         REG(AL, al)
         REG(CL, cl)
@@ -1349,7 +1349,7 @@ public:
         REG(XMM14, xmm14)
         REG(XMM15, xmm15)
         case UD_R_RIP: return std::make_unique<core::ir::Intrinsic>(
-            core::ir::Intrinsic::NEXT_INSTRUCTION_ADDRESS, IntelRegisters::rip()->size());
+            core::ir::Intrinsic::NEXT_INSTRUCTION_ADDRESS, X86Registers::rip()->size());
 
         #undef REG
         #undef REG_ST
@@ -1406,17 +1406,17 @@ public:
     }
 };
 
-IntelInstructionAnalyzer::IntelInstructionAnalyzer(const IntelArchitecture *architecture):
-    impl_(std::make_unique<IntelInstructionAnalyzerImpl>(architecture))
+X86InstructionAnalyzer::X86InstructionAnalyzer(const X86Architecture *architecture):
+    impl_(std::make_unique<X86InstructionAnalyzerImpl>(architecture))
 {}
 
-IntelInstructionAnalyzer::~IntelInstructionAnalyzer() {}
+X86InstructionAnalyzer::~X86InstructionAnalyzer() {}
 
-void IntelInstructionAnalyzer::doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) {
-    impl_->createStatements(checked_cast<const IntelInstruction *>(instruction), program);
+void X86InstructionAnalyzer::doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) {
+    impl_->createStatements(checked_cast<const X86Instruction *>(instruction), program);
 }
 
-std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::createFpuTerm(int index) {
+std::unique_ptr<core::ir::Term> X86InstructionAnalyzer::createFpuTerm(int index) {
     const SmallBitSize addressSize = 16;
 
     return std::make_unique<core::ir::Dereference>(
@@ -1426,21 +1426,21 @@ std::unique_ptr<core::ir::Term> IntelInstructionAnalyzer::createFpuTerm(int inde
                 core::ir::UnaryOperator::ZERO_EXTEND,
                 std::make_unique<core::ir::BinaryOperator>(
                     core::ir::BinaryOperator::ADD,
-                    createTerm(IntelRegisters::fpu_top()),
-                    std::make_unique<core::ir::Constant>(SizedValue(IntelRegisters::fpu_top()->size(), index)),
-                    IntelRegisters::fpu_top()->size()
+                    createTerm(X86Registers::fpu_top()),
+                    std::make_unique<core::ir::Constant>(SizedValue(X86Registers::fpu_top()->size(), index)),
+                    X86Registers::fpu_top()->size()
                 ),
                 addressSize
             ),
-            std::make_unique<core::ir::Constant>(SizedValue(addressSize, IntelRegisters::fpu_r0()->size())),
+            std::make_unique<core::ir::Constant>(SizedValue(addressSize, X86Registers::fpu_r0()->size())),
             addressSize
         ),
-        IntelRegisters::fpu_r0()->memoryLocation().domain(),
+        X86Registers::fpu_r0()->memoryLocation().domain(),
         addressSize
     );
 }
 
-} // namespace intel
+} // namespace x86
 } // namespace arch
 } // namespace nc
 

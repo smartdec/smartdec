@@ -29,16 +29,16 @@
 
 namespace nc {
 namespace arch {
-namespace intel {
+namespace x86 {
 
 class FpuOperand;
-class IntelInstructionAnalyzer;
-class IntelInstructionDisassembler;
-class IntelOperands;
-class IntelMasterAnalyzer;
-class IntelRegisters;
+class X86InstructionAnalyzer;
+class X86InstructionDisassembler;
+class X86Operands;
+class X86MasterAnalyzer;
+class X86Registers;
 
-class IntelArchitecture: public core::arch::Architecture {
+class X86Architecture: public core::arch::Architecture {
 public:
     /**
      * Processor mode.
@@ -55,12 +55,12 @@ public:
      * \param mode Processor mode.
      */
     explicit
-    IntelArchitecture(Mode mode);
+    X86Architecture(Mode mode);
 
     /**
      * Destructor.
      */
-    virtual ~IntelArchitecture();
+    virtual ~X86Architecture();
 
     /**
      * \return Valid pointer to the stack pointer register.
@@ -82,11 +82,10 @@ public:
     std::unique_ptr<core::arch::irgen::InstructionAnalyzer> createInstructionAnalyzer() const override;
 
 protected:
-    friend class IntelRegisters;
+    friend class X86Registers;
 
 private:
-    std::unique_ptr<IntelInstructionDisassembler> mInstructionDisassembler;
-    std::unique_ptr<IntelMasterAnalyzer> mMasterAnalyzer;
+    std::unique_ptr<X86MasterAnalyzer> mMasterAnalyzer;
 
     /** Stack pointer register. */
     const core::arch::Register *mStackPointer;
@@ -98,7 +97,7 @@ private:
     const core::arch::Register *mInstructionPointer;
 };
 
-} // namespace intel
+} // namespace x86
 } // namespace arch
 } // namespace nc
 

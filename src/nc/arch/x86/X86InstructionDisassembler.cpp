@@ -22,39 +22,35 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "IntelDataflowAnalyzer.h"
+#include "X86InstructionDisassembler.h"
 
-#include <nc/core/arch/Register.h>
+#include <nc/common/CheckedCast.h>
 
-#include <nc/core/ir/MemoryDomain.h>
-#include <nc/core/ir/Terms.h>
-#include <nc/core/ir/dflow/Dataflow.h>
-#include <nc/core/ir/dflow/Value.h>
-
-#include "IntelRegisters.h"
+#include "X86Architecture.h"
+#include "X86Instruction.h"
 
 namespace nc {
 namespace arch {
-namespace intel {
+namespace x86 {
 
-void IntelDataflowAnalyzer::execute(const core::ir::Term *term, core::ir::dflow::ExecutionContext &context) {
-    /* Do everything as usual. */
-    DataflowAnalyzer::execute(term, context);
-
-    /* But, if two values of fpu top register come here, force fpu top to zero. */
-    if (const core::ir::MemoryLocationAccess *access = term->asMemoryLocationAccess()) {
-        if (access->isRead()) {
-            if (access->memoryLocation() == IntelRegisters::fpu_top()->memoryLocation()) {
-                core::ir::dflow::Value *value = dataflow().getValue(term);
-                if (!value->abstractValue().isConcrete()) {
-                    value->setAbstractValue(SizedValue(access->size(), 0));
-                }
-            }
-        }
-    }
+X86InstructionDisassembler::X86InstructionDisassembler(const X86Architecture *architecture) {
+    ud_init(&ud_obj_);
+    ud_set_mode(&ud_obj_, architecture->bitness());
 }
 
-} // namespace intel
+std::shared_ptr<core::arch::Instruction> X86InstructionDisassembler::disassemble(ByteAddr pc, const void *buffer, ByteSize size) {
+    ud_set_pc(&ud_obj_, pc);
+    ud_set_input_buffer(&ud_obj_, const_cast<uint8_t *>(static_cast<const uint8_t *>(buffer)), checked_cast<std::size_t>(size));
+
+    auto instructionSize = ud_disassemble(&ud_obj_);
+    if (!instructionSize || ud_obj_.mnemonic == UD_Iinvalid) {
+        return NULL;
+    }
+
+    return std::make_shared<X86Instruction>(ud_obj_.dis_mode, pc, instructionSize, buffer);
+}
+
+} // namespace x86
 } // namespace arch
 } // namespace nc
 

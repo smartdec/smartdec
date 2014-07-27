@@ -246,6 +246,6 @@ set(SOURCES
 qt4_wrap_cpp(SOURCES ${MOC_HEADERS})
 
 add_library(nc-core ${SOURCES})
-target_link_libraries(nc-core nc-common nc-arch-intel nc-input-elf nc-input-pe ${Boost_LIBRARIES} ${QT_LIBRARIES})
+target_link_libraries(nc-core nc-common nc-arch-x86 nc-input-elf nc-input-pe ${Boost_LIBRARIES} ${QT_LIBRARIES})
 
 # vim:set et sts=4 sw=4 nospell:
