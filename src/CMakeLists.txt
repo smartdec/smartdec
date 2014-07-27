@@ -20,6 +20,11 @@ set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH}  ${CMAKE_SOURCE_DIR}/../modules)
 set(QT_NAMESPACE "" CACHE STRING "Qt Namespace")
 
 #
+# Profiling.
+#
+set(ENABLE_PROFILING FALSE CACHE BOOL "Enable profiling")
+
+#
 # Optimize and generate debug info by default.
 #
 if(NOT CMAKE_BUILD_TYPE)
@@ -55,6 +60,12 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
 
     # GCC produces false positives with boost::optional
     add_definitions(-Wno-maybe-uninitialized)
+
+    if(${ENABLE_PROFILING})
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+    endif()
 endif()
 
 #
