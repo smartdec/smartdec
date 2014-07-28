@@ -31,7 +31,6 @@
 
 #include <QString>
 #include <QHash>
-#include <QSet>
 
 #include "Register.h"
 
@@ -85,31 +84,6 @@ public:
         return mRegisterByLocation.value(location, NULL);
     }
 
-    /**
-     * \param[in] name                 Register name.
-     * \return                         Corresponding register, or NULL if 
-     *                                 register with such name doesn't exist.
-     */
-    const Register *getRegister(const QString &name) const {
-        return mRegisterByName.value(name, NULL);
-    }
-
-    /**
-     * \param[in] number               Register number.
-     * \return                         True if register is a stack pointer.
-     */
-    bool isStackPointer(int number) const {
-        return mStackPointerNumbers.contains(number);
-    }
-
-    /**
-     * \param[in] memoryLocation       Memory location.
-     * \return                         True if memory location stores a stack pointer.
-     */
-    bool isStackPointer(const ir::MemoryLocation &memoryLocation) const {
-        return mStackPointerLocations.contains(memoryLocation);
-    }
-
 protected:
     /**
      * Registers the given register. This register container takes ownership of
@@ -123,9 +97,6 @@ protected:
 
         mRegisters.push_back(reg);
 
-        mRegisterByName[reg->lowercaseName()] = reg;
-        mRegisterByName[reg->uppercaseName()] = reg;
-
         if (static_cast<std::size_t>(reg->number()) >= mRegisterByNumber.size()) {
             mRegisterByNumber.resize((reg->number() + 1) * 2);
         }
@@ -134,40 +105,15 @@ protected:
         mRegisterByLocation[reg->memoryLocation()] = reg;
     }
 
-    /**
-     * Registers the given register as stack pointer.
-     * 
-     * \param[in] number               Register number.
-     */
-    void registerStackPointer(int number) {
-        assert(getRegister(number) != NULL); /* Register number must be registered. */
-        assert(!mStackPointerNumbers.contains(number)); /* Re-registration not allowed. */
-
-        mStackPointerNumbers.insert(number);
-        mStackPointerLocations.insert(getRegister(number)->memoryLocation());
-    }
-
 private:
     /** All registers. */
     std::vector<const Register *> mRegisters;
-
-    /** Register name (uppercase or lowercase) to register number map. */
-    QHash<QString, Register *> mRegisterByName;
 
     /** Register number to register map. */
     std::vector<Register *> mRegisterByNumber;
 
     /** Map from memory location to register. */
     QHash<ir::MemoryLocation, Register *> mRegisterByLocation;
-
-    /** Set of register numbers that are stack pointers. */
-    QSet<int> mStackPointerNumbers;
-
-    /** Set of memory locations that are stack pointers. */
-    QSet<ir::MemoryLocation> mStackPointerLocations;
-
-    /** Null string to return reference to in case number was not found. */
-    QString mNullString;
 };
 
 
@@ -187,18 +133,6 @@ public:
 
     static const Register *getRegister(const ir::MemoryLocation &location) {
         return instance()->Registers::getRegister(location);
-    }
-
-    static const Register *getRegister(const QString &name) {
-        return instance()->Registers::getRegister(name);
-    }
-
-    static bool isStackPointer(int number) {
-        return instance()->Registers::isStackPointer(number);
-    }
-
-    static bool isStackPointer(const ir::MemoryLocation &memoryLocation) {
-        return instance()->Registers::isStackPointer(memoryLocation);
     }
 
     static Derived *instance() {
