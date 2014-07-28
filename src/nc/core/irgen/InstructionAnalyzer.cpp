@@ -33,10 +33,9 @@
 
 namespace nc {
 namespace core {
-namespace arch {
 namespace irgen {
 
-void InstructionAnalyzer::createStatements(const Instruction *instruction, ir::Program *program) {
+void InstructionAnalyzer::createStatements(const arch::Instruction *instruction, ir::Program *program) {
     assert(instruction);
 
     try {
@@ -49,12 +48,11 @@ void InstructionAnalyzer::createStatements(const Instruction *instruction, ir::P
     }
 }
 
-std::unique_ptr<ir::Term> InstructionAnalyzer::createTerm(const Register *reg) {
+std::unique_ptr<ir::Term> InstructionAnalyzer::createTerm(const arch::Register *reg) {
     return std::make_unique<ir::MemoryLocationAccess>(reg->memoryLocation());
 }
 
 } // namespace irgen
-} // namespace arch
 } // namespace core
 } // namespace nc
 

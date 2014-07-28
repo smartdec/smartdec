@@ -29,11 +29,11 @@
 #include <nc/common/CheckedCast.h>
 #include <nc/common/Unreachable.h>
 
-#include <nc/core/arch/irgen/Expressions.h>
-#include <nc/core/arch/irgen/InvalidInstructionException.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
+#include <nc/core/irgen/Expressions.h>
+#include <nc/core/irgen/InvalidInstructionException.h>
 
 #include "X86Architecture.h"
 #include "X86Instruction.h"
@@ -47,17 +47,17 @@ namespace x86 {
 
 namespace {
 
-class X86ExpressionFactory: public core::arch::irgen::expressions::ExpressionFactory<X86ExpressionFactory> {
+class X86ExpressionFactory: public core::irgen::expressions::ExpressionFactory<X86ExpressionFactory> {
 public:
     X86ExpressionFactory(const core::arch::Architecture *architecture):
-        core::arch::irgen::expressions::ExpressionFactory<X86ExpressionFactory>(architecture)
+        core::irgen::expressions::ExpressionFactory<X86ExpressionFactory>(architecture)
     {}
 };
 
-typedef core::arch::irgen::expressions::ExpressionFactoryCallback<X86ExpressionFactory> X86ExpressionFactoryCallback;
+typedef core::irgen::expressions::ExpressionFactoryCallback<X86ExpressionFactory> X86ExpressionFactoryCallback;
 
 #define NC_DEFINE_REGISTER_EXPRESSION(lowercase) \
-const auto lowercase = core::arch::irgen::expressions::regizter(X86Registers::lowercase());
+const auto lowercase = core::irgen::expressions::regizter(X86Registers::lowercase());
 
 NC_DEFINE_REGISTER_EXPRESSION(cf)
 NC_DEFINE_REGISTER_EXPRESSION(pf)
@@ -86,12 +86,12 @@ NC_DEFINE_REGISTER_EXPRESSION(rcx)
 
 #undef NC_DEFINE_REGISTER_EXPRESSION
 
-core::arch::irgen::expressions::MemoryLocationExpression
+core::irgen::expressions::MemoryLocationExpression
 resizedRegister(const core::arch::Register *reg, SmallBitSize size) {
     return core::ir::MemoryLocation(reg->memoryLocation().domain(), 0, size);
 }
 
-core::arch::irgen::expressions::MemoryLocationExpression
+core::irgen::expressions::MemoryLocationExpression
 temporary(SmallBitSize size) {
     return resizedRegister(X86Registers::tmp64(), size);
 }
@@ -136,7 +136,7 @@ public:
         X86ExpressionFactory factory(architecture_);
         X86ExpressionFactoryCallback _(factory, program->getBasicBlockForInstruction(instr), instr);
 
-        using namespace core::arch::irgen::expressions;
+        using namespace core::irgen::expressions;
 
         /* Describing semantics */
         switch (ud_obj_.mnemonic) {
@@ -539,7 +539,7 @@ public:
                             result2 = X86Registers::rdx();
                             break;
                         default:
-                            throw core::arch::irgen::InvalidInstructionException("strange argument size");
+                            throw core::irgen::InvalidInstructionException("strange argument size");
                     }
 
                     if (result1->size() == arg0->size()) {
@@ -711,7 +711,7 @@ public:
             }
             case UD_Ilea: {
                 auto operand0 = operand(0);
-                auto operand1 = core::arch::irgen::expressions::TermExpression(createDereferenceAddress(ud_obj_.operand[1]));
+                auto operand1 = core::irgen::expressions::TermExpression(createDereferenceAddress(ud_obj_.operand[1]));
 
                 if (operand0.size() == operand1.size()) {
                     _[std::move(operand0) ^= std::move(operand1)];
@@ -1129,8 +1129,8 @@ public:
         return ud_obj_.operand[index].type != UD_NONE;
     }
 
-    core::arch::irgen::expressions::TermExpression operand(std::size_t index) const {
-        return core::arch::irgen::expressions::TermExpression(createTermForOperand(index));
+    core::irgen::expressions::TermExpression operand(std::size_t index) const {
+        return core::irgen::expressions::TermExpression(createTermForOperand(index));
     }
 
     bool operandsAreTheSame(std::size_t index1, std::size_t index2) const {
@@ -1150,7 +1150,7 @@ public:
 
         switch (operand.type) {
             case UD_NONE:
-                throw core::arch::irgen::InvalidInstructionException(tr("The instruction does not have an argument with index %1").arg(index));
+                throw core::irgen::InvalidInstructionException(tr("The instruction does not have an argument with index %1").arg(index));
             case UD_OP_MEM:
                 return createDereference(operand);
             case UD_OP_PTR:
@@ -1366,7 +1366,7 @@ public:
 
     std::unique_ptr<core::ir::Term> createDereferenceAddress(const ud_operand &operand) const {
         if (operand.type != UD_OP_MEM) {
-            throw core::arch::irgen::InvalidInstructionException(tr("Expected the operand to be a memory operand"));
+            throw core::irgen::InvalidInstructionException(tr("Expected the operand to be a memory operand"));
         }
 
         std::unique_ptr<core::ir::Term> result = createRegisterAccess(operand.base);

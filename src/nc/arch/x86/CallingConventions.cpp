@@ -5,7 +5,6 @@
 
 #include <nc/common/make_unique.h>
 
-#include <nc/core/arch/irgen/InstructionAnalyzer.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 

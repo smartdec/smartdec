@@ -50,9 +50,9 @@ namespace ir {
 }
 
 namespace arch {
-
-class Disassembler;
-class Instructions;
+    class Disassembler;
+    class Instructions;
+}
 
 namespace irgen {
 
@@ -61,9 +61,9 @@ namespace irgen {
  */
 class IRGenerator {
     const image::Image *image_; ///< Executable image.
-    const Instructions *instructions_; ///< Instructions.
+    const arch::Instructions *instructions_; ///< Instructions.
     ir::Program *program_; ///< Program.
-    std::unique_ptr<Disassembler> disassembler_; ///< Disassembler.
+    std::unique_ptr<arch::Disassembler> disassembler_; ///< Disassembler.
 
 public:
     /**
@@ -73,7 +73,7 @@ public:
      * \param[in] instructions Valid pointer to the set of instructions.
      * \param[out] program Valid pointer to the program.
      */
-    IRGenerator(const image::Image *image, const Instructions *instructions, ir::Program *program);
+    IRGenerator(const image::Image *image, const arch::Instructions *instructions, ir::Program *program);
 
     /**
      * Destructor.
@@ -130,7 +130,6 @@ private:
 };
 
 } // namespace irgen
-} // namespace arch
 } // namespace core
 } // namespace nc
 

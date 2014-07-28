@@ -50,10 +50,9 @@
 
 namespace nc {
 namespace core {
-namespace arch {
 namespace irgen {
 
-IRGenerator::IRGenerator(const image::Image *image, const Instructions *instructions, ir::Program *program):
+IRGenerator::IRGenerator(const image::Image *image, const arch::Instructions *instructions, ir::Program *program):
     image_(image), instructions_(instructions), program_(program)
 {
     assert(image);
@@ -245,7 +244,6 @@ void IRGenerator::addJumpToDirectSuccessor(ir::BasicBlock *basicBlock) {
 }
 
 } // namespace irgen
-} // namespace arch
 } // namespace core
 } // namespace nc
 

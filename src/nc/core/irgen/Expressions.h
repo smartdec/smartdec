@@ -44,7 +44,7 @@
 
 #include "InvalidInstructionException.h"
 
-namespace nc { namespace core { namespace arch { namespace irgen { namespace expressions {
+namespace nc { namespace core { namespace irgen { namespace expressions {
 
 // -------------------------------------------------------------------------- //
 // Statements
@@ -477,7 +477,7 @@ term(std::unique_ptr<ir::Term> term) {
 
 inline
 MemoryLocationExpression
-regizter(const Register *reg) {
+regizter(const arch::Register *reg) {
     return MemoryLocationExpression(reg->memoryLocation());
 }
 
@@ -1082,7 +1082,7 @@ protected:
         }
 
         if (statement.left().size() != statement.right().size()) {
-            throw core::arch::irgen::InvalidInstructionException(tr("Cannot assign expressions of different sizes: %1 and %2")
+            throw core::irgen::InvalidInstructionException(tr("Cannot assign expressions of different sizes: %1 and %2")
                 .arg(statement.left().size()).arg(statement.right().size()));
         }
 
@@ -1223,7 +1223,7 @@ private:
         return static_cast<const Derived &>(*this);
     }
 
-    const Architecture *mArchitecture;
+    const arch::Architecture *mArchitecture;
 };
 
 
@@ -1292,6 +1292,6 @@ private:
 };
 
 
-}}}}} // namespace nc::core::arch::irgen::expressions
+}}}} // namespace nc::core::irgen::expressions
 
 /* vim:set et sts=4 sw=4: */

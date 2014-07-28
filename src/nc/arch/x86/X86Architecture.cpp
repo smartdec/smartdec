@@ -66,7 +66,7 @@ std::unique_ptr<core::arch::Disassembler> X86Architecture::createDisassembler() 
     return std::make_unique<X86Disassembler>(this);
 }
 
-std::unique_ptr<core::arch::irgen::InstructionAnalyzer> X86Architecture::createInstructionAnalyzer() const {
+std::unique_ptr<core::irgen::InstructionAnalyzer> X86Architecture::createInstructionAnalyzer() const {
     return std::make_unique<X86InstructionAnalyzer>(this);
 }
 

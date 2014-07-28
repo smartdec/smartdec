@@ -28,7 +28,6 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/core/Context.h>
-#include <nc/core/arch/irgen/IRGenerator.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
@@ -51,6 +50,7 @@
 #include <nc/core/ir/types/Types.h>
 #include <nc/core/ir/vars/VariableAnalyzer.h>
 #include <nc/core/ir/vars/Variables.h>
+#include <nc/core/irgen/IRGenerator.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/mangling/Demangler.h>
 
@@ -64,7 +64,7 @@ void MasterAnalyzer::createProgram(Context &context) const {
 
     std::unique_ptr<ir::Program> program(new ir::Program());
 
-    core::arch::irgen::IRGenerator(context.image().get(), context.instructions().get(), program.get())
+    core::irgen::IRGenerator(context.image().get(), context.instructions().get(), program.get())
         .generate(context.cancellationToken());
 
     context.setProgram(std::move(program));

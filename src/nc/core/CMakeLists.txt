@@ -20,13 +20,6 @@ set(SOURCES
     arch/Instructions.h
     arch/Register.h
     arch/Registers.h
-    arch/irgen/Expressions.h
-    arch/irgen/IRGenerator.cpp
-    arch/irgen/IRGenerator.h
-    arch/irgen/InstructionAnalyzer.cpp
-    arch/irgen/InstructionAnalyzer.h
-    arch/irgen/InvalidInstructionException.cpp
-    arch/irgen/InvalidInstructionException.h
     image/BufferByteSource.cpp
     image/BufferByteSource.h
     image/ByteSource.h
@@ -152,6 +145,13 @@ set(SOURCES
     ir/vars/VariableAnalyzer.h
     ir/vars/Variables.cpp
     ir/vars/Variables.h
+    irgen/Expressions.h
+    irgen/IRGenerator.cpp
+    irgen/IRGenerator.h
+    irgen/InstructionAnalyzer.cpp
+    irgen/InstructionAnalyzer.h
+    irgen/InvalidInstructionException.cpp
+    irgen/InvalidInstructionException.h
     likec/ArgumentDeclaration.cpp
     likec/ArgumentDeclaration.h
     likec/BinaryOperator.cpp

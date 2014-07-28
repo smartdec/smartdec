@@ -27,7 +27,7 @@
 
 #include <cassert>
 
-#include <nc/core/arch/irgen/InstructionAnalyzer.h>
+#include <nc/core/irgen/InstructionAnalyzer.h>
 
 namespace nc {
 namespace arch {
@@ -37,7 +37,7 @@ class X86Architecture;
 
 class X86InstructionAnalyzerImpl;
 
-class X86InstructionAnalyzer: public core::arch::irgen::InstructionAnalyzer {
+class X86InstructionAnalyzer: public core::irgen::InstructionAnalyzer {
     /** The object actually doing all the work. */
     std::unique_ptr<X86InstructionAnalyzerImpl> impl_;
 

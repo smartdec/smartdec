@@ -28,16 +28,18 @@
 
 #include <QCoreApplication>
 
-namespace nc { namespace core { namespace arch {
+namespace nc { namespace core {
 
-class Instruction;
+namespace arch {
+    class Instruction;
+}
 
 namespace irgen {
 
 /**
  * Error info structure for the pointer to the instruction which caused the exception.
  */
-typedef boost::error_info<struct InstructionTag, const Instruction *> ExceptionInstruction;
+typedef boost::error_info<struct InstructionTag, const arch::Instruction *> ExceptionInstruction;
 
 /**
  * Exception that is thrown when an invalid instruction is detected.
@@ -62,6 +64,6 @@ public:
     virtual QString unicodeWhat() const noexcept;
 };
 
-}}}} // namespace nc::core::arch::irgen
+}}} // namespace nc::core::irgen
 
 /* vim:set et sts=4 sw=4: */

@@ -46,11 +46,11 @@ namespace ir {
     }
 }
 
-namespace arch {
-
 namespace irgen {
     class InstructionAnalyzer;
 }
+
+namespace arch {
 
 class Disassembler;
 class Register;

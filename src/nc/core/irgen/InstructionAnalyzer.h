@@ -36,9 +36,9 @@ namespace ir {
 }
 
 namespace arch {
-
-class Instruction;
-class Register;
+    class Instruction;
+    class Register;
+}
 
 namespace irgen {
 
@@ -54,14 +54,14 @@ public:
      * \param[in] instruction   Valid pointer to the instruction to generate intermediate representation for.
      * \param[out] program      Valid pointer to the intermediate representation of a program.
      */
-    void createStatements(const Instruction *instruction, ir::Program *program);
+    void createStatements(const arch::Instruction *instruction, ir::Program *program);
 
     /**
      * \param[in] reg Valid pointer to a register.
      *
      * \return Valid pointer to the intermediate representation of this register as a term.
      */
-    static std::unique_ptr<ir::Term> createTerm(const Register *reg);
+    static std::unique_ptr<ir::Term> createTerm(const arch::Register *reg);
 
 protected:
     /**
@@ -70,11 +70,10 @@ protected:
      * \param[in] instruction   Valid pointer to the instruction to generate intermediate representation for.
      * \param[out] program      Valid pointer to the intermediate representation of a program.
      */
-    virtual void doCreateStatements(const Instruction *instruction, ir::Program *program) = 0;
+    virtual void doCreateStatements(const arch::Instruction *instruction, ir::Program *program) = 0;
 };
 
 } // namespace irgen
-} // namespace arch
 } // namespace core
 } // namespace nc
 

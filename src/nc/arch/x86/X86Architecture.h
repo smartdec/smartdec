@@ -79,7 +79,7 @@ public:
 
     std::unique_ptr<core::arch::Disassembler> createDisassembler() const override;
 
-    std::unique_ptr<core::arch::irgen::InstructionAnalyzer> createInstructionAnalyzer() const override;
+    std::unique_ptr<core::irgen::InstructionAnalyzer> createInstructionAnalyzer() const override;
 
 protected:
     friend class X86Registers;

@@ -26,10 +26,10 @@
 
 #include <nc/core/arch/Instruction.h>
 
-namespace nc { namespace core { namespace arch { namespace irgen {
+namespace nc { namespace core { namespace irgen {
 
 QString InvalidInstructionException::unicodeWhat() const noexcept {
-    if (const Instruction *const *instruction = boost::get_error_info<ExceptionInstruction>(*this)) {
+    if (const arch::Instruction *const *instruction = boost::get_error_info<ExceptionInstruction>(*this)) {
         return tr("Invalid instruction `%1' at 0x%2: %3")
             .arg((*instruction)->toString()).arg((*instruction)->addr(), 0, 16).arg(Exception::unicodeWhat());
     } else {
@@ -37,6 +37,6 @@ QString InvalidInstructionException::unicodeWhat() const noexcept {
     }
 }
 
-}}}} // namespace nc::core::arch::irgen
+}}} // namespace nc::core::irgen
 
 /* vim:set et sts=4 sw=4: */
