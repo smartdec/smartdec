@@ -48,14 +48,11 @@ namespace ir {
 
 namespace arch {
 
-namespace disasm {
-    class InstructionDisassembler;
-}
-
 namespace irgen {
     class InstructionAnalyzer;
 }
 
+class Disassembler;
 class Register;
 class Registers;
 
@@ -97,7 +94,7 @@ public:
     /**
      * \returns Valid pointer to the disassembler for a single instruction.
      */
-    virtual std::unique_ptr<disasm::InstructionDisassembler> createInstructionDisassembler() const = 0;
+    virtual std::unique_ptr<Disassembler> createDisassembler() const = 0;
 
     /**
      * \returns Valid pointer to the instruction analyzer for this architecture.

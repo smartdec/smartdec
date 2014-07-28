@@ -9,8 +9,8 @@
 #include <nc/common/Exception.h>
 
 #include <nc/core/arch/Architecture.h>
+#include <nc/core/arch/Disassembler.h>
 #include <nc/core/arch/Instructions.h>
-#include <nc/core/arch/disasm/Disassembler.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
 #include <nc/core/input/Parser.h>
@@ -81,8 +81,12 @@ void Driver::disassemble(Context &context, const image::ByteSource *source, Byte
     try {
         auto newInstructions = std::make_shared<arch::Instructions>(*context.instructions());
 
-        arch::disasm::Disassembler disassembler(context.image()->architecture(), newInstructions.get());
-        disassembler.disassemble(source, begin, end, context.cancellationToken());
+        context.image()->architecture()->createDisassembler()->disassemble(
+            source,
+            begin,
+            end,
+            [&](std::shared_ptr<arch::Instruction> instr){ newInstructions->add(std::move(instr)); },
+            context.cancellationToken());
 
         context.setInstructions(newInstructions);
 

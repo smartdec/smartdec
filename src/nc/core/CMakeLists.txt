@@ -12,15 +12,14 @@ set(SOURCES
     arch/Architecture.h
     arch/ArchitectureRepository.cpp
     arch/ArchitectureRepository.h
+    arch/Disassembler.cpp
+    arch/Disassembler.h
     arch/Instruction.cpp
     arch/Instruction.h
     arch/Instructions.cpp
     arch/Instructions.h
     arch/Register.h
     arch/Registers.h
-    arch/disasm/Disassembler.cpp
-    arch/disasm/Disassembler.h
-    arch/disasm/InstructionDisassembler.h
     arch/irgen/Expressions.h
     arch/irgen/IRGenerator.cpp
     arch/irgen/IRGenerator.h

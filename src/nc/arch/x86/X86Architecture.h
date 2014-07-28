@@ -77,7 +77,7 @@ public:
      */
     const core::arch::Register *instructionPointer() const { return mInstructionPointer; }
 
-    std::unique_ptr<core::arch::disasm::InstructionDisassembler> createInstructionDisassembler() const override;
+    std::unique_ptr<core::arch::Disassembler> createDisassembler() const override;
 
     std::unique_ptr<core::arch::irgen::InstructionAnalyzer> createInstructionAnalyzer() const override;
 

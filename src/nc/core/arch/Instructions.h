@@ -49,8 +49,7 @@ class Instructions {
     /** Mapping of addresses to instructions. */
     AddressInstructionMap address2instruction_;
 
-    public:
-
+public:
     /** Type for the sorted range of instructions. */
     typedef boost::select_second_const_range<AddressInstructionMap> InstructionsRange;
 
@@ -82,7 +81,7 @@ class Instructions {
      *
      * \return True if the instruction was added, false otherwise.
      */
-    bool add(const std::shared_ptr<const Instruction> &instruction);
+    bool add(std::shared_ptr<const Instruction> instruction);
 
     /**
      * Deletes given instruction from the set.

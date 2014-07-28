@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "X86InstructionDisassembler.h"
+#include "X86Disassembler.h"
 
 #include <nc/common/CheckedCast.h>
 
@@ -33,12 +33,12 @@ namespace nc {
 namespace arch {
 namespace x86 {
 
-X86InstructionDisassembler::X86InstructionDisassembler(const X86Architecture *architecture) {
+X86Disassembler::X86Disassembler(const X86Architecture *architecture): core::arch::Disassembler(architecture) {
     ud_init(&ud_obj_);
     ud_set_mode(&ud_obj_, architecture->bitness());
 }
 
-std::shared_ptr<core::arch::Instruction> X86InstructionDisassembler::disassemble(ByteAddr pc, const void *buffer, ByteSize size) {
+std::shared_ptr<core::arch::Instruction> X86Disassembler::disassembleSingleInstruction(ByteAddr pc, const void *buffer, ByteSize size) {
     ud_set_pc(&ud_obj_, pc);
     ud_set_input_buffer(&ud_obj_, const_cast<uint8_t *>(static_cast<const uint8_t *>(buffer)), checked_cast<std::size_t>(size));
 

@@ -25,7 +25,7 @@
 
 #include <nc/config.h>
 
-#include <nc/core/arch/disasm/InstructionDisassembler.h>
+#include <nc/core/arch/Disassembler.h>
 
 #include "udis86.h"
 
@@ -38,7 +38,7 @@ class X86Architecture;
 /**
  * Disassembler for x86 instructions.
  */
-class X86InstructionDisassembler: public core::arch::disasm::InstructionDisassembler {
+class X86Disassembler: public core::arch::Disassembler {
     ud_t ud_obj_;
 
 public:
@@ -48,9 +48,9 @@ public:
      * \param architecture Valid pointer to the architecture.
      */
     explicit
-    X86InstructionDisassembler(const X86Architecture *architecture);
+    X86Disassembler(const X86Architecture *architecture);
 
-    std::shared_ptr<core::arch::Instruction> disassemble(ByteAddr pc, const void *buffer, ByteSize size) override;
+    std::shared_ptr<core::arch::Instruction> disassembleSingleInstruction(ByteAddr pc, const void *buffer, ByteSize size) override;
 };
 
 } // namespace x86

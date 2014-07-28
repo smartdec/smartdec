@@ -5,12 +5,12 @@ set(SOURCES
     X86Architecture.h
     X86DataflowAnalyzer.cpp
     X86DataflowAnalyzer.h
+    X86Disassembler.cpp
+    X86Disassembler.h
     X86Instruction.cpp
     X86Instruction.h
     X86InstructionAnalyzer.cpp
     X86InstructionAnalyzer.h
-    X86InstructionDisassembler.cpp
-    X86InstructionDisassembler.h
     X86MasterAnalyzer.cpp
     X86MasterAnalyzer.h
     X86Registers.cpp

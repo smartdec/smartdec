@@ -8,9 +8,9 @@
 #include <nc/common/make_unique.h>
 
 #include "CallingConventions.h"
+#include "X86Disassembler.h"
 #include "X86Instruction.h"
 #include "X86InstructionAnalyzer.h"
-#include "X86InstructionDisassembler.h"
 #include "X86MasterAnalyzer.h"
 #include "X86Registers.h"
 
@@ -62,8 +62,8 @@ X86Architecture::X86Architecture(Mode mode) {
 
 X86Architecture::~X86Architecture() {}
 
-std::unique_ptr<core::arch::disasm::InstructionDisassembler> X86Architecture::createInstructionDisassembler() const {
-    return std::make_unique<X86InstructionDisassembler>(this);
+std::unique_ptr<core::arch::Disassembler> X86Architecture::createDisassembler() const {
+    return std::make_unique<X86Disassembler>(this);
 }
 
 std::unique_ptr<core::arch::irgen::InstructionAnalyzer> X86Architecture::createInstructionAnalyzer() const {

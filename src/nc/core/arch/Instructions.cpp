@@ -45,7 +45,7 @@ const std::shared_ptr<const Instruction> &Instructions::getCovering(ByteAddr add
     }
 }
 
-bool Instructions::add(const std::shared_ptr<const Instruction> &instruction) {
+bool Instructions::add(std::shared_ptr<const Instruction> instruction) {
     assert(instruction != NULL);
 
     auto &existing = address2instruction_[instruction->addr()];
