@@ -30,9 +30,11 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/core/arch/Architecture.h>
+#include <nc/core/arch/Disassembler.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
+#include <nc/core/image/Section.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
@@ -50,6 +52,16 @@ namespace nc {
 namespace core {
 namespace arch {
 namespace irgen {
+
+IRGenerator::IRGenerator(const image::Image *image, const Instructions *instructions, ir::Program *program):
+    image_(image), instructions_(instructions), program_(program)
+{
+    assert(image);
+    assert(instructions);
+    assert(program);
+}
+
+IRGenerator::~IRGenerator() {}
 
 void IRGenerator::generate(const CancellationToken &canceled) {
     auto instructionAnalyzer = image_->architecture()->createInstructionAnalyzer();
@@ -184,7 +196,7 @@ std::vector<ByteAddr> IRGenerator::getJumpTableEntries(const ir::Term *target, c
 
     ByteAddr address = arrayAccess.base();
     while (auto entry = reader.readInt<ByteAddr>(address, entrySize, image_->architecture()->byteOrder())) {
-        if (!instructions_->get(*entry)) {
+        if (!isInstructionAddress(*entry)) {
             break;
         }
         result.push_back(*entry);
@@ -197,6 +209,23 @@ std::vector<ByteAddr> IRGenerator::getJumpTableEntries(const ir::Term *target, c
     }
 
     return result;
+}
+
+bool IRGenerator::isInstructionAddress(ByteAddr address) {
+    if (instructions_->get(address)) {
+        return true;
+    }
+
+    auto section = image_->getSectionContainingAddress(address);
+    if (!section || !section->isExecutable()) {
+        return false;
+    }
+
+    if (!disassembler_) {
+        disassembler_ = image_->architecture()->createDisassembler();
+    }
+
+    return disassembler_->disassembleSingleInstruction(address, section) != NULL;
 }
 
 void IRGenerator::addJumpToDirectSuccessor(ir::BasicBlock *basicBlock) {

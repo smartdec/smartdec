@@ -65,13 +65,23 @@ public:
     /**
      * Disassembles a single instruction.
      *
-     * \param[in] pc Program counter value at the beginning of the buffer.
-     * \param[in] buffer Valid pointer to a buffer.
+     * \param[in] pc Virtual address of the instruction.
+     * \param[in] buffer Valid pointer to the buffer containing the instruction.
      * \param[in] size Buffer size.
      *
      * \return Pointer to the instruction disassembled from the buffer if disassembling succeeded, NULL otherwise.
      */
     virtual std::shared_ptr<Instruction> disassembleSingleInstruction(ByteAddr pc, const void *buffer, ByteSize size) = 0;
+
+    /**
+     * Disassembles a single instruction.
+     *
+     * \param[in] pc Virtual address of the instruction.
+     * \param[in] source Valid pointer to the byte source containing the instruction.
+     *
+     * \return Pointer to the instruction disassembled from the buffer if disassembling succeeded, NULL otherwise.
+     */
+    virtual std::shared_ptr<Instruction> disassembleSingleInstruction(ByteAddr pc, const image::ByteSource *source);
 };
 
 } // namespace arch

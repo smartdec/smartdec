@@ -45,6 +45,16 @@ void Disassembler::disassemble(const image::ByteSource *source, ByteAddr begin, 
     }
 }
 
+std::shared_ptr<Instruction> Disassembler::disassembleSingleInstruction(ByteAddr pc, const image::ByteSource *source) {
+    const SmallByteSize maxInstructionSize = architecture_->maxInstructionSize();
+    const std::unique_ptr<char[]> buffer(new char[maxInstructionSize]);
+
+    return disassembleSingleInstruction(
+        pc,
+        buffer.get(),
+        source->readBytes(pc, buffer.get(), maxInstructionSize));
+}
+
 } // namespace arch
 } // namespace core
 } // namespace nc
