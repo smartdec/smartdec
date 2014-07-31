@@ -83,8 +83,22 @@ public:
     /**
      * Builds a program control flow graph from the instructions
      * given to the constructor.
+     *
+     * \param[in] canceled Cancellation token.
      */
     void generate(const CancellationToken &canceled);
+
+    /**
+     * Tries to find all instructions reachable from the given one.
+     *
+     * \param[in] image Valid pointer to the executable image.
+     * \param[in] startAddress Virtual address of the instruction to start from.
+     * \param[in] followCalls Pass true to follow calls, pass false to stay within one function.
+     * \param[in] canceled Cancellation token.
+     *
+     * \return Valid pointer to the set of instructions discovered.
+     */
+    static std::unique_ptr<arch::Instructions> explore(const image::Image *image, ByteAddr startAddress, bool followCalls, const CancellationToken &canceled);
 
 private:
     /**
