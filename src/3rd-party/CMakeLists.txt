@@ -3,7 +3,7 @@ add_subdirectory(libiberty)
 add_subdirectory(undname)
 
 include(ExternalProject)
-ExternalProject_Add(capstone
+ExternalProject_Add(capstone-project
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/capstone
     CMAKE_ARGS
         -DCMAKE_INSTALL_PREFIX:string=${EP_PREFIX}

@@ -9,6 +9,7 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/arch/x86/X86Architecture.h>
+#include <nc/arch/arm/ArmArchitecture.h>
 
 #include "Architecture.h"
 
@@ -17,9 +18,12 @@ namespace nc { namespace core { namespace arch {
 namespace {
 
 ArchitectureRepository *createInstance() {
+    using nc::arch::arm::ArmArchitecture;
     using nc::arch::x86::X86Architecture;
 
     static ArchitectureRepository result;
+    result.registerArchitecture(std::make_unique<ArmArchitecture>(ByteOrder::LittleEndian));
+    result.registerArchitecture(std::make_unique<ArmArchitecture>(ByteOrder::BigEndian));
     result.registerArchitecture(std::make_unique<X86Architecture>(X86Architecture::REAL_MODE));
     result.registerArchitecture(std::make_unique<X86Architecture>(X86Architecture::PROTECTED_MODE));
     result.registerArchitecture(std::make_unique<X86Architecture>(X86Architecture::LONG_MODE));

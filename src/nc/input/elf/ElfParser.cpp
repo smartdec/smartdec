@@ -169,6 +169,13 @@ private:
             case EM_X86_64:
                 image_->setArchitecture(QLatin1String("x86-64"));
                 break;
+            case EM_ARM:
+                if (byteOrder_ == ByteOrder::LittleEndian) {
+                    image_->setArchitecture(QLatin1String("arm-le"));
+                } else {
+                    image_->setArchitecture(QLatin1String("arm-be"));
+                }
+                break;
             default:
                 throw core::input::ParseError(tr("Unknown machine id: %1.").arg(ehdr_.e_machine));
         }
