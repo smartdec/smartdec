@@ -31,7 +31,7 @@ namespace core {
 namespace likec {
 
 void InlineAssembly::doPrint(PrintContext &context) const {
-    context.out() << "__asm__(\"" << code() << "\")";
+    context.out() << "__asm__(\"" << code() << "\");";
 }
 
 } // namespace likec
