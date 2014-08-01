@@ -31,10 +31,7 @@ namespace nc {
 namespace arch {
 namespace x86 {
 
-class FpuOperand;
 class X86InstructionAnalyzer;
-class X86InstructionDisassembler;
-class X86Operands;
 class X86MasterAnalyzer;
 class X86Registers;
 
