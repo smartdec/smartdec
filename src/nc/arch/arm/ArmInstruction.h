@@ -22,7 +22,7 @@ public:
 
 private:
     /** Encoding mode of this instruction. */
-    cs_mode mode_;
+    int mode_;
 
     /** Binary representation of the instruction. */
     std::array<uint8_t, MAX_SIZE> bytes_;
@@ -36,7 +36,7 @@ public:
      * \param[in] size Instruction size in bytes.
      * \param[in] bytes Valid pointer to the bytes of the instruction.
      */
-    ArmInstruction(cs_mode mode, ByteAddr addr, SmallByteSize size, const void *bytes):
+    ArmInstruction(int mode, ByteAddr addr, SmallByteSize size, const void *bytes):
         Instruction(addr, size), mode_(mode)
     {
         assert(size > 0);

@@ -7,6 +7,7 @@ set(SOURCES
     ArmInstruction.h
     ArmInstructionAnalyzer.cpp
     ArmInstructionAnalyzer.h
+    CapstoneDisassembler.h
 )
 
 add_library(nc-arch-arm ${SOURCES})

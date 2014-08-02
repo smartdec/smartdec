@@ -5,9 +5,11 @@
 
 #include <nc/config.h>
 
+#include <memory>
+
 #include <nc/core/arch/Disassembler.h>
 
-#include <capstone/capstone.h>
+#include "CapstoneDisassembler.h"
 
 namespace nc {
 namespace arch {
@@ -15,8 +17,14 @@ namespace arm {
 
 class ArmArchitecture;
 
+/**
+ * Disassembler for ARM architecture.
+ *
+ * TODO: Support for THUMB instructions.
+ */
 class ArmDisassembler: public core::arch::Disassembler {
-    csh handle_;
+    std::unique_ptr<CapstoneDisassembler> capstone_;
+    int mode_;
 
 public:
     ArmDisassembler(const ArmArchitecture *architecture);

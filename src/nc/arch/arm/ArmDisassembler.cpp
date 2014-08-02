@@ -3,6 +3,8 @@
 
 #include "ArmDisassembler.h"
 
+#include <nc/common/make_unique.h>
+
 #include "ArmArchitecture.h"
 #include "ArmInstruction.h"
 
@@ -13,35 +15,25 @@ namespace arm {
 ArmDisassembler::ArmDisassembler(const ArmArchitecture *architecture):
     core::arch::Disassembler(architecture)
 {
-    if (cs_open(CS_ARCH_ARM, CS_MODE_ARM, &handle_) != CS_ERR_OK) {
-        assert(!"Could not initialize Capstone's ARM disassembler.");
+    mode_ = CS_MODE_ARM;
+    if (architecture->byteOrder() == ByteOrder::LittleEndian) {
+        mode_ |= CS_MODE_LITTLE_ENDIAN;
+    } else if (architecture->byteOrder() == ByteOrder::BigEndian) {
+        mode_ |= CS_MODE_BIG_ENDIAN;
     }
+    capstone_ = std::make_unique<CapstoneDisassembler>(CS_ARCH_ARM, mode_);
 }
 
-ArmDisassembler::~ArmDisassembler() {
-    if (cs_close(&handle_) != CS_ERR_OK) {
-        assert(!"Could not deinitialize Capstone's ARM disassembler.");
-    }
-}
+ArmDisassembler::~ArmDisassembler() {}
 
 std::shared_ptr<core::arch::Instruction> ArmDisassembler::disassembleSingleInstruction(ByteAddr pc, const void *buffer, ByteSize size) {
-    cs_insn *insn;
-    auto count = cs_disasm_ex(handle_, reinterpret_cast<const uint8_t *>(buffer), size, pc, 1, &insn);
-
-    std::shared_ptr<core::arch::Instruction> result;
-
-    if (count) {
-        assert(count == 1);
-        result = std::make_shared<ArmInstruction>(
-            CS_MODE_ARM,
-            insn->address,
-            insn->size,
-            buffer);
+    if (auto instr = capstone_->disassemble(pc, buffer, size, 1)) {
+        /* Instructions must be aligned to their size. */
+        if ((instr->address & (instr->size - 1)) == 0) {
+            return std::make_shared<ArmInstruction>(mode_, instr->address, instr->size, buffer);
+        }
     }
-
-    cs_free(insn, count);
-
-    return result;
+    return NULL;
 }
 
 }}} // namespace nc::arch::arm
