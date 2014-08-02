@@ -12,6 +12,8 @@ namespace arch {
 namespace arm {
 
 class ArmArchitecture: public nc::core::arch::Architecture {
+    std::unique_ptr<core::MasterAnalyzer> masterAnalyzer_;
+
 public:
     explicit
     ArmArchitecture(ByteOrder byteOrder);

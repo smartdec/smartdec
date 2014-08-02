@@ -5,6 +5,8 @@
 
 #include <nc/common/make_unique.h>
 
+#include <nc/core/MasterAnalyzer.h>
+
 #include "ArmDisassembler.h"
 #include "ArmInstruction.h"
 #include "ArmInstructionAnalyzer.h"
@@ -19,8 +21,12 @@ ArmArchitecture::ArmArchitecture(ByteOrder byteOrder) {
     } else {
         setName(QLatin1String("arm-be"));
     }
+    setBitness(32);
     setByteOrder(byteOrder);
     setMaxInstructionSize(ArmInstruction::MAX_SIZE);
+
+    masterAnalyzer_ = std::make_unique<core::MasterAnalyzer>();
+    setMasterAnalyzer(masterAnalyzer_.get());
 }
 
 ArmArchitecture::~ArmArchitecture() {}
