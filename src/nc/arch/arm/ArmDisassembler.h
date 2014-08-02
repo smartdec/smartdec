@@ -7,6 +7,8 @@
 
 #include <nc/core/arch/Disassembler.h>
 
+#include <capstone/capstone.h>
+
 namespace nc {
 namespace arch {
 namespace arm {
@@ -14,8 +16,12 @@ namespace arm {
 class ArmArchitecture;
 
 class ArmDisassembler: public core::arch::Disassembler {
+    csh handle_;
+
 public:
     ArmDisassembler(const ArmArchitecture *architecture);
+
+    virtual ~ArmDisassembler();
 
     std::shared_ptr<core::arch::Instruction> disassembleSingleInstruction(ByteAddr pc, const void *buffer, ByteSize size) override;
 };

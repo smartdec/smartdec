@@ -3,6 +3,8 @@ set(SOURCES
     ArmArchitecture.h
     ArmDisassembler.cpp
     ArmDisassembler.h
+    ArmInstruction.cpp
+    ArmInstruction.h
     ArmInstructionAnalyzer.cpp
     ArmInstructionAnalyzer.h
 )

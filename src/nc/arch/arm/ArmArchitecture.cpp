@@ -13,6 +13,11 @@ namespace arch {
 namespace arm {
 
 ArmArchitecture::ArmArchitecture(ByteOrder byteOrder) {
+    if (byteOrder == ByteOrder::LittleEndian) {
+        setName(QLatin1String("arm-le"));
+    } else {
+        setName(QLatin1String("arm-be"));
+    }
     setByteOrder(byteOrder);
     setMaxInstructionSize(4);
 }
