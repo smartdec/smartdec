@@ -56,10 +56,10 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] bytes Valid pointer to the bytes of the instruction.
-     * \param[in] mnemonic Instruction mnemonic.
+     * \param[in] bitness Processor mode (16, 32, 64) in which this instruction is executed.
      * \param[in] addr Instruction address in bytes.
      * \param[in] size Instruction size in bytes.
+     * \param[in] bytes Valid pointer to the bytes of the instruction.
      */
     X86Instruction(SmallBitSize bitness, ByteAddr addr, SmallByteSize size, const void *bytes):
         core::arch::Instruction(addr, size), bitness_(checked_cast<uint8_t>(bitness))
