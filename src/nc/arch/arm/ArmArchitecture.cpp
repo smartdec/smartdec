@@ -6,6 +6,7 @@
 #include <nc/common/make_unique.h>
 
 #include "ArmDisassembler.h"
+#include "ArmInstruction.h"
 #include "ArmInstructionAnalyzer.h"
 
 namespace nc {
@@ -19,7 +20,7 @@ ArmArchitecture::ArmArchitecture(ByteOrder byteOrder) {
         setName(QLatin1String("arm-be"));
     }
     setByteOrder(byteOrder);
-    setMaxInstructionSize(4);
+    setMaxInstructionSize(ArmInstruction::MAX_SIZE);
 }
 
 ArmArchitecture::~ArmArchitecture() {}

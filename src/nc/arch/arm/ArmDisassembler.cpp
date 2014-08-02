@@ -33,9 +33,10 @@ std::shared_ptr<core::arch::Instruction> ArmDisassembler::disassembleSingleInstr
     if (count) {
         assert(count == 1);
         result = std::make_shared<ArmInstruction>(
+            CS_MODE_ARM,
             insn->address,
             insn->size,
-            QString(QLatin1String("%1 %2")).arg(insn->mnemonic).arg(insn->op_str));
+            buffer);
     }
 
     cs_free(insn, count);
