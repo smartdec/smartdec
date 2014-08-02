@@ -11,7 +11,17 @@ namespace nc {
 namespace arch {
 namespace arm {
 
+class ArmArchitecture;
+class ArmInstructionAnalyzerImpl;
+
 class ArmInstructionAnalyzer: public core::irgen::InstructionAnalyzer {
+    std::unique_ptr<ArmInstructionAnalyzerImpl> impl_;
+
+public:
+    ArmInstructionAnalyzer(const ArmArchitecture *architecture);
+
+    ~ArmInstructionAnalyzer();
+
 protected:
     virtual void doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) override;
 };

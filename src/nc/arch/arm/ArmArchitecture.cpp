@@ -36,7 +36,7 @@ std::unique_ptr<core::arch::Disassembler> ArmArchitecture::createDisassembler() 
 }
 
 std::unique_ptr<core::irgen::InstructionAnalyzer> ArmArchitecture::createInstructionAnalyzer() const {
-    return std::make_unique<ArmInstructionAnalyzer>();
+    return std::make_unique<ArmInstructionAnalyzer>(this);
 }
 
 }}} // namespace nc::arch::arm

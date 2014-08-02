@@ -7,8 +7,6 @@
 
 #include <array>
 
-#include <capstone/capstone.h>
-
 #include <nc/core/arch/Instruction.h>
 
 namespace nc {
@@ -21,7 +19,7 @@ public:
     static const SmallByteSize MAX_SIZE = 4;
 
 private:
-    /** Encoding mode of this instruction. */
+    /** Encoding mode of this instruction, as denoted in Capstone. */
     int mode_;
 
     /** Binary representation of the instruction. */
@@ -31,7 +29,7 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] mode Encoding mode of this instruction.
+     * \param[in] mode Encoding mode of this instruction, as denoted in Capstone.
      * \param[in] addr Instruction address in bytes.
      * \param[in] size Instruction size in bytes.
      * \param[in] bytes Valid pointer to the bytes of the instruction.
@@ -43,6 +41,17 @@ public:
         assert(size <= MAX_SIZE);
         memcpy(&bytes_, bytes, size);
     }
+
+    /**
+     * Encoding mode of this instruction, as denoted in Capstone.
+     */
+    int mode() const { return mode_; }
+
+    /**
+     * \return Valid pointer to the buffer containing the binary
+     *         representation of the instruction.
+     */
+    const uint8_t *bytes() const { return &bytes_[0]; }
 
     void print(QTextStream &out) const override;
 };

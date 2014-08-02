@@ -57,13 +57,24 @@ public:
         }
     }
 
+    CapstoneDisassembler(CapstoneDisassembler &&other):
+        handle_(other.handle_)
+    {
+        other.handle_ = 0;
+    }
+
+    CapstoneDisassembler &operator=(CapstoneDisassembler &&other) {
+        close();
+        handle_ = other.handle_;
+        other.handle_ = 0;
+        return *this;
+    }
+
     /**
      * Destructor.
      */
     ~CapstoneDisassembler() {
-        if (cs_close(&handle_) != CS_ERR_OK) {
-            assert(!"Could not deinitialize Capstone's ARM disassembler.");
-        }
+        close();
     }
 
     /**
@@ -80,6 +91,18 @@ public:
         cs_insn *insn;
         count = cs_disasm_ex(handle_, reinterpret_cast<const uint8_t *>(buffer), size, pc, count, &insn);
         return CapstoneInstructionPtr(insn, CapstoneDeleter(count));
+    }
+
+private:
+    void close() {
+        if (!handle_) {
+            return;
+        }
+
+        auto result = cs_close(&handle_);
+        if (result != CS_ERR_OK) {
+            throw nc::Exception(cs_strerror(result));
+        }
     }
 };
 
