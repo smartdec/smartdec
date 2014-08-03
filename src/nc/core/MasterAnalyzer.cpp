@@ -28,6 +28,7 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/core/Context.h>
+#include <nc/core/arch/Architecture.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/CFG.h>
@@ -95,8 +96,10 @@ void MasterAnalyzer::createHooks(Context &context) const {
     });
 }
 
-void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::calling::CalleeId &/*descriptor*/) const {
-    /* Nothing to do. */
+void MasterAnalyzer::detectCallingConvention(Context &context, const ir::calling::CalleeId &calleeId) const {
+    if (!context.image()->architecture()->conventions().empty()) {
+        context.conventions()->setConvention(calleeId, context.image()->architecture()->conventions().front());
+    }
 }
 
 void MasterAnalyzer::dataflowAnalysis(Context &context) const {

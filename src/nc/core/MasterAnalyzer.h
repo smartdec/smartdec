@@ -85,9 +85,9 @@ public:
      * Detects and sets the calling convention of a function.
      *
      * \param context Context.
-     * \param descriptor Descriptor of the function.
+     * \param calleeId Id of the function.
      */
-    virtual void detectCallingConvention(Context &context, const ir::calling::CalleeId &descriptor) const;
+    virtual void detectCallingConvention(Context &context, const ir::calling::CalleeId &calleeId) const;
 
     /**
      * Performs dataflow analysis of all functions.

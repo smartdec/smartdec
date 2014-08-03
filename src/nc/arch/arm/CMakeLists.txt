@@ -7,6 +7,8 @@ set(SOURCES
     ArmInstruction.h
     ArmInstructionAnalyzer.cpp
     ArmInstructionAnalyzer.h
+    CallingConventions.cpp
+    CallingConventions.h
     CapstoneDisassembler.h
 )
 

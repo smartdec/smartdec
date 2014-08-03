@@ -10,6 +10,7 @@
 #include "ArmDisassembler.h"
 #include "ArmInstruction.h"
 #include "ArmInstructionAnalyzer.h"
+#include "CallingConventions.h"
 
 namespace nc {
 namespace arch {
@@ -27,6 +28,8 @@ ArmArchitecture::ArmArchitecture(ByteOrder byteOrder) {
 
     masterAnalyzer_ = std::make_unique<core::MasterAnalyzer>();
     setMasterAnalyzer(masterAnalyzer_.get());
+
+    addCallingConvention(std::make_unique<DefaultCallingConvention>());
 }
 
 ArmArchitecture::~ArmArchitecture() {}
