@@ -25,8 +25,6 @@
 
 #include <nc/config.h>
 
-#include <cassert>
-
 #include <nc/core/irgen/InstructionAnalyzer.h>
 
 namespace nc {
