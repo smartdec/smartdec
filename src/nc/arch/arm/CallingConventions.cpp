@@ -4,6 +4,7 @@
 #include "CallingConventions.h"
 
 #include "ArmArchitecture.h"
+#include "ArmRegisters.h"
 
 namespace nc {
 namespace arch {
@@ -12,7 +13,7 @@ namespace arm {
 DefaultCallingConvention::DefaultCallingConvention():
     core::ir::calling::Convention(QLatin1String("Default"))
 {
-    // TODO: setStackPointer();
+    setStackPointer(ArmRegisters::sp()->memoryLocation());
 }
 
 }}} // namespace nc::arch::arm

@@ -10,6 +10,7 @@
 #include "ArmDisassembler.h"
 #include "ArmInstruction.h"
 #include "ArmInstructionAnalyzer.h"
+#include "ArmRegisters.h"
 #include "CallingConventions.h"
 
 namespace nc {
@@ -25,6 +26,8 @@ ArmArchitecture::ArmArchitecture(ByteOrder byteOrder) {
     setBitness(32);
     setByteOrder(byteOrder);
     setMaxInstructionSize(ArmInstruction::MAX_SIZE);
+
+    setRegisters(ArmRegisters::instance());
 
     masterAnalyzer_ = std::make_unique<core::MasterAnalyzer>();
     setMasterAnalyzer(masterAnalyzer_.get());
