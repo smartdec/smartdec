@@ -4,9 +4,8 @@
 #pragma once
 
 #include <nc/config.h>
-#include <nc/core/arch/Registers.h>
 
-#include <QString>
+#include <nc/core/arch/Registers.h>
 
 namespace nc { namespace arch { namespace x86 {
 
