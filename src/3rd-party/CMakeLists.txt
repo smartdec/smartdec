@@ -8,8 +8,11 @@ ExternalProject_Add(capstone-project
     CMAKE_ARGS
         -DCMAKE_INSTALL_PREFIX:string=${EP_PREFIX}
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        -DBUILD_STATIC=ON
         -DBUILD_SHARED=OFF
         -DBUILD_TESTS=OFF
+        -DARM_SUPPORT=ON
+        -DARM64_SUPPORT=OFF
         -DMIPS_SUPPORT=OFF
         -DPPC_SUPPORT=OFF
         -DSPARC_SUPPORT=OFF
