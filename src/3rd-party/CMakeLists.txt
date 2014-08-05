@@ -18,6 +18,10 @@ ExternalProject_Add(capstone-project
         -DX86_SUPPORT=OFF
         -DX86_REDUCE=OFF
         <SOURCE_DIR>
+    BUILD_COMMAND
+        echo "Will build on install."
+    INSTALL_COMMAND
+        cmake --build . --target install --config ${CMAKE_BUILD_TYPE}
 )
 
 # vim:set et sts=4 sw=4 nospell:
