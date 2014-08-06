@@ -17,14 +17,15 @@ namespace nc {
 namespace arch {
 namespace arm {
 
-ArmArchitecture::ArmArchitecture(ByteOrder byteOrder) {
+ArmArchitecture::ArmArchitecture(ByteOrder byteOrder):
+    byteOrder_(byteOrder)
+{
     if (byteOrder == ByteOrder::LittleEndian) {
         setName(QLatin1String("arm-le"));
     } else {
         setName(QLatin1String("arm-be"));
     }
     setBitness(32);
-    setByteOrder(byteOrder);
     setMaxInstructionSize(ArmInstruction::MAX_SIZE);
 
     setRegisters(ArmRegisters::instance());
@@ -36,6 +37,16 @@ ArmArchitecture::ArmArchitecture(ByteOrder byteOrder) {
 }
 
 ArmArchitecture::~ArmArchitecture() {}
+
+ByteOrder ArmArchitecture::getByteOrder(core::ir::Domain domain) const {
+    if (domain == core::ir::MemoryDomain::MEMORY ||
+        domain == core::ir::MemoryDomain::STACK)
+    {
+        return byteOrder_;
+    } else {
+        return ByteOrder::LittleEndian;
+    }
+}
 
 std::unique_ptr<core::arch::Disassembler> ArmArchitecture::createDisassembler() const {
     return std::make_unique<ArmDisassembler>(this);

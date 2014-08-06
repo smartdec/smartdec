@@ -55,12 +55,14 @@ X86Architecture::X86Architecture(Mode mode) {
         unreachable();
     }
 
-    setByteOrder(ByteOrder::LittleEndian);
-
     setMaxInstructionSize(X86Instruction::MAX_SIZE);
 }
 
 X86Architecture::~X86Architecture() {}
+
+ByteOrder X86Architecture::getByteOrder(core::ir::Domain) const {
+    return ByteOrder::LittleEndian;
+}
 
 std::unique_ptr<core::arch::Disassembler> X86Architecture::createDisassembler() const {
     return std::make_unique<X86Disassembler>(this);

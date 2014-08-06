@@ -35,7 +35,6 @@ namespace arch {
 
 Architecture::Architecture():
     mBitness(0),
-    mByteOrder(ByteOrder::Unknown),
     mMaxInstructionSize(0),
     mMasterAnalyzer(NULL),
     mRegisters(NULL)
@@ -55,13 +54,6 @@ void Architecture::setBitness(SmallBitSize bitness) {
     assert(mBitness == 0 && "Bitness cannot be reset.");
 
     mBitness = bitness;
-}
-
-void Architecture::setByteOrder(ByteOrder byteOrder) {
-    assert(mByteOrder == ByteOrder::Unknown && "Byte order is already set.");
-    assert(byteOrder != ByteOrder::Unknown && "Byte order cannot be set to unknown.");
-
-    mByteOrder = byteOrder;
 }
 
 void Architecture::setMaxInstructionSize(SmallBitSize size) {

@@ -40,7 +40,7 @@ namespace dflow {
  * Dataflow information about a term.
  */
 class Value {
-    AbstractValue abstractValue_; ///< Abstract value of the term.
+    AbstractValue abstractValue_; ///< Abstract value of the term, in the host byte order.
 
     bool isStackOffset_; ///< Value is a stack pointer with a known offset from the frame base.
     bool isNotStackOffset_; ///< Value is not a stack pointer with a known offset from the frame base.

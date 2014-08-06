@@ -12,16 +12,27 @@ namespace arch {
 namespace arm {
 
 class ArmArchitecture: public nc::core::arch::Architecture {
+    ByteOrder byteOrder_;
     std::unique_ptr<core::MasterAnalyzer> masterAnalyzer_;
 
 public:
+    /**
+     * Constructor.
+     *
+     * \param byteOrder Byte order of the main memory.
+     */
     explicit
     ArmArchitecture(ByteOrder byteOrder);
 
     virtual ~ArmArchitecture();
 
-    std::unique_ptr<core::arch::Disassembler> createDisassembler() const override;
+    /**
+     * \return Byte order of the main memory.
+     */
+    ByteOrder byteOrder() const { return byteOrder_; }
 
+    ByteOrder getByteOrder(core::ir::Domain domain) const override;
+    std::unique_ptr<core::arch::Disassembler> createDisassembler() const override;
     std::unique_ptr<core::irgen::InstructionAnalyzer> createInstructionAnalyzer() const override;
 };
 

@@ -343,6 +343,8 @@ Value *DataflowAnalyzer::computeValue(const Term *term, const MemoryLocation &me
         return value;
     }
 
+    auto byteOrder = architecture()->getByteOrder(memoryLocation.domain());
+
     /*
      * Merge abstract values.
      */
@@ -355,7 +357,7 @@ Value *DataflowAnalyzer::computeValue(const Term *term, const MemoryLocation &me
          * Mask of bits inside abstractValue which are covered by chunk's location.
          */
         auto mask = bitMask<ConstantValue>(chunk.location().size());
-        if (architecture()->byteOrder() == ByteOrder::LittleEndian) {
+        if (byteOrder == ByteOrder::LittleEndian) {
             mask = bitShift(mask, chunk.location().addr() - memoryLocation.addr());
         } else {
             mask = bitShift(mask, memoryLocation.endAddr() - chunk.location().endAddr());
@@ -371,7 +373,7 @@ Value *DataflowAnalyzer::computeValue(const Term *term, const MemoryLocation &me
             /*
              * Shift definition's abstract value to match term's location.
              */
-            if (architecture()->byteOrder() == ByteOrder::LittleEndian) {
+            if (byteOrder == ByteOrder::LittleEndian) {
                 definitionAbstractValue.shift(definitionLocation.addr() - memoryLocation.addr());
             } else {
                 definitionAbstractValue.shift(memoryLocation.endAddr() - definitionLocation.endAddr());
@@ -394,7 +396,7 @@ Value *DataflowAnalyzer::computeValue(const Term *term, const MemoryLocation &me
      */
     const std::vector<const Term *> *lowerBitsDefinitions = NULL;
 
-    if (architecture()->byteOrder() == ByteOrder::LittleEndian) {
+    if (byteOrder == ByteOrder::LittleEndian) {
         if (definitions.chunks().front().location().addr() == memoryLocation.addr()) {
             lowerBitsDefinitions = &definitions.chunks().front().definitions();
         }

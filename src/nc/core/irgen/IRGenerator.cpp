@@ -189,8 +189,10 @@ std::vector<ByteAddr> IRGenerator::getJumpTableEntries(const ir::Term *target, c
 
     image::Reader reader(image_);
 
+    auto byteOrder = image_->architecture()->getByteOrder(ir::MemoryDomain::MEMORY);
+
     ByteAddr address = arrayAccess.base();
-    while (auto entry = reader.readInt<ByteAddr>(address, entrySize, image_->architecture()->byteOrder())) {
+    while (auto entry = reader.readInt<ByteAddr>(address, entrySize, byteOrder)) {
         if (!isInstructionAddress(*entry)) {
             break;
         }

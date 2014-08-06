@@ -207,7 +207,7 @@ std::unique_ptr<likec::Expression> CodeGenerator::makeInitialValue(const MemoryL
         ByteAddr addr = memoryLocation.addr() / CHAR_BIT;
         ByteSize size = memoryLocation.size() / CHAR_BIT;
 
-        if (auto value = image::Reader(&image()).readInt<ConstantValue>(addr, size, image().architecture()->byteOrder())) {
+        if (auto value = image::Reader(&image()).readInt<ConstantValue>(addr, size, image().architecture()->getByteOrder(MemoryDomain::MEMORY))) {
             if (auto integerType = type->as<likec::IntegerType>()) {
                 return std::make_unique<likec::IntegerConstant>(tree(), *value, integerType);
             } else {

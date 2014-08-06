@@ -33,6 +33,8 @@
 #include <nc/common/ByteOrder.h>
 #include <nc/common/Types.h>
 
+#include <nc/core/ir/MemoryDomain.h>
+
 namespace nc {
 namespace core {
 
@@ -82,13 +84,6 @@ public:
     SmallBitSize bitness() const { assert(mBitness); return mBitness; }
 
     /**
-     * \return Architecture's byte order.
-     */
-    // TODO: per-domain byte order. DataflowAnalyzer stores all values in local byte order.
-    // The architecture's byte order — only when merging reaching definitions!
-    ByteOrder byteOrder() const { assert(mByteOrder != ByteOrder::Unknown); return mByteOrder; }
-
-    /**
      * \return Maximal length of an instruction.
      */
     SmallByteSize maxInstructionSize() const { assert(mMaxInstructionSize); return mMaxInstructionSize; }
@@ -112,6 +107,13 @@ public:
      * \returns Valid pointer to the register container for this architecture.
      */
     const Registers *registers() const { return mRegisters; }
+
+    /**
+     * \param domain Memory domain.
+     *
+     * \return Byte order for this domain.
+     */
+    virtual ByteOrder getByteOrder(ir::Domain domain) const = 0;
 
     /**
      * \param memoryLocation Memory location.
@@ -151,13 +153,6 @@ protected:
     void setBitness(SmallBitSize bitness);
 
     /**
-     * Sets the architecture's byte order.
-     *
-     * \param byteOrder Byte order.
-     */
-    void setByteOrder(ByteOrder byteOrder);
-
-    /**
      * \param size Architecture's maximum instruction size.
      */
     void setMaxInstructionSize(SmallBitSize size);
@@ -186,9 +181,6 @@ private:
 
     /** Architecture's bitness. */
     SmallBitSize mBitness;
-
-    /** Architecture's byte order. */
-    ByteOrder mByteOrder;
 
     /** Maximum length of an instruction on this architecture. */
     SmallBitSize mMaxInstructionSize;

@@ -74,8 +74,8 @@ public:
      */
     const core::arch::Register *instructionPointer() const { return mInstructionPointer; }
 
+    ByteOrder getByteOrder(core::ir::Domain domain) const override;
     std::unique_ptr<core::arch::Disassembler> createDisassembler() const override;
-
     std::unique_ptr<core::irgen::InstructionAnalyzer> createInstructionAnalyzer() const override;
 
 protected:
