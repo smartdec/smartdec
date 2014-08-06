@@ -84,6 +84,8 @@ public:
     /**
      * \return Architecture's byte order.
      */
+    // TODO: per-domain byte order. DataflowAnalyzer stores all values in local byte order.
+    // The architecture's byte order — only when merging reaching definitions!
     ByteOrder byteOrder() const { assert(mByteOrder != ByteOrder::Unknown); return mByteOrder; }
 
     /**

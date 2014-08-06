@@ -114,6 +114,14 @@ public:
     }
 
     /**
+     * \param size New size.
+     * \return New memory location.
+     */
+    MemoryLocation resized(BitSize size) const {
+        return MemoryLocation(domain_, addr_, size);
+    }
+
+    /**
      * \param that Memory location.
      *
      * \return True if *this covers that.
