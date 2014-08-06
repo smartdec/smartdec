@@ -35,6 +35,9 @@ class X86InstructionAnalyzer;
 class X86MasterAnalyzer;
 class X86Registers;
 
+/**
+ * Intel x86 architecture.
+ */
 class X86Architecture: public core::arch::Architecture {
 public:
     /**

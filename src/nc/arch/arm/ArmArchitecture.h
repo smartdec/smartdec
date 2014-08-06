@@ -11,6 +11,9 @@ namespace nc {
 namespace arch {
 namespace arm {
 
+/**
+ * 32-bit ARM Architecture.
+ */
 class ArmArchitecture: public nc::core::arch::Architecture {
     ByteOrder byteOrder_;
     std::unique_ptr<core::MasterAnalyzer> masterAnalyzer_;
