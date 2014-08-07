@@ -75,7 +75,6 @@ NC_DEFINE_REGISTER_EXPRESSION(less)
 NC_DEFINE_REGISTER_EXPRESSION(less_or_equal)
 NC_DEFINE_REGISTER_EXPRESSION(greater)
 NC_DEFINE_REGISTER_EXPRESSION(greater_or_equal)
-NC_DEFINE_REGISTER_EXPRESSION(below)
 NC_DEFINE_REGISTER_EXPRESSION(below_or_equal)
 NC_DEFINE_REGISTER_EXPRESSION(above)
 NC_DEFINE_REGISTER_EXPRESSION(above_or_equal)
@@ -238,7 +237,7 @@ public:
             }
             case UD_Icmp: {
                 _[
-                    cf ^= intrinsic(),
+                    cf ^= unsigned_(operand(0)) < operand(1),
                     pf ^= intrinsic(),
                     zf ^= operand(0) == operand(1),
                     sf ^= signed_(operand(0)) < operand(1),
@@ -249,7 +248,6 @@ public:
                     less_or_equal    ^= signed_(operand(0)) <= operand(1),
                     greater          ^= signed_(operand(0)) > operand(1),
                     greater_or_equal ^= signed_(operand(0)) >= operand(1),
-                    below            ^= unsigned_(operand(0)) < operand(1),
                     below_or_equal   ^= unsigned_(operand(0)) <= operand(1),
                     above            ^= unsigned_(operand(0)) > operand(1),
                     above_or_equal   ^= unsigned_(operand(0)) >= operand(1)
@@ -308,7 +306,7 @@ public:
                         auto right = dereference(di, accessSize);
 
                         body[
-                            cf ^= intrinsic(),
+                            cf ^= unsigned_(left) < right,
                             pf ^= intrinsic(),
                             zf ^= left == right,
                             sf ^= signed_(left) < right,
@@ -319,7 +317,6 @@ public:
                             less_or_equal    ^= signed_(left) <= right,
                             greater          ^= signed_(left) > right,
                             greater_or_equal ^= signed_(left) >= right,
-                            below            ^= unsigned_(left) < right,
                             below_or_equal   ^= unsigned_(left) <= right,
                             above            ^= unsigned_(left) > right,
                             above_or_equal   ^= unsigned_(left) >= right
@@ -335,7 +332,7 @@ public:
                         auto right = resizedRegister(X86Registers::ax(), accessSize);
 
                         body[
-                            cf ^= intrinsic(),
+                            cf ^= unsigned_(left) < right,
                             pf ^= intrinsic(),
                             zf ^= left == right,
                             sf ^= signed_(left) < right,
@@ -346,7 +343,6 @@ public:
                             less_or_equal    ^= signed_(left) <= right,
                             greater          ^= signed_(left) > right,
                             greater_or_equal ^= signed_(left) >= right,
-                            below            ^= unsigned_(left) < right,
                             below_or_equal   ^= unsigned_(left) <= right,
                             above            ^= unsigned_(left) > right,
                             above_or_equal   ^= unsigned_(left) >= right
@@ -589,7 +585,7 @@ public:
                 break;
             }
             case UD_Ijb: {
-                _[jump(choice(below, cf), operand(0), directSuccessor())];
+                _[jump(cf, operand(0), directSuccessor())];
                 break;
             }
             case UD_Ijbe: {
@@ -672,7 +668,7 @@ public:
                     case UD_Icmovae:
                         _[jump(choice(above_or_equal, ~cf), then.basicBlock(), directSuccessor())]; break;
                     case UD_Icmovb:
-                        _[jump(choice(below, cf), then.basicBlock(), directSuccessor())]; break;
+                        _[jump(cf, then.basicBlock(), directSuccessor())]; break;
                     case UD_Icmovbe:
                         _[jump(choice(below_or_equal, cf | zf), then.basicBlock(), directSuccessor())]; break;
                     case UD_Icmovz:
@@ -944,14 +940,13 @@ public:
                     less_or_equal    ^= signed_(operand(0))   <= operand(1) + zero_extend(cf),
                     greater          ^= signed_(operand(0))   >  operand(1) + zero_extend(cf),
                     greater_or_equal ^= signed_(operand(0))   >= operand(1) + zero_extend(cf),
-                    below            ^= unsigned_(operand(0)) <  operand(1) + zero_extend(cf),
+                    cf               ^= unsigned_(operand(0)) <  operand(1) + zero_extend(cf),
                     below_or_equal   ^= unsigned_(operand(0)) <= operand(1) + zero_extend(cf),
                     above            ^= unsigned_(operand(0)) >  operand(1) + zero_extend(cf),
                     above_or_equal   ^= unsigned_(operand(0)) >= operand(1) + zero_extend(cf),
 
                     operand(0) ^= operand(0) - (operand(1) + zero_extend(cf)),
 
-                    cf ^= intrinsic(),
                     pf ^= intrinsic(),
                     zf ^= operand(0) == constant(0) + zero_extend(cf),
                     sf ^= signed_(operand(0)) < constant(0) + zero_extend(cf),
@@ -969,7 +964,7 @@ public:
                 break;
             }
             case UD_Isetb: {
-                _[operand(0) ^= zero_extend(choice(below, cf))];
+                _[operand(0) ^= zero_extend(cf)];
                 break;
             }
             case UD_Isetbe: {
@@ -1051,14 +1046,13 @@ public:
                     less_or_equal    ^= signed_(operand(0)) <= operand(1),
                     greater          ^= signed_(operand(0)) > operand(1),
                     greater_or_equal ^= signed_(operand(0)) >= operand(1),
-                    below            ^= unsigned_(operand(0)) < operand(1),
+                    cf               ^= unsigned_(operand(0)) < operand(1),
                     below_or_equal   ^= unsigned_(operand(0)) <= operand(1),
                     above            ^= unsigned_(operand(0)) > operand(1),
                     above_or_equal   ^= unsigned_(operand(0)) >= operand(1),
 
                     operand(0) ^= operand(0) - operand(1),
 
-                    cf ^= intrinsic(),
                     pf ^= intrinsic(),
                     zf ^= operand(0) == constant(0),
                     sf ^= signed_(operand(0)) < constant(0),
