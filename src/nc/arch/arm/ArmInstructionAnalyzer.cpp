@@ -190,8 +190,17 @@ public:
         case ARM_INS_LDRSBT:
             then[operand(0) ^= sign_extend(operand(1, 8))];
             break;
-        case ARM_INS_LDRD:
-            // TODO
+        // TODO: case ARM_INS_LDRD:
+        case ARM_INS_MOV:
+            if (detail_->operands[0].reg == ARM_REG_PC) {
+                then[jump(operand(1))];
+            } else {
+                then[operand(0) ^= operand(1)];
+                if (detail_->update_flags) {
+                    // TODO
+                }
+            }
+            break;
         default:
             then(std::make_unique<core::ir::InlineAssembly>());
             break;
