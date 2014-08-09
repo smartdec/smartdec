@@ -83,7 +83,7 @@ public:
 
         core::ir::BasicBlock *thenBasicBlock;
 
-        if (detail_->cc == ARM_CC_AL) {
+        if (detail_->cc == ARM_CC_INVALID || detail_->cc == ARM_CC_AL) {
             thenBasicBlock = condition.basicBlock();
         } else {
             thenBasicBlock = program->createBasicBlock();
@@ -141,6 +141,9 @@ public:
         ArmExpressionFactoryCallback then(factory, thenBasicBlock, instruction);
 
         switch (instr->id) {
+        case ARM_INS_B:
+            then[jump(constant(instr->address) + operand(0))];
+            break;
         // TODO: writeback handling.
         case ARM_INS_LDR:
         case ARM_INS_LDRT:
