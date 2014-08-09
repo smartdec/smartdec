@@ -41,6 +41,11 @@ NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, n)
 NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, c)
 NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, v)
 
+NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, pseudo_flags)
+NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, less)
+NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, less_or_equal)
+NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, below_or_equal)
+
 } // anonymous namespace
 
 class ArmInstructionAnalyzerImpl {
@@ -116,22 +121,22 @@ public:
                 condition[jump(~v, thenBasicBlock, directSuccessor())];
                 break;
             case ARM_CC_HI:
-                condition[jump(c & ~z, thenBasicBlock, directSuccessor())];
+                condition[jump(choice(~below_or_equal, c & ~z), thenBasicBlock, directSuccessor())];
                 break;
             case ARM_CC_LS:
-                condition[jump(~c | z, thenBasicBlock, directSuccessor())];
+                condition[jump(choice(below_or_equal, ~c | z), thenBasicBlock, directSuccessor())];
                 break;
             case ARM_CC_GE:
-                condition[jump(n == v, thenBasicBlock, directSuccessor())];
+                condition[jump(choice(~less, n == v), thenBasicBlock, directSuccessor())];
                 break;
             case ARM_CC_LT:
-                condition[jump(~(n == v), thenBasicBlock, directSuccessor())];
+                condition[jump(choice(less, ~(n == v)), thenBasicBlock, directSuccessor())];
                 break;
             case ARM_CC_GT:
-                condition[jump(~z & (n == v), thenBasicBlock, directSuccessor())];
+                condition[jump(choice(~less_or_equal, ~z & (n == v)), thenBasicBlock, directSuccessor())];
                 break;
             case ARM_CC_LE:
-                condition[jump(z | ~(n == v), thenBasicBlock, directSuccessor())];
+                condition[jump(choice(less_or_equal, z | ~(n == v)), thenBasicBlock, directSuccessor())];
                 break;
             default:
                 unreachable();
@@ -142,8 +147,25 @@ public:
 
         switch (instr->id) {
         case ARM_INS_B:
-            then[jump(constant(instr->address) + operand(0))];
+            then[jump(constant(instr->address) + operand(0))]; // TODO: instruction->endAddr() ?
             break;
+        case ARM_INS_BL: /* FALLTHROUGH */
+        case ARM_INS_BLX:
+            then[call(constant(instr->address) + operand(0))]; // TODO: instruction->endAddr() ?
+            break;
+        case ARM_INS_CMP: {
+            then[
+                n ^= intrinsic(),
+                c ^= unsigned_(operand(0)) < operand(1),
+                z ^= operand(0) == operand(1),
+                v ^= intrinsic(),
+
+                less             ^= signed_(operand(0)) < operand(1),
+                less_or_equal    ^= signed_(operand(0)) <= operand(1),
+                below_or_equal   ^= unsigned_(operand(0)) <= operand(1)
+            ];
+            break;
+        }
         // TODO: writeback handling.
         case ARM_INS_LDR:
         case ARM_INS_LDRT:
@@ -207,6 +229,7 @@ private:
         assert(index < boost::size(detail_->operands));
 
         const auto &operand = detail_->operands[index];
+        // TODO: shifts
         switch (operand.type) {
             case ARM_OP_REG: {
                 auto reg = getRegister(operand.reg);
@@ -220,7 +243,6 @@ private:
             case ARM_OP_PIMM:
                 throw core::irgen::InvalidInstructionException(tr("Don't know how to deal with PIMM operands."));
             case ARM_OP_IMM:
-                // TODO: what about shifts?
                 return std::make_unique<core::ir::Constant>(SizedValue(sizeHint, operand.imm));
             case ARM_OP_FP:
                 throw core::irgen::InvalidInstructionException(tr("Don't know how to deal with FP operands."));
