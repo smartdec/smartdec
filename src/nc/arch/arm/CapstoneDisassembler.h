@@ -55,6 +55,14 @@ public:
         if (result != CS_ERR_OK) {
             throw nc::Exception(cs_strerror(result));
         }
+
+        /**
+         * Enable returning the useful information.
+         */
+        result = cs_option(handle_, CS_OPT_DETAIL, CS_OPT_ON);
+        if (result != CS_ERR_OK) {
+            throw nc::Exception(cs_strerror(result));
+        }
     }
 
     CapstoneDisassembler(CapstoneDisassembler &&other):

@@ -1327,4 +1327,7 @@ private:
 
 }}}} // namespace nc::core::irgen::expressions
 
+#define NC_DEFINE_REGISTER_EXPRESSION(registers, lowercase) \
+const auto lowercase = core::irgen::expressions::regizter(registers::lowercase());
+
 /* vim:set et sts=4 sw=4: */
