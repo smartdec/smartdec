@@ -24,7 +24,11 @@
 
 #include "If.h"
 
+#include <nc/common/make_unique.h>
+
+#include "Block.h"
 #include "PrintContext.h"
+#include "UnaryOperator.h"
 
 namespace nc {
 namespace core {
@@ -45,11 +49,27 @@ If *If::rewrite() {
     assert(condition_);
     assert(thenStatement_);
 
-    rewriteChild(condition_);
     rewriteChild(thenStatement_);
     if (elseStatement_) {
         rewriteChild(elseStatement_);
+
+        if (auto block = elseStatement_->as<Block>()) {
+            if (block->statements().empty()) {
+                elseStatement_.reset();
+            }
+        }
+
+        if (elseStatement_) {
+            if (auto block = thenStatement_->as<Block>()) {
+                if (block->statements().empty()) {
+                    thenStatement_ = std::move(elseStatement_);
+                    condition_ = std::make_unique<UnaryOperator>(tree(), UnaryOperator::LOGICAL_NOT, std::move(condition_));
+                }
+            }
+        }
     }
+    rewriteChild(condition_);
+
     return this;
 }
 
