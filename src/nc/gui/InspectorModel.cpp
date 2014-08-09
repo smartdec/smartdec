@@ -36,6 +36,8 @@
 #include <nc/core/ir/dflow/Value.h>
 #include <nc/core/likec/BinaryOperator.h>
 #include <nc/core/likec/CallOperator.h>
+#include <nc/core/likec/CaseLabel.h>
+#include <nc/core/likec/DefaultLabel.h>
 #include <nc/core/likec/DoWhile.h>
 #include <nc/core/likec/Expression.h>
 #include <nc/core/likec/ExpressionStatement.h>
@@ -43,12 +45,14 @@
 #include <nc/core/likec/FunctionIdentifier.h>
 #include <nc/core/likec/Goto.h>
 #include <nc/core/likec/If.h>
+#include <nc/core/likec/InlineAssembly.h>
 #include <nc/core/likec/IntegerConstant.h>
 #include <nc/core/likec/LabelIdentifier.h>
 #include <nc/core/likec/MemberAccessOperator.h>
 #include <nc/core/likec/Return.h>
 #include <nc/core/likec/String.h>
 #include <nc/core/likec/StructType.h>
+#include <nc/core/likec/Switch.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/likec/Typecast.h>
 #include <nc/core/likec/UnaryOperator.h>
@@ -125,6 +129,10 @@ void expand(InspectorItem *item, const core::ir::Statement *statement) {
     }
 
     switch (statement->kind()) {
+        case core::ir::Statement::INLINE_ASSEMBLY: {
+            item->addComment("Inline Assembly");
+            break;
+        }
         case core::ir::Statement::ASSIGNMENT: {
             auto *assignment = statement->asAssignment();
             item->addComment("Assignment");
@@ -471,6 +479,29 @@ void expand(InspectorItem *item, const core::likec::Statement *statement) {
             item->addComment(tr("While"));
             item->addChild(tr("condition"), loop->condition());
             item->addChild(tr("body"), loop->body());
+            break;
+        }
+        case core::likec::Statement::INLINE_ASSEMBLY: {
+            auto assembly = statement->as<core::likec::InlineAssembly>();
+            item->addComment(tr("Inline assembly"));
+            item->addChild(tr("code = %1").arg(assembly->code()));
+            break;
+        }
+        case core::likec::Statement::SWITCH: {
+            auto witch = statement->as<core::likec::Switch>();
+            item->addComment(tr("Switch"));
+            item->addChild(tr("expression"), witch->expression());
+            item->addChild(tr("body"), witch->body());
+            break;
+        }
+        case core::likec::Statement::CASE_LABEL: {
+            auto label = statement->as<core::likec::CaseLabel>();
+            item->addComment(tr("Case label"));
+            item->addChild(tr("expression"), label->expression());
+            break;
+        }
+        case core::likec::Statement::DEFAULT_LABEL: {
+            item->addComment(tr("Default label"));
             break;
         }
         default: {
