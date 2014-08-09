@@ -299,15 +299,27 @@ public:
     explicit
     TermExpression(std::unique_ptr<ir::Term> term): base_type(term->size()), mTerm(std::move(term)) {}
 
-/*
- * Ugly workaround for stupid compilers. Type-safety vanishes.
- */
-#if defined(_MSC_VER) || defined(GCC_VERSION) && GCC_VERSION < 40900
+    TermExpression(TermExpression &&that):
+        base_type(std::move(that)),
+        mTerm(std::move(that.mTerm))
+    {}
+
     TermExpression(const TermExpression &that):
         base_type(that),
-        mTerm(const_cast<TermExpression &>(that).mTerm.release())
+        mTerm(that.mTerm->clone())
     {}
-#endif
+
+    TermExpression &operator=(TermExpression &&that) {
+        base_type::operator=(std::move(that));
+        mTerm = std::move(that.mTerm);
+        return *this;
+    }
+
+    TermExpression &operator=(const TermExpression &that) {
+        base_type::operator=(that);
+        mTerm = that.mTerm->clone();
+        return *this;
+    }
 
     std::unique_ptr<ir::Term> &term() { return mTerm; }
 
