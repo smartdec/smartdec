@@ -280,7 +280,7 @@ AbstractValue operator^(const AbstractValue &a, const AbstractValue &b) {
 
 inline
 AbstractValue operator~(const AbstractValue &a) {
-    return AbstractValue(a.size(), ~a.zeroBits(), ~a.oneBits());
+    return AbstractValue(a.size(), a.oneBits(), a.zeroBits());
 }
 
 inline
