@@ -140,12 +140,8 @@ REG(id,               ID,               23, 21,  1, "Identification (Pentium+)")
 REG(pseudo_flags,     PSEUDO_FLAGS,     24,  0, 128, "")
 REG(less,             LESS,             24,  0,  1, "")
 REG(less_or_equal,    LESS_OR_EQUAL,    24,  1,  1, "")
-REG(greater,          GREATER,          24,  2,  1, "")
-REG(greater_or_equal, GREATER_OR_EQUAL, 24,  3,  1, "")
-// use cf instead of below
-REG(below_or_equal,   BELOW_OR_EQUAL,   24,  5,  1, "")
-REG(above,            ABOVE,            24,  6,  1, "")
-REG(above_or_equal,   ABOVE_OR_EQUAL,   24,  7,  1, "")
+// below == cf
+REG(below_or_equal,   BELOW_OR_EQUAL,   24,  2,  1, "")
 
 REG(fpu_status_word,  FPU_STATUS_WORD,  25,  0, 16, "x87 FPU Status Word")
 REG(fpu_ie,           FPU_IE,           25,  0,  1, "Invalid Operation")

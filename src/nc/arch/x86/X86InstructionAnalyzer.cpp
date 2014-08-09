@@ -73,11 +73,7 @@ NC_DEFINE_REGISTER_EXPRESSION(rflags)
 NC_DEFINE_REGISTER_EXPRESSION(pseudo_flags)
 NC_DEFINE_REGISTER_EXPRESSION(less)
 NC_DEFINE_REGISTER_EXPRESSION(less_or_equal)
-NC_DEFINE_REGISTER_EXPRESSION(greater)
-NC_DEFINE_REGISTER_EXPRESSION(greater_or_equal)
 NC_DEFINE_REGISTER_EXPRESSION(below_or_equal)
-NC_DEFINE_REGISTER_EXPRESSION(above)
-NC_DEFINE_REGISTER_EXPRESSION(above_or_equal)
 
 NC_DEFINE_REGISTER_EXPRESSION(cx)
 NC_DEFINE_REGISTER_EXPRESSION(ecx)
@@ -246,11 +242,7 @@ public:
 
                     less             ^= signed_(operand(0)) < operand(1),
                     less_or_equal    ^= signed_(operand(0)) <= operand(1),
-                    greater          ^= signed_(operand(0)) > operand(1),
-                    greater_or_equal ^= signed_(operand(0)) >= operand(1),
-                    below_or_equal   ^= unsigned_(operand(0)) <= operand(1),
-                    above            ^= unsigned_(operand(0)) > operand(1),
-                    above_or_equal   ^= unsigned_(operand(0)) >= operand(1)
+                    below_or_equal   ^= unsigned_(operand(0)) <= operand(1)
                 ];
                 break;
             }
@@ -315,11 +307,7 @@ public:
 
                             less             ^= signed_(left) < right,
                             less_or_equal    ^= signed_(left) <= right,
-                            greater          ^= signed_(left) > right,
-                            greater_or_equal ^= signed_(left) >= right,
-                            below_or_equal   ^= unsigned_(left) <= right,
-                            above            ^= unsigned_(left) > right,
-                            above_or_equal   ^= unsigned_(left) >= right
+                            below_or_equal   ^= unsigned_(left) <= right
                         ];
                     }
                     case UD_Imovsb: case UD_Imovsw: case UD_Imovsd: case UD_Imovsq: {
@@ -341,11 +329,7 @@ public:
 
                             less             ^= signed_(left) < right,
                             less_or_equal    ^= signed_(left) <= right,
-                            greater          ^= signed_(left) > right,
-                            greater_or_equal ^= signed_(left) >= right,
-                            below_or_equal   ^= unsigned_(left) <= right,
-                            above            ^= unsigned_(left) > right,
-                            above_or_equal   ^= unsigned_(left) >= right
+                            below_or_equal   ^= unsigned_(left) <= right
                         ];
                         break;
                     }
@@ -577,11 +561,11 @@ public:
                 break;
             }
             case UD_Ija: {
-                _[jump(choice(above, ~cf & ~zf), operand(0), directSuccessor())];
+                _[jump(~choice(below_or_equal, cf | zf), operand(0), directSuccessor())];
                 break;
             }
             case UD_Ijae: {
-                _[jump(choice(above_or_equal, ~cf), operand(0), directSuccessor())];
+                _[jump(~cf, operand(0), directSuccessor())];
                 break;
             }
             case UD_Ijb: {
@@ -609,11 +593,11 @@ public:
                 break;
             }
             case UD_Ijg: {
-                _[jump(choice(greater, ~zf | (sf == of)), operand(0), directSuccessor())];
+                _[jump(~choice(less_or_equal, zf | ~(sf == of)), operand(0), directSuccessor())];
                 break;
             }
             case UD_Ijge: {
-                _[jump(choice(greater_or_equal, sf == of), operand(0), directSuccessor())];
+                _[jump(~choice(less, ~(sf == of)), operand(0), directSuccessor())];
                 break;
             }
             case UD_Ijl: {
@@ -664,9 +648,9 @@ public:
 
                 switch (ud_obj_.mnemonic) {
                     case UD_Icmova:
-                        _[jump(choice(above, ~cf & ~zf), then.basicBlock(), directSuccessor())]; break;
+                        _[jump(~choice(below_or_equal, cf | zf), then.basicBlock(), directSuccessor())]; break;
                     case UD_Icmovae:
-                        _[jump(choice(above_or_equal, ~cf), then.basicBlock(), directSuccessor())]; break;
+                        _[jump(~cf, then.basicBlock(), directSuccessor())]; break;
                     case UD_Icmovb:
                         _[jump(cf, then.basicBlock(), directSuccessor())]; break;
                     case UD_Icmovbe:
@@ -674,9 +658,9 @@ public:
                     case UD_Icmovz:
                         _[jump(zf, then.basicBlock(), directSuccessor())]; break;
                     case UD_Icmovg:
-                        _[jump(choice(greater, ~zf | (sf == of)), then.basicBlock(), directSuccessor())]; break;
+                        _[jump(~choice(less_or_equal, zf | ~(sf == of)), then.basicBlock(), directSuccessor())]; break;
                     case UD_Icmovge:
-                        _[jump(choice(greater_or_equal, sf == of), then.basicBlock(), directSuccessor())]; break;
+                        _[jump(~choice(less, ~(sf == of)), then.basicBlock(), directSuccessor())]; break;
                     case UD_Icmovl:
                         _[jump(choice(less, ~(sf == of)), then.basicBlock(), directSuccessor())]; break;
                     case UD_Icmovle:
@@ -938,12 +922,8 @@ public:
                 _[
                     less             ^= signed_(operand(0))   <  operand(1) + zero_extend(cf),
                     less_or_equal    ^= signed_(operand(0))   <= operand(1) + zero_extend(cf),
-                    greater          ^= signed_(operand(0))   >  operand(1) + zero_extend(cf),
-                    greater_or_equal ^= signed_(operand(0))   >= operand(1) + zero_extend(cf),
                     cf               ^= unsigned_(operand(0)) <  operand(1) + zero_extend(cf),
                     below_or_equal   ^= unsigned_(operand(0)) <= operand(1) + zero_extend(cf),
-                    above            ^= unsigned_(operand(0)) >  operand(1) + zero_extend(cf),
-                    above_or_equal   ^= unsigned_(operand(0)) >= operand(1) + zero_extend(cf),
 
                     operand(0) ^= operand(0) - (operand(1) + zero_extend(cf)),
 
@@ -956,11 +936,11 @@ public:
                 break;
             }
             case UD_Iseta: {
-                _[operand(0) ^= zero_extend(choice(above, ~cf & ~zf))];
+                _[operand(0) ^= zero_extend(~choice(below_or_equal, cf | zf))];
                 break;
             }
             case UD_Isetnb: {
-                _[operand(0) ^= zero_extend(choice(above_or_equal, ~cf))];
+                _[operand(0) ^= zero_extend(~cf)];
                 break;
             }
             case UD_Isetb: {
@@ -976,11 +956,11 @@ public:
                 break;
             }
             case UD_Isetg: {
-                _[operand(0) ^= zero_extend(choice(greater, ~zf | (sf == of)))];
+                _[operand(0) ^= zero_extend(~choice(less_or_equal, zf & ~(sf == of)))];
                 break;
             }
             case UD_Isetge: {
-                _[operand(0) ^= zero_extend(choice(greater_or_equal, sf == of))];
+                _[operand(0) ^= zero_extend(~choice(less, ~(sf == of)))];
                 break;
             }
             case UD_Isetl: {
@@ -1044,12 +1024,8 @@ public:
                 _[
                     less             ^= signed_(operand(0)) < operand(1),
                     less_or_equal    ^= signed_(operand(0)) <= operand(1),
-                    greater          ^= signed_(operand(0)) > operand(1),
-                    greater_or_equal ^= signed_(operand(0)) >= operand(1),
                     cf               ^= unsigned_(operand(0)) < operand(1),
                     below_or_equal   ^= unsigned_(operand(0)) <= operand(1),
-                    above            ^= unsigned_(operand(0)) > operand(1),
-                    above_or_equal   ^= unsigned_(operand(0)) >= operand(1),
 
                     operand(0) ^= operand(0) - operand(1),
 
