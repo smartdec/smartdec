@@ -147,11 +147,11 @@ public:
 
         switch (instr->id) {
         case ARM_INS_B:
-            then[jump(constant(instr->address) + operand(0))]; // TODO: instruction->endAddr() ?
+            then[jump(operand(0))];
             break;
         case ARM_INS_BL: /* FALLTHROUGH */
         case ARM_INS_BLX:
-            then[call(constant(instr->address) + operand(0))]; // TODO: instruction->endAddr() ?
+            then[call(operand(0))];
             break;
         case ARM_INS_CMP: {
             then[
