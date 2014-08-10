@@ -186,34 +186,39 @@ public:
         }
         case ARM_INS_LDR:
         case ARM_INS_LDRT:
-        case ARM_INS_LDREX: // TODO: atomic
+        case ARM_INS_LDREX: { // TODO: atomic
             then[operand(0) ^= operand(1)];
             handleWriteback();
             break;
+        }
         case ARM_INS_LDRH:
         case ARM_INS_LDRHT:
-        case ARM_INS_LDREXH: // TODO: atomic
+        case ARM_INS_LDREXH: { // TODO: atomic
             then[operand(0) ^= zero_extend(operand(1, 16))];
             handleWriteback();
             break;
+        }
         case ARM_INS_LDRSH:
-        case ARM_INS_LDRSHT:
+        case ARM_INS_LDRSHT: {
             then[operand(0) ^= sign_extend(operand(1, 16))];
             handleWriteback();
             break;
+        }
         case ARM_INS_LDRB:
         case ARM_INS_LDRBT:
-        case ARM_INS_LDREXB: // TODO: atomic
+        case ARM_INS_LDREXB: { // TODO: atomic
             then[operand(0) ^= zero_extend(operand(1, 8))];
             handleWriteback();
             break;
+        }
         case ARM_INS_LDRSB:
-        case ARM_INS_LDRSBT:
+        case ARM_INS_LDRSBT: {
             then[operand(0) ^= sign_extend(operand(1, 8))];
             handleWriteback();
             break;
-        // TODO: case ARM_INS_LDRD:
-        case ARM_INS_MOV:
+        }
+        // TODO case ARM_INS_LDRD:
+        case ARM_INS_MOV: {
             if (detail_->operands[0].reg == ARM_REG_PC) {
                 then[jump(operand(1))];
             } else {
@@ -223,9 +228,33 @@ public:
                 }
             }
             break;
-        default:
+        }
+        case ARM_INS_STR:
+        case ARM_INS_STRT:
+        case ARM_INS_STREX: { // TODO: atomic
+            then[operand(1) ^= operand(0)];
+            handleWriteback();
+            break;
+        }
+        case ARM_INS_STRH:
+        case ARM_INS_STRHT:
+        case ARM_INS_STREXH: {
+            then[operand(1, 16) ^= truncate(operand(0))];
+            handleWriteback();
+            break;
+        }
+        case ARM_INS_STRB:
+        case ARM_INS_STRBT:
+        case ARM_INS_STREXB: {
+            then[operand(1, 8) ^= truncate(operand(0))];
+            handleWriteback();
+            break;
+        }
+        // TODO case ARM_INS_STRD:
+        default: {
             then(std::make_unique<core::ir::InlineAssembly>());
             break;
+        }
         } /* switch */
 
         if (then.basicBlock() != condition.basicBlock() && !then.basicBlock()->getTerminator()) {
