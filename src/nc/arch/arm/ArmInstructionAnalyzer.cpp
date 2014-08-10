@@ -54,7 +54,6 @@ class ArmInstructionAnalyzerImpl {
     const ArmArchitecture *architecture_;
     std::vector<std::pair<int, CapstoneDisassembler>> disassemblers_;
     const cs_arm *detail_;
-    SmallBitSize sizeHint_;
 
 public:
     ArmInstructionAnalyzerImpl(const ArmArchitecture *architecture):
@@ -84,7 +83,6 @@ public:
         ArmExpressionFactoryCallback condition(factory, program->getBasicBlockForInstruction(instruction), instruction);
 
         detail_ = &instr->detail->arm;
-        sizeHint_ = 32;
 
         core::ir::BasicBlock *thenBasicBlock;
 
@@ -145,6 +143,26 @@ public:
 
         ArmExpressionFactoryCallback then(factory, thenBasicBlock, instruction);
 
+        auto handleWriteback = [&]() {
+            if (detail_->op_count != 2 && detail_->op_count != 3) {
+                throw core::irgen::InvalidInstructionException(tr("Expected either two or three operands."));
+            }
+            if (detail_->operands[0].type != ARM_OP_REG) {
+                throw core::irgen::InvalidInstructionException(tr("Expected the first operand to be a register."));
+            }
+            if (detail_->operands[1].type != ARM_OP_MEM) {
+                throw core::irgen::InvalidInstructionException(tr("Expected the second operand to be a memory operand."));
+            }
+
+            if (detail_->op_count == 3) {
+                auto base = regizter(getRegister(detail_->operands[1].mem.base));
+                then[base ^= base + operand(2)];
+            } else if (detail_->writeback) {
+                auto base = regizter(getRegister(detail_->operands[1].mem.base));
+                then[base ^= base + constant(detail_->operands[1].mem.disp)];
+            }
+        };
+
         switch (instr->id) {
         case ARM_INS_B:
             then[jump(operand(0))];
@@ -166,29 +184,33 @@ public:
             ];
             break;
         }
-        // TODO: writeback handling.
         case ARM_INS_LDR:
         case ARM_INS_LDRT:
         case ARM_INS_LDREX: // TODO: atomic
             then[operand(0) ^= operand(1)];
+            handleWriteback();
             break;
         case ARM_INS_LDRH:
         case ARM_INS_LDRHT:
         case ARM_INS_LDREXH: // TODO: atomic
             then[operand(0) ^= zero_extend(operand(1, 16))];
+            handleWriteback();
             break;
         case ARM_INS_LDRSH:
         case ARM_INS_LDRSHT:
             then[operand(0) ^= sign_extend(operand(1, 16))];
+            handleWriteback();
             break;
         case ARM_INS_LDRB:
         case ARM_INS_LDRBT:
         case ARM_INS_LDREXB: // TODO: atomic
             then[operand(0) ^= zero_extend(operand(1, 8))];
+            handleWriteback();
             break;
         case ARM_INS_LDRSB:
         case ARM_INS_LDRSBT:
             then[operand(0) ^= sign_extend(operand(1, 8))];
+            handleWriteback();
             break;
         // TODO: case ARM_INS_LDRD:
         case ARM_INS_MOV:
@@ -226,11 +248,7 @@ private:
         return getDisassembler(instruction->mode()).disassemble(instruction->addr(), instruction->bytes(), instruction->size());
     }
 
-    core::irgen::expressions::TermExpression operand(std::size_t index) const {
-        return operand(index, sizeHint_);
-    }
-
-    core::irgen::expressions::TermExpression operand(std::size_t index, SmallBitSize sizeHint) const {
+    core::irgen::expressions::TermExpression operand(std::size_t index, SmallBitSize sizeHint = 32) const {
         return core::irgen::expressions::TermExpression(createTermForOperand(index, sizeHint));
     }
 
@@ -296,11 +314,11 @@ private:
         return result;
     }
 
-    std::unique_ptr<core::ir::Term> createRegisterAccess(int reg) const {
+    static std::unique_ptr<core::ir::Term> createRegisterAccess(int reg) {
         return ArmInstructionAnalyzer::createTerm(getRegister(reg));
     }
 
-    const core::arch::Register *getRegister(int reg) const {
+    static const core::arch::Register *getRegister(int reg) {
         switch (reg) {
         #define REG(lowercase, uppercase) \
             case ARM_REG_##uppercase: return ArmRegisters::lowercase();
