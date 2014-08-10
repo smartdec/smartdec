@@ -97,10 +97,32 @@ ArrayAccess recognizeArrayAccess(const Term *term, const dflow::Dataflow &datafl
 }
 
 BoundsCheck recognizeBoundsCheck(const Jump *jump, const BasicBlock *ifPassed, const dflow::Dataflow &dataflow) {
+    bool inverse;
     if (jump->thenTarget().basicBlock() == ifPassed) {
-        const Term *condition = getFirstCopy(jump->condition(), dataflow);
+        inverse = false;
+    } else if (jump->elseTarget().basicBlock() == ifPassed) {
+        inverse = true;
+    } else {
+        return BoundsCheck();
+    }
 
-        if (const BinaryOperator *binary = condition->as<BinaryOperator>()) {
+    auto condition = getFirstCopy(jump->condition(), dataflow);
+
+    for (std::size_t niterations = 0; niterations < 10; ++niterations) {
+        if (auto unary = condition->as<UnaryOperator>()) {
+            if (unary->operatorKind() == UnaryOperator::NOT && unary->size() == 1) {
+                condition = getFirstCopy(unary->operand(), dataflow);
+                inverse = !inverse;
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+
+    if (auto binary = condition->as<BinaryOperator>()) {
+        if (!inverse) {
             switch (binary->operatorKind()) {
                 case BinaryOperator::UNSIGNED_LESS_OR_EQUAL: {
                     const dflow::Value *rightValue = dataflow.getValue(binary->right());
@@ -117,11 +139,7 @@ BoundsCheck recognizeBoundsCheck(const Jump *jump, const BasicBlock *ifPassed, c
                     break;
                 }
             }
-        }
-    } else if (jump->elseTarget().basicBlock() == ifPassed) {
-        const Term *condition = getFirstCopy(jump->condition(), dataflow);
-
-        if (const BinaryOperator *binary = condition->as<BinaryOperator>()) {
+        } else {
             switch (binary->operatorKind()) {
                 case BinaryOperator::UNSIGNED_LESS: {
                     const dflow::Value *leftValue = dataflow.getValue(binary->left());
