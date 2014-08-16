@@ -14,13 +14,13 @@ namespace image {
 QString SymbolType::getName(Type type) {
     switch (type) {
         case NOTYPE:
-            return QObject::tr("none", "symbol");
+            return tr("None");
         case FUNCTION:
-            return QObject::tr("function", "symbol");
+            return tr("Function");
         case OBJECT:
-            return QObject::tr("object", "symbol");
+            return tr("Object");
         case SECTION:
-            return QObject::tr("section", "symbol");
+            return tr("Section");
     }
     unreachable();
 }

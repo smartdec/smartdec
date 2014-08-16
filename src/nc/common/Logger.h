@@ -25,6 +25,7 @@
 
 #include <nc/config.h>
 
+#include <QCoreApplication>
 #include <QString>
 
 #include "LogLevel.h"
@@ -35,6 +36,7 @@ namespace nc {
  * Log level.
  */
 class LogLevel {
+    Q_DECLARE_TR_FUNCTIONS(LogLevel)
 public:
     /**
      * Log level values.

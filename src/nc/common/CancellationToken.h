@@ -27,6 +27,8 @@
 
 #include <memory> /* std::shared_ptr */
 
+#include <QCoreApplication>
+
 #include "Exception.h"
 
 namespace nc {
@@ -35,6 +37,8 @@ namespace nc {
  * Exception thrown when cancellation was requested.
  */
 class CancellationException: public nc::Exception {
+    Q_DECLARE_TR_FUNCTIONS(CancellationException)
+
 public:
     /**
      * Default constructor.
@@ -49,8 +53,7 @@ class CancellationToken {
     /** Flag whether the cancellation is requested. */
     std::shared_ptr<volatile bool> cancellationRequested_;
 
-    public:
-
+public:
     /**
      * Creates a not canceled token.
      */

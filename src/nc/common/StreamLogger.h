@@ -5,6 +5,7 @@
 
 #include <nc/config.h>
 
+#include <QCoreApplication>
 #include <QTextStream>
 
 #include "Logger.h"
@@ -15,6 +16,8 @@ namespace nc {
  * Logger printing messages to a stream.
  */
 class StreamLogger: public nc::Logger {
+    Q_DECLARE_TR_FUNCTIONS(StreamLogger)
+
     QTextStream &stream_;
 
 public:

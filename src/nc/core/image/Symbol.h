@@ -7,6 +7,7 @@
 
 #include <nc/common/Types.h>
 
+#include <QCoreApplication>
 #include <QString>
 
 namespace nc {
@@ -19,6 +20,8 @@ class Section;
  * Symbol type.
  */
 class SymbolType {
+    Q_DECLARE_TR_FUNCTIONS(SymbolType)
+
 public:
     /**
      * Symbol type values.

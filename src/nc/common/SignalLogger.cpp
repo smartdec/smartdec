@@ -6,7 +6,7 @@
 namespace nc {
 
 void SignalLogger::log(LogLevel level, const QString &text) {
-    Q_EMIT onMessage(QObject::tr("[%1] %2", "log").arg(level.getName()).arg(text));
+    Q_EMIT onMessage(tr("[%1] %2").arg(level.getName()).arg(text));
 }
 
 } // namespace nc
