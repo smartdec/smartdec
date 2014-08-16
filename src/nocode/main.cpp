@@ -105,29 +105,8 @@ void printSections(nc::core::Context &context, QTextStream &out) {
 
 void printSymbols(nc::core::Context &context, QTextStream &out) {
     foreach (const auto *symbol, context.image()->symbols()) {
-        using nc::core::image::Symbol;
-
-        QString type;
-        switch (symbol->type()) {
-            case Symbol::NOTYPE:
-                type = QLatin1String("none");
-                break;
-            case Symbol::FUNCTION:
-                type = QLatin1String("function");
-                break;
-            case Symbol::OBJECT:
-                type = QLatin1String("object");
-                break;
-            case Symbol::SECTION:
-                type = QLatin1String("section");
-                break;
-            default:
-                unreachable();
-        }
-
         out << QString("symbol name = '%1', type = %2, value = 0x%3, section = %4")
-            .arg(symbol->name())
-            .arg(type).arg(symbol->value(), 0, 16)
+            .arg(symbol->name()).arg(symbol->type().getName()).arg(symbol->value(), 0, 16)
             .arg(symbol->section() ? symbol->section()->name() : QString()) << endl;
     }
 }

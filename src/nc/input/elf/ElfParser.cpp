@@ -271,20 +271,21 @@ private:
             byteOrder_.convertFrom(sym.st_shndx);
 
             using core::image::Symbol;
+            using core::image::SymbolType;
 
-            Symbol::Type type;
+            SymbolType type;
             switch (Elf::st_type(sym.st_info)) {
                 case STT_OBJECT:
-                    type = Symbol::OBJECT;
+                    type = SymbolType::OBJECT;
                     break;
                 case STT_FUNC:
-                    type = Symbol::FUNCTION;
+                    type = SymbolType::FUNCTION;
                     break;
                 case STT_SECTION:
-                    type = Symbol::SECTION;
+                    type = SymbolType::SECTION;
                     break;
                 default:
-                    type = Symbol::NOTYPE;
+                    type = SymbolType::NOTYPE;
                     break;
             }
 

@@ -79,23 +79,10 @@ QVariant SymbolsModel::data(const QModelIndex &index, int role) const {
         assert(symbol);
 
         switch (index.column()) {
-            case COL_NAME: return symbol->name();
-            case COL_TYPE: {
-                using core::image::Symbol;
-
-                switch (symbol->type()) {
-                    case Symbol::NOTYPE:
-                        return tr("None");
-                    case Symbol::FUNCTION:
-                        return tr("Function");
-                    case Symbol::OBJECT:
-                        return tr("Object");
-                    case Symbol::SECTION:
-                        return tr("Section");
-                    default:
-                        return tr("Unknown");
-                }
-            }
+            case COL_NAME:
+                return symbol->name();
+            case COL_TYPE:
+                return symbol->type().getName();
             case COL_VALUE: {
                 if (role == Qt::DisplayRole) {
                     return QString("%1").arg(symbol->value(), 0, 16);
@@ -103,7 +90,8 @@ QVariant SymbolsModel::data(const QModelIndex &index, int role) const {
                     return static_cast<qlonglong>(symbol->value());
                 }
             }
-            case COL_SECTION: return symbol->section() ? symbol->section()->name() : QString();
+            case COL_SECTION:
+                return symbol->section() ? symbol->section()->name() : QString();
             default:
                 unreachable();
         }

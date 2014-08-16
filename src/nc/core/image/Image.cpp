@@ -92,7 +92,7 @@ void Image::addSymbol(std::unique_ptr<Symbol> symbol) {
     symbols_.push_back(std::move(symbol));
 }
 
-const Symbol *Image::getSymbol(ConstantValue value, Symbol::Type type) const {
+const Symbol *Image::getSymbol(ConstantValue value, SymbolType type) const {
     return nc::find(value2symbol_, std::make_pair(value, type));
 }
 

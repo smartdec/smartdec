@@ -618,9 +618,9 @@ void SignatureAnalyzer::computeName(const CalleeId &calleeId, FunctionSignature 
 
     if (calleeId.entryAddress()) {
         /* Take the name of the corresponding symbol, if possible. */
-        auto symbol = image_.getSymbol(*calleeId.entryAddress(), image::Symbol::FUNCTION);
+        auto symbol = image_.getSymbol(*calleeId.entryAddress(), image::SymbolType::FUNCTION);
         if (!symbol) {
-            symbol = image_.getSymbol(*calleeId.entryAddress(), image::Symbol::NOTYPE);
+            symbol = image_.getSymbol(*calleeId.entryAddress(), image::SymbolType::NOTYPE);
         }
         if (symbol) {
             signature.setName(likec::Tree::cleanName(symbol->name()));

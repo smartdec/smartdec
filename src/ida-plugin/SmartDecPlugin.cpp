@@ -217,20 +217,21 @@ std::unique_ptr<gui::Project> SmartDecPlugin::createIdaProject() const {
     IdaFrontend::createSections(image);
 
     using core::image::Symbol;
+    using core::image::SymbolType;
 
     /* Add function names. */
     foreach(ByteAddr address, IdaFrontend::functionStarts()) {
         QString name = IdaFrontend::functionName(address);
 
         if (!name.isEmpty()) {
-            image->addSymbol(std::make_unique<Symbol>(Symbol::FUNCTION, name, address));
+            image->addSymbol(std::make_unique<Symbol>(SymbolType::FUNCTION, name, address));
         }
     }
 
     /* Add imported function names. */
     typedef std::pair<ByteAddr, QString> Import;
     foreach(const Import &import, IdaFrontend::importedFunctions()) {
-        image->addSymbol(std::make_unique<Symbol>(Symbol::FUNCTION, import.second, import.first));
+        image->addSymbol(std::make_unique<Symbol>(SymbolType::FUNCTION, import.second, import.first));
     }
 
     return project;

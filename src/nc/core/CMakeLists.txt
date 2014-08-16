@@ -30,6 +30,7 @@ set(SOURCES
     image/Relocation.h
     image/Section.cpp
     image/Section.h
+    image/Symbol.cpp
     image/Symbol.h
     image/ZeroByteSource.cpp
     image/ZeroByteSource.h

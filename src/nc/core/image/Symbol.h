@@ -15,10 +15,13 @@ namespace image {
 
 class Section;
 
-class Symbol {
+/**
+ * Symbol type.
+ */
+class SymbolType {
 public:
     /**
-     * Symbol type.
+     * Symbol type values.
      */
     enum Type {
         NOTYPE,   ///< Not specified or unknown.
@@ -27,8 +30,37 @@ public:
         SECTION   ///< Section object.
     };
 
+    /**
+     * Constructor.
+     *
+     * \param type Symbol type value.
+     */
+    SymbolType(Type type = NOTYPE): type_(type) {}
+
+    /**
+     * \return Symbol type value.
+     */
+    operator Type() const { return type_; }
+
+    /**
+     * \param type Symbol type value.
+     *
+     * \return Name of the given symbol type.
+     */
+    static QString getName(Type type);
+
+    /**
+     * \return Name of the symbol type.
+     */
+    QString getName() const { return getName(type_); }
+
 private:
-    Type type_; ///< Type of the symbol.
+    Type type_;
+};
+
+class Symbol {
+private:
+    SymbolType type_; ///< Type of the symbol.
     QString name_; ///< Name of the symbol.
     ConstantValue value_; ///< Value of the symbol.
     const Section *section_; ///< Section referenced by the symbol.
@@ -42,17 +74,17 @@ public:
      * \param value Value of the symbol.
      * \param section Pointer to the section referenced by the symbol.
      */
-    Symbol(Type type, QString name, ConstantValue value, const Section *section = NULL):
+    Symbol(SymbolType type, QString name, ConstantValue value, const Section *section = NULL):
         type_(type), name_(std::move(name)), value_(value), section_(section)
     {}
 
     /**
-     * \return Type of the object.
+     * \return Type of the symbol.
      */
-    Type type() const { return type_; }
+    SymbolType type() const { return type_; }
 
     /**
-     * \return Name of the object.
+     * \return Name of the symbol.
      */
     QString name() const { return name_; }
 

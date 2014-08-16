@@ -244,16 +244,17 @@ private:
             peByteOrder.convertFrom(symbol.SectionNumber);
 
             using core::image::Symbol;
+            using core::image::SymbolType;
 
-            Symbol::Type type;
+            SymbolType type;
             /*
              * Microsoft tools set this field to 0x20 (function) or 0x0 (not a function).
              * -- http://www.kishorekumar.net/pecoff_v8.1.htm
              */
             if (symbol.Type == 0x20) {
-                type = Symbol::FUNCTION;
+                type = SymbolType::FUNCTION;
             } else {
-                type = Symbol::NOTYPE;
+                type = SymbolType::NOTYPE;
             }
 
             QString name;

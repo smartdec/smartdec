@@ -191,9 +191,9 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
                 }
             }
 
-            auto symbol = image().getSymbol(addr, image::Symbol::OBJECT);
+            auto symbol = image().getSymbol(addr, image::SymbolType::OBJECT);
             if (!symbol) {
-                symbol = image().getSymbol(addr, image::Symbol::NOTYPE);
+                symbol = image().getSymbol(addr, image::SymbolType::NOTYPE);
             }
             if (symbol) {
                 if (name.isEmpty()) {
