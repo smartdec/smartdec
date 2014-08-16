@@ -85,6 +85,10 @@ class PeParserPrivate {
     QIODevice *source_;
     core::image::Image *image_;
 
+    ByteAddr fileHeaderOffset_;
+    IMAGE_FILE_HEADER fileHeader_;
+    ByteAddr imageBase_;
+
 public:
     PeParserPrivate(QIODevice *source, core::image::Image *image):
         source_(source), image_(image)
@@ -94,39 +98,63 @@ public:
         if (!seekFileHeader(source_)) {
             throw core::input::ParseError(tr("PE signature doesn't match."));
         }
+        fileHeaderOffset_ = source_->pos();
 
-        IMAGE_FILE_HEADER fileHeader;
-        if (source_->read(reinterpret_cast<char *>(&fileHeader), sizeof(fileHeader)) != sizeof(fileHeader)) {
-            throw core::input::ParseError(tr("Cannot read the file header."));
-        }
-        peByteOrder.convertFrom(fileHeader.Machine);
-        peByteOrder.convertFrom(fileHeader.PointerToSymbolTable);
-        peByteOrder.convertFrom(fileHeader.NumberOfSymbols);
-        peByteOrder.convertFrom(fileHeader.NumberOfSections);
-
-        switch (fileHeader.Machine) {
-            case IMAGE_FILE_MACHINE_I386:
-                image_->setArchitecture(QLatin1String("i386"));
-                break;
-            case IMAGE_FILE_MACHINE_AMD64:
-                image_->setArchitecture(QLatin1String("x86-64"));
-                break;
-            default:
-                throw core::input::ParseError(tr("Unknown machine id: %1.").arg(fileHeader.Machine));
-        }
-
-        parseSections(fileHeader);
-        parseSymbols(fileHeader);
+        parseFileHeader();
+        parseSections();
+        parseSymbols();
     }
 
 private:
-    void parseSections(const IMAGE_FILE_HEADER &fileHeader) {
-        if (!source_->seek(source_->pos() + fileHeader.SizeOfOptionalHeader)) {
+    void parseFileHeader() {
+        if (!source_->seek(fileHeaderOffset_)) {
+            throw core::input::ParseError(tr("Cannot seek to the file header."));
+        }
+        if (source_->read(reinterpret_cast<char *>(&fileHeader_), sizeof(fileHeader_)) != sizeof(fileHeader_)) {
+            throw core::input::ParseError(tr("Cannot read the file header."));
+        }
+        peByteOrder.convertFrom(fileHeader_.Machine);
+        peByteOrder.convertFrom(fileHeader_.PointerToSymbolTable);
+        peByteOrder.convertFrom(fileHeader_.NumberOfSymbols);
+        peByteOrder.convertFrom(fileHeader_.NumberOfSections);
+
+        switch (fileHeader_.Machine) {
+            case IMAGE_FILE_MACHINE_I386:
+                image_->setArchitecture(QLatin1String("i386"));
+                parseOptionalHeader<IMAGE_OPTIONAL_HEADER32>();
+                break;
+            case IMAGE_FILE_MACHINE_AMD64:
+                image_->setArchitecture(QLatin1String("x86-64"));
+                parseOptionalHeader<IMAGE_OPTIONAL_HEADER64>();
+                break;
+            default:
+                throw core::input::ParseError(tr("Unknown machine id: %1.").arg(fileHeader_.Machine));
+        }
+    }
+
+    template<class IMAGE_OPTIONAL_HEADER>
+    void parseOptionalHeader() {
+        if (!source_->seek(fileHeaderOffset_ + sizeof(IMAGE_FILE_HEADER))) {
+            throw core::input::ParseError(tr("Cannot seek to the optional header."));
+        }
+
+        IMAGE_OPTIONAL_HEADER optionalHeader;
+        if (source_->read(reinterpret_cast<char *>(&optionalHeader), sizeof(optionalHeader)) != sizeof(optionalHeader)) {
+            throw core::input::ParseError(tr("Cannot read the optional header."));
+        }
+
+        peByteOrder.convertFrom(optionalHeader.ImageBase);
+
+        imageBase_ = optionalHeader.ImageBase;
+    }
+
+    void parseSections() {
+        if (!source_->seek(fileHeaderOffset_ + sizeof(IMAGE_FILE_HEADER) + fileHeader_.SizeOfOptionalHeader)) {
             ncWarning("Cannot seek to the section header table.");
             return;
         }
 
-        for (std::size_t i = 0; i < fileHeader.NumberOfSections; ++i) {
+        for (std::size_t i = 0; i < fileHeader_.NumberOfSections; ++i) {
             IMAGE_SECTION_HEADER sectionHeader;
             if (source_->read(reinterpret_cast<char *>(&sectionHeader), sizeof(sectionHeader)) != sizeof(sectionHeader)) {
                 ncWarning("Cannot read the section header %1.", i);
@@ -140,7 +168,7 @@ private:
             peByteOrder.convertFrom(sectionHeader.SizeOfRawData);
 
             auto section = std::make_unique<core::image::Section>(
-                getString(sectionHeader.Name), sectionHeader.VirtualAddress, sectionHeader.SizeOfRawData
+                getString(sectionHeader.Name), sectionHeader.VirtualAddress + imageBase_, sectionHeader.SizeOfRawData
             );
 
             section->setAllocated((sectionHeader.Characteristics & IMAGE_SCN_MEM_DISCARDABLE) == 0);
@@ -165,12 +193,12 @@ private:
         }
     }
 
-    void parseSymbols(const IMAGE_FILE_HEADER &fileHeader) {
-        if (!fileHeader.PointerToSymbolTable || !fileHeader.NumberOfSymbols) {
+    void parseSymbols() {
+        if (!fileHeader_.PointerToSymbolTable || !fileHeader_.NumberOfSymbols) {
             return;
         }
 
-        if (!source_->seek(fileHeader.PointerToSymbolTable)) {
+        if (!source_->seek(fileHeader_.PointerToSymbolTable)) {
             ncWarning("Cannot seek to the symbol table.");
             return;
         }
@@ -178,10 +206,10 @@ private:
         /*
          * http://www.delorie.com/djgpp/doc/coff/symtab.html
          */
-        std::vector<IMAGE_SYMBOL> symbols(fileHeader.NumberOfSymbols);
+        std::vector<IMAGE_SYMBOL> symbols(fileHeader_.NumberOfSymbols);
 
-        if (source_->read(reinterpret_cast<char *>(&symbols[0]), sizeof(IMAGE_SYMBOL) * fileHeader.NumberOfSymbols) !=
-            static_cast<qint64>(sizeof(IMAGE_SYMBOL) * fileHeader.NumberOfSymbols))
+        if (source_->read(reinterpret_cast<char *>(&symbols[0]), sizeof(IMAGE_SYMBOL) * fileHeader_.NumberOfSymbols) !=
+            static_cast<qint64>(sizeof(IMAGE_SYMBOL) * fileHeader_.NumberOfSymbols))
         {
             ncWarning("Cannot read the symbol table.");
             return;
@@ -212,6 +240,7 @@ private:
         foreach (IMAGE_SYMBOL &symbol, symbols) {
             peByteOrder.convertFrom(symbol.Type);
             peByteOrder.convertFrom(symbol.Value);
+            peByteOrder.convertFrom(symbol.SectionNumber);
 
             using core::image::Symbol;
 
@@ -233,7 +262,14 @@ private:
                 name = getStringFromTable(symbol.N.Name.Long);
             }
 
-            image_->addSymbol(std::make_unique<Symbol>(type, name, symbol.Value));
+            auto value = symbol.Value;
+            std::size_t sectionNumber = symbol.SectionNumber - 1;
+
+            if (sectionNumber < image_->sections().size()) {
+                value += image_->sections()[sectionNumber]->addr();
+            }
+
+            image_->addSymbol(std::make_unique<Symbol>(type, name, value));
         }
 
         foreach (auto section, image_->sections()) {
