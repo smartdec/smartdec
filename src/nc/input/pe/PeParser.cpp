@@ -265,13 +265,15 @@ private:
             }
 
             auto value = symbol.Value;
-            std::size_t sectionNumber = symbol.SectionNumber - 1;
+            const core::image::Section *section = NULL;
 
+            std::size_t sectionNumber = symbol.SectionNumber - 1;
             if (sectionNumber < image_->sections().size()) {
-                value += image_->sections()[sectionNumber]->addr();
+                section = image_->sections()[sectionNumber];
+                value += section->addr();
             }
 
-            image_->addSymbol(std::make_unique<Symbol>(type, name, value));
+            image_->addSymbol(std::make_unique<Symbol>(type, name, value, section));
         }
 
         foreach (auto section, image_->sections()) {
