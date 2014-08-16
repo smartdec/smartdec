@@ -30,7 +30,7 @@
 #include <nc/common/ByteOrder.h>
 #include <nc/common/Conversions.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/Warnings.h>
+#include <nc/common/LogToken.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/image/BufferByteSource.h>
@@ -84,14 +84,15 @@ class PeParserPrivate {
 
     QIODevice *source_;
     core::image::Image *image_;
+    const LogToken &log_;
 
     ByteAddr fileHeaderOffset_;
     IMAGE_FILE_HEADER fileHeader_;
     ByteAddr imageBase_;
 
 public:
-    PeParserPrivate(QIODevice *source, core::image::Image *image):
-        source_(source), image_(image)
+    PeParserPrivate(QIODevice *source, core::image::Image *image, const LogToken &log):
+        source_(source), image_(image), log_(log)
     {}
 
     void parse() {
@@ -150,14 +151,14 @@ private:
 
     void parseSections() {
         if (!source_->seek(fileHeaderOffset_ + sizeof(IMAGE_FILE_HEADER) + fileHeader_.SizeOfOptionalHeader)) {
-            ncWarning("Cannot seek to the section header table.");
+            log_.warning(tr("Cannot seek to the section header table."));
             return;
         }
 
         for (std::size_t i = 0; i < fileHeader_.NumberOfSections; ++i) {
             IMAGE_SECTION_HEADER sectionHeader;
             if (source_->read(reinterpret_cast<char *>(&sectionHeader), sizeof(sectionHeader)) != sizeof(sectionHeader)) {
-                ncWarning("Cannot read the section header %1.", i);
+                log_.warning(tr("Cannot read the section header number %1.").arg(i));
                 return;
             }
 
@@ -199,7 +200,7 @@ private:
         }
 
         if (!source_->seek(fileHeader_.PointerToSymbolTable)) {
-            ncWarning("Cannot seek to the symbol table.");
+            log_.warning(tr("Cannot seek to the symbol table."));
             return;
         }
 
@@ -211,20 +212,20 @@ private:
         if (source_->read(reinterpret_cast<char *>(&symbols[0]), sizeof(IMAGE_SYMBOL) * fileHeader_.NumberOfSymbols) !=
             static_cast<qint64>(sizeof(IMAGE_SYMBOL) * fileHeader_.NumberOfSymbols))
         {
-            ncWarning("Cannot read the symbol table.");
+            log_.warning(tr("Cannot read the symbol table."));
             return;
         }
 
         uint32_t stringTableSize;
         if (source_->read(reinterpret_cast<char *>(&stringTableSize), sizeof(stringTableSize)) != sizeof(stringTableSize)) {
-            ncWarning("Cannot read the size of the string table.");
+            log_.warning(tr("Cannot read the size of the string table."));
             return;
         }
 
         std::unique_ptr<char[]> stringTable(new char[stringTableSize]);
         memset(stringTable.get(), 0, 4);
         if (source_->read(stringTable.get() + 4, stringTableSize - 4) != stringTableSize - 4) {
-            ncWarning("Cannot read the string table.");
+            log_.warning(tr("Cannot read the string table."));
             return;
         }
 
@@ -301,8 +302,8 @@ bool PeParser::doCanParse(QIODevice *source) const {
     return seekFileHeader(source);
 }
 
-void PeParser::doParse(QIODevice *source, core::image::Image *image) const {
-    PeParserPrivate parser(source, image);
+void PeParser::doParse(QIODevice *source, core::image::Image *image, const LogToken &log) const {
+    PeParserPrivate parser(source, image, log);
     parser.parse();
     image->setDemangler("msvc");
 }

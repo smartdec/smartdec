@@ -25,10 +25,13 @@
 
 #include <nc/config.h>
 
+#include <QCoreApplication>
+
 #include <cassert>
 #include <vector>
 
 #include <nc/common/CancellationToken.h>
+#include <nc/common/LogToken.h>
 #include <nc/common/Types.h>
 
 namespace nc {
@@ -60,9 +63,13 @@ namespace irgen {
  * Class for translating assembler programs into intermediate representation.
  */
 class IRGenerator {
+    Q_DECLARE_TR_FUNCTIONS(IRGenerator)
+
     const image::Image *image_; ///< Executable image.
     const arch::Instructions *instructions_; ///< Instructions.
     ir::Program *program_; ///< Program.
+    const CancellationToken &canceled_; ///< Cancellation token.
+    const LogToken &log_; ///< Log token.
     std::unique_ptr<arch::Disassembler> disassembler_; ///< Disassembler.
 
 public:
@@ -72,8 +79,11 @@ public:
      * \param[in] image Valid pointer to the executable image.
      * \param[in] instructions Valid pointer to the set of instructions.
      * \param[out] program Valid pointer to the program.
+     * \param[in] canceled Cancellation token.
+     * \param[in] log Log token.
      */
-    IRGenerator(const image::Image *image, const arch::Instructions *instructions, ir::Program *program);
+    IRGenerator(const image::Image *image, const arch::Instructions *instructions, ir::Program *program,
+        const CancellationToken &canceled, const LogToken &logToken);
 
     /**
      * Destructor.
@@ -83,10 +93,8 @@ public:
     /**
      * Builds a program control flow graph from the instructions
      * given to the constructor.
-     *
-     * \param[in] canceled Cancellation token.
      */
-    void generate(const CancellationToken &canceled);
+    void generate();
 
     /**
      * Tries to find all instructions reachable from the given one.
@@ -95,10 +103,11 @@ public:
      * \param[in] startAddress Virtual address of the instruction to start from.
      * \param[in] followCalls Pass true to follow calls, pass false to stay within one function.
      * \param[in] canceled Cancellation token.
+     * \param[in] log Log token.
      *
      * \return Valid pointer to the set of instructions discovered.
      */
-    static std::unique_ptr<arch::Instructions> explore(const image::Image *image, ByteAddr startAddress, bool followCalls, const CancellationToken &canceled);
+    static std::unique_ptr<arch::Instructions> explore(const image::Image *image, ByteAddr startAddress, bool followCalls, const CancellationToken &canceled, const LogToken &log);
 
 private:
     /**

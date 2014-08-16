@@ -64,8 +64,9 @@ void MasterAnalyzer::createProgram(Context &context) const {
 
     std::unique_ptr<ir::Program> program(new ir::Program());
 
-    core::irgen::IRGenerator(context.image().get(), context.instructions().get(), program.get())
-        .generate(context.cancellationToken());
+    core::irgen::IRGenerator(context.image().get(), context.instructions().get(), program.get(),
+        context.cancellationToken(), context.logToken())
+    .generate();
 
     context.setProgram(std::move(program));
 }
@@ -114,8 +115,8 @@ void MasterAnalyzer::dataflowAnalysis(Context &context, ir::Function *function) 
 
     context.hooks()->instrument(function, dataflow.get());
 
-    ir::dflow::DataflowAnalyzer(*dataflow, context.image()->architecture())
-        .analyze(function, context.cancellationToken());
+    ir::dflow::DataflowAnalyzer(*dataflow, context.image()->architecture(), context.cancellationToken(), context.logToken())
+        .analyze(function);
 
     context.dataflows()->emplace(function, std::move(dataflow));
 }
@@ -124,8 +125,8 @@ void MasterAnalyzer::reconstructSignatures(Context &context) const {
     context.logToken().info(tr("Reconstructing function signatures."));
 
     ir::calling::SignatureAnalyzer(*context.signatures(), *context.image(), *context.functions(),
-        *context.dataflows(), *context.hooks())
-        .analyze(context.cancellationToken());
+        *context.dataflows(), *context.hooks(), context.cancellationToken(), context.logToken())
+        .analyze();
 }
 
 void MasterAnalyzer::reconstructVariables(Context &context) const {
@@ -133,7 +134,8 @@ void MasterAnalyzer::reconstructVariables(Context &context) const {
 
     std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
 
-    ir::vars::VariableAnalyzer(*variables, *context.dataflows(), context.image()->architecture()).analyze();
+    ir::vars::VariableAnalyzer(*variables, *context.dataflows(), context.image()->architecture())
+        .analyze();
 
     context.setVariables(std::move(variables));
 }
@@ -155,7 +157,8 @@ void MasterAnalyzer::livenessAnalysis(Context &context, const ir::Function *func
 
     ir::liveness::LivenessAnalyzer(*liveness, function,
         *context.dataflows()->at(function), context.image()->architecture(),
-        *context.graphs()->at(function), *context.hooks(), *context.signatures())
+        *context.graphs()->at(function), *context.hooks(), *context.signatures(),
+        context.logToken())
     .analyze();
 
     context.livenesses()->emplace(function, std::move(liveness));

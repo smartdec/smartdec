@@ -34,9 +34,11 @@ class X86DataflowAnalyzer: public core::ir::dflow::DataflowAnalyzer {
 
     X86DataflowAnalyzer(
         core::ir::dflow::Dataflow &dataflow,
-        const core::arch::Architecture *architecture
+        const core::arch::Architecture *architecture,
+        const CancellationToken &canceled,
+        const LogToken &log
     ):
-        core::ir::dflow::DataflowAnalyzer(dataflow, architecture)
+        core::ir::dflow::DataflowAnalyzer(dataflow, architecture, canceled, log)
     {}
 
     virtual void execute(const core::ir::Term *term, core::ir::dflow::ExecutionContext &context) override;

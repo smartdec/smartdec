@@ -39,13 +39,13 @@ bool Parser::canParse(QIODevice *source) const {
     return doCanParse(source);
 }
 
-void Parser::parse(QIODevice *source, image::Image *image) const {
+void Parser::parse(QIODevice *source, image::Image *image, const LogToken &log) const {
     assert(source != NULL);
     assert(image != NULL);
 
     try {
         source->seek(0);
-        doParse(source, image);
+        doParse(source, image, log);
     } catch (nc::Exception &e) {
         if (!boost::get_error_info<ErrorOffset>(e)) {
             e << ErrorOffset(source->pos());

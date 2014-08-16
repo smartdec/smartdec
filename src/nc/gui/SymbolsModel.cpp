@@ -7,7 +7,6 @@
 
 #include <nc/common/CheckedCast.h>
 #include <nc/common/Unreachable.h>
-#include <nc/common/Warnings.h>
 
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
@@ -94,7 +93,6 @@ QVariant SymbolsModel::data(const QModelIndex &index, int role) const {
                     case Symbol::SECTION:
                         return tr("Section");
                     default:
-                        ncWarning("Unknown symbol type: %1.", symbol->type());
                         return tr("Unknown");
                 }
             }

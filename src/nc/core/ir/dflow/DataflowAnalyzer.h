@@ -25,11 +25,14 @@
 
 #include <nc/config.h>
 
+#include <QCoreApplication>
+
+#include <nc/common/CancellationToken.h>
+#include <nc/common/LogToken.h>
+
 #include <cassert>
 
 namespace nc {
-
-class CancellationToken;
 
 namespace core {
 
@@ -57,18 +60,25 @@ class ReachingDefinitions;
  * Implements a dataflow analysis based on abstract interpretation loop.
  */
 class DataflowAnalyzer {
+    Q_DECLARE_TR_FUNCTIONS(DataflowAnalyzer)
+
     Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Valid pointer to architecture description.
+    const CancellationToken &canceled_;
+    const LogToken &log_;
 
 public:
     /**
      * Constructor.
      *
-     * \param dataflow An object where to store results of analyses.
-     * \param architecture Valid pointer to architecture description.
+     * \param dataflow      An object where to store results of analyses.
+     * \param architecture  Valid pointer to architecture description.
+     * \param canceled      Cancellation token.
+     * \param log           Log token.
      */
-    DataflowAnalyzer(Dataflow &dataflow, const arch::Architecture *architecture):
-        dataflow_(dataflow), architecture_(architecture)
+    DataflowAnalyzer(Dataflow &dataflow, const arch::Architecture *architecture,
+        const CancellationToken &canceled, const LogToken &log):
+        dataflow_(dataflow), architecture_(architecture), canceled_(canceled), log_(log)
     {
         assert(architecture != NULL);
     }
@@ -93,9 +103,8 @@ public:
      * analysis on the function given to the constructor.
      *
      * \param[in] function  Valid pointer to the function.
-     * \param[in] canceled  Cancellation token.
      */
-    void analyze(const Function *function, const CancellationToken &canceled);
+    void analyze(const Function *function);
 
     /**
      * Executes a statement.

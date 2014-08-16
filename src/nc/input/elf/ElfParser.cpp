@@ -28,8 +28,8 @@
 #include <QIODevice>
 
 #include <nc/common/Foreach.h>
+#include <nc/common/LogToken.h>
 #include <nc/common/Range.h>
-#include <nc/common/Warnings.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/image/BufferByteSource.h>
@@ -98,11 +98,12 @@ public:
 };
 
 template<class Elf>
-class RealElfParser {
+class ElfParserImpl {
     Q_DECLARE_TR_FUNCTIONS(ElfParserPrivate)
 
     QIODevice *source_;
     core::image::Image *image_;
+    const LogToken &log_;
 
     typename Elf::Ehdr ehdr_;
     ByteOrder byteOrder_;
@@ -112,8 +113,8 @@ class RealElfParser {
     boost::unordered_map<std::size_t, std::vector<std::unique_ptr<core::image::Relocation>>> relocationTables_;
 
 public:
-    RealElfParser(QIODevice *source, core::image::Image *image):
-        source_(source), image_(image), byteOrder_(ByteOrder::Current)
+    ElfParserImpl(QIODevice *source, core::image::Image *image, const LogToken &log):
+        source_(source), image_(image), log_(log), byteOrder_(ByteOrder::Current)
     {}
 
     void parse() {
@@ -154,7 +155,7 @@ private:
         } else if (ehdr_.e_ident[EI_DATA] == ELFDATA2MSB) {
             byteOrder_ = ByteOrder::BigEndian;
         } else {
-            ncWarning("Invalid byte order in ELF file: %1. Assuming host byte order.", ehdr_.e_ident[EI_DATA]);
+            log_.warning(tr("Invalid byte order in ELF file: %1. Assuming host byte order.").arg(ehdr_.e_ident[EI_DATA]));
         }
 
         byteOrder_.convertFrom(ehdr_.e_machine);
@@ -247,7 +248,7 @@ private:
 
         auto strtabIndex = shdrs_[symtabIndex].sh_link;
         if (strtabIndex >= shdrs_.size()) {
-            ncWarning("Symbol table %1 uses invalid string table %2.", symtabIndex, strtabIndex);
+            log_.warning(tr("Symbol table (section number %1) has invalid string table section number %2.").arg(symtabIndex).arg(strtabIndex));
             return;
         }
 
@@ -317,7 +318,7 @@ private:
 
         std::size_t symIndex = shdrs_[reltabIndex].sh_link;
         if (symIndex >= sections_.size()) {
-            ncWarning("Relocations table %1 uses invalid symbol table %2.", reltabIndex, symIndex);
+            log_.warning(tr("Relocations table %1 uses invalid symbol table %2.").arg(reltabIndex).arg(symIndex));
             return;
         }
 
@@ -344,7 +345,7 @@ private:
                 result.push_back(std::make_unique<core::image::Relocation>(
                     rel.r_offset, symbolTable[symbolIndex].get(), Relocation::addend(rel)));
             } else {
-                ncWarning("Symbol index %1 is out of range, symbol table has %2 elements.", symbolIndex, symbolTable.size());
+                log_.warning(tr("Symbol index %1 is out of range: symbol table has only %2 elements.").arg(symbolIndex).arg(symbolTable.size()));
             }
         }
     }
@@ -364,7 +365,7 @@ bool ElfParser::doCanParse(QIODevice *source) const {
     return IS_ELF(ehdr);
 }
 
-void ElfParser::doParse(QIODevice *source, core::image::Image *image) const {
+void ElfParser::doParse(QIODevice *source, core::image::Image *image, const LogToken &log) const {
     Elf32_Ehdr ehdr;
 
     std::size_t bytesRead = source->read(reinterpret_cast<char *>(&ehdr), sizeof(ehdr));
@@ -374,11 +375,11 @@ void ElfParser::doParse(QIODevice *source, core::image::Image *image) const {
 
     switch (ehdr.e_ident[EI_CLASS]) {
         case ELFCLASS32: {
-            RealElfParser<Elf32>(source, image).parse();
+            ElfParserImpl<Elf32>(source, image, log).parse();
             break;
         }
         case ELFCLASS64: {
-            RealElfParser<Elf64>(source, image).parse();
+            ElfParserImpl<Elf64>(source, image, log).parse();
             break;
         }
         default: {

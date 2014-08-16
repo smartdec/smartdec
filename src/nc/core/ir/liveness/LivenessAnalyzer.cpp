@@ -27,7 +27,6 @@
 #include <cassert>
 
 #include <nc/common/Foreach.h>
-#include <nc/common/Warnings.h>
 
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/ir/BasicBlock.h>
@@ -55,7 +54,7 @@ namespace liveness {
 void LivenessAnalyzer::analyze() {
     deadJumps_.clear();
 
-    foreach (auto node, regionGraph().nodes()) {
+    foreach (auto node, regionGraph_.nodes()) {
         if (auto region = node->as<cflow::Region>()) {
             if (auto witch = region->as<cflow::Switch>()) {
                 if (witch->boundsCheckNode()) {
@@ -67,7 +66,7 @@ void LivenessAnalyzer::analyze() {
 
     std::sort(deadJumps_.begin(), deadJumps_.end());
 
-    foreach (const BasicBlock *basicBlock, function()->basicBlocks()) {
+    foreach (const BasicBlock *basicBlock, function_->basicBlocks()) {
         foreach (const Statement *statement, basicBlock->statements()) {
             computeLiveness(statement);
         }
@@ -80,9 +79,9 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
             break;
         case Statement::ASSIGNMENT: {
             auto assignment = statement->asAssignment();
-            auto memoryLocation = dataflow().getMemoryLocation(assignment->left());
+            auto memoryLocation = dataflow_.getMemoryLocation(assignment->left());
 
-            if (!memoryLocation || architecture()->isGlobalMemory(memoryLocation)) {
+            if (!memoryLocation || architecture_->isGlobalMemory(memoryLocation)) {
                 makeLive(assignment->left());
             }
             break;
@@ -108,8 +107,8 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
 
             makeLive(call->target());
 
-            if (auto signature = signatures().getSignature(call)) {
-                if (auto callHook = hooks().getCallHook(call)) {
+            if (auto signature = signatures_.getSignature(call)) {
+                if (auto callHook = hooks_.getCallHook(call)) {
                     foreach (const auto &argument, signature->arguments()) {
                         makeLive(callHook->getArgumentTerm(argument.get()));
                     }
@@ -121,9 +120,9 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
         case Statement::RETURN: {
             auto ret = statement->asReturn();
 
-            if (auto signature = signatures().getSignature(function())) {
+            if (auto signature = signatures_.getSignature(function_)) {
                 if (signature->returnValue()) {
-                    if (auto returnHook = hooks().getReturnHook(ret)) {
+                    if (auto returnHook = hooks_.getReturnHook(ret)) {
                         makeLive(returnHook->getReturnValueTerm(signature->returnValue().get()));
                     }
                 }
@@ -135,7 +134,7 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
         case Statement::CALLBACK:
             break;
         default:
-            ncWarning("Unknown statement kind: '%1'.", static_cast<int>(statement->kind()));
+            log_.warning(tr("%1: Unknown statement kind: %2.").arg(Q_FUNC_INFO).arg(statement->kind()));
             break;
     }
 }
@@ -144,7 +143,7 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
     assert(term != NULL);
 
 #ifdef NC_PREFER_CONSTANTS_TO_EXPRESSIONS
-    if (term->isRead() && dataflow().getValue(term)->abstractValue().isConcrete()) {
+    if (term->isRead() && dataflow_.getValue(term)->abstractValue().isConcrete()) {
         return;
     }
 #endif
@@ -156,7 +155,7 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
             break;
         case Term::MEMORY_LOCATION_ACCESS: {
             if (term->isRead()) {
-                foreach (auto &chunk, dataflow().getDefinitions(term).chunks()) {
+                foreach (auto &chunk, dataflow_.getDefinitions(term).chunks()) {
                     foreach (const Term *definition, chunk.definitions()) {
                         makeLive(definition);
                     }
@@ -170,7 +169,7 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
         }
         case Term::DEREFERENCE: {
             if (term->isRead()) {
-                foreach (auto &chunk, dataflow().getDefinitions(term).chunks()) {
+                foreach (auto &chunk, dataflow_.getDefinitions(term).chunks()) {
                     foreach (const Term *definition, chunk.definitions()) {
                         makeLive(definition);
                     }
@@ -181,7 +180,7 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
                 }
             }
 
-            if (!dataflow().getMemoryLocation(term)) {
+            if (!dataflow_.getMemoryLocation(term)) {
                 makeLive(term->asDereference()->address());
             }
             break;
@@ -199,7 +198,7 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
         }
         case Term::CHOICE: {
             const Choice *choice = term->asChoice();
-            if (!dataflow().getDefinitions(choice->preferredTerm()).empty()) {
+            if (!dataflow_.getDefinitions(choice->preferredTerm()).empty()) {
                 makeLive(choice->preferredTerm());
             } else {
                 makeLive(choice->defaultTerm());
@@ -207,15 +206,15 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
             break;
         }
         default:
-            ncWarning("Unknown term kind: '%1'.", static_cast<int>(term->kind()));
+            log_.warning(tr("%1: Unknown term kind: %2.").arg(Q_FUNC_INFO).arg(term->kind()));
             break;
     }
 }
 
 void LivenessAnalyzer::makeLive(const Term *term) {
     assert(term != NULL);
-    if (!liveness().isLive(term)) {
-        liveness().makeLive(term);
+    if (!liveness_.isLive(term)) {
+        liveness_.makeLive(term);
         propagateLiveness(term);
     }
 }

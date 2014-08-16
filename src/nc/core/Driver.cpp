@@ -50,7 +50,7 @@ void Driver::parse(Context &context, const QString &filename) {
 
     context.logToken().info(tr("Parsing using %1 parser...").arg(suitableParser->name()));
 
-    suitableParser->parse(&source, context.image().get());
+    suitableParser->parse(&source, context.image().get(), context.logToken());
 
     context.logToken().info(tr("Parsing completed."));
 }

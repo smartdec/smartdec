@@ -34,7 +34,6 @@ set(SOURCES
     Unreachable.h
     Unused.h
     Visitor.h
-    Warnings.h
     ilist.h
     make_unique.h
 )

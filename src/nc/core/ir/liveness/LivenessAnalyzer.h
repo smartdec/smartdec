@@ -25,6 +25,10 @@
 
 #include <nc/config.h>
 
+#include <QCoreApplication>
+
+#include <nc/common/LogToken.h>
+
 #include <vector>
 
 namespace nc {
@@ -69,6 +73,8 @@ class Liveness;
  * offsets from the frame base can be inferred.
  */
 class LivenessAnalyzer {
+    Q_DECLARE_TR_FUNCTIONS(LivenessAnalyzer)
+
     Liveness &liveness_; ///< Liveness information.
     const Function *function_; ///< Function to be analyzed.
     const dflow::Dataflow &dataflow_; ///< Dataflow information.
@@ -76,6 +82,7 @@ class LivenessAnalyzer {
     const cflow::Graph &regionGraph_; ///< Reduced control-flow graph.
     const calling::Hooks &hooks_; ///< Hooks manager.
     const calling::Signatures &signatures_; ///< Signatures of functions.
+    const LogToken &log_; ///< Log token.
     std::vector<const Jump *> deadJumps_; ///< Useless jumps.
 
 public:
@@ -88,82 +95,38 @@ public:
      * \param[in]  architecture Valid pointer to the architecture.
      * \param[in]  regionGraph  Reduced control-flow graph.
      * \param[in]  hooks        Hooks manager.
+     * \param[in]  log          Log token.
      * \param[in]  signatures   Signatures of functions.
      */
     LivenessAnalyzer(Liveness &liveness, const Function *function,
         const dflow::Dataflow &dataflow, const arch::Architecture *architecture, 
         const cflow::Graph &regionGraph, const calling::Hooks &hooks,
-        const calling::Signatures &signatures
+        const calling::Signatures &signatures, const LogToken &log
     ):
         liveness_(liveness), function_(function), dataflow_(dataflow),
         architecture_(architecture), regionGraph_(regionGraph),
-        hooks_(hooks), signatures_(signatures)
+        hooks_(hooks), signatures_(signatures), log_(log)
     {}
-
-    /**
-     * Virtual destructor.
-     */
-    virtual ~LivenessAnalyzer() {}
-
-    /**
-     * \return Liveness information.
-     */
-    Liveness &liveness() { return liveness_; }
-
-    /**
-     * \return Liveness information.
-     */
-    const Liveness &liveness() const { return liveness_; }
-
-    /**
-     * \return Valid pointer to the function being analyzed.
-     */
-    const Function *function() const { return function_; }
-
-    /**
-     * \return Valid pointer to the dataflow information.
-     */
-    const dflow::Dataflow &dataflow() const { return dataflow_; }
-
-    /**
-     * \return Valid pointer to the architecture.
-     */
-    const arch::Architecture *architecture() const { return architecture_; }
-
-    /**
-     * \return Pointer to the reduced control-flow graph.
-     */
-    const cflow::Graph &regionGraph() const { return regionGraph_; }
-
-    /**
-     * \return Calls data.
-     */
-    const calling::Hooks &hooks() const { return hooks_; }
-
-    /**
-     * \return Signatures of functions.
-     */
-    const calling::Signatures &signatures() const { return signatures_; }
 
     /**
      * Computes the set of used terms.
      */
     void analyze();
 
-protected:
+private:
     /**
      * Computes liveness of statement's terms based on the statement's kind.
      *
      * \param[in] statement Statement.
      */
-    virtual void computeLiveness(const Statement *statement);
+    void computeLiveness(const Statement *statement);
 
     /**
      * Marks as used all the terms, used by given term in order to generate code.
      *
      * \param[in] term Used term.
      */
-    virtual void propagateLiveness(const Term *term);
+    void propagateLiveness(const Term *term);
 
     /**
      * If given term is not used, marks it as used and propagates liveness further.

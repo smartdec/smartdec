@@ -32,7 +32,11 @@ QT_BEGIN_NAMESPACE
 class QIODevice;
 QT_END_NAMESPACE
 
-namespace nc { namespace core {
+namespace nc {
+
+class LogToken;
+
+namespace core {
 
 class Instructions;
 
@@ -93,8 +97,9 @@ public:
      *
      * \param[in] source Valid pointer to the data source.
      * \param[out] image Valid pointer to the image.
+     * \param[in] log Log token.
      */
-    void parse(QIODevice *source, image::Image *image) const;
+    void parse(QIODevice *source, image::Image *image, const LogToken &log) const;
 
 protected:
     /**
@@ -110,8 +115,9 @@ protected:
      *
      * \param[in] source Data source.
      * \param[out] image Valid pointer to the image.
+     * \param[in] log Log token.
      */
-    virtual void doParse(QIODevice *source, image::Image *image) const = 0;
+    virtual void doParse(QIODevice *source, image::Image *image, const LogToken &log) const = 0;
 };
 
 }}} // namespace nc::core::input

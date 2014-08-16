@@ -30,7 +30,6 @@
 
 #include <nc/common/Foreach.h>
 #include <nc/common/Range.h>
-#include <nc/common/Warnings.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/arch/Architecture.h>
@@ -56,8 +55,9 @@ namespace nc {
 namespace core {
 namespace irgen {
 
-IRGenerator::IRGenerator(const image::Image *image, const arch::Instructions *instructions, ir::Program *program):
-    image_(image), instructions_(instructions), program_(program)
+IRGenerator::IRGenerator(const image::Image *image, const arch::Instructions *instructions, ir::Program *program,
+    const CancellationToken &canceled, const LogToken &log):
+    image_(image), instructions_(instructions), program_(program), canceled_(canceled), log_(log)
 {
     assert(image);
     assert(instructions);
@@ -66,7 +66,7 @@ IRGenerator::IRGenerator(const image::Image *image, const arch::Instructions *in
 
 IRGenerator::~IRGenerator() {}
 
-void IRGenerator::generate(const CancellationToken &canceled) {
+void IRGenerator::generate() {
     auto instructionAnalyzer = image_->architecture()->createInstructionAnalyzer();
 
     /* Generate statements. */
@@ -75,21 +75,21 @@ void IRGenerator::generate(const CancellationToken &canceled) {
             instructionAnalyzer->createStatements(instr.get(), program_);
         } catch (const InvalidInstructionException &e) {
             /* Note: this is an AntiIdiom: http://c2.com/cgi/wiki?LoggingDiscussion */
-            ncWarning(e.unicodeWhat());
+            log_.warning(e.unicodeWhat());
         }
-        canceled.poll();
+        canceled_.poll();
     }
 
     /* Compute jump targets. */
     foreach (auto basicBlock, program_->basicBlocks()) {
         computeJumpTargets(basicBlock);
-        canceled.poll();
+        canceled_.poll();
     }
 
     /* Add jumps to direct successors where necessary. */
     foreach (auto basicBlock, program_->basicBlocks()) {
         addJumpToDirectSuccessor(basicBlock);
-        canceled.poll();
+        canceled_.poll();
     }
 }
 
@@ -98,7 +98,7 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
 
     /* Prepare context for quick and dirty dataflow analysis. */
     ir::dflow::Dataflow dataflow;
-    ir::dflow::DataflowAnalyzer analyzer(dataflow, image_->architecture());
+    ir::dflow::DataflowAnalyzer analyzer(dataflow, image_->architecture(), canceled_, log_);
     ir::dflow::ExecutionContext context(analyzer);
 
     foreach (auto statement, basicBlock->statements()) {
@@ -206,7 +206,7 @@ std::vector<ByteAddr> IRGenerator::getJumpTableEntries(const ir::Term *target, c
         address += arrayAccess.stride();
 
         if (result.size() > maxTableEntries) {
-            ncWarning("Jump table at address %1 seems to have at least %2 entries. Giving up reading it.", address, result.size());
+            log_.warning(tr("Jump table at address %1 seems to have more than %2 entries.").arg(address).arg(maxTableEntries));
             break;
         }
     }
@@ -247,7 +247,7 @@ void IRGenerator::addJumpToDirectSuccessor(ir::BasicBlock *basicBlock) {
     }
 }
 
-std::unique_ptr<arch::Instructions> IRGenerator::explore(const image::Image *image, ByteAddr startAddress, bool followCalls, const CancellationToken &canceled) {
+std::unique_ptr<arch::Instructions> IRGenerator::explore(const image::Image *image, ByteAddr startAddress, bool followCalls, const CancellationToken &canceled, const LogToken &log) {
     assert(image);
 
     auto instructions = std::make_unique<arch::Instructions>();
@@ -265,7 +265,7 @@ std::unique_ptr<arch::Instructions> IRGenerator::explore(const image::Image *ima
             try {
                 instructionAnalyzer->createStatements(instruction.get(), &program);
             } catch (const InvalidInstructionException &e) {
-                ncWarning(e.unicodeWhat());
+                log.warning(e.unicodeWhat());
             }
             instructions->add(std::move(instruction));
         }
@@ -277,7 +277,7 @@ std::unique_ptr<arch::Instructions> IRGenerator::explore(const image::Image *ima
         return instructions;
     }
 
-    IRGenerator generator(image, instructions.get(), &program);
+    IRGenerator generator(image, instructions.get(), &program, canceled, log);
 
     auto exploreBasicBlock = [&](ir::BasicBlock *basicBlock){
         while (basicBlock->successorAddress() && !basicBlock->getTerminator()) {

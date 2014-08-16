@@ -7,16 +7,19 @@
 
 #include <vector>
 
+#include <QCoreApplication>
+
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
+
+#include <nc/common/CancellationToken.h>
+#include <nc/common/LogToken.h>
 
 #include <nc/core/ir/MemoryLocation.h>
 
 #include "CalleeId.h"
 
 namespace nc {
-
-class CancellationToken;
 
 namespace core {
 
@@ -47,10 +50,14 @@ class ReturnHook;
  * This class reconstructs signatures of functions.
  */
 class SignatureAnalyzer {
+    Q_DECLARE_TR_FUNCTIONS(SignatureAnalyzer)
+
     Signatures &signatures_;
     const image::Image &image_;
     const dflow::Dataflows &dataflows_;
     const Hooks &hooks_;
+    const CancellationToken &canceled_;
+    const LogToken &log_;
 
     struct Referrers {
         std::vector<const Function *> functions;
@@ -93,29 +100,25 @@ public:
      * \param functions Functions.
      * \param dataflows Dataflows.
      * \param hooks Hooks manager.
+     * \param canceled Cancellation token.
+     * \param log Log token.
      */
     SignatureAnalyzer(Signatures &signatures, const image::Image &image, const Functions &functions,
-        const dflow::Dataflows &dataflows, const Hooks &hooks);
+        const dflow::Dataflows &dataflows, const Hooks &hooks, const CancellationToken &canceled,
+        const LogToken &log);
 
     /**
      * Destructor.
      */
     ~SignatureAnalyzer();
 
-    /**
-     * Reconstructs signatures of all functions and all called functions.
-     *
-     * \param[in] canceled Cancellation token.
-     */
-    void analyze(const CancellationToken &canceled);
+    void analyze();
 
 private:
     /**
      * Computes locations of arguments for all functions.
-     *
-     * \param[in] canceled Cancellation token.
      */
-    void computeArgumentsAndReturnValues(const CancellationToken &canceled);
+    void computeArgumentsAndReturnValues();
 
     /**
      * \param term Valid pointer to a read term.
@@ -196,10 +199,8 @@ private:
 
     /**
      * Computes and sets signatures for all callee ids.
-     *
-     * \param[in] canceled Cancellation token.
      */
-    void computeSignatures(const CancellationToken &canceled);
+    void computeSignatures();
 
     /**
      * Reconstructs the signatures of the functions and calls

@@ -43,7 +43,7 @@ public:
 
 protected:
     virtual bool doCanParse(QIODevice *source) const override;
-    virtual void doParse(QIODevice *source, core::image::Image *image) const override;
+    virtual void doParse(QIODevice *source, core::image::Image *image, const LogToken &logToken) const override;
 };
 
 } // namespace elf

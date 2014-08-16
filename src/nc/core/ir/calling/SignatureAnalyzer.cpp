@@ -7,9 +7,7 @@
 
 #include <boost/range/adaptor/map.hpp>
 
-#include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/Warnings.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/image/Image.h>
@@ -38,12 +36,15 @@ namespace ir {
 namespace calling {
 
 SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image &image,
-    const Functions &functions, const dflow::Dataflows &dataflows, const Hooks &hooks
+    const Functions &functions, const dflow::Dataflows &dataflows, const Hooks &hooks,
+    const CancellationToken &canceled, const LogToken &log
 ):
     signatures_(signatures),
     image_(image),
     dataflows_(dataflows),
-    hooks_(hooks)
+    hooks_(hooks),
+    canceled_(canceled),
+    log_(log)
 {
     foreach (auto function, functions.list()) {
         auto &dataflow = *dataflows.at(function);
@@ -70,12 +71,12 @@ SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image 
 
 SignatureAnalyzer::~SignatureAnalyzer() {}
 
-void SignatureAnalyzer::analyze(const CancellationToken &canceled) {
-    computeArgumentsAndReturnValues(canceled);
-    computeSignatures(canceled);
+void SignatureAnalyzer::analyze() {
+    computeArgumentsAndReturnValues();
+    computeSignatures();
 }
 
-void SignatureAnalyzer::computeArgumentsAndReturnValues(const CancellationToken &canceled) {
+void SignatureAnalyzer::computeArgumentsAndReturnValues() {
     int niterations = 0;
 
     bool changed;
@@ -94,11 +95,11 @@ void SignatureAnalyzer::computeArgumentsAndReturnValues(const CancellationToken 
         }
 
         if (++niterations > 3) {
-            ncWarning("Fixpoint was not reached after %1 iterations while reconstructing arguments. Giving up.", niterations);
+            log_.warning(tr("Fixpoint was not reached after %1 iterations while reconstructing arguments. Giving up.").arg(niterations));
             break;
         }
 
-        canceled.poll();
+        canceled_.poll();
     } while (changed);
 }
 
@@ -520,10 +521,10 @@ std::vector<std::pair<const Term *, MemoryLocation>> SignatureAnalyzer::getUnuse
     return result;
 }
 
-void SignatureAnalyzer::computeSignatures(const CancellationToken &canceled) {
+void SignatureAnalyzer::computeSignatures() {
     foreach (const auto &calleeId, id2referrers_ | boost::adaptors::map_keys) {
         computeSignatures(calleeId);
-        canceled.poll();
+        canceled_.poll();
     }
 }
 

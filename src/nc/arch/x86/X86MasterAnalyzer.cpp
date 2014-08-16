@@ -126,8 +126,8 @@ void X86MasterAnalyzer::dataflowAnalysis(core::Context &context, core::ir::Funct
 
     context.hooks()->instrument(function, dataflow.get());
 
-    X86DataflowAnalyzer(*dataflow, context.image()->architecture())
-        .analyze(function, context.cancellationToken());
+    X86DataflowAnalyzer(*dataflow, context.image()->architecture(), context.cancellationToken(), context.logToken())
+        .analyze(function);
 
     context.dataflows()->emplace(function, std::move(dataflow));
 }

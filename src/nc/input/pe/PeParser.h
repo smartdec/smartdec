@@ -46,7 +46,7 @@ public:
 
 protected:
     virtual bool doCanParse(QIODevice *source) const override;
-    virtual void doParse(QIODevice *source, core::image::Image *image) const override;
+    virtual void doParse(QIODevice *source, core::image::Image *image, const LogToken &log) const override;
 };
 
 } // namespace pe

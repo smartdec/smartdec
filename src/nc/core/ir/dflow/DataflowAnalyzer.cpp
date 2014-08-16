@@ -28,7 +28,6 @@
 
 #include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/Warnings.h>
 
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instruction.h>
@@ -67,7 +66,7 @@ void remove_if(Map &map, Pred pred) {
 
 } // anonymous namespace
 
-void DataflowAnalyzer::analyze(const Function *function, const CancellationToken &canceled) {
+void DataflowAnalyzer::analyze(const Function *function) {
     assert(function != NULL);
 
     /*
@@ -128,11 +127,11 @@ void DataflowAnalyzer::analyze(const Function *function, const CancellationToken
          * Do we loop infinitely?
          */
         if (++niterations >= 30) {
-            ncWarning("Fixpoint was not reached after %1 iterations while analyzing dataflow. Giving up.", niterations);
+            log_.warning(tr("%1: Fixpoint was not reached after %2 iterations.").arg(Q_FUNC_INFO).arg(niterations));
             break;
         }
 
-        canceled.poll();
+        canceled_.poll();
     }
 
     /*
@@ -197,7 +196,7 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
             break;
         }
         default:
-            ncWarning("Unknown statement kind: '%1'.", static_cast<int>(statement->kind()));
+            log_.warning(tr("%1: Unknown statement kind: %2.").arg(Q_FUNC_INFO).arg(statement->kind()));
             break;
     }
 }
@@ -251,7 +250,7 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
                     break;
                 }
                 default: {
-                    ncWarning("Unknown kind of intrinsic: '%1'", intrinsic->intrinsicKind());
+                    log_.warning(tr("%1: Unknown kind of intrinsic: %2.").arg(Q_FUNC_INFO).arg(intrinsic->intrinsicKind()));
                     break;
                 }
             }
@@ -315,7 +314,7 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
             break;
         }
         default:
-            ncWarning("Unknown term kind: '%1'.", static_cast<int>(term->kind()));
+            log_.warning(tr("%1: Unknown term kind: %2.").arg(Q_FUNC_INFO).arg(term->kind()));
             break;
     }
 }
@@ -569,7 +568,7 @@ AbstractValue DataflowAnalyzer::apply(const UnaryOperator *unary, const Abstract
         case UnaryOperator::TRUNCATE:
             return dflow::AbstractValue(a).resize(unary->size());
         default:
-            ncWarning("Unknown unary operator kind: %1", unary->operatorKind());
+            log_.warning(tr("%1: Unknown unary operator kind: %2.").arg(Q_FUNC_INFO).arg(unary->operatorKind()));
             return dflow::AbstractValue();
     }
 }
@@ -613,7 +612,7 @@ AbstractValue DataflowAnalyzer::apply(const BinaryOperator *binary, const Abstra
         case BinaryOperator::UNSIGNED_LESS_OR_EQUAL:
             return a.asUnsigned() <= b;
         default:
-            ncWarning("Unknown binary operator kind: %1", binary->operatorKind());
+            log_.warning(tr("%1: Unknown binary operator kind: %2.").arg(Q_FUNC_INFO).arg(binary->operatorKind()));
             return dflow::AbstractValue();
     }
 }
