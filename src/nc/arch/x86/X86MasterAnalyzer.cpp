@@ -120,7 +120,7 @@ void X86MasterAnalyzer::detectCallingConvention(core::Context &context, const co
 }
 
 void X86MasterAnalyzer::dataflowAnalysis(core::Context &context, core::ir::Function *function) const {
-    context.logToken() << tr("Dataflow analysis of %1.").arg(getFunctionName(context, function));
+    context.logToken().info(tr("Dataflow analysis of %1.").arg(getFunctionName(context, function)));
 
     std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
 

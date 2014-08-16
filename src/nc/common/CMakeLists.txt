@@ -19,12 +19,16 @@ set(SOURCES
     Foreach.h
     Kinds.h
     LogToken.h
+    Logger.cpp
     Logger.h
     PrintCallback.h
     Printable.h
     Range.h
     RangeClass.h
+    SignalLogger.cpp
+    SignalLogger.h
     SizedValue.h
+    StreamLogger.cpp
     StreamLogger.h
     Types.h
     Unreachable.h

@@ -44,7 +44,7 @@ Disassemble::Disassemble(Project *project, const core::image::ByteSource *source
 }
 
 void Disassemble::work() {
-    project_->logToken() << tr("Disassembling addresses %2 to %3...").arg(begin_, 0, 16).arg(end_, 0, 16);
+    project_->logToken().info(tr("Disassembling addresses %2 to %3...").arg(begin_, 0, 16).arg(end_, 0, 16));
 
     auto context = std::make_shared<core::Context>();
     context->setImage(project_->image());

@@ -25,11 +25,57 @@
 
 #include <nc/config.h>
 
-QT_BEGIN_NAMESPACE
-class QString;
-QT_END_NAMESPACE
+#include <QString>
+
+#include "LogLevel.h"
 
 namespace nc {
+
+/**
+ * Log level.
+ */
+class LogLevel {
+public:
+    /**
+     * Log level values.
+     */
+    enum Level {
+        DEBUG,
+        INFO,
+        WARNING,
+        ERROR,
+        LOWEST = DEBUG,
+        HIGHEST = ERROR
+    };
+
+    /**
+     * Constructor.
+     *
+     * \param level Log level value.
+     */
+    LogLevel(Level level): level_(level) {}
+
+    /**
+     * \return Log level value.
+     */
+    operator Level() const { return level_; }
+
+    /**
+     * \param level Log level value.
+     *
+     * \return Name of the given level.
+     */
+    static QString getName(Level level);
+
+    /**
+     * \return Name of the log level.
+     */
+    QString getName() const { return getName(level_); }
+
+private:
+    /** The value of the log level. */
+    Level level_;
+};
 
 /**
  * The base class for a logger.
@@ -37,19 +83,19 @@ namespace nc {
  * Logger does the actual logging of messages.
  */
 class Logger {
-    public:
-
+public:
     /**
      * Virtual destructor.
      */
     virtual ~Logger() {}
 
     /**
-     * Logs given text.
+     * Logs a message with a given level.
      *
-     * \param[in] text Text to log.
+     * \param[in] level Log level of the message.
+     * \param[in] text  Text of the message.
      */
-    virtual void log(const QString &text) = 0;
+    virtual void log(LogLevel level, const QString &text) = 0;
 };
 
 } // namespace nc

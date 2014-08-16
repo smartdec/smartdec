@@ -40,8 +40,7 @@ class LogManager: public QObject {
      */
     LogManager() {}
 
-    public:
-
+public:
     /**
      * \return Valid pointer to a global unique instance of LogManager.
      */
@@ -63,8 +62,7 @@ class LogManager: public QObject {
      */
     void log(const QString &text);
 
-    Q_SIGNAL
-
+Q_SIGNAL
     /**
      * A signal emitted when there is a new message to be shown.
      *

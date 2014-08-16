@@ -60,7 +60,7 @@ namespace core {
 MasterAnalyzer::~MasterAnalyzer() {}
 
 void MasterAnalyzer::createProgram(Context &context) const {
-    context.logToken() << tr("Creating intermediate representation of the program.");
+    context.logToken().info(tr("Creating intermediate representation of the program."));
 
     std::unique_ptr<ir::Program> program(new ir::Program());
 
@@ -71,7 +71,7 @@ void MasterAnalyzer::createProgram(Context &context) const {
 }
 
 void MasterAnalyzer::createFunctions(Context &context) const {
-    context.logToken() << tr("Creating functions.");
+    context.logToken().info(tr("Creating functions."));
 
     std::unique_ptr<ir::Functions> functions(new ir::Functions);
 
@@ -81,7 +81,7 @@ void MasterAnalyzer::createFunctions(Context &context) const {
 }
 
 void MasterAnalyzer::createHooks(Context &context) const {
-    context.logToken() << tr("Creating hooks.");
+    context.logToken().info(tr("Creating hooks."));
 
     context.setSignatures(std::make_unique<ir::calling::Signatures>());
     context.setConventions(std::make_unique<ir::calling::Conventions>());
@@ -97,7 +97,7 @@ void MasterAnalyzer::detectCallingConvention(Context & /*context*/, const ir::ca
 }
 
 void MasterAnalyzer::dataflowAnalysis(Context &context) const {
-    context.logToken() << tr("Dataflow analysis.");
+    context.logToken().info(tr("Dataflow analysis."));
 
     context.setDataflows(std::make_unique<ir::dflow::Dataflows>());
 
@@ -108,7 +108,7 @@ void MasterAnalyzer::dataflowAnalysis(Context &context) const {
 }
 
 void MasterAnalyzer::dataflowAnalysis(Context &context, ir::Function *function) const {
-    context.logToken() << tr("Dataflow analysis of %1.").arg(getFunctionName(context, function));
+    context.logToken().info(tr("Dataflow analysis of %1.").arg(getFunctionName(context, function)));
 
     std::unique_ptr<ir::dflow::Dataflow> dataflow(new ir::dflow::Dataflow());
 
@@ -121,7 +121,7 @@ void MasterAnalyzer::dataflowAnalysis(Context &context, ir::Function *function) 
 }
 
 void MasterAnalyzer::reconstructSignatures(Context &context) const {
-    context.logToken() << tr("Reconstructing function signatures.");
+    context.logToken().info(tr("Reconstructing function signatures."));
 
     ir::calling::SignatureAnalyzer(*context.signatures(), *context.image(), *context.functions(),
         *context.dataflows(), *context.hooks())
@@ -129,7 +129,7 @@ void MasterAnalyzer::reconstructSignatures(Context &context) const {
 }
 
 void MasterAnalyzer::reconstructVariables(Context &context) const {
-    context.logToken() << tr("Reconstructing variables.");
+    context.logToken().info(tr("Reconstructing variables."));
 
     std::unique_ptr<ir::vars::Variables> variables(new ir::vars::Variables());
 
@@ -139,7 +139,7 @@ void MasterAnalyzer::reconstructVariables(Context &context) const {
 }
 
 void MasterAnalyzer::livenessAnalysis(Context &context) const {
-    context.logToken() << tr("Liveness analysis.");
+    context.logToken().info(tr("Liveness analysis."));
 
     context.setLivenesses(std::make_unique<ir::liveness::Livenesses>());
 
@@ -149,7 +149,7 @@ void MasterAnalyzer::livenessAnalysis(Context &context) const {
 }
 
 void MasterAnalyzer::livenessAnalysis(Context &context, const ir::Function *function) const {
-    context.logToken() << tr("Liveness analysis of %1.").arg(getFunctionName(context, function));
+    context.logToken().info(tr("Liveness analysis of %1.").arg(getFunctionName(context, function)));
 
     std::unique_ptr<ir::liveness::Liveness> liveness(new ir::liveness::Liveness());
 
@@ -162,7 +162,7 @@ void MasterAnalyzer::livenessAnalysis(Context &context, const ir::Function *func
 }
 
 void MasterAnalyzer::reconstructTypes(Context &context) const {
-    context.logToken() << tr("Reconstructing types.");
+    context.logToken().info(tr("Reconstructing types."));
 
     std::unique_ptr<ir::types::Types> types(new ir::types::Types());
 
@@ -175,7 +175,7 @@ void MasterAnalyzer::reconstructTypes(Context &context) const {
 }
 
 void MasterAnalyzer::structuralAnalysis(Context &context) const {
-    context.logToken() << tr("Structural analysis.");
+    context.logToken().info(tr("Structural analysis."));
 
     context.setGraphs(std::make_unique<ir::cflow::Graphs>());
 
@@ -186,7 +186,7 @@ void MasterAnalyzer::structuralAnalysis(Context &context) const {
 }
 
 void MasterAnalyzer::structuralAnalysis(Context &context, const ir::Function *function) const {
-    context.logToken() << tr("Structural analysis of %1.").arg(getFunctionName(context, function));
+    context.logToken().info(tr("Structural analysis of %1.").arg(getFunctionName(context, function)));
 
     std::unique_ptr<ir::cflow::Graph> graph(new ir::cflow::Graph());
 
@@ -197,7 +197,7 @@ void MasterAnalyzer::structuralAnalysis(Context &context, const ir::Function *fu
 }
 
 void MasterAnalyzer::generateTree(Context &context) const {
-    context.logToken() << tr("Generating AST.");
+    context.logToken().info(tr("Generating AST."));
 
     auto tree = std::make_unique<nc::core::likec::Tree>();
 
@@ -210,7 +210,7 @@ void MasterAnalyzer::generateTree(Context &context) const {
 }
 
 void MasterAnalyzer::decompile(Context &context) const {
-    context.logToken() << tr("Decompiling.");
+    context.logToken().info(tr("Decompiling."));
 
     createProgram(context);
     context.cancellationToken().poll();
@@ -245,7 +245,7 @@ void MasterAnalyzer::decompile(Context &context) const {
     generateTree(context);
     context.cancellationToken().poll();
 
-    context.logToken() << tr("Decompilation completed.");
+    context.logToken().info(tr("Decompilation completed."));
 }
 
 QString MasterAnalyzer::getFunctionName(Context &context, const ir::Function *function) const {

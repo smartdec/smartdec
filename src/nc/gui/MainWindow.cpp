@@ -82,9 +82,9 @@ MainWindow::MainWindow(QWidget *parent):
     createMenus();
 
     auto logger = std::make_shared<SignalLogger>();
-    connect(logger.get(), SIGNAL(message(const QString &)), logView_, SLOT(log(const QString &)));
-    connect(logger.get(), SIGNAL(message(const QString &)), progressDialog_, SLOT(setLabelText(const QString &)));
-    connect(logger.get(), SIGNAL(message(const QString &)), this, SLOT(setStatusText(const QString &)));
+    connect(logger.get(), SIGNAL(onMessage(const QString &)), logView_, SLOT(log(const QString &)));
+    connect(logger.get(), SIGNAL(onMessage(const QString &)), progressDialog_, SLOT(setLabelText(const QString &)));
+    connect(logger.get(), SIGNAL(onMessage(const QString &)), this, SLOT(setStatusText(const QString &)));
 
     logToken_ = LogToken(logger);
 

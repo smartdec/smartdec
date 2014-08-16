@@ -17,8 +17,7 @@ namespace nc {
 class StreamLogger: public nc::Logger {
     QTextStream &stream_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -26,7 +25,7 @@ class StreamLogger: public nc::Logger {
      */
     StreamLogger(QTextStream &stream): stream_(stream) {}
 
-    virtual void log(const QString &text) { stream_ << text << endl; }
+    void log(LogLevel level, const QString &text) override;
 };
 
 } // namespace nc

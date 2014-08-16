@@ -33,14 +33,13 @@
 namespace nc {
 
 /**
- * A copy-constructable class carrying a pointer to a logger.
+ * A copy-constructable class carrying a shared pointer to a logger.
  */
 class LogToken {
     /** Logger. */
     std::shared_ptr<Logger> logger_;
 
-    public:
-
+public:
     /**
      * Default constructor.
      *
@@ -53,23 +52,51 @@ class LogToken {
      *
      * \param logger Valid pointer to a logger.
      */
-    LogToken(const std::shared_ptr<Logger> &logger):
-        logger_(logger)
+    LogToken(std::shared_ptr<Logger> logger):
+        logger_(std::move(logger))
     {
-        assert(logger);
+        assert(logger_);
     }
 
     /**
-     * Logs given string.
+     * Logs a message with a given level.
      *
-     * \param[in] text String to be logged.
+     * \param[in] level Log level of the message.
+     * \param[in] text  Text of the message.
      */
-    const LogToken &operator<<(const QString &text) const {
+    void log(LogLevel level, const QString &text) const {
         if (logger_) {
-            logger_->log(text);
+            logger_->log(level, text);
         }
-        return *this;
     }
+
+    /**
+     * Logs a message with the debug level.
+     *
+     * \param[in] text Text of the message.
+     */
+    void debug(const QString &text) const { log(LogLevel::DEBUG, text); }
+
+    /**
+     * Logs a message with the info level.
+     *
+     * \param[in] text Text of the message.
+     */
+    void info(const QString &text) const { log(LogLevel::INFO, text); }
+
+    /**
+     * Logs a message with the warning level.
+     *
+     * \param[in] text Text of the message.
+     */
+    void warning(const QString &text) const { log(LogLevel::WARNING, text); }
+
+    /**
+     * Logs a message with the error level.
+     *
+     * \param[in] text Text of the message.
+     */
+    void error(const QString &text) const { log(LogLevel::ERROR, text); }
 };
 
 } // namespace nc
