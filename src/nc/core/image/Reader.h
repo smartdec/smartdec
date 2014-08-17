@@ -33,7 +33,6 @@
 #include <boost/optional.hpp>
 
 #include <nc/common/ByteOrder.h>
-#include <nc/common/CheckedCast.h>
 
 #include "ByteSource.h"
 
@@ -90,23 +89,21 @@ public:
         assert(size >= 0);
         assert(byteOrder != ByteOrder::Unknown);
 
-        std::unique_ptr<char[]> buf(new char[std::max<ByteSize>(size, sizeof(T))]);
+        std::unique_ptr<char[]> buf(new char[std::max<std::size_t>(size, sizeof(T))]);
 
         if (readBytes(addr, buf.get(), size) != size) {
             return boost::none;
         }
 
-        if (size < checked_cast<ByteSize>(sizeof(T))) {
+        ByteOrder::convert(buf.get(), size, byteOrder, ByteOrder::LittleEndian);
+
+        if (static_cast<std::size_t>(size) < sizeof(T)) {
             memset(buf.get() + size, 0, sizeof(T) - size);
         }
 
-        ByteOrder::convert(buf.get(), size, byteOrder, ByteOrder::Current);
+        ByteOrder::convert(buf.get(), sizeof(T), ByteOrder::LittleEndian, ByteOrder::Current);
 
-        if (ByteOrder::Current == ByteOrder::LittleEndian) {
-            return *reinterpret_cast<T *>(buf.get());
-        } else {
-            return *reinterpret_cast<T *>(buf.get() + size - sizeof(T));
-        }
+        return *reinterpret_cast<T *>(buf.get());
     }
 
     /**
