@@ -76,16 +76,16 @@ private:
     /** Mapping from a window to the function's entry address. */
     boost::unordered_map<gui::MainWindow *, ByteAddr> window2function_;
 
-    /** Mapping from a main window to the tab QWidget of IDA Pro. */
+    /** Mapping from a main window to the tab QWidget of IDA. */
     boost::unordered_map<gui::MainWindow *, QWidget *> window2widget_;
 
     /** Main window decompiliing the whole program. */
     gui::MainWindow *programWindow_;
 
     /**
-     * Creates a main window inside an IDA Pro tab widget.
+     * Creates a main window inside an IDA tab widget.
      *
-     * \return Valid pointer to the created main window, owned by IDA Pro.
+     * \return Valid pointer to the created main window, owned by IDA.
      */
     gui::MainWindow *createWindow();
 
@@ -99,7 +99,7 @@ private:
     private Q_SLOTS:
 
     /**
-     * Slot handling destruction of a main window (owned by IDA Pro).
+     * Slot handling destruction of a main window (owned by IDA).
      *
      * \param object Valid pointer to the main window object that was destroyed.
      */
@@ -108,7 +108,7 @@ private:
     private:
 
     /**
-     * Creates a project for decompiling (a part of) the program opened in IDA Pro.
+     * Creates a project for decompiling (a part of) the program opened in IDA.
      * \return Valid pointer to the project.
      */
     std::unique_ptr<gui::Project> createIdaProject() const;

@@ -31,7 +31,7 @@ namespace nc {
 namespace ida {
 
 /**
- * Demangler using IDA Pro's facilities.
+ * Demangler using IDA's facilities.
  */
 class IdaDemangler: public core::mangling::Demangler {
     public:

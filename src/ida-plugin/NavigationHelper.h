@@ -39,7 +39,7 @@ namespace gui {
 namespace ida {
 
 /**
- * This class adds possibility of jumping from instructions and C++ views to IDA Pro views.
+ * This class adds possibility of jumping from instructions and C++ views to IDA views.
  */
 class NavigationHelper: public QObject {
     Q_OBJECT
@@ -47,10 +47,10 @@ class NavigationHelper: public QObject {
     /** Main window being cared about. */
     gui::MainWindow *mainWindow_;
 
-    /** Action to jump from instructions view to IDA Pro. */
+    /** Action to jump from instructions view to IDA. */
     QAction *jumpFromInstructionsViewAction_;
 
-    /** Action to jump from C++ view to IDA Pro. */
+    /** Action to jump from C++ view to IDA. */
     QAction *jumpFromCxxViewAction_;
 
     public:
@@ -66,7 +66,7 @@ class NavigationHelper: public QObject {
 
     /**
      * Populates context menu of instructions view with the action
-     * of jumping to IDA Pro.
+     * of jumping to IDA.
      *
      * \param menu Valid pointer to the context menu.
      */
@@ -74,19 +74,19 @@ class NavigationHelper: public QObject {
 
     /**
      * Populates context menu of C++ view with the action
-     * of jumping to IDA Pro.
+     * of jumping to IDA.
      *
      * \param menu Valid pointer to the context menu.
      */
     void populateCxxContextMenu(QMenu *menu);
 
     /**
-     * This slot is called when the user asks to jump from instructions view to IDA Pro.
+     * This slot is called when the user asks to jump from instructions view to IDA.
      */
     void jumpFromInstructionsView();
 
     /**
-     * This slot is called when the user asks to jump from C++ view to IDA Pro.
+     * This slot is called when the user asks to jump from C++ view to IDA.
      */
     void jumpFromCxxView();
 };

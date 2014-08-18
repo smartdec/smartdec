@@ -102,10 +102,10 @@ endif()
 # Find IDA SDK.
 find_package(IDA)
 
-# Option for building IDA Pro plug-in.
-set(IDA_PLUGIN_ENABLED ${IDA_SDK_FOUND} CACHE BOOL "Build IDA Pro plug-in.")
+# Option for building IDA plug-in.
+set(IDA_PLUGIN_ENABLED ${IDA_SDK_FOUND} CACHE BOOL "Build IDA plug-in.")
 
-# Position-independent code is necessary for the IDA Pro plug-in.
+# Position-independent code is necessary for the IDA plug-in.
 if(${IDA_PLUGIN_ENABLED})
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   ${CMAKE_C_COMPILE_OPTIONS_PIC}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_COMPILE_OPTIONS_PIC}")
