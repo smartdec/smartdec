@@ -129,6 +129,8 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
             }
             break;
         }
+        case Statement::HALT:
+            break;
         case Statement::TOUCH:
             break;
         case Statement::CALLBACK:

@@ -425,6 +425,11 @@ public:
                 }
                 break;
             }
+            case UD_Ihlt: {
+                _(std::make_unique<core::ir::InlineAssembly>());
+                _[halt()];
+                break;
+            }
             case UD_Iidiv: {
     #if 0
                 /* A correct implementation, however, generating complicated code. */

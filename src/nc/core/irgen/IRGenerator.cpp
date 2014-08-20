@@ -102,7 +102,6 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
     ir::dflow::ExecutionContext context(analyzer);
 
     foreach (auto statement, basicBlock->statements()) {
-        /* Execute yet another statement. */
         analyzer.execute(statement, context);
 
         switch (statement->kind()) {
@@ -141,23 +140,16 @@ void IRGenerator::computeJumpTargets(ir::BasicBlock *basicBlock) {
             case ir::Statement::JUMP: {
                 auto jump = statement->as<ir::Jump>();
 
-                /* If target basic block is unknown, try to guess it. */
+                /* If the target basic block is unknown, try to guess it. */
                 computeJumpTarget(jump->thenTarget(), dataflow);
                 computeJumpTarget(jump->elseTarget(), dataflow);
 
-                /* Current basic block ends here. */
-                if (jump->basicBlock()->address() && jump->instruction()) {
-                    program_->createBasicBlock(jump->instruction()->endAddr());
-                }
                 break;
             }
-            case ir::Statement::RETURN: {
-                /* Current basic block ends here. */
-                if (statement->basicBlock()->address()) {
-                    program_->createBasicBlock(statement->instruction()->endAddr());
-                }
-                break;
-            }
+        }
+
+        if (statement->isTerminator() && statement->basicBlock()->address() && statement->instruction()) {
+            program_->createBasicBlock(statement->instruction()->endAddr());
         }
     }
 }
@@ -234,13 +226,9 @@ bool IRGenerator::isInstructionAddress(ByteAddr address) {
 void IRGenerator::addJumpToDirectSuccessor(ir::BasicBlock *basicBlock) {
     assert(basicBlock != NULL);
 
-    /*
-     * If there is no jump or return at the end of the basic block,
-     * add a jump to the direct successor.
-     */
     if (!basicBlock->getTerminator()) {
         if (basicBlock->successorAddress() && basicBlock->successorAddress() != basicBlock->address()) {
-            if (ir::BasicBlock *directSuccessor = program_->getBasicBlockStartingAt(*basicBlock->successorAddress())) {
+            if (auto directSuccessor = program_->getBasicBlockStartingAt(*basicBlock->successorAddress())) {
                 basicBlock->pushBack(std::make_unique<ir::Jump>(ir::JumpTarget(directSuccessor)));
             }
         }

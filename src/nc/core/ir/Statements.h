@@ -152,19 +152,29 @@ protected:
 };
 
 /**
- * Return from a function statement.
+ * Return from a function.
  */
 class Return: public Statement {
 public:
-    /**
-     * Default constructor.
-     */
     Return(): Statement(RETURN) {}
 
     void print(QTextStream &out) const override;
 
 protected:
     Return *doClone() const override;
+};
+
+/**
+ * Return from a program.
+ */
+class Halt: public Statement {
+public:
+    Halt(): Statement(HALT) {}
+
+    void print(QTextStream &out) const override;
+
+protected:
+    Statement *doClone() const override;
 };
 
 /**

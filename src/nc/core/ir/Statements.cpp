@@ -117,6 +117,14 @@ Return *Return::doClone() const {
     return new Return();
 }
 
+void Halt::print(QTextStream &out) const {
+    out << "halt" << endl;
+}
+
+Statement *Halt::doClone() const {
+    return new Halt();
+}
+
 void Return::print(QTextStream &out) const {
     out << "return" << endl;
 }

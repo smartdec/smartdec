@@ -730,6 +730,9 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
             }
             return std::make_unique<likec::Return>(tree());
         }
+        case Statement::HALT: {
+            return NULL;
+        }
         case Statement::TOUCH: {
             return NULL;
         }

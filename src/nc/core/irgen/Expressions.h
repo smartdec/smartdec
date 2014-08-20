@@ -108,6 +108,11 @@ private:
 class ReturnStatement: public StatementBase<ReturnStatement> {};
 
 /**
+ * Class for halt statements.
+ */
+class HaltStatement: public StatementBase<HaltStatement> {};
+
+/**
  * Class for kill statements.
  */
 template<class E>
@@ -812,6 +817,12 @@ return_() {
     return ReturnStatement();
 }
 
+inline
+HaltStatement
+halt() {
+    return HaltStatement();
+}
+
 template<class L, class R>
 inline
 typename std::enable_if<
@@ -1011,6 +1022,16 @@ protected:
         NC_UNUSED(statement);
 
         return std::make_unique<ir::Return>();
+    }
+
+    /**
+     * \param statement                Halt statement to create IR statement from.
+     * \returns                        Newly created ir statement for the given statement.
+     */
+    std::unique_ptr<ir::Statement> doCreateStatement(HaltStatement &statement) const {
+        NC_UNUSED(statement);
+
+        return std::make_unique<ir::Halt>();
     }
 
     /**

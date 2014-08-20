@@ -186,6 +186,9 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
         case Statement::RETURN: {
             break;
         }
+        case Statement::HALT: {
+            break;
+        }
         case Statement::TOUCH: {
             auto touch = statement->asTouch();
             execute(touch->term(), context);
