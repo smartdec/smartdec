@@ -116,6 +116,14 @@ public:
     const arch::Instruction *instruction() const { return instruction_; }
 
     /**
+     * \return True iff this a terminator statement, i.e. a statement
+     *         which can be only the last statement of a basic block.
+     */
+    bool isTerminator() const {
+        return is<Jump>() || is<Return>();
+    }
+
+    /**
      * Clones the statement via doClone() and copies properties common to all statements.
      *
      * \returns Valid pointer to the clone.

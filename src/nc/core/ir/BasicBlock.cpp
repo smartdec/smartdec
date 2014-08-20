@@ -103,9 +103,9 @@ const Statement *BasicBlock::getTerminator() const {
         return NULL;
     }
 
-    const Statement *terminator = statements().back();
-    if (terminator->is<Jump>() || terminator->is<Return>()) {
-        return terminator;
+    auto lastStatement = statements().back();
+    if (lastStatement->isTerminator()) {
+        return lastStatement;
     }
 
     return NULL;

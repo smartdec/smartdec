@@ -178,7 +178,7 @@ public:
 
     /**
      * \return Valid pointer to the last statement in the basic block if this
-     *         is a jump or return, NULL otherwise.
+     *         is a terminator statement, NULL otherwise.
      */
     const Statement *getTerminator() const;
 
