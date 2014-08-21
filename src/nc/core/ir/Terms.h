@@ -59,10 +59,10 @@ public:
      */
     void setValue(ConstantValue value) { value_ = bitTruncate(value, size()); }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Constant *doClone() const override;
+    std::unique_ptr<Term> doClone() const override;
 };
 
 /**
@@ -100,10 +100,10 @@ public:
      */
     int intrinsicKind() const { return intrinsicKind_; }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Intrinsic *doClone() const override;
+    std::unique_ptr<Term> doClone() const override;
 };
 
 /**
@@ -125,10 +125,10 @@ public:
      */
     const MemoryLocation &memoryLocation() const { return memoryLocation_; }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual MemoryLocationAccess *doClone() const override;
+    std::unique_ptr<Term> doClone() const override;
 };
 
 /**
@@ -163,11 +163,11 @@ public:
      */
     const Term *address() const { return address_.get(); }
 
-    virtual void setStatement(const Statement *statement) override;
-    virtual void print(QTextStream &out) const override;
+    void setStatement(const Statement *statement) override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Dereference *doClone() const override;
+    std::unique_ptr<Term> doClone() const override;
 };
 
 /**
@@ -220,11 +220,11 @@ public:
      */
     const Term *operand() const { return operand_.get(); }
 
-    virtual void setStatement(const Statement *statement) override;
-    virtual void print(QTextStream &out) const override;
+    void setStatement(const Statement *statement) override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual UnaryOperator *doClone() const override;
+    std::unique_ptr<Term> doClone() const override;
 };
 
 /**
@@ -305,11 +305,11 @@ public:
      */
     const Term *right() const { return right_.get(); }
 
-    virtual void setStatement(const Statement *statement) override;
-    virtual void print(QTextStream &out) const override;
+    void setStatement(const Statement *statement) override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual BinaryOperator *doClone() const;
+    std::unique_ptr<Term> doClone() const override;
 };
 
 /**
@@ -351,11 +351,11 @@ public:
      */
     const Term *defaultTerm() const { return defaultTerm_.get(); }
 
-    virtual void setStatement(const Statement *statement) override;
-    virtual void print(QTextStream &out) const override;
+    void setStatement(const Statement *statement) override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Choice *doClone() const;
+    std::unique_ptr<Term> doClone() const override;
 };
 
 

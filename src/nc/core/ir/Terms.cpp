@@ -27,23 +27,22 @@
 #include <QTextStream>
 
 #include <nc/common/Unreachable.h>
+#include <nc/common/make_unique.h>
 
 namespace nc {
 namespace core {
 namespace ir {
 
-Constant *Constant::doClone() const {
-    return new Constant(value());
+std::unique_ptr<Term> Constant::doClone() const {
+    return std::make_unique<Constant>(value());
 }
 
 void Constant::print(QTextStream &out) const {
-    int integerBase = out.integerBase();
-    hex(out) << "0x" << value().value();
-    out.setIntegerBase(integerBase);
+    out << QString(QLatin1String("0x%1")).arg(value().value(), 0, 16);
 }
 
-Intrinsic *Intrinsic::doClone() const {
-    return new Intrinsic(intrinsicKind(), size());
+std::unique_ptr<Term> Intrinsic::doClone() const {
+    return std::make_unique<Intrinsic>(intrinsicKind(), size());
 }
 
 void Intrinsic::print(QTextStream &out) const {
@@ -54,8 +53,8 @@ MemoryLocationAccess::MemoryLocationAccess(const MemoryLocation &memoryLocation)
     Term(MEMORY_LOCATION_ACCESS, memoryLocation.size<SmallBitSize>()), memoryLocation_(memoryLocation)
 {}
 
-MemoryLocationAccess *MemoryLocationAccess::doClone() const {
-    return new MemoryLocationAccess(memoryLocation());
+std::unique_ptr<Term> MemoryLocationAccess::doClone() const {
+    return std::make_unique<MemoryLocationAccess>(memoryLocation());
 }
 
 void MemoryLocationAccess::print(QTextStream &out) const {
@@ -68,8 +67,8 @@ Dereference::Dereference(std::unique_ptr<Term> address, Domain domain, SmallBitS
     address_->setAccessType(READ);
 }
 
-Dereference *Dereference::doClone() const {
-    return new Dereference(address()->clone(), domain(), size());
+std::unique_ptr<Term> Dereference::doClone() const {
+    return std::make_unique<Dereference>(address()->clone(), domain(), size());
 }
 
 void Dereference::setStatement(const Statement *statement) {
@@ -103,8 +102,8 @@ UnaryOperator::UnaryOperator(int operatorKind, std::unique_ptr<Term> operand, Sm
     }
 }
 
-UnaryOperator *UnaryOperator::doClone() const {
-    return new UnaryOperator(operatorKind(), operand()->clone(), size());
+std::unique_ptr<Term> UnaryOperator::doClone() const {
+    return std::make_unique<UnaryOperator>(operatorKind(), operand()->clone(), size());
 }
 
 void UnaryOperator::setStatement(const Statement *statement) {
@@ -167,8 +166,8 @@ BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std
     }
 }
 
-BinaryOperator *BinaryOperator::doClone() const {
-    return new BinaryOperator(operatorKind(), left()->clone(), right()->clone(), size());
+std::unique_ptr<Term> BinaryOperator::doClone() const {
+    return std::make_unique<BinaryOperator>(operatorKind(), left()->clone(), right()->clone(), size());
 }
 
 void BinaryOperator::setStatement(const Statement *statement) {
@@ -252,8 +251,8 @@ Choice::Choice(std::unique_ptr<Term> preferredTerm, std::unique_ptr<Term> defaul
     defaultTerm_->setAccessType(READ);
 }
 
-Choice *Choice::doClone() const {
-    return new Choice(preferredTerm()->clone(), defaultTerm()->clone());
+std::unique_ptr<Term> Choice::doClone() const {
+    return std::make_unique<Choice>(preferredTerm()->clone(), defaultTerm()->clone());
 }
 
 void Choice::setStatement(const Statement *statement) {

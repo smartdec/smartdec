@@ -162,7 +162,7 @@ public:
     /**
      * \return Clone of the term.
      */
-    std::unique_ptr<Term> clone() const { return std::unique_ptr<Term>(doClone()); }
+    std::unique_ptr<Term> clone() const { return doClone(); }
 
     /* The following functions are defined in Terms.h. */
 
@@ -176,11 +176,9 @@ public:
 
 protected:
     /**
-     * Actually clones the term.
-     *
-     * \return Clone of the term.
+     * \return Valid pointer to the clone of this term.
      */
-    virtual Term *doClone() const = 0;
+    virtual std::unique_ptr<Term> doClone() const = 0;
 };
 
 }}} // namespace nc::core::ir

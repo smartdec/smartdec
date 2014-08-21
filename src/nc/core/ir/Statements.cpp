@@ -27,6 +27,7 @@
 #include <QTextStream>
 
 #include <nc/common/Unreachable.h>
+#include <nc/common/make_unique.h>
 
 #include <nc/core/arch/Instruction.h>
 
@@ -34,8 +35,8 @@ namespace nc {
 namespace core {
 namespace ir {
 
-InlineAssembly *InlineAssembly::doClone() const {
-    return new InlineAssembly();
+std::unique_ptr<Statement> InlineAssembly::doClone() const {
+    return std::make_unique<InlineAssembly>();
 }
 
 void InlineAssembly::print(QTextStream &out) const {
@@ -60,8 +61,8 @@ Assignment::Assignment(std::unique_ptr<Term> left, std::unique_ptr<Term> right):
     right_->setStatement(this);
 }
 
-Assignment *Assignment::doClone() const {
-    return new Assignment(left()->clone(), right()->clone());
+std::unique_ptr<Statement> Assignment::doClone() const {
+    return std::make_unique<Assignment>(left()->clone(), right()->clone());
 }
 
 void Assignment::print(QTextStream &out) const {
@@ -78,8 +79,8 @@ Touch::Touch(std::unique_ptr<Term> term, Term::AccessType accessType):
     term_->setStatement(this);
 }
 
-Touch *Touch::doClone() const {
-    return new Touch(term()->clone(), term()->accessType());
+std::unique_ptr<Statement> Touch::doClone() const {
+    return std::make_unique<Touch>(term()->clone(), term()->accessType());
 }
 
 void Touch::print(QTextStream &out) const {
@@ -109,28 +110,32 @@ Call::Call(std::unique_ptr<Term> target):
     target_->setStatement(this);
 }
 
+std::unique_ptr<Statement> Call::doClone() const {
+    return std::make_unique<Call>(target()->clone());
+}
+
 void Call::print(QTextStream &out) const {
     out << "call " << *target_ << endl;
 }
 
-Return *Return::doClone() const {
-    return new Return();
-}
-
-void Halt::print(QTextStream &out) const {
-    out << "halt" << endl;
-}
-
-Statement *Halt::doClone() const {
-    return new Halt();
+std::unique_ptr<Statement> Return::doClone() const {
+    return std::make_unique<Return>();
 }
 
 void Return::print(QTextStream &out) const {
     out << "return" << endl;
 }
 
-Callback *Callback::doClone() const {
-    return new Callback(function());
+std::unique_ptr<Statement> Halt::doClone() const {
+    return std::make_unique<Halt>();
+}
+
+void Halt::print(QTextStream &out) const {
+    out << "halt" << endl;
+}
+
+std::unique_ptr<Statement> Callback::doClone() const {
+    return std::make_unique<Callback>(function());
 }
 
 void Callback::print(QTextStream &out) const {

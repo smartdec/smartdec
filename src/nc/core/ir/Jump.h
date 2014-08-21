@@ -57,14 +57,14 @@ public:
      * \param[in] thenTarget    Jump target if condition is non-zero.
      * \param[in] elseTarget    Jump target if condition is zero.
      */
-    Jump(std::unique_ptr<Term> condition, JumpTarget &&thenTarget, JumpTarget &&elseTarget);
+    Jump(std::unique_ptr<Term> condition, JumpTarget thenTarget, JumpTarget elseTarget);
 
     /**
      * Constructor of an unconditional jump.
      *
      * \param[in] thenTarget    Jump target.
      */
-    Jump(JumpTarget &&thenTarget);
+    Jump(JumpTarget thenTarget);
 
     /**
      * \return Pointer to the term representing jump condition. NULL for unconditional jump.
@@ -104,7 +104,7 @@ public:
     virtual void print(QTextStream &out) const override;
 
 protected:
-    virtual Jump *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 const Jump *Statement::asJump() const {

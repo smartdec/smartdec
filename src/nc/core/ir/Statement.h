@@ -126,7 +126,8 @@ public:
     }
 
     /**
-     * Clones the statement via doClone() and copies properties common to all statements.
+     * Clones the statement and sets the instruction of the clone
+     * to the instruction of this statement.
      *
      * \returns Valid pointer to the clone.
      */
@@ -143,11 +144,9 @@ public:
     
 protected:
     /**
-     * Actually clones the statement.
-     *
-     * \return Valid pointer to the clone.
+     * \return Valid pointer to the clone of the statement.
      */
-    virtual Statement *doClone() const = 0;
+    virtual std::unique_ptr<Statement> doClone() const = 0;
 };
 
 }}} // namespace nc::core::ir

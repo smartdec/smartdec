@@ -29,7 +29,7 @@ namespace core {
 namespace ir {
 
 std::unique_ptr<Statement> Statement::clone() const {
-    std::unique_ptr<Statement> result(doClone());
+    auto result = doClone();
 
     if (instruction()) {
         result->setInstruction(instruction());

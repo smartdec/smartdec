@@ -38,17 +38,13 @@ namespace core {
 namespace ir {
 
 class InlineAssembly: public Statement {
-    public:
-
-    /**
-     * Constructor.
-     */
+public:
     InlineAssembly(): Statement(INLINE_ASSEMBLY) {}
 
     void print(QTextStream &out) const override;
 
 protected:
-    InlineAssembly *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /**
@@ -60,8 +56,6 @@ class Assignment: public Statement {
 
 public:
     /**
-     * Class constructor.
-     *
      * \param[in] left  Valid pointer to the term being the left-hand side.
      * \param[in] right Valid pointer to the term being the right-hand side.
      *
@@ -92,7 +86,7 @@ public:
     void print(QTextStream &out) const override;
 
 protected:
-    Assignment *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /**
@@ -103,8 +97,6 @@ class Touch: public Statement {
 
 public:
     /**
-     * Class constructor.
-     *
      * \param[in] term Valid pointer to the term being accessed.
      * \param[in] accessType Type of term's use.
      */
@@ -118,7 +110,7 @@ public:
     void print(QTextStream &out) const override;
 
 protected:
-    Touch *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /**
@@ -129,10 +121,9 @@ class Call: public Statement {
 
 public:
     /**
-     * Class constructor.
-     *
      * \param[in] target    Call target (function address).
      */
+    explicit
     Call(std::unique_ptr<Term> target);
 
     /**
@@ -148,7 +139,7 @@ public:
     void print(QTextStream &out) const override;
 
 protected:
-    Call *doClone() const override { return new Call(target()->clone()); }
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /**
@@ -161,7 +152,7 @@ public:
     void print(QTextStream &out) const override;
 
 protected:
-    Return *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /**
@@ -174,7 +165,7 @@ public:
     void print(QTextStream &out) const override;
 
 protected:
-    Statement *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /**
@@ -186,10 +177,9 @@ class Callback: public Statement {
 
 public:
     /**
-     * Constructor.
-     *
      * \param function Callback function.
      */
+    explicit
     Callback(std::function<void()> function):
         Statement(CALLBACK), function_(std::move(function))
     {}
@@ -202,7 +192,7 @@ public:
     void print(QTextStream &out) const override;
 
 protected:
-    Callback *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /*

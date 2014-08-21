@@ -48,8 +48,7 @@ class JumpTableEntry {
     /** Target basic block. */
     BasicBlock *basicBlock_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -93,8 +92,7 @@ class JumpTarget: public PrintableBase<JumpTarget> {
     /** Jump table. */
     std::unique_ptr<JumpTable> table_;
 
-    public:
-
+public:
     /**
      * Constructs an invalid jump target.
      */

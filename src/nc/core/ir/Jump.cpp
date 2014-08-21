@@ -26,13 +26,15 @@
 
 #include <QTextStream>
 
+#include <nc/common/make_unique.h>
+
 #include "Term.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 
-Jump::Jump(std::unique_ptr<Term> condition, JumpTarget &&thenTarget, JumpTarget &&elseTarget):
+Jump::Jump(std::unique_ptr<Term> condition, JumpTarget thenTarget, JumpTarget elseTarget):
     Statement(JUMP), condition_(std::move(condition)),
     thenTarget_(std::move(thenTarget)), elseTarget_(std::move(elseTarget))
 {
@@ -53,7 +55,7 @@ Jump::Jump(std::unique_ptr<Term> condition, JumpTarget &&thenTarget, JumpTarget 
     }
 }
 
-Jump::Jump(JumpTarget &&thenTarget):
+Jump::Jump(JumpTarget thenTarget):
     Statement(JUMP), thenTarget_(std::move(thenTarget))
 {
     assert(thenTarget_ && "Jump target must be valid.");
@@ -64,11 +66,11 @@ Jump::Jump(JumpTarget &&thenTarget):
     }
 }
 
-Jump *Jump::doClone() const {
+std::unique_ptr<Statement> Jump::doClone() const {
     if (isConditional()) {
-        return new Jump(condition()->clone(), JumpTarget(thenTarget()), JumpTarget(elseTarget()));
+        return std::make_unique<Jump>(condition()->clone(), thenTarget(), elseTarget());
     } else {
-        return new Jump(JumpTarget(thenTarget()));
+        return std::make_unique<Jump>(thenTarget());
     }
 }
 
