@@ -238,20 +238,6 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
                     dataflow_.getDefinitions(intrinsic) = context.definitions();
                     break;
                 }
-                case Intrinsic::INSTRUCTION_ADDRESS: {
-                    auto instruction = intrinsic->statement()->instruction();
-                    value->setAbstractValue(SizedValue(term->size(), instruction->addr()));
-                    value->makeNotStackOffset();
-                    value->makeNotProduct();
-                    break;
-                }
-                case Intrinsic::NEXT_INSTRUCTION_ADDRESS: {
-                    auto instruction = intrinsic->statement()->instruction();
-                    value->setAbstractValue(SizedValue(term->size(), instruction->endAddr()));
-                    value->makeNotStackOffset();
-                    value->makeNotProduct();
-                    break;
-                }
                 default: {
                     log_.warning(tr("%1: Unknown kind of intrinsic: %2.").arg(Q_FUNC_INFO).arg(intrinsic->intrinsicKind()));
                     break;

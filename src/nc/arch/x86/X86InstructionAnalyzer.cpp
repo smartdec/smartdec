@@ -98,6 +98,7 @@ class X86InstructionAnalyzerImpl {
 
     const X86Architecture *architecture_;
     ud_t ud_obj_;
+    const X86Instruction *currentInstruction_;
 
 public:
     explicit
@@ -113,6 +114,8 @@ public:
     void createStatements(const X86Instruction *instr, core::ir::Program *program) {
         assert(instr != NULL);
         assert(program != NULL);
+
+        currentInstruction_ = instr;
 
         ud_set_pc(&ud_obj_, instr->addr());
         ud_set_input_buffer(&ud_obj_, const_cast<uint8_t *>(instr->bytes()), checked_cast<std::size_t>(instr->size()));
@@ -201,7 +204,7 @@ public:
 
                 _[
                     regizter(sp) ^= regizter(sp) - constant(ip->size() / CHAR_BIT),
-                    *regizter(sp) ^= regizter(ip),
+                    *regizter(sp) ^= constant(instr->endAddr(), ip->size()),
                     call(operand(0)),
                     regizter(sp) ^= regizter(sp) + constant(ip->size() / CHAR_BIT)
                 ];
@@ -879,12 +882,6 @@ public:
             }
             case UD_Iret: {
                 auto sp = architecture_->stackPointer();
-                auto ip = architecture_->instructionPointer();
-
-                _[
-                    regizter(ip) ^= *regizter(sp),
-                    regizter(sp) ^= regizter(sp) + constant(ip->size() / CHAR_BIT)
-                ];
 
                 if (hasOperand(0)) {
                     _[regizter(sp) ^= regizter(sp) + zero_extend(operand(0))];
@@ -1099,6 +1096,7 @@ public:
         }
     }
 
+private:
     bool hasOperand(std::size_t index) const {
         assert(index < boost::size(ud_obj_.operand));
         return ud_obj_.operand[index].type != UD_NONE;
@@ -1323,8 +1321,8 @@ public:
         REG(XMM13, xmm13)
         REG(XMM14, xmm14)
         REG(XMM15, xmm15)
-        case UD_R_RIP: return std::make_unique<core::ir::Intrinsic>(
-            core::ir::Intrinsic::NEXT_INSTRUCTION_ADDRESS, X86Registers::rip()->size());
+        case UD_R_RIP: return std::make_unique<core::ir::Constant>(
+            SizedValue(X86Registers::rip()->size(), currentInstruction_->endAddr()));
 
         #undef REG
         #undef REG_ST
