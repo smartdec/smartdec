@@ -34,9 +34,11 @@
 
 #include <nc/common/Foreach.h>
 #include <nc/common/Range.h>
+#include <nc/common/make_unique.h>
 
 #include "BasicNode.h"
 #include "Graph.h"
+#include "Region.h"
 
 namespace nc {
 namespace core {
@@ -45,7 +47,7 @@ namespace cflow {
 
 void GraphBuilder::operator()(Graph &graph, const ir::Function *function) const {
     /* Create the root bulk region. */
-    graph.setRoot(new Region(graph, Region::UNKNOWN));
+    graph.setRoot(graph.addNode(std::make_unique<Region>(Region::UNKNOWN)));
 
     /*
      * Create nodes.
@@ -53,8 +55,9 @@ void GraphBuilder::operator()(Graph &graph, const ir::Function *function) const 
     boost::unordered_map<const ir::BasicBlock *, Node *> basicBlock2node;
 
     foreach (const ir::BasicBlock *basicBlock, function->basicBlocks()) {
-        auto node = new BasicNode(graph, basicBlock);
-        graph.root()->addNode(node);
+        auto node = graph.addNode(std::make_unique<BasicNode>(basicBlock));
+        graph.root()->nodes().push_back(node);
+        node->setParent(graph.root());
         basicBlock2node[basicBlock] = node;
     }
     graph.root()->setEntry(basicBlock2node[function->entry()]);

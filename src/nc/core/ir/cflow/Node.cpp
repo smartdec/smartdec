@@ -34,11 +34,7 @@ namespace core {
 namespace ir {
 namespace cflow {
 
-Node::Node(Graph &graph, NodeKind kind):
-    nodeKind_(kind), parent_(NULL)
-{
-    graph.addNode(this);
-}
+Node::~Node() {}
 
 Node *Node::uniquePredecessor() const {
     if (inEdges().size() == 1) {

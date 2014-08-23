@@ -26,6 +26,7 @@
 #include <nc/config.h>
 
 #include <cassert>
+#include <memory>
 
 #include "Node.h"
 
@@ -42,8 +43,7 @@ class Switch;
 class Region: public Node {
     NC_CLASS_WITH_KINDS(Region, regionKind)
 
-    public:
-
+public:
     /**
      * Region kind.
      */
@@ -59,23 +59,20 @@ class Region: public Node {
         SWITCH ///< Switch.
     };
 
-    private:
-
+private:
     Node *entry_; ///< Region's entry node.
     std::vector<Node *> nodes_; ///< Nodes of the region.
     const BasicBlock *exitBasicBlock_; ///< Exit basic block.
-    Node *loopCondition_; ///< Loop condition.
+    Node *loopCondition_; ///< Node with the loop condition.
 
-    public:
+public:
 
     /**
-     * Class constructor.
-     *
      * \param graph         Graph this node belongs to.
      * \param regionKind    Region kind.
      */
-    Region(Graph &graph, RegionKind regionKind):
-        Node(graph, REGION), regionKind_(regionKind), entry_(NULL), exitBasicBlock_(NULL), loopCondition_(NULL)
+    Region(RegionKind regionKind):
+        Node(REGION), regionKind_(regionKind), entry_(NULL), exitBasicBlock_(NULL), loopCondition_(NULL)
     {}
 
     /**
@@ -95,19 +92,20 @@ class Region: public Node {
      *
      * \param[in] entry Valid pointer to the new region entry.
      */
-    void setEntry(Node *entry);
+    void setEntry(Node *entry) {
+        assert(entry != NULL);
+        entry_ = entry;
+    }
+
+    /**
+     * \return Region nodes.
+     */
+    std::vector<Node *> &nodes() { return nodes_; }
 
     /**
      * \return Region nodes.
      */
     const std::vector<Node *> &nodes() const { return nodes_; }
-
-    /**
-     * Adds node to the region.
-     *
-     * \param[in] node Valid pointer to a node.
-     */
-    void addNode(Node *node);
 
     /**
      * Adds subregion to the region.
@@ -118,7 +116,7 @@ class Region: public Node {
      *
      * \param[in] subregion Valid pointer to the subregion.
      */
-    void addSubregion(Region *subregion);
+    bool addSubregion(std::unique_ptr<Region> subregion);
 
     /**
      * \return Pointer to the exit basic block. Can be NULL.
@@ -134,23 +132,20 @@ class Region: public Node {
     void setExitBasicBlock(const BasicBlock *basicBlock) { exitBasicBlock_ = basicBlock; }
 
     /**
-     * \return Pointer to the node being the condition of the do-while loop.
-     * Can be NULL iff region is not of DO_WHILE type.
+     * \return Pointer to the node being the condition of the loop. Can be NULL.
      */
-    Node *loopCondition() const { assert(regionKind() == DO_WHILE); return loopCondition_; }
+    Node *loopCondition() const { return loopCondition_; }
 
     /**
-     * Sets the node being the condition of the do-while loop.
+     * Sets the node being the condition of a loop.
      *
-     * \param condition Pointer to the new do-while loop condition.
+     * \param condition Pointer to the loop condition node.
      */
-    void setLoopCondition(Node *condition) { assert(regionKind() == DO_WHILE); loopCondition_ = condition; }
+    void setLoopCondition(Node *condition) { loopCondition_ = condition; }
 
-    virtual const BasicBlock *getEntryBasicBlock() const override;
-
-    virtual bool isCondition() const override;
-
-    virtual void print(QTextStream &out) const override;
+    const BasicBlock *getEntryBasicBlock() const override;
+    bool isCondition() const override;
+    void print(QTextStream &out) const override;
 };
 
 } // namespace cflow

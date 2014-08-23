@@ -57,8 +57,7 @@ class Switch: public Region {
     /** Default basic block. */
     const BasicBlock *defaultBasicBlock_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -67,8 +66,8 @@ class Switch: public Region {
      * \param switchTerm    Valid pointer to the term being switched upon.
      * \param jumpTableSize Size of the jump table.
      */
-    Switch(Graph &graph, BasicNode *switchNode, const Term *switchTerm, std::size_t jumpTableSize):
-        Region(graph, Region::SWITCH),
+    Switch(BasicNode *switchNode, const Term *switchTerm, std::size_t jumpTableSize):
+        Region(Region::SWITCH),
         switchNode_(switchNode),
         switchTerm_(switchTerm),
         jumpTableSize_(jumpTableSize),

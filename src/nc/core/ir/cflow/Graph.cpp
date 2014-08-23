@@ -26,33 +26,27 @@
 
 #include <QTextStream>
 
-#include <nc/common/Foreach.h>
+#include <nc/common/make_unique.h>
 
 #include "Edge.h"
-#include "Node.h"
+#include "Region.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace cflow {
 
-Graph::~Graph() {
-    foreach (Node *node, nodes_) {
-        delete node;
-    }
-    foreach (Edge *edge, edges_) {
-        delete edge;
-    }
-}
+Graph::Graph(): root_(NULL) {}
 
-void Graph::addNode(Node *node) {
-    nodes_.push_back(node);
-}
+Graph::~Graph() {}
 
 Edge *Graph::createEdge(Node *tail, Node *head) {
-    Edge *edge = new Edge(tail, head);
-    edges_.push_back(edge);
-    return edge;
+    auto edge = std::make_unique<Edge>(tail, head);
+    auto result = edge.get();
+
+    edges_.push_back(std::move(edge));
+
+    return result;
 }
 
 void Graph::print(QTextStream &out) const {

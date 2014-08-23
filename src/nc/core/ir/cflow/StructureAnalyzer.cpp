@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <tuple>
 
 #include <boost/unordered_map.hpp>
 
@@ -122,9 +123,6 @@ void StructureAnalyzer::analyze(Region *region) {
     } while (changed);
 }
 
-// TODO: Generally, before reduction check that we do not reduce
-// a subregion which contains region's entry, but not as an entry.
-
 bool StructureAnalyzer::reduceBlock(Node *entry) {
     Node *uniquePredecessor = entry->uniquePredecessor();
 
@@ -144,16 +142,12 @@ bool StructureAnalyzer::reduceBlock(Node *entry) {
         node = node->uniqueSuccessor();
     } while (node && node->uniquePredecessor());
 
-    /* Finally, create the region. */
+    /* Finally, create the subregion. */
     if (traverse.size() > 1) {
-        Region *parent = entry->parent();
-        Region *region = new Region(graph_, Region::BLOCK);
-        foreach (Node *node, traverse) {
-            region->addNode(node);
-        }
-        region->setEntry(entry);
-        parent->addSubregion(region);
-        return true;
+        auto subregion = std::make_unique<Region>(Region::BLOCK);
+        subregion->setEntry(entry);
+        subregion->nodes() = std::move(traverse);
+        return insertSubregion(entry->parent(), std::move(subregion));
     }
 
     return false;
@@ -167,8 +161,6 @@ bool StructureAnalyzer::reduceConditional(Node *entry) {
     Node *left = entry->outEdges()[0]->head();
     Node *right = entry->outEdges()[1]->head();
 
-    Region *parent = entry->parent();
-
     /*
      * IF_THEN_ELSE
      */
@@ -177,13 +169,12 @@ bool StructureAnalyzer::reduceConditional(Node *entry) {
         (left->outEdges().empty() || right->outEdges().empty() ||
          left->outEdges()[0]->head() == right->outEdges()[0]->head()))
     {
-        Region *region = new Region(graph_, Region::IF_THEN_ELSE);
-        region->addNode(entry);
-        region->addNode(left);
-        region->addNode(right);
-        region->setEntry(entry);
-        parent->addSubregion(region);
-        return true;
+        auto subregion = std::make_unique<Region>(Region::IF_THEN_ELSE);
+        subregion->setEntry(entry);
+        subregion->nodes().push_back(entry);
+        subregion->nodes().push_back(left);
+        subregion->nodes().push_back(right);
+        return insertSubregion(entry->parent(), std::move(subregion));
     }
 
     /*
@@ -194,13 +185,12 @@ bool StructureAnalyzer::reduceConditional(Node *entry) {
         (left->outEdges().empty() ||                                                \
          (left->outEdges().size() == 1 && left->outEdges()[0]->head() == right)))   \
     {                                                                               \
-        Region *region = new Region(graph_, Region::IF_THEN);                       \
-        region->addNode(entry);                                                     \
-        region->addNode(left);                                                      \
-        region->setEntry(entry);                                                    \
-        region->setExitBasicBlock(right->getEntryBasicBlock());                     \
-        parent->addSubregion(region);                                               \
-        return true;                                                                \
+        auto subregion = std::make_unique<Region>(Region::IF_THEN);                 \
+        subregion->setEntry(entry);                                                 \
+        subregion->nodes().push_back(entry);                                        \
+        subregion->nodes().push_back(left);                                         \
+        subregion->setExitBasicBlock(right->getEntryBasicBlock());                  \
+        return insertSubregion(entry->parent(), std::move(subregion));              \
     }
     REDUCE(left, right)
     REDUCE(right, left)
@@ -217,16 +207,12 @@ bool StructureAnalyzer::reduceHopelessConditional(Node *entry) {
     Node *left = entry->outEdges()[0]->head();
     Node *right = entry->outEdges()[1]->head();
 
-    Region *parent = entry->parent();
-
-    Region *region = new Region(graph_, Region::IF_THEN_ELSE);
-    region->addNode(entry);
-    region->addNode(left);
-    region->addNode(right);
-    region->setEntry(entry);
-    parent->addSubregion(region);
-
-    return true;
+    auto subregion = std::make_unique<Region>(Region::IF_THEN_ELSE);
+    subregion->setEntry(entry);
+    subregion->nodes().push_back(entry);
+    subregion->nodes().push_back(left);
+    subregion->nodes().push_back(right);
+    return insertSubregion(entry->parent(), std::move(subregion));
 }
 
 bool StructureAnalyzer::reduceCompoundCondition(Node *entry) {
@@ -237,19 +223,16 @@ bool StructureAnalyzer::reduceCompoundCondition(Node *entry) {
     Node *left = entry->outEdges()[0]->head();
     Node *right = entry->outEdges()[1]->head();
 
-    Region *parent = entry->parent();
-
 #define REDUCE(left, right)                                                                 \
     if (left->inEdges().size() == 1 && left->isFork() && left->isCondition() &&             \
         ((left->outEdges()[0]->head() == right && left->outEdges()[1]->head() != entry) ||  \
          (left->outEdges()[1]->head() == right && left->outEdges()[0]->head() != entry)))   \
     {                                                                                       \
-        Region *region = new Region(graph_, Region::COMPOUND_CONDITION);                    \
-        region->addNode(entry);                                                             \
-        region->addNode(left);                                                              \
-        region->setEntry(entry);                                                            \
-        parent->addSubregion(region);                                                       \
-        return true;                                                                        \
+        auto subregion = std::make_unique<Region>(Region::COMPOUND_CONDITION);              \
+        subregion->setEntry(entry);                                                         \
+        subregion->nodes().push_back(entry);                                                \
+        subregion->nodes().push_back(left);                                                 \
+        return insertSubregion(entry->parent(), std::move(subregion));                      \
     }
     REDUCE(left, right)
     REDUCE(right, left)
@@ -269,62 +252,30 @@ bool StructureAnalyzer::reduceCyclic(Node *entry, const Dfs &dfs) {
     }
 
     /*
-     * If the entry node of the analyzed region belongs to the loop, but
-     * it is not the loop entry, do not reduce the loop.
-     */
-    if (entry != entry->parent()->entry() &&
-        nc::contains(explorer.loopNodes(), entry->parent()->entry()))
-    {
-        return false;
-    }
-
-    /*
      * Create the region.
      */
-    Region *parent = entry->parent();
-    Region *region = new Region(graph_, Region::LOOP);
-    foreach (Node *n, explorer.loopNodes()) {
-        region->addNode(n);
-    }
-    region->setEntry(entry);
+    auto subregion = std::make_unique<Region>(Region::LOOP);
+    subregion->setEntry(entry);
+    subregion->nodes() = std::move(explorer.loopNodes());
 
     /*
-     * Try to detect a WHILE loop: entry must be a condition and
-     * must have an edge outside the region.
-     *
-     * We must do this early, before the edges are redirected by
-     * Region::addSubregion() method.
+     * Potential condition nodes, together with the respective loop
+     * exit blocks. We need to compute it before doing the structural
+     * analysis on the loop subregion, because we need the edges before
+     * their redirection by insertSubregion().
      */
-    if (entry->isFork() && entry->isCondition()) {
-        foreach (const Edge *edge, entry->outEdges()) {
-            if (edge->head()->parent() == parent) {
-                region->setRegionKind(Region::WHILE);
-                region->setExitBasicBlock(edge->head()->getEntryBasicBlock());
-                break;
-            }
-        }
-    }
+    std::vector<std::tuple<Node *, const BasicBlock *, Region::RegionKind>> loopConditions;
 
     /*
-     * Potential DO_WHILE conditions: pairs of the condition node
-     * and respective loop exit basic block.
-     */
-    std::vector<std::pair<Node *, const BasicBlock *>> doWhileConditions;
-
-    /*
-     * Detect potential DO_WHILE conditions: one must be a condition,
-     * have a (back) edge to the entry and an edge outside the region.
-     *
-     * We must do this early, before the edges are redirected by
-     * Region::addSubregion() method.
+     * For a DO_WHILE loop.
      */
     foreach (Edge *edge, entry->inEdges()) {
         if (dfs.getEdgeType(edge) == Dfs::BACK) {
             Node *n = edge->tail();
             if (n->isFork() && n->isCondition()) {
                 foreach (Edge *e, n->outEdges()) {
-                    if (e->head()->parent() == parent) {
-                        doWhileConditions.push_back(std::make_pair(n, e->head()->getEntryBasicBlock()));
+                    if (!nc::contains(subregion->nodes(), e->head())) {
+                        loopConditions.push_back(std::make_tuple(n, e->head()->getEntryBasicBlock(), Region::DO_WHILE));
                     }
                 }
             }
@@ -332,9 +283,24 @@ bool StructureAnalyzer::reduceCyclic(Node *entry, const Dfs &dfs) {
     }
 
     /*
-     * Install this new region, redirect edges.
+     * For a WHILE loop.
      */
-    parent->addSubregion(region);
+    if (entry->isFork() && entry->isCondition()) {
+        foreach (const Edge *edge, entry->outEdges()) {
+            if (!nc::contains(subregion->nodes(), edge->head())) {
+                loopConditions.push_back(std::make_tuple(entry, edge->head()->getEntryBasicBlock(), Region::WHILE));
+                break;
+            }
+        }
+    }
+
+    /*
+     * Insert the subregion, redirect edges.
+     */
+    Region *loop = insertSubregion(entry->parent(), std::move(subregion));
+    if (!loop) {
+        return false;
+    }
 
     /*
      * Remove 'continue' edges. They only make the structural
@@ -349,16 +315,17 @@ bool StructureAnalyzer::reduceCyclic(Node *entry, const Dfs &dfs) {
     /*
      * Run structural analysis inside the loop region.
      */
-    analyze(region);
+    analyze(loop);
 
     /*
-     * Try to detect a DO_WHILE loop.
+     * Try to find a condition node.
      */
-    foreach (const auto &pair, doWhileConditions) {
-        if (pair.first->parent() == region) {
-            region->setRegionKind(Region::DO_WHILE);
-            region->setLoopCondition(pair.first);
-            region->setExitBasicBlock(pair.second);
+    foreach (const auto &tuple, loopConditions) {
+        if (std::get<0>(tuple)->parent() == loop) {
+            loop->setLoopCondition(std::get<0>(tuple));
+            loop->setExitBasicBlock(std::get<1>(tuple));
+            loop->setRegionKind(std::get<2>(tuple));
+            break;
         }
     }
 
@@ -536,41 +503,114 @@ bool StructureAnalyzer::reduceSwitch(Node *entry) {
     /*
      * Create the region.
      */
-    Region *parent = entry->parent();
-    Switch *region = new Switch(graph_, basicEntry, arrayAccess.index(), jumpTableSize);
+    auto subregion = std::make_unique<Switch>(basicEntry, arrayAccess.index(), jumpTableSize);
 
-    region->addNode(entry);
+    subregion->nodes().push_back(entry);
 
     if (boundsCheckNode) {
-        region->addNode(boundsCheckNode);
-        region->setBoundsCheckNode(boundsCheckNode);
-        region->setEntry(boundsCheckNode);
+        subregion->nodes().push_back(boundsCheckNode);
+        subregion->setBoundsCheckNode(boundsCheckNode);
+        subregion->setEntry(boundsCheckNode);
     } else {
-        region->setEntry(entry);
+        subregion->setEntry(entry);
     }
 
     if (exitBranch) {
-        region->setExitBasicBlock(exitBranch->getEntryBasicBlock());
+        subregion->setExitBasicBlock(exitBranch->getEntryBasicBlock());
     }
 
     if (defaultBranch) {
-        region->setDefaultBasicBlock(defaultBranch->getEntryBasicBlock());
+        subregion->setDefaultBasicBlock(defaultBranch->getEntryBasicBlock());
     }
 
     foreach (const auto &pair, node2branch) {
         assert(pair.second != NULL);
 
         if (pair.second != exitBranch) {
-            region->addNode(pair.first);
+            subregion->nodes().push_back(pair.first);
         }
     }
 
     /*
      * Install this new region, redirect edges.
      */
-    parent->addSubregion(region);
+    return insertSubregion(entry->parent(), std::move(subregion));
+}
 
-    return true;
+Region *StructureAnalyzer::insertSubregion(Region *region, std::unique_ptr<Region> subregion) {
+    assert(region != NULL);
+    assert(subregion != NULL);
+
+    if (region->entry() == subregion->entry()) {
+        region->setEntry(subregion.get());
+    } else if (nc::contains(subregion->nodes(), region->entry())) {
+        return NULL;
+    }
+
+    foreach (auto node, subregion->nodes()) {
+        node->setParent(subregion.get());
+    }
+
+    region->nodes().erase(
+        std::remove_if(
+            region->nodes().begin(),
+            region->nodes().end(),
+            [&](Node *n) { return n->parent() == subregion.get(); }),
+        region->nodes().end());
+
+    subregion->setParent(region);
+    region->nodes().push_back(subregion.get());
+
+    /*
+     * Redirect edges properly.
+     */
+
+    std::vector<Edge *> edgesToSubregion;
+    std::vector<Edge *> edgesFromSubregion;
+    std::vector<Edge *> duplicateEdges;
+
+    std::vector<Node *> tails;
+    std::vector<Node *> heads;
+
+    foreach (Node *node, subregion->nodes()) {
+        foreach (Edge *edge, node->inEdges()) {
+            assert(edge->tail()->parent() == region || edge->tail()->parent() == subregion.get());
+
+            if (edge->tail()->parent() == region) {
+                if (edge->head() == subregion->entry() && !nc::contains(tails, edge->tail())) {
+                    edgesToSubregion.push_back(edge);
+                    tails.push_back(edge->tail());
+                } else {
+                    duplicateEdges.push_back(edge);
+                }
+            }
+        }
+        foreach (Edge *edge, node->outEdges()) {
+            assert(edge->head()->parent() == region || edge->head()->parent() == subregion.get());
+
+            if (edge->head()->parent() == region) {
+                if (!nc::contains(heads, edge->head())) {
+                    edgesFromSubregion.push_back(edge);
+                    heads.push_back(edge->head());
+                } else {
+                    duplicateEdges.push_back(edge);
+                }
+            }
+        }
+    }
+
+    foreach (Edge *edge, edgesToSubregion) {
+        edge->setHead(subregion.get());
+    }
+    foreach (Edge *edge, edgesFromSubregion) {
+        edge->setTail(subregion.get());
+    }
+    foreach (Edge *edge, duplicateEdges) {
+        edge->setTail(0);
+        edge->setHead(0);
+    }
+
+    return graph_.addNode(std::move(subregion));
 }
 
 } // namespace cflow

@@ -49,9 +49,9 @@ class Region;
  */
 class Node: public Printable {
     NC_CLASS_WITH_KINDS(Node, nodeKind)
+    friend class Edge;
 
-    public:
-
+public:
     /**
      * Node kind.
      */
@@ -60,26 +60,21 @@ class Node: public Printable {
         REGION ///< Region.
     };
 
-    private:
-
+private:
     Region *parent_; ///< Parent region.
     std::vector<Edge *> inEdges_; ///< Incoming edges.
     std::vector<Edge *> outEdges_; ///< Outgoing edges.
 
-    public:
-
+public:
     /**
-     * Class constructor.
-     *
-     * \param graph     Graph this node belongs to.
-     * \param nodeKind  Kind of the node.
+     * \param nodeKind Kind of the node.
      */
-    Node(Graph &graph, NodeKind nodeKind);
+    Node(NodeKind kind): nodeKind_(kind), parent_(NULL) {}
 
     /**
      * Virtual destructor.
      */
-    virtual ~Node() {}
+    virtual ~Node();
 
     /**
      * \return Pointer to the parent region. Can be NULL.
@@ -139,8 +134,6 @@ class Node: public Printable {
      *         false otherwise.
      */
     virtual bool isCondition() const = 0;
-
-    friend class Edge;
 };
 
 } // namespace cflow
