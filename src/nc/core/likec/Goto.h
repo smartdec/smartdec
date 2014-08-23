@@ -61,13 +61,11 @@ class Goto: public Statement {
      */
     const Expression *destination() const { return destination_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
+    Goto *rewrite() override;
 
-    virtual Goto *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

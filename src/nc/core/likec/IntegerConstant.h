@@ -42,8 +42,7 @@ class IntegerConstant: public Expression {
     SizedValue value_; ///< Value of the constant.
     const IntegerType *type_; ///< Type of the constant.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -62,7 +61,6 @@ class IntegerConstant: public Expression {
      */
     IntegerConstant(Tree &tree, ConstantValue value, const IntegerType *type);
 
-
     /**
      * \return Value of the constant.
      */
@@ -73,13 +71,11 @@ class IntegerConstant: public Expression {
      */
     const IntegerType *type() const { return type_; }
 
-    virtual const Type *getType() const override { return type(); }
+    const Type *getType() const override { return type(); }
+    bool isZero() const override { return value().value() == 0; }
 
-    virtual bool isZero() const override { return value().value() == 0; }
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

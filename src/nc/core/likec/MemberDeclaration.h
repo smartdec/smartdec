@@ -61,7 +61,7 @@ public:
     virtual MemberDeclaration *rewrite() override { return this; }
 
 protected:
-    virtual void doPrint(PrintContext &context) const override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

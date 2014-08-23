@@ -78,13 +78,12 @@ class CallOperator: public Expression {
         arguments_.push_back(std::move(argument));
     }
 
-    virtual const Type *getType() const override;
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual CallOperator *rewrite() override;
-    virtual int precedence() const override { return 2; }
+    const Type *getType() const override;
+    CallOperator *rewrite() override;
+    int precedence() const override { return 2; }
 
-    protected:
-
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
     virtual void doPrint(PrintContext &context) const override;
 };
 

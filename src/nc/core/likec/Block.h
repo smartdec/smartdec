@@ -43,8 +43,7 @@ class Block: public Statement {
     std::vector<std::unique_ptr<Declaration> > declarations_; ///< Declarations.
     std::vector<std::unique_ptr<Statement> > statements_; ///< Statements.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -82,13 +81,11 @@ class Block: public Statement {
         statements_.push_back(std::move(statement));
     }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
+    Block *rewrite() override;
 
-    virtual Block *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

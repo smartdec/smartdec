@@ -35,8 +35,7 @@ namespace likec {
  * Break statement.
  */
 class Break: public Statement {
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -44,9 +43,8 @@ class Break: public Statement {
      */
     Break(Tree &tree): Statement(tree, BREAK) {}
 
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

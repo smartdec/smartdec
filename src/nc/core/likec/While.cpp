@@ -31,9 +31,9 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void While::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(body());
-    visitor(condition_.get());
+void While::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(body());
+    fun(condition());
 }
 
 While *While::rewrite() {

@@ -42,8 +42,7 @@ class While: public Statement {
     std::unique_ptr<Expression> condition_; ///< Loop condition.
     std::unique_ptr<Statement> body_; ///< Loop body.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -75,12 +74,11 @@ class While: public Statement {
      */
     const Statement *body() const { return body_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual While *rewrite() override;
+    While *rewrite() override;
 
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

@@ -48,8 +48,8 @@ public:
      * \param[in] tree Owning tree.
      * \param[in] identifier Struct tag/id.
      */
-    StructTypeDeclaration(Tree &tree, const QString &identifier):
-        Declaration(tree, STRUCT_TYPE_DECLARATION, identifier), type_(this)
+    StructTypeDeclaration(Tree &tree, QString identifier):
+        Declaration(tree, STRUCT_TYPE_DECLARATION, std::move(identifier)), type_(this)
     {}
 
     /**
@@ -63,7 +63,7 @@ public:
     const StructType *type() const { return &type_; }
 
 protected:
-    virtual void doPrint(PrintContext &context) const override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

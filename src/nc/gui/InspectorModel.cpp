@@ -60,7 +60,7 @@
 #include <nc/core/likec/While.h>
 
 #include "InspectorItem.h"
-#include "ParentTrackingVisitor.h"
+#include "ParentTracker.h"
 
 namespace nc { namespace gui {
 
@@ -664,8 +664,8 @@ inline void InspectorModel::computeParentRelation() {
         return;
     }
 
-    ParentTrackingVisitor visitor(node2parent_);
-    visitor(context()->tree()->root());
+    ParentTracker tracker(node2parent_);
+    tracker(context()->tree()->root());
 }
 
 const core::likec::TreeNode *InspectorModel::getParent(const core::likec::TreeNode *node) {

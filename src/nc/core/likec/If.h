@@ -42,8 +42,7 @@ class If: public Statement {
     std::unique_ptr<Statement> thenStatement_; ///< Then-statement.
     std::unique_ptr<Statement> elseStatement_; ///< Else-statement.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -92,13 +91,11 @@ class If: public Statement {
      */
     const Statement *elseStatement() const { return elseStatement_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
+    If *rewrite() override;
 
-    virtual If *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

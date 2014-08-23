@@ -41,8 +41,7 @@ class Expression;
 class ExpressionStatement: public Statement {
     std::unique_ptr<Expression> expression_; ///< Expression used as statement.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -70,12 +69,10 @@ class ExpressionStatement: public Statement {
      */
     std::unique_ptr<Expression> releaseExpression() { return std::move(expression_); };
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
+    Statement *rewrite() override;
 
-    virtual Statement *rewrite() override;
-
-    protected:
-
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
     virtual void doPrint(PrintContext &context) const override;
 };
 

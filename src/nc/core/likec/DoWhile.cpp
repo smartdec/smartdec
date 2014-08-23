@@ -31,9 +31,9 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void DoWhile::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(body());
-    visitor(condition_.get());
+void DoWhile::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(body());
+    fun(condition_.get());
 }
 
 DoWhile *DoWhile::rewrite() {

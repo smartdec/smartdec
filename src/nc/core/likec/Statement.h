@@ -28,7 +28,6 @@
 #include <cassert>
 
 #include <nc/common/Unused.h>
-#include <nc/common/Visitor.h>
 
 #include "TreeNode.h"
 
@@ -93,7 +92,7 @@ public:
         statement_ = statement;
     }
 
-    virtual Statement *rewrite() override { return this; }
+    Statement *rewrite() override;
 
 protected:
     /**

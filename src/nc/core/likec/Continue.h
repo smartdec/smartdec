@@ -35,8 +35,7 @@ namespace likec {
  * Continue statement.
  */
 class Continue: public Statement {
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -44,9 +43,8 @@ class Continue: public Statement {
      */
     Continue(Tree &tree): Statement(tree, CONTINUE) {}
 
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

@@ -39,8 +39,7 @@ class LabelDeclaration;
 class LabelIdentifier: public Expression {
     LabelDeclaration *declaration_; ///< Label declaration.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -59,11 +58,10 @@ class LabelIdentifier: public Expression {
      */
     const LabelDeclaration *declaration() const { return declaration_; }
 
-    virtual const Type *getType() const override;
+    const Type *getType() const override;
 
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

@@ -40,8 +40,7 @@ class UnaryOperator: public Expression {
     NC_CLASS_WITH_KINDS(UnaryOperator, operatorKind)
     std::unique_ptr<Expression> operand_; ///< Operand.
 
-    public:
-
+public:
     /**
      * Operator id.
      */
@@ -98,14 +97,13 @@ class UnaryOperator: public Expression {
      */
     std::unique_ptr<Expression> releaseOperand() { return std::move(operand_); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual const Type *getType() const override;
-    virtual Expression *rewrite() override;
-    virtual int precedence() const override;
+    const Type *getType() const override;
+    Expression *rewrite() override;
+    int precedence() const override;
 
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

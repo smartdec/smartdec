@@ -284,7 +284,7 @@ QString CxxView::getDeclarationTooltip(int position) {
             core::likec::PrintContext context(stream, NULL);
 
             if (auto variable = expression->as<core::likec::VariableIdentifier>()) {
-                variable->declaration()->doPrint(context);
+                variable->declaration()->print(context);
             } else if (auto function = expression->as<core::likec::FunctionIdentifier>()) {
                 function->declaration()->core::likec::FunctionDeclaration::doPrint(context);
             }

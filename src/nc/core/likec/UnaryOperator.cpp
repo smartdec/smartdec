@@ -35,8 +35,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void UnaryOperator::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(operand());
+void UnaryOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(operand());
 }
 
 const Type *UnaryOperator::getType() const {

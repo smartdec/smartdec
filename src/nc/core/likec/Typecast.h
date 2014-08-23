@@ -40,8 +40,7 @@ class Typecast: public Expression {
     const Type *type_; ///< Type to cast to.
     std::unique_ptr<Expression> operand_; ///< Operand.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -83,14 +82,13 @@ class Typecast: public Expression {
      */
     std::unique_ptr<Expression> releaseOperand() { return std::move(operand_); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual const Type *getType() const override { return type(); }
-    virtual Expression *rewrite() override;
-    virtual int precedence() const override { return -3; }
+    const Type *getType() const override { return type(); }
+    Expression *rewrite() override;
+    int precedence() const override { return -3; }
 
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

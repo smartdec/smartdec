@@ -39,16 +39,15 @@ namespace likec {
 class String: public Expression {
     QString characters_; ///< Characters of the string.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
      * \param[in] tree Owning tree.
      * \param[in] characters Characters of the string.
      */
-    String(Tree &tree, const QString &characters):
-        Expression(tree, STRING), characters_(characters)
+    String(Tree &tree, QString characters):
+        Expression(tree, STRING), characters_(std::move(characters))
     {}
 
     /**
@@ -58,9 +57,8 @@ class String: public Expression {
 
     const Type *getType() const override;
 
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

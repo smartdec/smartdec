@@ -39,8 +39,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void Typecast::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(operand());
+void Typecast::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(operand());
 }
 
 Expression *Typecast::rewrite() {

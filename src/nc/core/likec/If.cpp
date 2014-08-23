@@ -34,14 +34,12 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void If::visitChildNodes(Visitor<TreeNode> &visitor) {
-    Statement::visitChildNodes(visitor);
-
-    visitor(condition());
-    visitor(thenStatement());
+void If::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(condition());
+    fun(thenStatement());
 
     if (elseStatement() != NULL) {
-        visitor(elseStatement());
+        fun(elseStatement());
     }
 }
 

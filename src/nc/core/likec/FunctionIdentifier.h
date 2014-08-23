@@ -39,8 +39,7 @@ class FunctionDeclaration;
 class FunctionIdentifier: public Expression {
     FunctionDeclaration *declaration_; ///< Declaration of accessed function.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -61,11 +60,10 @@ class FunctionIdentifier: public Expression {
      */
     const FunctionDeclaration *declaration() const { return declaration_; }
 
-    virtual const Type *getType() const override;
+    const Type *getType() const override;
 
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

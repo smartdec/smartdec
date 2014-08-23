@@ -35,8 +35,7 @@ namespace likec {
  * Default case label.
  */
 class DefaultLabel: public Statement {
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -44,9 +43,8 @@ class DefaultLabel: public Statement {
      */
     DefaultLabel(Tree &tree): Statement(tree, DEFAULT_LABEL) {}
 
-    protected:
-
-    virtual void doPrint(PrintContext &callback) const override;
+protected:
+    void doPrint(PrintContext &callback) const override;
 };
 
 } // namespace likec

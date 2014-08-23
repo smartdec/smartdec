@@ -38,8 +38,7 @@ namespace likec {
  * Access to a struct or union member.
  */
 class MemberAccessOperator: public Expression {
-    public:
-
+public:
     /**
      * Operator id.
      */
@@ -48,14 +47,12 @@ class MemberAccessOperator: public Expression {
         DOT,    ///< a.b
     };
 
-    private:
-
+private:
     AccessKind accessKind_; ///< Operator id.
     std::unique_ptr<Expression> compound_; ///< Accessed struct or union.
     const MemberDeclaration *member_; ///< Accessed member.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -93,14 +90,12 @@ class MemberAccessOperator: public Expression {
      */
     const MemberDeclaration *member() const { return member_; }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual const Type *getType() const override;
+    const Type *getType() const override;
+    int precedence() const override;
 
-    virtual int precedence() const override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const;
 };
 
 } // namespace likec

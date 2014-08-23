@@ -606,26 +606,26 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::makeStatement(const State
     auto result = doMakeStatement(statement, nextBB, breakBB, continueBB);
 
     if (result != NULL) {
-        class StatementSetterVisitor: public Visitor<likec::TreeNode> {
+        class StatementSetter {
             const ir::Statement *statement_;
 
         public:
-            StatementSetterVisitor(const ir::Statement *statement): statement_(statement) {
+            StatementSetter(const ir::Statement *statement): statement_(statement) {
                 assert(statement != NULL);
             }
 
-            virtual void operator()(likec::TreeNode *node) override {
+            void operator()(likec::TreeNode *node) {
                 if (auto stmt = node->as<likec::Statement>()) {
                     if (stmt->statement() == NULL) {
                         stmt->setStatement(statement_);
-                        stmt->visitChildNodes(*this);
+                        stmt->callOnChildren(*this);
                     }
                 }
             }
         };
 
-        StatementSetterVisitor visitor(statement);
-        visitor(result.get());
+        StatementSetter setter(statement);
+        setter(result.get());
     }
 
     return result;
@@ -774,26 +774,26 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const Ter
     auto result = doMakeExpression(term);
     assert(result != NULL);
 
-    class TermSetterVisitor: public Visitor<likec::TreeNode> {
+    class TermSetter {
         const ir::Term *term_;
 
     public:
-        TermSetterVisitor(const ir::Term *term): term_(term) {
+        TermSetter(const ir::Term *term): term_(term) {
             assert(term != NULL);
         }
 
-        virtual void operator()(likec::TreeNode *node) override {
+        virtual void operator()(likec::TreeNode *node) {
             if (auto expression = node->as<likec::Expression>()) {
                 if (expression->term() == NULL) {
                     expression->setTerm(term_);
-                    expression->visitChildNodes(*this);
+                    expression->callOnChildren(*this);
                 }
             }
         }
     };
 
-    TermSetterVisitor visitor(term);
-    visitor(result.get());
+    TermSetter setter(term);
+    setter(result.get());
 
     return result;
 }

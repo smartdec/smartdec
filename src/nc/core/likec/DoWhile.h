@@ -42,8 +42,7 @@ class DoWhile: public Statement {
     std::unique_ptr<Statement> body_; ///< Loop body.
     std::unique_ptr<Expression> condition_; ///< Loop condition.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -75,11 +74,10 @@ class DoWhile: public Statement {
      */
     const Expression *condition() const { return condition_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual DoWhile *rewrite() override;
+    DoWhile *rewrite() override;
 
-    protected:
-
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
     virtual void doPrint(PrintContext &context) const override;
 };
 

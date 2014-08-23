@@ -37,8 +37,7 @@ namespace likec {
 class InlineAssembly: public Statement {
     QString code_; ///< Assembler code.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -46,7 +45,7 @@ class InlineAssembly: public Statement {
      * \param[in] code Assembler code.
      */
     InlineAssembly(Tree &tree, QString code):
-        Statement(tree, INLINE_ASSEMBLY), code_(code)
+        Statement(tree, INLINE_ASSEMBLY), code_(std::move(code))
     {}
 
     /**
@@ -54,9 +53,8 @@ class InlineAssembly: public Statement {
      */
     const QString &code() const { return code_; }
 
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

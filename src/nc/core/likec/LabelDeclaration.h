@@ -48,7 +48,7 @@ public:
         Declaration(tree, LABEL_DECLARATION, std::move(identifier)), referenceCount_(0)
     {}
 
-    virtual LabelDeclaration *rewrite() override { return this; }
+    LabelDeclaration *rewrite() override { return this; }
 
     /**
      * Increments reference count.
@@ -61,7 +61,7 @@ public:
     int referenceCount() const { return referenceCount_; }
 
 protected:
-    virtual void doPrint(PrintContext &context) const override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

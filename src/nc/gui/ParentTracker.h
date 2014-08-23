@@ -27,7 +27,7 @@
 
 #include <vector>
 
-#include <nc/common/Visitor.h>
+#include <boost/unordered_map.hpp>
 
 #include <nc/core/likec/TreeNode.h>
 
@@ -37,21 +37,20 @@ namespace gui {
 /**
  * Visitor of LikeC nodes for computing parent mapping.
  */
-class ParentTrackingVisitor: public Visitor<core::likec::TreeNode> {
+class ParentTracker {
     /** Mapping from a node to its parent. */
     boost::unordered_map<const core::likec::TreeNode *, const core::likec::TreeNode *> &map_;
 
     /** Ancestors of the currently visited node. */
     std::vector<core::likec::TreeNode *> stack_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
      * \param[out] map  Mapping from a node to its parent.
      */
-    ParentTrackingVisitor(boost::unordered_map<const core::likec::TreeNode *, const core::likec::TreeNode *> &map):
+    ParentTracker(boost::unordered_map<const core::likec::TreeNode *, const core::likec::TreeNode *> &map):
         map_(map)
     {
         stack_.push_back(NULL);
@@ -62,11 +61,11 @@ class ParentTrackingVisitor: public Visitor<core::likec::TreeNode> {
      *
      * \param node Valid pointer to a LikeC node.
      */
-    void operator()(core::likec::TreeNode *node) override {
+    void operator()(core::likec::TreeNode *node) {
         map_[node] = stack_.back();
 
         stack_.push_back(node);
-        node->visitChildNodes(*this);
+        node->callOnChildren(*this);
         stack_.pop_back();
     }
 };

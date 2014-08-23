@@ -33,11 +33,9 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void CompilationUnit::visitChildNodes(Visitor<TreeNode> &visitor) {
-    TreeNode::visitChildNodes(visitor);
-
+void CompilationUnit::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     foreach (const auto &declaration, declarations_) {
-        visitor(declaration.get());
+        fun(declaration.get());
     }
 }
 

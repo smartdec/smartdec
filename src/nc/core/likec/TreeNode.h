@@ -26,13 +26,13 @@
 #include <nc/config.h>
 
 #include <algorithm> /* remove_if */
+#include <functional>
 
 #include <QString>
 
 #include <nc/common/Foreach.h>
 #include <nc/common/Kinds.h>
 #include <nc/common/Unused.h>
-#include <nc/common/Visitor.h>
 
 namespace nc {
 namespace core {
@@ -80,11 +80,24 @@ public:
     Tree &tree() const { return tree_; }
 
     /**
-     * Calls visitor for node's child nodes.
+     * Calls a given function on all the children of this node.
      *
-     * \param[in] visitor Visitor.
+     * \param fun Valid function.
      */
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) { NC_UNUSED(visitor); }
+    void callOnChildren(const std::function<void(const TreeNode *)> &fun) const {
+        assert(fun);
+        const_cast<TreeNode *>(this)->doCallOnChildren(fun);
+    }
+
+    /**
+     * Calls a given function on all the children of this node.
+     *
+     * \param fun Valid function.
+     */
+    void callOnChildren(const std::function<void(TreeNode *)> &fun) {
+        assert(fun);
+        doCallOnChildren(fun);
+    }
 
     /**
      * Rewrites subtree starting from this node for the purpose of its optimization.
@@ -101,6 +114,15 @@ public:
     void print(PrintContext &context) const;
 
 protected:
+    /**
+     * Calls a given function on all the children of this node.
+     * Default implementation does nothing. Subclasses having
+     * children must override this method.
+     *
+     * \param fun Valid function.
+     */
+    virtual void doCallOnChildren(const std::function<void(TreeNode *)> &fun);
+
     /**
      * Prints the tree node without calling any callbacks.
      *

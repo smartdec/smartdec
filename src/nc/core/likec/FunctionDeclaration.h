@@ -85,11 +85,13 @@ public:
      */
     void addArgument(std::unique_ptr<ArgumentDeclaration> argument);
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
+    FunctionDeclaration *rewrite() override { return this; }
 
-    virtual FunctionDeclaration *rewrite() override { return this; }
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 
-    virtual void doPrint(PrintContext &context) const override;
+public:
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

@@ -28,7 +28,6 @@
 #include <cassert>
 
 #include <nc/common/Unused.h>
-#include <nc/common/Visitor.h>
 
 #include "TreeNode.h"
 
@@ -53,8 +52,7 @@ class Expression: public TreeNode {
 
     const ir::Term *term_; ///< Term this expression was created from.
 
-    public:
-
+public:
     enum {
         BINARY_OPERATOR,        ///< Binary operator.
         CALL_OPERATOR,          ///< Function call.
@@ -106,7 +104,7 @@ class Expression: public TreeNode {
      */
     virtual bool isZero() const { return false; }
 
-    virtual Expression *rewrite() override { return this; }
+    Expression *rewrite() override { return this; }
 
     /**
      * \return Precedence of operator:

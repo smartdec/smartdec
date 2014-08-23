@@ -42,10 +42,10 @@ const Type *CallOperator::getType() const {
     }
 }
 
-void CallOperator::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(callee());
+void CallOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(callee());
     foreach(const auto &expression, arguments_) {
-        visitor(expression.get());
+        fun(expression.get());
     }
 }
 

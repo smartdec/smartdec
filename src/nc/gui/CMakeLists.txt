@@ -54,6 +54,7 @@ set(SOURCES
     LogManager.cpp
     LogView.cpp
     MainWindow.cpp
+    ParentTracker.h
     Project.cpp
     SearchWidget.cpp
     SectionsModel.cpp

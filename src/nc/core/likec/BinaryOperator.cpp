@@ -43,9 +43,9 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void BinaryOperator::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(left());
-    visitor(right());
+void BinaryOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(left());
+    fun(right());
 }
 
 const Type *BinaryOperator::getType() const {

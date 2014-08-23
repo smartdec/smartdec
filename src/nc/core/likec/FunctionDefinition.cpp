@@ -32,13 +32,13 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void FunctionDefinition::visitChildNodes(Visitor<TreeNode> &visitor) {
-    FunctionDeclaration::visitChildNodes(visitor);
+void FunctionDefinition::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    FunctionDeclaration::doCallOnChildren(fun);
 
-    visitor(block_.get());
+    fun(block_.get());
 
     foreach (const auto &label, labels_) {
-        visitor(label.get());
+        fun(label.get());
     }
 }
 

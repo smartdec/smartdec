@@ -30,6 +30,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
+void TreeNode::doCallOnChildren(const std::function<void(TreeNode *)> &) {}
+
 void TreeNode::print(PrintContext &context) const {
     if (context.callback()) {
         context.callback()->onStartPrinting(this);

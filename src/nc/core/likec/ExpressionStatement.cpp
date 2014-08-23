@@ -33,8 +33,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void ExpressionStatement::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(expression());
+void ExpressionStatement::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(expression());
 }
 
 Statement *ExpressionStatement::rewrite() {

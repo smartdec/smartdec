@@ -140,15 +140,15 @@ class BinaryOperator: public Expression {
      */
     const Expression *right() const { return right_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual const Type *getType() const override;
-    virtual int precedence() const override;
-    virtual Expression *rewrite() override;
+    const Type *getType() const override;
+    int precedence() const override;
+    Expression *rewrite() override;
 
-    protected:
-
+protected:
     virtual const Type *getType(const Type *leftType, const Type *rightType) const;
-    virtual void doPrint(PrintContext &context) const override;
+
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

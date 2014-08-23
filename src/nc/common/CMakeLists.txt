@@ -33,7 +33,6 @@ set(SOURCES
     Types.h
     Unreachable.h
     Unused.h
-    Visitor.h
     ilist.h
     make_unique.h
 )

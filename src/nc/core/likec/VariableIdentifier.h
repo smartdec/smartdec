@@ -38,8 +38,7 @@ namespace likec {
 class VariableIdentifier: public Expression {
     VariableDeclaration *declaration_; ///< Variable declaration.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -60,9 +59,10 @@ class VariableIdentifier: public Expression {
      */
     const VariableDeclaration *declaration() const { return declaration_; }
 
-    virtual const Type *getType() const override { return declaration_->type(); }
+    const Type *getType() const override { return declaration_->type(); }
 
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

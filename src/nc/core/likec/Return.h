@@ -41,8 +41,7 @@ class Expression;
 class Return: public Statement {
     std::unique_ptr<Expression> returnValue_; ///< Returned value.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -62,12 +61,10 @@ class Return: public Statement {
      */
     const Expression *returnValue() const { return returnValue_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
+    Statement *rewrite() override;
 
-    virtual Statement *rewrite() override;
-
-    protected:
-
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
     virtual void doPrint(PrintContext &context) const override;
 };
 

@@ -43,15 +43,14 @@ class CaseLabel: public Statement {
     /** Case expression. */
     std::unique_ptr<Expression> expression_;
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
      * \param[in] tree Owning tree.
      * \param[in] expression Valid pointer to the case expression.
      */
-    CaseLabel(Tree &tree, std::unique_ptr<Expression> &&expression):
+    CaseLabel(Tree &tree, std::unique_ptr<Expression> expression):
         Statement(tree, CASE_LABEL), expression_(std::move(expression))
     {
         assert(expression_);
@@ -62,9 +61,8 @@ class CaseLabel: public Statement {
      */
     Expression *expression() const { return expression_.get(); }
 
-    protected:
-
-    virtual void doPrint(PrintContext &callback) const override;
+protected:
+    void doPrint(PrintContext &callback) const override;
 };
 
 } // namespace likec

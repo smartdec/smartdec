@@ -36,8 +36,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void MemberAccessOperator::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(compound());
+void MemberAccessOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(compound());
 }
 
 const Type *MemberAccessOperator::getType() const {

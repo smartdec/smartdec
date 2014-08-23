@@ -31,9 +31,9 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void Switch::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(body());
-    visitor(expression());
+void Switch::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(body());
+    fun(expression());
 }
 
 Switch *Switch::rewrite() {

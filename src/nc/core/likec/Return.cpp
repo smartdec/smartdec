@@ -31,9 +31,9 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void Return::visitChildNodes(Visitor<TreeNode> &visitor) {
+void Return::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     if (returnValue()) {
-        visitor(returnValue());
+        fun(returnValue());
     }
 }
 

@@ -31,6 +31,12 @@ namespace nc {
 namespace core {
 namespace likec {
 
+void VariableDeclaration::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    if (initialValue_) {
+        fun(initialValue_.get());
+    }
+}
+
 VariableDeclaration *VariableDeclaration::rewrite() {
     if (initialValue_) {
         rewriteChild(initialValue_);

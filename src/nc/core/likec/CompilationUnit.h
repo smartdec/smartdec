@@ -39,10 +39,9 @@ namespace likec {
  * Compilation unit.
  */
 class CompilationUnit: public TreeNode, public Commentable {
-    std::vector<std::unique_ptr<Declaration> > declarations_; ///< Declarations.
+    std::vector<std::unique_ptr<Declaration>> declarations_; ///< Declarations.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -65,13 +64,11 @@ class CompilationUnit: public TreeNode, public Commentable {
         declarations_.push_back(std::move(declaration));
     }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-
     virtual CompilationUnit *rewrite() override;
 
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

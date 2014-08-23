@@ -41,8 +41,7 @@ class LabelDeclaration;
 class LabelStatement: public Statement {
     LabelDeclaration *label_; ///< Label.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -62,9 +61,8 @@ class LabelStatement: public Statement {
 
     LabelStatement *rewrite() override;
 
-    protected:
-
-    virtual void doPrint(PrintContext &callback) const override;
+protected:
+    void doPrint(PrintContext &callback) const override;
 };
 
 } // namespace likec

@@ -30,8 +30,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void Goto::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(destination());
+void Goto::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(destination());
 }
 
 Goto *Goto::rewrite() {

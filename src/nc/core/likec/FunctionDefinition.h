@@ -74,11 +74,11 @@ public:
      */
     void addLabel(std::unique_ptr<LabelDeclaration> label) { labels_.push_back(std::move(label)); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-
     FunctionDefinition *rewrite() override;
 
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec

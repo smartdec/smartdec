@@ -52,11 +52,9 @@ void FunctionDeclaration::addArgument(std::unique_ptr<ArgumentDeclaration> argum
     arguments_.push_back(std::move(argument));
 }
 
-void FunctionDeclaration::visitChildNodes(Visitor<TreeNode> &visitor) {
-    Declaration::visitChildNodes(visitor);
-
+void FunctionDeclaration::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     foreach (const auto &argument, arguments_) {
-        visitor(argument.get());
+        fun(argument.get());
     }
 }
 

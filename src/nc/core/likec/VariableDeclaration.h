@@ -70,9 +70,11 @@ public:
      */
     const Expression *initialValue() const { return initialValue_.get(); }
 
-    virtual VariableDeclaration *rewrite() override;
+    VariableDeclaration *rewrite() override;
 
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
+    void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec
