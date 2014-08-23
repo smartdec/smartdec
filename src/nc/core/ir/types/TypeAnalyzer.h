@@ -32,8 +32,11 @@ class CancellationToken;
 namespace core {
 namespace ir {
 
+class BinaryOperator;
 class Function;
 class Functions;
+class Term;
+class UnaryOperator;
 
 namespace calling {
     class Hooks;
@@ -67,6 +70,7 @@ class TypeAnalyzer {
     const liveness::Livenesses &livenesses_; ///< Set of terms producing actual high-level code.
     const calling::Hooks &hooks_; ///< Hooks manager.
     const calling::Signatures &signatures_; ///< Signatures of functions.
+    const CancellationToken &canceled_;
 
 public:
     /**
@@ -82,29 +86,69 @@ public:
      */
     TypeAnalyzer(Types &types, const Functions &functions, const dflow::Dataflows &dataflows,
         const vars::Variables &variables, const liveness::Livenesses &livenesses,
-        const calling::Hooks &hooks, const calling::Signatures &signatures
+        const calling::Hooks &hooks, const calling::Signatures &signatures,
+        const CancellationToken &canceled
     ):
         types_(types), functions_(functions), dataflows_(dataflows), variables_(variables),
-        livenesses_(livenesses), hooks_(hooks), signatures_(signatures)
+        livenesses_(livenesses), hooks_(hooks), signatures_(signatures), canceled_(canceled)
     {}
 
     /**
      * Computes type traits for all terms in all functions.
-     *
-     * \param[in] canceled Cancellation token.
      */
-    void analyze(const CancellationToken &canceled);
+    void analyze();
 
 private:
     /**
+     * Unites types of terms assigned to each other.
+     */
+    void uniteTypesOfAssignedTerms();
+
+    /**
      * Unites types of terms accessing the same part of the same variable.
      */
-    void joinVariableTypes();
+    void uniteVariableTypes();
 
-    /*
+    /**
      * Unites types of terms representing matching arguments and return values.
      */
-    void joinArgumentTypes();
+    void uniteArgumentTypes();
+
+    /**
+     * Marks types of terms whose value is believed to be a stack pointer
+     * as pointer.
+     */
+    void markStackPointersAsPointers();
+
+    /**
+     * Recomputes types of terms in the given function.
+     *
+     * \param function Valid pointer to a function.
+     *
+     * \return True if types changed, false otherwise.
+     */
+    bool analyze(const Function *function);
+
+    /**
+     * Recomputes type of the given term.
+     *
+     * \param term Valid pointer to a term.
+     */
+    void analyze(const Term *term);
+
+    /**
+     * Recomputes type of the given term.
+     *
+     * \param unary Valid pointer to a unary operator term.
+     */
+    void analyze(const UnaryOperator *unary);
+
+    /**
+     * Recomputes type of the given term.
+     *
+     * \param binary Valid pointer to a binary operator term.
+     */
+    void analyze(const BinaryOperator *binary);
 };
 
 }}}} // namespace nc::core::ir::types

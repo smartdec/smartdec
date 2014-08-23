@@ -129,8 +129,6 @@ set(SOURCES
     ir/misc/BoundsCheck.h
     ir/misc/PatternRecognition.cpp
     ir/misc/PatternRecognition.h
-    ir/types/FunctionAnalyzer.cpp
-    ir/types/FunctionAnalyzer.h
     ir/types/Type.cpp
     ir/types/Type.h
     ir/types/TypeAnalyzer.cpp

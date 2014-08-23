@@ -171,8 +171,9 @@ void MasterAnalyzer::reconstructTypes(Context &context) const {
 
     ir::types::TypeAnalyzer(
         *types, *context.functions(), *context.dataflows(), *context.variables(),
-        *context.livenesses(), *context.hooks(), *context.signatures())
-    .analyze(context.cancellationToken());
+        *context.livenesses(), *context.hooks(), *context.signatures(),
+        context.cancellationToken())
+    .analyze();
 
     context.setTypes(std::move(types));
 }
