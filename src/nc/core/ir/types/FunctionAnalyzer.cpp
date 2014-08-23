@@ -21,13 +21,9 @@ namespace core {
 namespace ir {
 namespace types {
 
-FunctionAnalyzer::FunctionAnalyzer(Types &types, const Function *function, const dflow::Dataflow &dataflow,
-    const liveness::Liveness &liveness
-):
+FunctionAnalyzer::FunctionAnalyzer(Types &types, const dflow::Dataflow &dataflow, const liveness::Liveness &liveness):
     types_(types), dataflow_(dataflow), liveness_(liveness)
 {
-    assert(function != NULL);
-
     /*
      * Unite types of arguments of left and right hand sides of assignments.
      */

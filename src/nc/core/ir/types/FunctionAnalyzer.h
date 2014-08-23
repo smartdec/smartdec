@@ -45,12 +45,10 @@ public:
      * Constructor.
      *
      * \param[out] types Information about types of terms.
-     * \param[in] function Valid pointer to the function being analyzed.
      * \param[in] dataflow Dataflow information for this function.
      * \param[in] liveness Liveness information for this function.
      */
-    FunctionAnalyzer(Types &types, const Function *function, const dflow::Dataflow &dataflow,
-        const liveness::Liveness &liveness);
+    FunctionAnalyzer(Types &types, const dflow::Dataflow &dataflow, const liveness::Liveness &liveness);
 
     /**
      * Recomputes types of terms in the function being analyzed.
