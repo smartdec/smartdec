@@ -63,9 +63,7 @@ void MemoryLocationAccess::print(QTextStream &out) const {
 
 Dereference::Dereference(std::unique_ptr<Term> address, Domain domain, SmallBitSize size):
     Term(DEREFERENCE, size), domain_(domain), address_(std::move(address))
-{
-    address_->setAccessType(READ);
-}
+{}
 
 std::unique_ptr<Term> Dereference::doClone() const {
     return std::make_unique<Dereference>(address()->clone(), domain(), size());
@@ -86,8 +84,6 @@ UnaryOperator::UnaryOperator(int operatorKind, std::unique_ptr<Term> operand, Sm
     operand_(std::move(operand))
 {
     assert(operand_ != NULL);
-
-    operand_->setAccessType(READ);
 
     switch (operatorKind) {
         case NOT: case NEGATION:
@@ -140,9 +136,6 @@ BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std
 {
     assert(left_ != NULL);
     assert(right_ != NULL);
-
-    left_->setAccessType(READ);
-    right_->setAccessType(READ);
 
     switch (operatorKind) {
         case AND: case OR: case XOR:
@@ -246,9 +239,6 @@ Choice::Choice(std::unique_ptr<Term> preferredTerm, std::unique_ptr<Term> defaul
     assert(preferredTerm_ != NULL);
     assert(defaultTerm_ != NULL);
     assert(preferredTerm_->size() == defaultTerm_->size());
-
-    preferredTerm_->setAccessType(READ);
-    defaultTerm_->setAccessType(READ);
 }
 
 std::unique_ptr<Term> Choice::doClone() const {

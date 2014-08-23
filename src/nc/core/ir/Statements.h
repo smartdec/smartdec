@@ -94,6 +94,7 @@ protected:
  */
 class Touch: public Statement {
     std::unique_ptr<Term> term_; ///< Term being accessed.
+    Term::AccessType accessType_;
 
 public:
     /**
@@ -106,6 +107,11 @@ public:
      * \return Valid pointer to the term being accessed.
      */
     Term *term() const { return term_.get(); }
+
+    /**
+     * \return Type of the term's use.
+     */
+    Term::AccessType accessType() const { return accessType_; }
 
     void print(QTextStream &out) const override;
 

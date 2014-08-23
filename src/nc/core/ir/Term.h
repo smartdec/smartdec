@@ -75,16 +75,14 @@ public:
      * How term is used.
      */
     enum AccessType {
-        NO_ACCESS, ///< Unknown.
         READ,      ///< Term is read.
         WRITE,     ///< Term is written.
         KILL       ///< Term is killed.
     };
 
 private:
-    SmallBitSize size_; ///< Size of this term's value in bits.
-    AccessType accessType_; ///< Type of term's use.
     const Statement *statement_; ///< Statement that this term belongs to.
+    SmallBitSize size_; ///< Size of this term's value in bits.
 
 public:
     /**
@@ -94,7 +92,7 @@ public:
      * \param[in] size Size of this term's value in bits.
      */
     Term(int kind, SmallBitSize size):
-        kind_(kind), size_(size), accessType_(NO_ACCESS), statement_(NULL)
+        kind_(kind), statement_(NULL), size_(size)
     {
         assert(size != 0);
     }
@@ -107,36 +105,22 @@ public:
     /**
      * \return Term's access type.
      */
-    AccessType accessType() const { return accessType_; }
-
-    /**
-     * Sets the term's access type.
-     *
-     * \param[in] accessType Access type.
-     *
-     * \note Must be called only once for each term.
-     */
-    void setAccessType(AccessType accessType) {
-        assert(accessType_ == NO_ACCESS);
-        assert(accessType  != NO_ACCESS);
-
-        accessType_ = accessType;
-    }
+    AccessType accessType() const;
 
     /**
      * \return True if term is used for reading, false otherwise.
      */
-    bool isRead() const { assert(accessType_ != NO_ACCESS); return accessType_ == READ; }
+    bool isRead() const { return accessType() == READ; }
 
     /**
      * \return True if term is used for writing, false otherwise.
      */
-    bool isWrite() const { assert(accessType_ != NO_ACCESS); return accessType_ == WRITE; }
+    bool isWrite() const { return accessType() == WRITE; }
 
     /**
      * \return True if term is used for killing, false otherwise.
      */
-    bool isKill() const { assert(accessType_ != NO_ACCESS); return accessType_ == KILL; }
+    bool isKill() const { return accessType() == KILL; }
 
     /**
      * \return Pointer to the statement this term belongs to. Can be NULL.

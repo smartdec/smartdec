@@ -28,10 +28,27 @@
 
 namespace nc { namespace core { namespace ir {
 
+Term::AccessType Term::accessType() const {
+    assert(statement() && "Each term must belong to a statement.");
+
+    if (auto assignment = statement()->asAssignment()) {
+        if (assignment->left() == this) {
+            return WRITE;
+        } else {
+            return READ;
+        }
+    } else if (auto touch = statement()->asTouch()) {
+        return touch->accessType();
+    } else {
+        return READ;
+    }
+}
+
 const Term *Term::source() const {
-    if (isWrite() && statement()) {
-        if (auto assignment = statement()->as<Assignment>()) {
-            assert(assignment->left() == this);
+    assert(statement() && "Each term must belong to a statement.");
+
+    if (auto assignment = statement()->as<Assignment>()) {
+        if (assignment->left() == this) {
             return assignment->right();
         }
     }

@@ -54,9 +54,6 @@ Assignment::Assignment(std::unique_ptr<Term> left, std::unique_ptr<Term> right):
     assert(right_);
     assert(left_->size() == right_->size());
 
-    left_->setAccessType(Term::WRITE);
-    right_->setAccessType(Term::READ);
-
     left_->setStatement(this);
     right_->setStatement(this);
 }
@@ -70,12 +67,10 @@ void Assignment::print(QTextStream &out) const {
 }
 
 Touch::Touch(std::unique_ptr<Term> term, Term::AccessType accessType):
-    Statement(TOUCH), term_(std::move(term))
+    Statement(TOUCH), term_(std::move(term)), accessType_(accessType)
 {
     assert(term_);
-    assert(accessType != Term::NO_ACCESS);
 
-    term_->setAccessType(accessType);
     term_->setStatement(this);
 }
 
@@ -106,7 +101,6 @@ Call::Call(std::unique_ptr<Term> target):
 {
     assert(target_ != NULL);
 
-    target_->setAccessType(Term::READ);
     target_->setStatement(this);
 }
 
