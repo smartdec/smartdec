@@ -135,6 +135,8 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
             break;
         case Statement::CALLBACK:
             break;
+        case Statement::REMEMBER_REACHING_DEFINITIONS:
+            break;
         default:
             log_.warning(tr("%1: Unknown statement kind: %2.").arg(Q_FUNC_INFO).arg(statement->kind()));
             break;

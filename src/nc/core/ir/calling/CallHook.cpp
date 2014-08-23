@@ -42,7 +42,7 @@ namespace calling {
 
 CallHook::CallHook(const Convention *convention, const CallSignature *signature,
     const boost::optional<ByteSize> &stackArgumentsSize):
-    stackPointer_(NULL), snapshotTerm_(NULL), insertedStatementsCount_(0)
+    stackPointer_(NULL), snapshotStatement_(NULL), insertedStatementsCount_(0)
 {
     assert(convention != NULL);
 
@@ -85,9 +85,9 @@ CallHook::CallHook(const Convention *convention, const CallSignature *signature,
             createReturnValue(signature->returnValue().get());
         }
     } else {
-        auto snapshotTerm = std::make_unique<Intrinsic>(Intrinsic::REACHING_SNAPSHOT, 1);
-        snapshotTerm_ = snapshotTerm.get();
-        statements_.push_back(std::make_unique<Touch>(std::move(snapshotTerm), Term::READ));
+        auto snapshotStatement = std::make_unique<RememberReachingDefinitions>();
+        snapshotStatement_ = snapshotStatement.get();
+        statements_.push_back(std::move(snapshotStatement));
 
         foreach (auto term, convention->returnValueTerms()) {
             createReturnValue(term);

@@ -175,8 +175,8 @@ protected:
 };
 
 /**
- * Statement used for performing custom operations during
- * dataflow analysis.
+ * DataflowAnalyzer, when executing the statement, calls
+ * the function stored in the statement.
  */
 class Callback: public Statement {
     std::function<void()> function_; ///< Callback function.
@@ -188,12 +188,27 @@ public:
     explicit
     Callback(std::function<void()> function):
         Statement(CALLBACK), function_(std::move(function))
-    {}
+    {
+        assert(function_);
+    }
 
     /**
      * \return Callback function.
      */
     const std::function<void()> &function() const { return function_; }
+
+    void print(QTextStream &out) const override;
+
+protected:
+    std::unique_ptr<Statement> doClone() const override;
+};
+
+/**
+ * DataflowAnalyzer remembers definitions reaching this statement.
+ */
+class RememberReachingDefinitions: public Statement {
+public:
+    RememberReachingDefinitions(): Statement(REMEMBER_REACHING_DEFINITIONS) {}
 
     void print(QTextStream &out) const override;
 

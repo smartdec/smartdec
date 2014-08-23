@@ -36,7 +36,6 @@ FunctionAnalyzer::FunctionAnalyzer(Types &types, const Function *function, const
             types_.getType(term)->unionSet(types_.getType(term->source()));
         }
     }
-
 }
 
 bool FunctionAnalyzer::analyze() {

@@ -56,6 +56,9 @@ class Dataflow {
     /** Mapping from a term to the reaching definitions. */
     boost::unordered_map<const Term *, ReachingDefinitions> term2definitions_;
 
+    /** Mapping from a statement to the reaching definitions. */
+    boost::unordered_map<const Statement *, ReachingDefinitions> statement2definitions_;
+
 public:
     /**
      * Constructor.
@@ -158,6 +161,26 @@ public:
      * \return Mapping from a term to its reaching definitions.
      */
     const boost::unordered_map<const Term *, ReachingDefinitions> &term2definitions() const { return term2definitions_; }
+
+    /**
+     * \param[in] statement Valid pointer to a read statement.
+     *
+     * \return Definitions reaching the given statement.
+     */
+    ReachingDefinitions &getDefinitions(const Statement *statement) {
+        assert(statement != NULL);
+        return statement2definitions_[statement];
+    }
+
+    /**
+     * \param[in] statement Valid pointer to a read statement.
+     *
+     * \return Definitions reaching the given statement.
+     */
+    const ReachingDefinitions &getDefinitions(const Statement *statement) const {
+        assert(statement != NULL);
+        return nc::find(statement2definitions_, statement);
+    }
 };
 
 } // namespace dflow

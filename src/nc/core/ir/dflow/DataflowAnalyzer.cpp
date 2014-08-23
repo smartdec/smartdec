@@ -198,6 +198,10 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
             statement->asCallback()->function()();
             break;
         }
+        case Statement::REMEMBER_REACHING_DEFINITIONS: {
+            dataflow_.getDefinitions(statement) = context.definitions();
+            break;
+        }
         default:
             log_.warning(tr("%1: Unknown statement kind: %2.").arg(Q_FUNC_INFO).arg(statement->kind()));
             break;
@@ -232,10 +236,6 @@ void DataflowAnalyzer::execute(const Term *term, ExecutionContext &context) {
                     value->setAbstractValue(AbstractValue(term->size(), -1, -1));
                     value->makeStackOffset(0);
                     value->makeNotProduct();
-                    break;
-                }
-                case Intrinsic::REACHING_SNAPSHOT: {
-                    dataflow_.getDefinitions(intrinsic) = context.definitions();
                     break;
                 }
                 default: {

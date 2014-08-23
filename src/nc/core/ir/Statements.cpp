@@ -136,6 +136,14 @@ void Callback::print(QTextStream &out) const {
     out << "callback" << endl;
 }
 
+std::unique_ptr<Statement> RememberReachingDefinitions::doClone() const {
+    return std::make_unique<RememberReachingDefinitions>();
+}
+
+void RememberReachingDefinitions::print(QTextStream &out) const {
+    out << "remember_reaching_definitions" << endl;
+}
+
 } // namespace ir
 } // namespace core
 } // namespace nc

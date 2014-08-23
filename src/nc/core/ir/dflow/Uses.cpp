@@ -14,13 +14,9 @@ namespace dflow {
 
 Uses::Uses(const Dataflow &dataflow) {
     foreach (auto &termAndDefinitions, dataflow.term2definitions()) {
-        /* Ignore REACHING_SNAPSHOT intrinsics which do not have
-         * a memory location, but have definitions. */
-        if (dataflow.getMemoryLocation(termAndDefinitions.first)) {
-            foreach (const auto &chunk, termAndDefinitions.second.chunks()) {
-                foreach (const Term *definition, chunk.definitions()) {
-                    term2uses_[definition].push_back(termAndDefinitions.first);
-                }
+        foreach (const auto &chunk, termAndDefinitions.second.chunks()) {
+            foreach (const Term *definition, chunk.definitions()) {
+                term2uses_[definition].push_back(termAndDefinitions.first);
             }
         }
     }

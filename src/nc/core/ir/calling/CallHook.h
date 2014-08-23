@@ -55,8 +55,8 @@ class CallHook {
     /** Statements inserted during instrumentation. */
     nc::ilist<Statement> statements_;
 
-    /** Term for snapshotting reaching definitions. */
-    const Term *snapshotTerm_;
+    /** Statement for snapshotting reaching definitions. */
+    const Statement *snapshotStatement_;
 
     /** Mapping from argument terms to their clones. */
     boost::unordered_map<const Term *, const Term *> argumentTerms_;
@@ -97,10 +97,10 @@ public:
     void deinstrument(Call *call);
 
     /**
-     * \return Pointer to the term used for snapshotting reaching definitions.
+     * \return Pointer to the statement used for snapshotting reaching definitions.
      *         Will be NULL if signature was given to the constructor.
      */
-    const Term *snapshotTerm() const { return snapshotTerm_; }
+    const Statement *snapshotStatement() const { return snapshotStatement_; }
 
     /**
      * \param term Valid pointer to a term representing the argument

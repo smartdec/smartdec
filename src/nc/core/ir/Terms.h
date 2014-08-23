@@ -80,7 +80,6 @@ public:
         UNKNOWN,            ///< Unknown intrinsic.
         UNDEFINED,          ///< Undefined value, generally not a stack offset.
         ZERO_STACK_OFFSET,  ///< Undefined value, zero stack offset.
-        REACHING_SNAPSHOT,  ///< Used for making snapshots of reaching definitions.
         USER = 1000         ///< First user intrinsic.
     };
 
@@ -315,7 +314,7 @@ protected:
 
 /**
  * Special kind of binary operator which is equal to its first argument, if the latter
- * is defined, and equal to the second argument otherwise. Just like a Phi-function.
+ * is defined, and equal to the second argument otherwise. Almost like a phi-function.
  */
 class Choice: public Term {
     std::unique_ptr<Term> preferredTerm_; ///< Preferred term (used if defined).

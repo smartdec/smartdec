@@ -392,7 +392,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *
 
         auto callHook = hooks_.getCallHook(call);
         auto fixer = StackOffsetFixer(callHook->stackPointer(), dataflow);
-        auto &reachingDefinitions = dataflow.getDefinitions(callHook->snapshotTerm());
+        auto &reachingDefinitions = dataflow.getDefinitions(callHook->snapshotStatement());
 
         foreach (auto memoryLocation, callArguments) {
             memoryLocation = fixer.addStackOffset(memoryLocation);
@@ -421,7 +421,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call
     auto &uses = *function2uses_.at(function);
     auto fixer = StackOffsetFixer(callHook->stackPointer(), dataflow);
 
-    foreach (const auto &chunk, dataflow.getDefinitions(callHook->snapshotTerm()).chunks()) {
+    foreach (const auto &chunk, dataflow.getDefinitions(callHook->snapshotStatement()).chunks()) {
         foreach (const Term *term, chunk.definitions()) {
             if (isRealWrite(term)) {
                 bool used = false;
