@@ -63,6 +63,7 @@ public:
 
 protected:
     std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
@@ -102,6 +103,7 @@ public:
 
 protected:
     std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
@@ -127,6 +129,7 @@ public:
 
 protected:
     std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
@@ -161,11 +164,11 @@ public:
      */
     const Term *address() const { return address_.get(); }
 
-    void setStatement(const Statement *statement) override;
     void print(QTextStream &out) const override;
 
 protected:
     std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
@@ -218,11 +221,11 @@ public:
      */
     const Term *operand() const { return operand_.get(); }
 
-    void setStatement(const Statement *statement) override;
     void print(QTextStream &out) const override;
 
 protected:
     std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
@@ -303,11 +306,11 @@ public:
      */
     const Term *right() const { return right_.get(); }
 
-    void setStatement(const Statement *statement) override;
     void print(QTextStream &out) const override;
 
 protected:
     std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
@@ -349,13 +352,12 @@ public:
      */
     const Term *defaultTerm() const { return defaultTerm_.get(); }
 
-    void setStatement(const Statement *statement) override;
     void print(QTextStream &out) const override;
 
 protected:
     std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
-
 
 /*
  * Term implementation follows.

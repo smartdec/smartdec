@@ -103,6 +103,20 @@ public:
     SmallBitSize size() const { return size_; }
 
     /**
+     * \return Pointer to the statement this term belongs to. Can be NULL.
+     */
+    const Statement *statement() const { return statement_; }
+
+    /**
+     * Sets the statement this term and its children belong to.
+     *
+     * \param[in] statement Valid pointer to the statement.
+     *
+     * \note Must be called only once for each term.
+     */
+    void setStatement(const Statement *statement);
+
+    /**
      * \return Term's access type.
      */
     AccessType accessType() const;
@@ -123,20 +137,6 @@ public:
     bool isKill() const { return accessType() == KILL; }
 
     /**
-     * \return Pointer to the statement this term belongs to. Can be NULL.
-     */
-    const Statement *statement() const { return statement_; }
-
-    /**
-     * Sets the statement this term and its children belong to.
-     *
-     * \param[in] statement Valid pointer to the statement.
-     *
-     * \note Must be called only once for each term.
-     */
-    virtual void setStatement(const Statement *statement);
-
-    /**
      * \return If the term stands in the left hand side of an assignment,
      *         returns the right hand size of this assignment. Otherwise,
      *         NULL is returned.
@@ -147,6 +147,26 @@ public:
      * \return Clone of the term.
      */
     std::unique_ptr<Term> clone() const { return doClone(); }
+
+    /**
+     * Calls a given function on all the children of this term.
+     *
+     * \param fun Valid function.
+     */
+    void callOnChildren(const std::function<void(const Term *)> &fun) const {
+        assert(fun);
+        const_cast<Term *>(this)->doCallOnChildren(fun);
+    }
+
+    /**
+     * Calls a given function on all the children of this term.
+     *
+     * \param fun Valid function.
+     */
+    void callOnChildren(const std::function<void(Term *)> &fun) {
+        assert(fun);
+        doCallOnChildren(fun);
+    }
 
     /* The following functions are defined in Terms.h. */
 
@@ -163,6 +183,13 @@ protected:
      * \return Valid pointer to the clone of this term.
      */
     virtual std::unique_ptr<Term> doClone() const = 0;
+
+    /**
+     * Calls a given function on all the children of this term.
+     *
+     * \param fun Valid function.
+     */
+    virtual void doCallOnChildren(const std::function<void(Term *)> &fun) = 0;
 };
 
 }}} // namespace nc::core::ir

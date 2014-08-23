@@ -28,6 +28,15 @@
 
 namespace nc { namespace core { namespace ir {
 
+void Term::setStatement(const Statement *statement) {
+    assert(statement_ == NULL);
+    assert(statement != NULL);
+
+    statement_ = statement;
+
+    callOnChildren([statement](Term *term) { term->setStatement(statement); });
+}
+
 Term::AccessType Term::accessType() const {
     assert(statement() && "Each term must belong to a statement.");
 
@@ -54,13 +63,6 @@ const Term *Term::source() const {
     }
 
     return NULL;
-}
-
-void Term::setStatement(const Statement *statement) {
-    assert(statement_ == NULL);
-    assert(statement != NULL);
-
-    statement_ = statement;
 }
 
 }}} // namespace nc::core::ir

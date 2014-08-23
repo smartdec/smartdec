@@ -37,6 +37,8 @@ std::unique_ptr<Term> Constant::doClone() const {
     return std::make_unique<Constant>(value());
 }
 
+void Constant::doCallOnChildren(const std::function<void(Term *)> &) {}
+
 void Constant::print(QTextStream &out) const {
     out << QString(QLatin1String("0x%1")).arg(value().value(), 0, 16);
 }
@@ -44,6 +46,8 @@ void Constant::print(QTextStream &out) const {
 std::unique_ptr<Term> Intrinsic::doClone() const {
     return std::make_unique<Intrinsic>(intrinsicKind(), size());
 }
+
+void Intrinsic::doCallOnChildren(const std::function<void(Term *)> &) {}
 
 void Intrinsic::print(QTextStream &out) const {
     out << "intrinsic(" << intrinsicKind() << ")";
@@ -57,6 +61,8 @@ std::unique_ptr<Term> MemoryLocationAccess::doClone() const {
     return std::make_unique<MemoryLocationAccess>(memoryLocation());
 }
 
+void MemoryLocationAccess::doCallOnChildren(const std::function<void(Term *)> &) {}
+
 void MemoryLocationAccess::print(QTextStream &out) const {
     out << memoryLocation_;
 }
@@ -69,9 +75,8 @@ std::unique_ptr<Term> Dereference::doClone() const {
     return std::make_unique<Dereference>(address()->clone(), domain(), size());
 }
 
-void Dereference::setStatement(const Statement *statement) {
-    Term::setStatement(statement);
-    address()->setStatement(statement);
+void Dereference::doCallOnChildren(const std::function<void(Term *)> &fun) {
+    fun(address());
 }
 
 void Dereference::print(QTextStream &out) const {
@@ -102,9 +107,8 @@ std::unique_ptr<Term> UnaryOperator::doClone() const {
     return std::make_unique<UnaryOperator>(operatorKind(), operand()->clone(), size());
 }
 
-void UnaryOperator::setStatement(const Statement *statement) {
-    Term::setStatement(statement);
-    operand()->setStatement(statement);
+void UnaryOperator::doCallOnChildren(const std::function<void(Term *)> &fun) {
+    fun(operand());
 }
 
 void UnaryOperator::print(QTextStream &out) const {
@@ -163,10 +167,9 @@ std::unique_ptr<Term> BinaryOperator::doClone() const {
     return std::make_unique<BinaryOperator>(operatorKind(), left()->clone(), right()->clone(), size());
 }
 
-void BinaryOperator::setStatement(const Statement *statement) {
-    Term::setStatement(statement);
-    left()->setStatement(statement);
-    right()->setStatement(statement);
+void BinaryOperator::doCallOnChildren(const std::function<void(Term *)> &fun) {
+    fun(left());
+    fun(right());
 }
 
 void BinaryOperator::print(QTextStream &out) const {
@@ -245,10 +248,9 @@ std::unique_ptr<Term> Choice::doClone() const {
     return std::make_unique<Choice>(preferredTerm()->clone(), defaultTerm()->clone());
 }
 
-void Choice::setStatement(const Statement *statement) {
-    Term::setStatement(statement);
-    preferredTerm()->setStatement(statement);
-    defaultTerm()->setStatement(statement);
+void Choice::doCallOnChildren(const std::function<void(Term *)> &fun) {
+    fun(preferredTerm());
+    fun(defaultTerm());
 }
 
 void Choice::print(QTextStream &out) const {
