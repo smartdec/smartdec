@@ -165,8 +165,8 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
                     }
                 }
             } else if (term->isWrite()) {
-                if (term->source()) {
-                    makeLive(term->source());
+                if (auto source = term->source()) {
+                    makeLive(source);
                 }
             }
             break;
@@ -179,8 +179,8 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
                     }
                 }
             } else if (term->isWrite()) {
-                if (term->source()) {
-                    makeLive(term->source());
+                if (auto source = term->source()) {
+                    makeLive(source);
                 }
             }
 
