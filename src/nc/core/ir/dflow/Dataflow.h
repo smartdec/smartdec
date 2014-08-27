@@ -114,10 +114,12 @@ public:
      *
      * \param[in] term Valid pointer to a term.
      * \param[in] memoryLocation Memory location.
+     *
+     * \return Const reference to the memory location stored in the object.
      */
-    void setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation) {
+    const MemoryLocation &setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation) {
         assert(term != NULL);
-        term2location_[term] = memoryLocation;
+        return (term2location_[term] = memoryLocation);
     }
 
     /**

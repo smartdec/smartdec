@@ -50,8 +50,7 @@ class Value {
     bool isProduct_; ///< Value was computed via multiplication.
     bool isNotProduct_; ///< Value was computed not via multiplication.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *

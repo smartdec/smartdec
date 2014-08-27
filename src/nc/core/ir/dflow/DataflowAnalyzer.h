@@ -55,6 +55,7 @@ class AbstractValue;
 class Dataflow;
 class ExecutionContext;
 class ReachingDefinitions;
+class Value;
 
 /**
  * Implements a dataflow analysis based on abstract interpretation loop.
@@ -112,24 +113,67 @@ public:
      * \param statement Valid pointer to a statement.
      * \param context   Execution context.
      */
-    virtual void execute(const Statement *statement, ExecutionContext &context);
+    void execute(const Statement *statement, ExecutionContext &context);
+
+protected:
 
     /**
-     * Executes a term.
+     * Computes the value of the given term.
      *
      * \param term      Valid pointer to a term.
      * \param context   Execution context.
+     *
+     * \return Valid pointer to the computed value, owned by dataflow().
      */
-    virtual void execute(const Term *term, ExecutionContext &context);
+    virtual Value *computeValue(const Term *term, const ExecutionContext &context);
 
-protected:
+    /**
+     * Computes the memory location of the given term.
+     *
+     * \param term      Valid pointer to a term.
+     * \param context   Execution context.
+     *
+     * \return Reference to the computed memory location, owned by dataflow().
+     */
+    const MemoryLocation &computeMemoryLocation(const Term *term, const ExecutionContext &context);
+
+    /**
+     * Computes reaching definitions of the given term.
+     *
+     * \param term              Valid pointer to a term.
+     * \param memoryLocation    Memory location of this term.
+     * \param context           Execution context.
+     *
+     * \return Reference to the computed reaching definitions, owned by dataflow().
+     */
+    const ReachingDefinitions &computeReachingDefinitions(const Term *term, const MemoryLocation &memoryLocation, const ExecutionContext &context);
+
+    /**
+     * \param memoryLocation Memory location.
+     *
+     * \return True if reaching definitions for this memory location must be tracked,
+     *         false otherwise.
+     */
+    bool isTracked(const MemoryLocation &memoryLocation) const;
+
+    /**
+     * Computes the value of a term by merging the values of its reaching definitions.
+     *
+     * \param term              Valid pointer to a read term.
+     * \param memoryLocation    Memory location of this term.
+     * \param definitions       Reaching definitions of this memory location.
+     *
+     * \return Valid pointer to the computed value, owned by dataflow().
+     */
+    Value *computeValue(const Term *term, const MemoryLocation &memoryLocation, const ReachingDefinitions &definitions);
+
     /**
      * Executes a unary operator.
      *
      * \param[in] unary     Valid pointer to a UnaryOperator instance.
      * \param     context   Execution context.
      */
-    void executeUnaryOperator(const UnaryOperator *unary, ExecutionContext &context);
+    Value *computeValue(const UnaryOperator *unary, const ExecutionContext &context);
 
     /**
      * Executes a binary operator.
@@ -137,7 +181,7 @@ protected:
      * \param[in] binary    Valid pointer to a BinaryOperator instance.
      * \param     context   Execution context.
      */
-    void executeBinaryOperator(const BinaryOperator *binary, ExecutionContext &context);
+    Value *computeValue(const BinaryOperator *binary, const ExecutionContext &context);
 
     /**
      * Applies a unary operator to an abstract value.
@@ -161,23 +205,23 @@ protected:
     AbstractValue apply(const BinaryOperator *binary, const AbstractValue &a, const AbstractValue &b);
 
     /**
-     * Remembers the new memory location of a term, updates reaching definitions
-     * in the execution context accordingly.
+     * Remembers in the reaching definitions of the execution context
+     * that the given term now defines the given memory location.
      *
      * \param term              Valid pointer to a term.
-     * \param newMemoryLocation Memory location of this term. Can be invalid.
+     * \param memoryLocation    Memory location.
      * \param context           Execution context.
      */
-    void setMemoryLocation(const Term *term, const MemoryLocation &newMemoryLocation, ExecutionContext &context);
+    void handleWrite(const Term *term, const MemoryLocation &memoryLocation, ExecutionContext &context);
 
     /**
-     * Computes term's value by merging values of reaching definitions.
+     * Removes all definitions of the given memory location from the
+     * list of reaching definitions in the execution context.
      *
-     * \param term          Valid pointer to a read term.
-     * \param termLocation  Valid memory location of this term.
-     * \param definitions   Reaching definitions of this memory location.
+     * \param memoryLocation    Memory location.
+     * \param context           Execution context.
      */
-    void mergeReachingValues(const Term *term, const MemoryLocation &termLocation, const ReachingDefinitions &definitions);
+    void handleKill(const MemoryLocation &memoryLocation, ExecutionContext &context);
 };
 
 } // namespace dflow

@@ -37,21 +37,22 @@ namespace nc {
 namespace arch {
 namespace x86 {
 
-void X86DataflowAnalyzer::execute(const core::ir::Term *term, core::ir::dflow::ExecutionContext &context) {
+core::ir::dflow::Value *X86DataflowAnalyzer::computeValue(const core::ir::Term *term, const core::ir::dflow::ExecutionContext &context) {
     /* Do everything as usual. */
-    DataflowAnalyzer::execute(term, context);
+    auto value = DataflowAnalyzer::computeValue(term, context);
 
     /* But, if two values of fpu top register come here, force fpu top to zero. */
     if (const core::ir::MemoryLocationAccess *access = term->asMemoryLocationAccess()) {
         if (access->isRead()) {
             if (access->memoryLocation() == X86Registers::fpu_top()->memoryLocation()) {
-                core::ir::dflow::Value *value = dataflow().getValue(term);
                 if (!value->abstractValue().isConcrete()) {
                     value->setAbstractValue(SizedValue(access->size(), 0));
                 }
             }
         }
     }
+
+    return value;
 }
 
 } // namespace x86

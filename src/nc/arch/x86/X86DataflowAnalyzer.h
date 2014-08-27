@@ -41,7 +41,7 @@ class X86DataflowAnalyzer: public core::ir::dflow::DataflowAnalyzer {
         core::ir::dflow::DataflowAnalyzer(dataflow, architecture, canceled, log)
     {}
 
-    virtual void execute(const core::ir::Term *term, core::ir::dflow::ExecutionContext &context) override;
+    core::ir::dflow::Value *computeValue(const core::ir::Term *term, const core::ir::dflow::ExecutionContext &context) override;
 };
 
 } // namespace x86
