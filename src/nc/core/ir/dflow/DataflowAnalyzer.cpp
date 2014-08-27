@@ -31,8 +31,6 @@
 #include <nc/common/Unreachable.h>
 
 #include <nc/core/arch/Architecture.h>
-#include <nc/core/arch/Instruction.h>
-#include <nc/core/arch/Register.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/CFG.h>
 #include <nc/core/ir/Function.h>
