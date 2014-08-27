@@ -30,6 +30,7 @@
 #include <QEvent>
 #include <QFile>
 #include <QFileDialog>
+#include <QFontDialog>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPlainTextEdit>
@@ -125,6 +126,11 @@ TextView::TextView(const QString &title, QWidget *parent):
     connect(closeEverythingAction, SIGNAL(triggered()), searchWidget, SLOT(deactivate()));
     connect(closeEverythingAction, SIGNAL(triggered()), gotoLineWidget, SLOT(deactivate()));
     connect(closeEverythingAction, SIGNAL(triggered()), textEdit(), SLOT(setFocus()));
+
+    selectFontAction_ = new QAction(tr("Select Font..."), this);
+    addAction(selectFontAction_);
+
+    connect(selectFontAction_, SIGNAL(triggered()), this, SLOT(selectFont()));
 }
 
 void TextView::updatePositionStatus() {
@@ -154,6 +160,8 @@ void TextView::populateContextMenu(QMenu *menu) {
     menu->addAction(findPreviousAction_);
     menu->addSeparator();
     menu->addAction(openGotoLineAction_);
+    menu->addSeparator();
+    menu->addAction(selectFontAction_);
     menu->addSeparator();
 }
 
@@ -228,13 +236,25 @@ void TextView::saveAs() {
 }
 
 void TextView::zoomIn(int delta) {
-    QFont font = textEdit()->document()->defaultFont();
-    font.setPointSize(std::max(font.pointSize() + delta, 1));
-    textEdit()->document()->setDefaultFont(font);
+    QFont f = font();
+    f.setPointSize(std::max(f.pointSize() + delta, 1));
+    setFont(f);
 }
 
 void TextView::zoomOut(int delta) {
     zoomIn(-delta);
+}
+
+QFont TextView::font() const {
+    return textEdit()->document()->defaultFont();
+}
+
+void TextView::setFont(const QFont &font) {
+    textEdit()->document()->setDefaultFont(font);
+}
+
+void TextView::selectFont() {
+    setFont(QFontDialog::getFont(NULL, font(), this));
 }
 
 bool TextView::eventFilter(QObject *watched, QEvent *event) {

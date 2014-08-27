@@ -277,6 +277,14 @@ void MainWindow::loadSettings() {
     }
     restoreState(settings_->value("windowState").toByteArray());
     setDecompileAutomatically(settings_->value("decompileAutomatically", true).toBool());
+
+    foreach (QObject *child, children()) {
+        if (auto textView = qobject_cast<TextView *>(child)) {
+            if (!textView->objectName().isEmpty()) {
+                textView->setFont(settings_->value(textView->objectName() + ".font").value<QFont>());
+            }
+        }
+    }
 }
 
 void MainWindow::saveSettings() {
@@ -285,6 +293,14 @@ void MainWindow::saveSettings() {
     }
     settings_->setValue("windowState", saveState());
     settings_->setValue("decompileAutomatically", decompileAutomatically());
+
+    foreach (QObject *child, children()) {
+        if (auto textView = qobject_cast<TextView *>(child)) {
+            if (!textView->objectName().isEmpty()) {
+                settings_->setValue(textView->objectName() + ".font", textView->font());
+            }
+        }
+    }
 }
 
 void MainWindow::updateGuiState() {
@@ -296,7 +312,7 @@ void MainWindow::updateGuiState() {
     if (project() && !project()->name().isEmpty()) {
         setWindowTitle(tr("%1 - SmartDec").arg(project()->name()));
     } else {
-        setWindowTitle("SmartDec");
+        setWindowTitle(tr("SmartDec"));
     }
 
     if (project() && project()->commandQueue()->front() && !project()->commandQueue()->front()->isBackground()) {

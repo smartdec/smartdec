@@ -27,7 +27,7 @@
 
 #include <QDockWidget>
 
-#include <memory>
+#include <vector>
 
 #include "TextRange.h"
 
@@ -65,8 +65,10 @@ class TextView: public QDockWidget {
     /** Action for showing the go to line widget. */
     QAction *openGotoLineAction_;
 
-    public:
+    /** Action for showing font selection dialog. */
+    QAction *selectFontAction_;
 
+public:
     /**
      * Class constructor.
      *
@@ -80,8 +82,7 @@ class TextView: public QDockWidget {
      */
     QPlainTextEdit *textEdit() const { return textEdit_; }
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Highlights text ranges.
      *
@@ -98,8 +99,7 @@ class TextView: public QDockWidget {
      */
     void moveCursor(int position, bool ensureVisible = true);
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Lets the user choose a file name and saves the text into this file.
      */
@@ -119,8 +119,22 @@ class TextView: public QDockWidget {
      */
     void zoomOut(int delta = 1);
 
-    Q_SIGNALS:
+    /**
+     * \return The font used for showing the text document.
+     */
+    QFont font() const;
 
+    /**
+     * Sets the font used for showing the text document.
+     */
+    void setFont(const QFont &font);
+
+    /**
+     * Lets the user select the font used for showing the document.
+     */
+    void selectFont();
+
+Q_SIGNALS:
     /**
      * This signal is emitted when a context menu is being created.
      * Intercept this signal to populate the menu with some actions.
@@ -136,8 +150,7 @@ class TextView: public QDockWidget {
      */
     void status(const QString &message = QString());
 
-    private Q_SLOTS:
-
+private Q_SLOTS:
     /**
      * Generates a status signal reporting current position.
      */
@@ -157,8 +170,7 @@ class TextView: public QDockWidget {
      */
     void populateContextMenu(QMenu *menu);
 
-    protected:
-
+protected:
     virtual bool eventFilter(QObject *watched, QEvent *event) override;
 };
 
