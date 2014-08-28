@@ -32,22 +32,21 @@ later and at <<configuration_step,configuration step>> choose `v110_xp`
 toolset in CMake using `-T` switch (support since CMake 2.8.11, known to
 work with `Visual Studio` generators).
 
-Notes on Building IDA Pro Plug-In
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Notes on Building IDA Plug-In
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. The following additional package is required to build IDA Pro
-plug-in:
+1. The following additional package is required to build IDA plug-in:
 
-    * http://www.hex-rays.com/products/ida/[IDA Pro SDK] >= 6.1
+    * http://www.hex-rays.com/products/ida/[IDA SDK] >= 6.1
 
-2. You must use the same compiler as the one used by IDA Pro and the
-   same version of Qt (different patch levels of the same major.minor
-   version are binary compatible and work too):
+2. You must use the same compiler as the one used by IDA and the same
+version of Qt (different patch levels of the same major.minor version
+are binary compatible and work too):
 
-    * IDA Pro 6.1 — MSVC 2010 — Qt 4.7.2.
-    * IDA Pro 6.3 — MSVC 2010 — Qt 4.8.1.
-    * IDA Pro 6.4 — MSVC 2010 — Qt 4.8.1.
-    * IDA Pro 6.5 — MSVC 2010 — Qt 4.8.4.
+    * IDA 6.1 — MSVC 2010 — Qt 4.7.2.
+    * IDA 6.3 — MSVC 2010 — Qt 4.8.1.
+    * IDA 6.4 — MSVC 2010 — Qt 4.8.1.
+    * IDA 6.5 — MSVC 2010 — Qt 4.8.4.
 
 3. Qt must be built in namespace `QT`, e.g.:
 +
@@ -56,7 +55,7 @@ configure.exe -qtnamespace QT -platform win32-msvc2010 -debug-and-release -opens
 ------------------------------------------------------------------------
 
 4. You must must build decompiler in +Release+ mode, because this is the
-one used by IDA Pro. Otherwise, you will end up linked against debug Qt
+one used by IDA. Otherwise, you will end up linked against debug Qt
 library, while IDA uses the release version. Nothing good comes out of
 this.
 
@@ -79,8 +78,8 @@ locations at <<configuration_step,configuration step>>.
        should contain `boost` subdirectory with header files).
     3. Set `QTDIR` to the path to the Qt installation directory (it
        should contain `include` and `lib` subdirectories).
-    4. Set `IDA_SDK_DIR` to the IDA Pro SDK installation directory
-       (it should contain `include` and `lib`) subdirectories.
+    4. Set `IDA_SDK_DIR` to the IDA SDK installation directory (it
+       should contain `include` and `lib`) subdirectories.
 
 [[configuration_step]]
 Configuration Step
@@ -111,8 +110,7 @@ e.g.:
 
     * `-D QT_NAMESPACE=QT`
 
-You can choose whether to build the IDA Pro plug-in and which one to
-build:
+You can choose whether to build the IDA plug-in and which one to build:
 
     * `-D IDA_PLUGIN_ENABLED=YES` (or `NO`, defaults to `YES` when IDA
       Pro SDK is found).
@@ -155,11 +153,11 @@ installation can be painlessly moved to any other machine and remain
 workable.
 
 [NOTE]
-When IDA Pro plug-in is enabled, it is the only target which is
-installed. The rationale is that IDA Pro is thread-unsafe, and
-multithreading is disabled in the builds with plug-in enabled.
-This gives you less chances to install single-threaded standalone
-version of the decompiler (which you should not normally want).
+When IDA plug-in is enabled, it is the only target which is installed.
+The rationale is that IDA is thread-unsafe, and multithreading is
+disabled in the builds with plug-in enabled. This gives you less chances
+to install single-threaded standalone version of the decompiler (which
+you should not normally want).
 
 //////////////////////////////
 # vim:set et sts=4 sw=4 tw=72:
