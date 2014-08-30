@@ -1181,7 +1181,6 @@ private:
         case UD_NONE: return NULL;
 
         #define REG(ud_name, nc_name) case UD_R_##ud_name: return X86InstructionAnalyzer::createTerm(X86Registers::nc_name());
-        #define REG_ST(n) case UD_R_ST##n: return X86InstructionAnalyzer::createFpuTerm(n);
 
         REG(AL, al)
         REG(CL, cl)
@@ -1297,14 +1296,14 @@ private:
         REG(MM5, mm5)
         REG(MM6, mm6)
         REG(MM7, mm7)
-        REG_ST(0)
-        REG_ST(1)
-        REG_ST(2)
-        REG_ST(3)
-        REG_ST(4)
-        REG_ST(5)
-        REG_ST(6)
-        REG_ST(7)
+        REG(ST0, st0)
+        REG(ST1, st1)
+        REG(ST2, st2)
+        REG(ST3, st3)
+        REG(ST4, st4)
+        REG(ST5, st5)
+        REG(ST6, st6)
+        REG(ST7, st7)
         REG(XMM0, xmm0)
         REG(XMM1, xmm1)
         REG(XMM2, xmm2)
@@ -1387,30 +1386,6 @@ X86InstructionAnalyzer::~X86InstructionAnalyzer() {}
 
 void X86InstructionAnalyzer::doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) {
     impl_->createStatements(checked_cast<const X86Instruction *>(instruction), program);
-}
-
-std::unique_ptr<core::ir::Term> X86InstructionAnalyzer::createFpuTerm(int index) {
-    const SmallBitSize addressSize = 16;
-
-    return std::make_unique<core::ir::Dereference>(
-        std::make_unique<core::ir::BinaryOperator>(
-            core::ir::BinaryOperator::MUL,
-            std::make_unique<core::ir::UnaryOperator>(
-                core::ir::UnaryOperator::ZERO_EXTEND,
-                std::make_unique<core::ir::BinaryOperator>(
-                    core::ir::BinaryOperator::ADD,
-                    createTerm(X86Registers::fpu_top()),
-                    std::make_unique<core::ir::Constant>(SizedValue(X86Registers::fpu_top()->size(), index)),
-                    X86Registers::fpu_top()->size()
-                ),
-                addressSize
-            ),
-            std::make_unique<core::ir::Constant>(SizedValue(addressSize, X86Registers::fpu_r0()->size())),
-            addressSize
-        ),
-        X86Registers::fpu_r0()->memoryLocation().domain(),
-        addressSize
-    );
 }
 
 } // namespace x86

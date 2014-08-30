@@ -44,22 +44,24 @@ ReturnHook::ReturnHook(const Convention *convention, const FunctionSignature *si
 {
     assert(convention != NULL);
 
-    auto createReturnValue = [&](const Term *term) {
-        auto clone = term->clone();
-        returnValueTerms_[term] = clone.get();
+    auto addReturnValueRead = [&](std::unique_ptr<Term> term) {
         statements_.push_back(std::make_unique<Touch>(
-            std::move(clone),
+            std::move(term),
             Term::READ
         ));
     };
 
     if (signature) {
         if (signature->returnValue()) {
-            createReturnValue(signature->returnValue().get());
+            auto clone = signature->returnValue()->clone();
+            returnValueTerms_[signature->returnValue().get()] = clone.get();
+            addReturnValueRead(std::move(clone));
         }
     } else {
-        foreach (auto term, convention->returnValueTerms()) {
-            createReturnValue(term);
+        foreach (const auto &memoryLocation, convention->returnValueLocations()) {
+            auto term = std::make_unique<MemoryLocationAccess>(memoryLocation);
+            speculativeReturnValueTerms_.push_back(std::make_pair(memoryLocation, term.get()));
+            addReturnValueRead(std::move(term));
         }
     }
 }

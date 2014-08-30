@@ -84,12 +84,11 @@ class SignatureAnalyzer {
      *  formal arguments of the respective callee id. */
     boost::unordered_map<const Call *, std::vector<MemoryLocation>> call2extraArguments_;
 
-    /** Mapping from a callee id to the estimated return value term and
-     * (if it is a MemoryLocationAccess) its part used for passing the return value. */
-    boost::unordered_map<CalleeId, std::pair<const Term *, MemoryLocation>> id2returnValue_;
+    /** Mapping from a callee id to the estimated return value location. */
+    boost::unordered_map<CalleeId, MemoryLocation> id2returnValue_;
 
-    /** Terms that do not belong to the program, but to the hooks. */
-    boost::unordered_set<const Term *> artificialTerms_;
+    /** Terms that represent potential return values in the hooks. */
+    boost::unordered_set<const Term *> speculativeTerms_;
 
 public:
     /**
@@ -141,7 +140,7 @@ private:
     /**
      * Computes the terms representing potential arguments inserted by hooks.
      */
-    void computeArtificialTerms();
+    void computeSpeculativeTerms();
 
     /**
      * Recomputes arguments of the function with the given callee id
@@ -182,20 +181,19 @@ private:
     /**
      * \param[in] call Valid pointer to a call statement.
      *
-     * \return List of terms identifying the locations that can be used
-     *         to pass return values and that are read after the call,
-     *         together with the corresponding memory locations being read.
+     * \return List of memory locations within the locations where the
+     *         return value can be passed, which are read after the call.
      */
-    std::vector<std::pair<const Term *, MemoryLocation>> getUsedReturnValues(const Call *call);
+    std::vector<MemoryLocation> getUsedReturnValueLocations(const Call *call);
 
     /**
      * \param[in] ret Valid pointer to a return statement.
      *
-     * \return List of terms identifying the locations that can be used
-     *         to pass return values, values in which are defined before
-     *         the return, however, not used before it.
+     * \return List of memory locations within the locations where the
+     *         return value can be passed, which are written before the
+     *         return and never read.
      */
-    std::vector<std::pair<const Term *, MemoryLocation>> getUnusedReturnValues(const Return *ret);
+    std::vector<MemoryLocation> getUnusedReturnValueLocations(const Return *ret);
 
     /**
      * Computes and sets signatures for all callee ids.

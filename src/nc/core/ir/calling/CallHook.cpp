@@ -56,41 +56,42 @@ CallHook::CallHook(const Convention *convention, const CallSignature *signature,
         ));
     }
 
-    auto createArgument = [&](const Term *term) {
-        auto clone = term->clone();
-        argumentTerms_[term] = clone.get();
-
+    auto addArgumentRead = [&](std::unique_ptr<Term> term) {
         statements_.push_back(std::make_unique<Touch>(
-            std::move(clone),
+            std::move(term),
             Term::READ
         ));
     };
 
-    auto createReturnValue = [&](const Term *term) {
-        auto clone = term->clone();
-        returnValueTerms_[term] = clone.get();
-
+    auto addReturnValueWrite = [&](std::unique_ptr<Term> term) {
+        auto size = term->size();
         statements_.push_back(std::make_unique<Assignment>(
-            std::move(clone),
-            std::make_unique<Intrinsic>(Intrinsic::UNDEFINED, term->size())
+            std::move(term),
+            std::make_unique<Intrinsic>(Intrinsic::UNDEFINED, size)
         ));
     };
 
     if (signature) {
         foreach (const auto &term, signature->arguments()) {
-            createArgument(term.get());
+            auto clone = term->clone();
+            argumentTerms_[term.get()] = clone.get();
+            addArgumentRead(std::move(clone));
         }
 
         if (signature->returnValue()) {
-            createReturnValue(signature->returnValue().get());
+            auto clone = signature->returnValue()->clone();
+            returnValueTerms_[signature->returnValue().get()] = clone.get();
+            addReturnValueWrite(std::move(clone));
         }
     } else {
         auto snapshotStatement = std::make_unique<RememberReachingDefinitions>();
         snapshotStatement_ = snapshotStatement.get();
         statements_.push_back(std::move(snapshotStatement));
 
-        foreach (auto term, convention->returnValueTerms()) {
-            createReturnValue(term);
+        foreach (const auto &memoryLocation, convention->returnValueLocations()) {
+            auto term = std::make_unique<MemoryLocationAccess>(memoryLocation);
+            speculativeReturnValueTerms_.push_back(std::make_pair(memoryLocation, term.get()));
+            addReturnValueWrite(std::move(term));
         }
     }
 

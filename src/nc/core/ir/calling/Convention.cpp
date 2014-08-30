@@ -204,9 +204,18 @@ void Convention::addArgumentGroup(std::vector<MemoryLocation> memoryLocations) {
     argumentGroups_.push_back(std::move(memoryLocations));
 }
 
-void Convention::addReturnValueTerm(std::unique_ptr<Term> term) {
-    assert(term != NULL);
-    returnValueTerms_.push_back(std::move(term));
+MemoryLocation Convention::getReturnValueLocationCovering(const MemoryLocation &memoryLocation) const {
+    foreach (const auto &returnValueLocation, returnValueLocations_) {
+        if (returnValueLocation.covers(memoryLocation)) {
+            return returnValueLocation;
+        }
+    }
+    return MemoryLocation();
+}
+
+void Convention::addReturnValueLocation(const MemoryLocation &memoryLocation) {
+    assert(memoryLocation);
+    returnValueLocations_.push_back(memoryLocation);
 }
 
 void Convention::addEnterStatement(std::unique_ptr<Statement> statement) {

@@ -3,8 +3,6 @@ set(SOURCES
     CallingConventions.h
     X86Architecture.cpp
     X86Architecture.h
-    X86DataflowAnalyzer.cpp
-    X86DataflowAnalyzer.h
     X86Disassembler.cpp
     X86Disassembler.h
     X86Instruction.cpp

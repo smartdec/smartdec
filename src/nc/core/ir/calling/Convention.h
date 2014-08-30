@@ -59,7 +59,7 @@ private:
     BitSize argumentAlignment_; ///< Alignment of stack arguments in bits.
 
     std::vector<std::vector<MemoryLocation>> argumentGroups_; ///< Groups of locations through which arguments of different kinds can be passed.
-    std::vector<std::unique_ptr<const Term>> returnValueTerms_; ///< Terms denoting where return values may be kept.
+    std::vector<MemoryLocation> returnValueLocations_; ///< List of memory locations that can be used for passing return values.
 
     bool calleeCleanup_; ///< Callee cleans up arguments.
 
@@ -136,11 +136,16 @@ public:
     std::vector<MemoryLocation> sortArguments(std::vector<MemoryLocation> arguments) const;
 
     /**
-     * \return List of terms where return values can be kept.
+     * \return List of memory locations that can be used for passing return values.
      */
-    const std::vector<const Term *> &returnValueTerms() const {
-        return reinterpret_cast<const std::vector<const Term *> &>(returnValueTerms_);
-    }
+    const std::vector<MemoryLocation> &returnValueLocations() const { return returnValueLocations_; }
+
+    /**
+     * \param memoryLocation A memory location.
+     *
+     * \return Possible return value location covering given memory location.
+     */
+    MemoryLocation getReturnValueLocationCovering(const MemoryLocation &memoryLocation) const;
 
     /**
      * \return True if callee cleans up arguments.
@@ -180,11 +185,11 @@ protected:
     void addArgumentGroup(std::vector<MemoryLocation> memoryLocations);
 
     /**
-     * Adds a term in which return values may be kept.
+     * Adds a memory location that can be used for passing returned values.
      *
-     * \param term Valid pointer to the term.
+     * \param location Valid memory location.
      */
-    void addReturnValueTerm(std::unique_ptr<Term> term);
+    void addReturnValueLocation(const MemoryLocation &location);
 
     /**
      * Sets whether callee cleans up arguments.

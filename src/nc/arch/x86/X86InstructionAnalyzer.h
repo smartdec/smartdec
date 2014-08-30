@@ -54,14 +54,6 @@ public:
      */
     ~X86InstructionAnalyzer();
 
-    /**
-     * \param[in] index FPU stack operand index.
-     *
-     * \return Valid pointer to the intermediate representation of the fpu stack register
-     *         operand with the given index.
-     */
-    static std::unique_ptr<core::ir::Term> createFpuTerm(int index);
-
 protected:
     virtual void doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) override;
 };

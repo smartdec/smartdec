@@ -10,7 +10,6 @@
 
 #include "X86Architecture.h"
 #include "X86Registers.h"
-#include "X86InstructionAnalyzer.h"
 
 namespace nc {
 namespace arch {
@@ -46,14 +45,11 @@ AMD64CallingConvention::AMD64CallingConvention(const X86Architecture *architectu
     fpArgs.push_back(X86Registers::xmm7()->memoryLocation());
     addArgumentGroup(std::move(fpArgs));
 
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::rax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::eax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::ax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::al()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::xmm0()));
+    addReturnValueLocation(X86Registers::rax()->memoryLocation());
+    addReturnValueLocation(X86Registers::xmm0()->memoryLocation());
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
-        X86InstructionAnalyzer::createTerm(X86Registers::df()),
+        std::make_unique<core::ir::MemoryLocationAccess>(X86Registers::df()->memoryLocation()),
         std::make_unique<core::ir::Constant>(SizedValue(X86Registers::df()->size(), 0))
     ));
 }
@@ -82,14 +78,11 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const X86Architecture
     fpArgs.push_back(X86Registers::xmm3()->memoryLocation());
     addArgumentGroup(std::move(fpArgs));
 
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::rax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::eax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::ax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::al()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::xmm0()));
+    addReturnValueLocation(X86Registers::rax()->memoryLocation());
+    addReturnValueLocation(X86Registers::xmm0()->memoryLocation());
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
-        X86InstructionAnalyzer::createTerm(X86Registers::df()),
+        std::make_unique<core::ir::MemoryLocationAccess>(X86Registers::df()->memoryLocation()),
         std::make_unique<core::ir::Constant>(SizedValue(X86Registers::df()->size(), 0))
     ));
 }
@@ -102,13 +95,11 @@ Cdecl32CallingConvention::Cdecl32CallingConvention(const X86Architecture *archit
     setFirstArgumentOffset(32);
     setArgumentAlignment(32);
 
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::eax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::ax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::al()));
-    addReturnValueTerm(X86InstructionAnalyzer::createFpuTerm(0));
+    addReturnValueLocation(X86Registers::eax()->memoryLocation());
+    addReturnValueLocation(X86Registers::st0()->memoryLocation());
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
-        X86InstructionAnalyzer::createTerm(X86Registers::df()),
+        std::make_unique<core::ir::MemoryLocationAccess>(X86Registers::df()->memoryLocation()),
         std::make_unique<core::ir::Constant>(SizedValue(X86Registers::df()->size(), 0))
     ));
 }
@@ -121,12 +112,11 @@ Cdecl16CallingConvention::Cdecl16CallingConvention(const X86Architecture *archit
     setFirstArgumentOffset(16);
     setArgumentAlignment(16);
 
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::ax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::al()));
-    addReturnValueTerm(X86InstructionAnalyzer::createFpuTerm(0));
+    addReturnValueLocation(X86Registers::ax()->memoryLocation());
+    addReturnValueLocation(X86Registers::st0()->memoryLocation());
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
-        X86InstructionAnalyzer::createTerm(X86Registers::df()),
+        std::make_unique<core::ir::MemoryLocationAccess>(X86Registers::df()->memoryLocation()),
         std::make_unique<core::ir::Constant>(SizedValue(X86Registers::df()->size(), 0))
     ));
 }
@@ -140,13 +130,11 @@ Stdcall32CallingConvention::Stdcall32CallingConvention(const X86Architecture *ar
     setArgumentAlignment(32);
     setCalleeCleanup(true);
 
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::eax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::ax()));
-    addReturnValueTerm(X86InstructionAnalyzer::createTerm(X86Registers::al()));
-    addReturnValueTerm(X86InstructionAnalyzer::createFpuTerm(0));
+    addReturnValueLocation(X86Registers::ax()->memoryLocation());
+    addReturnValueLocation(X86Registers::st0()->memoryLocation());
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
-        X86InstructionAnalyzer::createTerm(X86Registers::df()),
+        std::make_unique<core::ir::MemoryLocationAccess>(X86Registers::df()->memoryLocation()),
         std::make_unique<core::ir::Constant>(SizedValue(X86Registers::df()->size(), 0))
     ));
 }

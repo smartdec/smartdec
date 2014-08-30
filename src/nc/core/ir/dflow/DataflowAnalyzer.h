@@ -85,11 +85,6 @@ public:
     }
 
     /**
-     * Virtual destructor.
-     */
-    virtual ~DataflowAnalyzer() {}
-
-    /**
      * An object where the results of analyses are stored.
      */
     Dataflow &dataflow() const { return dataflow_; }
@@ -125,7 +120,7 @@ protected:
      *
      * \return Valid pointer to the computed value, owned by dataflow().
      */
-    virtual Value *computeValue(const Term *term, const ExecutionContext &context);
+    Value *computeValue(const Term *term, const ExecutionContext &context);
 
     /**
      * Computes the memory location of the given term.

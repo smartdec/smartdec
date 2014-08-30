@@ -25,12 +25,16 @@
 
 #include <nc/config.h>
 
+#include <vector>
+
 #include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <nc/common/Range.h>
 #include <nc/common/Types.h>
 #include <nc/common/ilist.h>
+
+#include <nc/core/ir/MemoryLocation.h>
 
 namespace nc {
 namespace core {
@@ -63,6 +67,9 @@ class CallHook {
 
     /** Mapping from return value terms to their clones. */
     boost::unordered_map<const Term *, const Term *> returnValueTerms_;
+
+    /** Mapping from memory locations that can be used for returning values to terms. */
+    std::vector<std::pair<MemoryLocation, const Term *>> speculativeReturnValueTerms_;
 
     /** Number of inserted statements. */
     std::size_t insertedStatementsCount_;
@@ -133,14 +140,20 @@ public:
     const Term *stackPointer() const { return stackPointer_; }
 
     /**
-     * \return Mapping from argument terms to their clones.
+     * \return Mapping from argument terms from the signature to their clones.
      */
     const boost::unordered_map<const Term *, const Term *> &argumentTerms() const { return argumentTerms_; }
 
     /**
-     * \return Mapping from return value terms to their clones.
+     * \return Mapping from return value terms from the signature to their clones.
      */
     const boost::unordered_map<const Term *, const Term *> &returnValueTerms() const { return returnValueTerms_; }
+
+    /**
+     * \return Mapping of the memory locations that can contain return values
+     *         to terms representing writes to these locations.
+     */
+    const std::vector<std::pair<MemoryLocation, const Term *>> &speculativeReturnValueTerms() const { return speculativeReturnValueTerms_; }
 };
 
 } // namespace calling

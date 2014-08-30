@@ -39,7 +39,6 @@
 #include <nc/core/ir/dflow/Dataflows.h>
 
 #include "X86Architecture.h"
-#include "X86DataflowAnalyzer.h"
 #include "X86Registers.h"
 
 namespace nc {
@@ -117,19 +116,6 @@ void X86MasterAnalyzer::detectCallingConvention(core::Context &context, const co
             setConvention("amd64");
             break;
     }
-}
-
-void X86MasterAnalyzer::dataflowAnalysis(core::Context &context, core::ir::Function *function) const {
-    context.logToken().info(tr("Dataflow analysis of %1.").arg(getFunctionName(context, function)));
-
-    std::unique_ptr<core::ir::dflow::Dataflow> dataflow(new core::ir::dflow::Dataflow());
-
-    context.hooks()->instrument(function, dataflow.get());
-
-    X86DataflowAnalyzer(*dataflow, context.image()->architecture(), context.cancellationToken(), context.logToken())
-        .analyze(function);
-
-    context.dataflows()->emplace(function, std::move(dataflow));
 }
 
 } // namespace x86
