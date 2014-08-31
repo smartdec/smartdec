@@ -141,8 +141,10 @@ public:
      * Adds a symbol.
      *
      * \param symbol Valid pointer to the symbol.
+     *
+     * \return Pointer to the added symbol.
      */
-    void addSymbol(std::unique_ptr<Symbol> symbol);
+    const Symbol *addSymbol(std::unique_ptr<Symbol> symbol);
 
     /**
      * \return List of all symbols.
@@ -165,8 +167,10 @@ public:
      * Adds an information about relocation.
      *
      * \param relocation Valid pointer to a relocation information.
+     *
+     * \return Pointer to the added relocation.
      */
-    void addRelocation(std::unique_ptr<Relocation> relocation);
+    const Relocation *addRelocation(std::unique_ptr<Relocation> relocation);
 
     /**
      * \param address Virtual address.

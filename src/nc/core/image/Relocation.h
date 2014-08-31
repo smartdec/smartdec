@@ -32,7 +32,7 @@ public:
      * \param symbol Valid pointer to the symbol whose address to use.
      * \param addend Displacement to add to the symbol's address.
      */
-    Relocation(ByteAddr address, const Symbol *symbol, ByteSize addend):
+    Relocation(ByteAddr address, const Symbol *symbol, ByteSize addend = 0):
         address_(address), symbol_(symbol), addend_(addend)
     {
         assert(symbol != NULL);

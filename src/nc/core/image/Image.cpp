@@ -87,18 +87,26 @@ ByteSize Image::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
     }
 }
 
-void Image::addSymbol(std::unique_ptr<Symbol> symbol) {
-    value2symbol_[std::make_pair(symbol->value(), symbol->type())] = symbol.get();
+const Symbol *Image::addSymbol(std::unique_ptr<Symbol> symbol) {
+    auto result = symbol.get();
+
     symbols_.push_back(std::move(symbol));
+    value2symbol_[std::make_pair(result->value(), result->type())] = result;
+
+    return result;
 }
 
 const Symbol *Image::getSymbol(ConstantValue value, SymbolType type) const {
     return nc::find(value2symbol_, std::make_pair(value, type));
 }
 
-void Image::addRelocation(std::unique_ptr<Relocation> relocation) {
-    address2relocation_[relocation->address()] = relocation.get();
+const Relocation *Image::addRelocation(std::unique_ptr<Relocation> relocation) {
+    auto result = relocation.get();
+
     relocations_.push_back(std::move(relocation));
+    address2relocation_[result->address()] = result;
+
+    return result;
 }
 
 const Relocation *Image::getRelocation(ByteAddr address) const {

@@ -35,6 +35,7 @@
 #include <nc/core/Context.h>
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Relocation.h>
 #include <nc/gui/MainWindow.h>
 #include <nc/gui/Project.h>
 
@@ -216,6 +217,7 @@ std::unique_ptr<gui::Project> SmartDecPlugin::createIdaProject() const {
     /* Create sections. */
     IdaFrontend::createSections(image);
 
+    using core::image::Relocation;
     using core::image::Symbol;
     using core::image::SymbolType;
 
@@ -231,7 +233,9 @@ std::unique_ptr<gui::Project> SmartDecPlugin::createIdaProject() const {
     /* Add imported function names. */
     typedef std::pair<ByteAddr, QString> Import;
     foreach(const Import &import, IdaFrontend::importedFunctions()) {
-        image->addSymbol(std::make_unique<Symbol>(SymbolType::FUNCTION, import.second, import.first));
+        image->addRelocation(std::make_unique<Relocation>(
+            import.first,
+            image->addSymbol(std::make_unique<Symbol>(SymbolType::FUNCTION, import.second, 0))));
     }
 
     return project;
