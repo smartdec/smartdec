@@ -46,7 +46,7 @@ namespace pe {
 
 namespace {
 
-const ByteOrder peByteOrder(ByteOrder::LittleEndian);
+const ByteOrder peByteOrder = ByteOrder::LittleEndian;
 
 bool seekFileHeader(QIODevice *source) {
     IMAGE_DOS_HEADER dosHeader;
@@ -79,79 +79,67 @@ bool seekFileHeader(QIODevice *source) {
     return true;
 }
 
-class PeParserPrivate {
+struct Pe32 {
+    typedef IMAGE_OPTIONAL_HEADER32 IMAGE_OPTIONAL_HEADER;
+};
+
+struct Pe64 {
+    typedef IMAGE_OPTIONAL_HEADER64 IMAGE_OPTIONAL_HEADER;
+};
+
+template<class Pe>
+class PeParserImpl {
     Q_DECLARE_TR_FUNCTIONS(PeParserPrivate)
 
     QIODevice *source_;
     core::image::Image *image_;
     const LogToken &log_;
 
-    ByteAddr fileHeaderOffset_;
-    IMAGE_FILE_HEADER fileHeader_;
-    ByteAddr imageBase_;
+    ByteAddr optionalHeaderOffset_;
+    IMAGE_FILE_HEADER &fileHeader_;
+    typename Pe::IMAGE_OPTIONAL_HEADER optionalHeader_;
 
 public:
-    PeParserPrivate(QIODevice *source, core::image::Image *image, const LogToken &log):
-        source_(source), image_(image), log_(log)
+    PeParserImpl(QIODevice *source, core::image::Image *image, const LogToken &log, IMAGE_FILE_HEADER &fileHeader):
+        source_(source), image_(image), log_(log), fileHeader_(fileHeader)
     {}
 
-    // TODO: imports.
     void parse() {
-        if (!seekFileHeader(source_)) {
-            throw core::input::ParseError(tr("PE signature doesn't match."));
-        }
-        fileHeaderOffset_ = source_->pos();
+        optionalHeaderOffset_ = source_->pos();
 
         parseFileHeader();
+        parseOptionalHeader();
         parseSections();
         parseSymbols();
+        parseImports();
     }
 
 private:
     void parseFileHeader() {
-        if (!source_->seek(fileHeaderOffset_)) {
-            throw core::input::ParseError(tr("Cannot seek to the file header."));
-        }
-        if (source_->read(reinterpret_cast<char *>(&fileHeader_), sizeof(fileHeader_)) != sizeof(fileHeader_)) {
-            throw core::input::ParseError(tr("Cannot read the file header."));
-        }
-        peByteOrder.convertFrom(fileHeader_.Machine);
         peByteOrder.convertFrom(fileHeader_.PointerToSymbolTable);
         peByteOrder.convertFrom(fileHeader_.NumberOfSymbols);
         peByteOrder.convertFrom(fileHeader_.NumberOfSections);
-
-        switch (fileHeader_.Machine) {
-            case IMAGE_FILE_MACHINE_I386:
-                image_->setArchitecture(QLatin1String("i386"));
-                parseOptionalHeader<IMAGE_OPTIONAL_HEADER32>();
-                break;
-            case IMAGE_FILE_MACHINE_AMD64:
-                image_->setArchitecture(QLatin1String("x86-64"));
-                parseOptionalHeader<IMAGE_OPTIONAL_HEADER64>();
-                break;
-            default:
-                throw core::input::ParseError(tr("Unknown machine id: %1.").arg(fileHeader_.Machine));
-        }
     }
 
-    template<class IMAGE_OPTIONAL_HEADER>
     void parseOptionalHeader() {
-        if (!source_->seek(fileHeaderOffset_ + sizeof(IMAGE_FILE_HEADER))) {
+        if (!source_->seek(optionalHeaderOffset_)) {
             throw core::input::ParseError(tr("Cannot seek to the optional header."));
         }
 
-        IMAGE_OPTIONAL_HEADER optionalHeader;
-        if (source_->read(reinterpret_cast<char *>(&optionalHeader), sizeof(optionalHeader)) != sizeof(optionalHeader)) {
+        if (source_->read(reinterpret_cast<char *>(&optionalHeader_), sizeof(optionalHeader_)) != sizeof(optionalHeader_)) {
             throw core::input::ParseError(tr("Cannot read the optional header."));
         }
 
-        peByteOrder.convertFrom(optionalHeader.ImageBase);
+        peByteOrder.convertFrom(optionalHeader_.ImageBase);
 
-        imageBase_ = optionalHeader.ImageBase;
+        foreach (auto &entry, optionalHeader_.DataDirectory) {
+            peByteOrder.convertFrom(entry.VirtualAddress);
+            peByteOrder.convertFrom(entry.Size);
+        }
     }
 
     void parseSections() {
-        if (!source_->seek(fileHeaderOffset_ + sizeof(IMAGE_FILE_HEADER) + fileHeader_.SizeOfOptionalHeader)) {
+        if (!source_->seek(optionalHeaderOffset_ + fileHeader_.SizeOfOptionalHeader)) {
             log_.warning(tr("Cannot seek to the section header table."));
             return;
         }
@@ -170,7 +158,7 @@ private:
             peByteOrder.convertFrom(sectionHeader.SizeOfRawData);
 
             auto section = std::make_unique<core::image::Section>(
-                getString(sectionHeader.Name), sectionHeader.VirtualAddress + imageBase_, sectionHeader.SizeOfRawData
+                getString(sectionHeader.Name), sectionHeader.VirtualAddress + optionalHeader_.ImageBase, sectionHeader.SizeOfRawData
             );
 
             section->setAllocated((sectionHeader.Characteristics & IMAGE_SCN_MEM_DISCARDABLE) == 0);
@@ -294,6 +282,23 @@ private:
     QString getString(const char (&buffer)[size]) const {
         return QString::fromLatin1(buffer, qstrnlen(buffer, size));
     }
+
+    void parseImports() {
+        if (optionalHeader_.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress == 0) {
+            return;
+        }
+
+        auto address = optionalHeader_.ImageBase + optionalHeader_.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
+
+        IMAGE_IMPORT_DESCRIPTOR descriptor;
+        while (image_->readBytes(address, reinterpret_cast<char *>(&descriptor), sizeof(descriptor)) == sizeof(descriptor)) {
+            if (descriptor.Characteristics == 0) {
+                break;
+            }
+            // TODO: imports.
+            address += sizeof(descriptor);
+        }
+    }
 };
 
 } // anonymous namespace
@@ -307,8 +312,29 @@ bool PeParser::doCanParse(QIODevice *source) const {
 }
 
 void PeParser::doParse(QIODevice *source, core::image::Image *image, const LogToken &log) const {
-    PeParserPrivate parser(source, image, log);
-    parser.parse();
+    if (!seekFileHeader(source)) {
+        throw core::input::ParseError(tr("PE signature doesn't match."));
+    }
+
+    IMAGE_FILE_HEADER fileHeader;
+    if (source->read(reinterpret_cast<char *>(&fileHeader), sizeof(fileHeader)) != sizeof(fileHeader)) {
+        throw core::input::ParseError(tr("Cannot read the file header."));
+    }
+
+    peByteOrder.convertFrom(fileHeader.Machine);
+    switch (fileHeader.Machine) {
+        case IMAGE_FILE_MACHINE_I386:
+            image->setArchitecture(QLatin1String("i386"));
+            PeParserImpl<Pe32>(source, image, log, fileHeader).parse();
+            break;
+        case IMAGE_FILE_MACHINE_AMD64:
+            image->setArchitecture(QLatin1String("x86-64"));
+            PeParserImpl<Pe64>(source, image, log, fileHeader).parse();
+            break;
+        default:
+            throw core::input::ParseError(tr("Unknown machine id: %1.").arg(fileHeader.Machine));
+    }
+
     image->setDemangler("msvc");
 }
 
