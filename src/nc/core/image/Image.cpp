@@ -91,7 +91,10 @@ const Symbol *Image::addSymbol(std::unique_ptr<Symbol> symbol) {
     auto result = symbol.get();
 
     symbols_.push_back(std::move(symbol));
-    value2symbol_[std::make_pair(result->value(), result->type())] = result;
+
+    if (result->value()) {
+        value2symbol_[std::make_pair(*result->value(), result->type())] = result;
+    }
 
     return result;
 }

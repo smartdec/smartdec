@@ -235,7 +235,7 @@ std::unique_ptr<gui::Project> SmartDecPlugin::createIdaProject() const {
     foreach(const Import &import, IdaFrontend::importedFunctions()) {
         image->addRelocation(std::make_unique<Relocation>(
             import.first,
-            image->addSymbol(std::make_unique<Symbol>(SymbolType::FUNCTION, import.second, 0))));
+            image->addSymbol(std::make_unique<Symbol>(SymbolType::FUNCTION, import.second, boost::none))));
     }
 
     return project;

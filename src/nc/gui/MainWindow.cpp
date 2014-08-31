@@ -453,7 +453,9 @@ void MainWindow::populateSectionsContextMenu(QMenu *menu) {
 
 void MainWindow::populateSymbolsContextMenu(QMenu *menu) {
     if (auto symbol = symbolsView_->selectedSymbol()) {
-        menu->addAction(tr("Jump to address %1").arg(symbol->value(), 0, 16), this, SLOT(jumpToSymbolAddress()));
+        if (symbol->value()) {
+            menu->addAction(tr("Jump to address %1").arg(*symbol->value(), 0, 16), this, SLOT(jumpToSymbolAddress()));
+        }
     }
 }
 
@@ -602,8 +604,10 @@ void MainWindow::jumpToSelectedAddress() {
 
 void MainWindow::jumpToSymbolAddress() {
     if (auto symbol = symbolsView_->selectedSymbol()) {
-        if (jumpToAddress(symbol->value())) {
-            instructionsView_->show();
+        if (symbol->value()) {
+            if (jumpToAddress(*symbol->value())) {
+                instructionsView_->show();
+            }
         }
     }
 }

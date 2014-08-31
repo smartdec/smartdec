@@ -5,10 +5,12 @@
 
 #include <nc/config.h>
 
-#include <nc/common/Types.h>
+#include <boost/optional.hpp>
 
 #include <QCoreApplication>
 #include <QString>
+
+#include <nc/common/Types.h>
 
 namespace nc {
 namespace core {
@@ -65,7 +67,7 @@ class Symbol {
 private:
     SymbolType type_; ///< Type of the symbol.
     QString name_; ///< Name of the symbol.
-    ConstantValue value_; ///< Value of the symbol.
+    boost::optional<ConstantValue> value_; ///< Value of the symbol.
     const Section *section_; ///< Section referenced by the symbol.
 
 public:
@@ -77,7 +79,7 @@ public:
      * \param value Value of the symbol.
      * \param section Pointer to the section referenced by the symbol.
      */
-    Symbol(SymbolType type, QString name, ConstantValue value, const Section *section = NULL):
+    Symbol(SymbolType type, QString name, const boost::optional<ConstantValue> &value, const Section *section = NULL):
         type_(type), name_(std::move(name)), value_(value), section_(section)
     {}
 
@@ -94,7 +96,7 @@ public:
     /**
      * \return Value of the symbol.
      */
-    ConstantValue value() const { return value_; }
+    const boost::optional<ConstantValue> &value() const { return value_; }
 
     /**
      * \return Pointer to the section references by the symbol. Can be NULL.

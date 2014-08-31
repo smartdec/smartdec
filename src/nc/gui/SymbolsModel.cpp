@@ -84,10 +84,14 @@ QVariant SymbolsModel::data(const QModelIndex &index, int role) const {
             case COL_TYPE:
                 return symbol->type().getName();
             case COL_VALUE: {
-                if (role == Qt::DisplayRole) {
-                    return QString("%1").arg(symbol->value(), 0, 16);
+                if (symbol->value()) {
+                    if (role == Qt::DisplayRole) {
+                        return QString("%1").arg(*symbol->value(), 0, 16);
+                    } else {
+                        return static_cast<qlonglong>(*symbol->value());
+                    }
                 } else {
-                    return static_cast<qlonglong>(symbol->value());
+                    return tr("Undefined");
                 }
             }
             case COL_SECTION:

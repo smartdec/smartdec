@@ -105,8 +105,14 @@ void printSections(nc::core::Context &context, QTextStream &out) {
 
 void printSymbols(nc::core::Context &context, QTextStream &out) {
     foreach (const auto *symbol, context.image()->symbols()) {
+        QString value;
+        if (symbol->value()) {
+            value = QString("%1").arg(*symbol->value(), 0, 16);
+        } else {
+            value = QLatin1String("Undefined");
+        }
         out << QString("symbol name = '%1', type = %2, value = 0x%3, section = %4")
-            .arg(symbol->name()).arg(symbol->type().getName()).arg(symbol->value(), 0, 16)
+            .arg(symbol->name()).arg(symbol->type().getName()).arg(value)
             .arg(symbol->section() ? symbol->section()->name() : QString()) << endl;
     }
 }
