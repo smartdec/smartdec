@@ -188,6 +188,7 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
             if (auto relocation = image().getRelocation(addr)) {
                 if (name.isEmpty()) {
                     name = relocation->symbol()->name();
+                    // TODO: try to demangle.
                 }
             }
 

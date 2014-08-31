@@ -95,6 +95,7 @@ public:
         source_(source), image_(image), log_(log)
     {}
 
+    // TODO: imports.
     void parse() {
         if (!seekFileHeader(source_)) {
             throw core::input::ParseError(tr("PE signature doesn't match."));
