@@ -61,7 +61,6 @@ public:
     /**
      * Constructor.
      *
-     * \param graph         Graph this node belongs to.
      * \param switchNode    Valid pointer to the node doing the table-based jump.
      * \param switchTerm    Valid pointer to the term being switched upon.
      * \param jumpTableSize Size of the jump table.

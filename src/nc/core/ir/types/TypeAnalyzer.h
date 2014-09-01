@@ -83,6 +83,7 @@ public:
      * \param[in] livenesses Liveness information.
      * \param[in] hooks Hooks manager.
      * \param[in] signatures Signatures of functions.
+     * \param[in] canceled Cancellation token.
      */
     TypeAnalyzer(Types &types, const Functions &functions, const dflow::Dataflows &dataflows,
         const vars::Variables &variables, const liveness::Livenesses &livenesses,

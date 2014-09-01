@@ -20,12 +20,6 @@ class BundledDemangler: public Demangler {
     std::unique_ptr<const Demangler> demangler_;
 
 public:
-    /**
-     * Constructor.
-     *
-     * \param program Demangler executable.
-     * \param arguments Demangler arguments.
-     */
     BundledDemangler();
 
     virtual QString demangle(const QString &symbol) const override;

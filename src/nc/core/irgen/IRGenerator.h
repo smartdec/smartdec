@@ -83,7 +83,7 @@ public:
      * \param[in] log Log token.
      */
     IRGenerator(const image::Image *image, const arch::Instructions *instructions, ir::Program *program,
-        const CancellationToken &canceled, const LogToken &logToken);
+        const CancellationToken &canceled, const LogToken &log);
 
     /**
      * Destructor.

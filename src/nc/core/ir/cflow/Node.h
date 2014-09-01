@@ -67,7 +67,7 @@ private:
 
 public:
     /**
-     * \param nodeKind Kind of the node.
+     * \param kind Kind of the node.
      */
     Node(NodeKind kind): nodeKind_(kind), parent_(NULL) {}
 

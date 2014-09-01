@@ -66,9 +66,7 @@ private:
     Node *loopCondition_; ///< Node with the loop condition.
 
 public:
-
     /**
-     * \param graph         Graph this node belongs to.
      * \param regionKind    Region kind.
      */
     Region(RegionKind regionKind):
