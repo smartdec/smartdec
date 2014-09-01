@@ -1,4 +1,4 @@
-TXT_FILES	= build.txt hacking.txt licenses.txt
+TXT_FILES	= build.txt hacking.txt licenses.txt todo.txt
 HTML_FILES	= $(TXT_FILES:.txt=.html)
 
 .PHONY: all

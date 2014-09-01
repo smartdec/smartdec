@@ -1,0 +1,64 @@
+SmartDec: Things to be done
+===========================
+:toc:
+Yegor Derevenets <yegor.derevenets@gmail.com>
+
+Here is a list of things that should be done, sorted by descending priority.
+
+PE Imports
+----------
+PE parser must parse the imports information and store in the `Image` (as relocations?).
+
+[[ExactUses]]
+Exact Uses
+----------
+`dflow::Uses` must contain more detailed information: which part of a term is used by which other term.
+
+Regression in Return Value Reconstruction
+-----------------------------------------
+Introduced in 0f2f3c37cd940335d3e3e35fc2dab4cd3bbac1c4.
+`014_calls` test now fails.
+Requires <<ExactUses>> to be done.
+The problem there is that even if some read is real due to it being a speculative term of a return, it might read more than what is computed to be the return value of the term.
+
+ARM
+---
+Support for ARM architecture is wanted.
+A prototype is available in the `arm` branch.
+Needed: more descriptions of instructions, description of the calling convention, testing.
+
+x86 Floating-Point Arithmetic
+-----------------------------
+Needed: descriptions of floating-point instructions.
+Idea: implement pushes and pops from/to FPU stack as a sequence of assignments, e.g.: `st(7)=st(6), st(6)=st(5), ..., st(1) = st(0)`.
+Might be a bit much of code, but it is much better than tracking the FPU stack pointer value (that may come different from different branches).
+Will require more clever code generation concerning elimination of unnecessary copies.
+Will require support for floating types in `likec`.
+
+Faster GUI
+----------
+Currently, GUI acts slow on big C++ outputs, especially on selection/deselection of big parts of code.
+
+Refactoring
+-----------
+Refactoring must be designed and implemented.
+Currently, it is unclear how to remember the names given by the user and reuse them in further decompilations.
+Related to this topic: changing calling convention by the user.
+
+[[SessionSaving]]
+Session Saving
+--------------
+One should be able to store a session and reopen it, with all decompilation results being there.
+
+Session Saving in IDA
+---------------------
+One should restore SmartDec windows in IDA on reopening the project.
+Depends on <<SessionSaving>>.
+
+Eliminating Term Access Types
+-----------------------------
+Term access types should go: they are not some property of a term.
+
+Pass Manager
+------------
+`MasterAnalyzer` should eventually become a `PassManager`.
