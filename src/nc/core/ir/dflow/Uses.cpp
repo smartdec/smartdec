@@ -16,7 +16,7 @@ Uses::Uses(const Dataflow &dataflow) {
     foreach (auto &termAndDefinitions, dataflow.term2definitions()) {
         foreach (const auto &chunk, termAndDefinitions.second.chunks()) {
             foreach (const Term *definition, chunk.definitions()) {
-                term2uses_[definition].push_back(termAndDefinitions.first);
+                term2uses_[definition].push_back(Use(chunk.location(), termAndDefinitions.first));
             }
         }
     }

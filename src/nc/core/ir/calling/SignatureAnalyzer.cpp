@@ -418,8 +418,8 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call
         foreach (const Term *term, chunk.definitions()) {
             if (isRealWrite(term)) {
                 bool used = false;
-                foreach (const Term *use, uses.getUses(term)) {
-                    if (isRealRead(use)) {
+                foreach (const auto &use, uses.getUses(term)) {
+                    if (isRealRead(use.term())) {
                         used = true;
                         break;
                     }
@@ -449,9 +449,9 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUsedReturnValueLocations(const
     foreach (const auto &locationAndTerm, callHook->speculativeReturnValueTerms()) {
         MemoryLocation usedPart;
 
-        foreach (const Term *use, uses.getUses(locationAndTerm.second)) {
-            if (isRealRead(use)) {
-                usedPart = MemoryLocation::merge(usedPart, dataflow.getMemoryLocation(use));
+        foreach (const auto &use, uses.getUses(locationAndTerm.second)) {
+            if (isRealRead(use.term())) {
+                usedPart = MemoryLocation::merge(usedPart, use.location());
             }
         }
 
@@ -484,8 +484,8 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedReturnValueLocations(con
                 if (isRealWrite(definition)) {
                     defined = true;
 
-                    foreach (const Term *use, uses.getUses(definition)) {
-                        if (use != locationAndTerm.second && isRealRead(use)) {
+                    foreach (const auto &use, uses.getUses(definition)) {
+                        if (use.term() != locationAndTerm.second && isRealRead(use.term())) {
                             used = true;
                             break;
                         }

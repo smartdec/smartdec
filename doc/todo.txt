@@ -9,16 +9,10 @@ PE Imports
 ----------
 PE parser must parse the imports information and store in the `Image` (as relocations?).
 
-[[ExactUses]]
-Exact Uses
-----------
-`dflow::Uses` must contain more detailed information: which part of a term is used by which other term.
-
 Regression in Return Value Reconstruction
 -----------------------------------------
 Introduced in 0f2f3c37cd940335d3e3e35fc2dab4cd3bbac1c4.
 `014_calls` test now fails.
-Requires <<ExactUses>> to be done.
 The problem there is that even if some read is real due to it being a speculative term of a return, it might read more than what is computed to be the return value of the term.
 
 ARM

@@ -1132,10 +1132,10 @@ void DefinitionGenerator::computeSubstitutions() {
         {
             const Term *onlyUse = NULL;
             const auto &uses = uses_->getUses(termAndLocation.first);
-            foreach (const Term *use, uses) {
-                if (liveness_.isLive(use)) {
+            foreach (const auto &use, uses) {
+                if (liveness_.isLive(use.term())) {
                     if (onlyUse == NULL) {
-                        onlyUse = use;
+                        onlyUse = use.term();
                     } else {
                         onlyUse = NULL;
                         break;
