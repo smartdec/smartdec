@@ -124,8 +124,8 @@ void MasterAnalyzer::dataflowAnalysis(Context &context, ir::Function *function) 
 void MasterAnalyzer::reconstructSignatures(Context &context) const {
     context.logToken().info(tr("Reconstructing function signatures."));
 
-    ir::calling::SignatureAnalyzer(*context.signatures(), *context.image(), *context.functions(),
-        *context.dataflows(), *context.hooks(), context.cancellationToken(), context.logToken())
+    ir::calling::SignatureAnalyzer(*context.signatures(), *context.image(), *context.dataflows(),
+                                   *context.hooks(), context.cancellationToken(), context.logToken())
         .analyze();
 }
 

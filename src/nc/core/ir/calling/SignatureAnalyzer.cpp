@@ -36,44 +36,57 @@ namespace ir {
 namespace calling {
 
 SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image &image,
-    const Functions &functions, const dflow::Dataflows &dataflows, const Hooks &hooks,
-    const CancellationToken &canceled, const LogToken &log
-):
-    signatures_(signatures),
-    image_(image),
-    dataflows_(dataflows),
-    hooks_(hooks),
-    canceled_(canceled),
-    log_(log)
-{
-    foreach (auto function, functions.list()) {
-        auto &dataflow = *dataflows.at(function);
+                                     const dflow::Dataflows &dataflows, const Hooks &hooks,
+                                     const CancellationToken &canceled, const LogToken &log)
+    : signatures_(signatures), image_(image), dataflows_(dataflows), hooks_(hooks), canceled_(canceled), log_(log)
+{}
+
+SignatureAnalyzer::~SignatureAnalyzer() {}
+
+void SignatureAnalyzer::analyze() {
+    computeMappings();
+    computeUses();
+    computeArgumentsAndReturnValues();
+    computeSignatures();
+}
+
+void SignatureAnalyzer::computeMappings() {
+    foreach (const auto &functionAndDataflow, dataflows_) {
+        auto function = functionAndDataflow.first;
+        auto &dataflow = *functionAndDataflow.second;
 
         id2referrers_[getCalleeId(function)].functions.push_back(function);
 
         foreach (auto basicBlock, function->basicBlocks()) {
             foreach (auto statement, basicBlock->statements()) {
                 if (auto call = statement->asCall()) {
-                    id2referrers_[getCalleeId(call, dataflow)].calls.push_back(call);
+                    auto id = getCalleeId(call, dataflow);
+
+                    id2referrers_[id].calls.push_back(call);
                     function2calls_[function].push_back(call);
+
+                    foreach (const auto &locationAndTerm, hooks_.getCallHook(call)->speculativeReturnValueTerms()) {
+                        speculativeReturnValueTerm2calleeId_[locationAndTerm.second] = id;
+                    }
                 } else if (auto ret = statement->asReturn()) {
-                    id2referrers_[getCalleeId(function)].returns.push_back(ret);
+                    auto id = getCalleeId(function);
+
+                    id2referrers_[id].returns.push_back(ret);
                     function2returns_[function].push_back(ret);
+
+                    foreach (const auto &locationAndTerm, hooks_.getReturnHook(ret)->speculativeReturnValueTerms()) {
+                        speculativeReturnValueTerm2calleeId_[locationAndTerm.second] = id;
+                    }
                 }
             }
         }
     }
+}
 
+void SignatureAnalyzer::computeUses() {
     foreach (const auto &functionAndDataflow, dataflows_) {
         function2uses_[functionAndDataflow.first] = std::make_unique<dflow::Uses>(*functionAndDataflow.second);
     }
-}
-
-SignatureAnalyzer::~SignatureAnalyzer() {}
-
-void SignatureAnalyzer::analyze() {
-    computeArgumentsAndReturnValues();
-    computeSignatures();
 }
 
 void SignatureAnalyzer::computeArgumentsAndReturnValues() {
@@ -82,8 +95,6 @@ void SignatureAnalyzer::computeArgumentsAndReturnValues() {
     bool changed;
     do {
         changed = false;
-
-        computeSpeculativeTerms();
 
         foreach (const CalleeId &calleeId, id2referrers_ | boost::adaptors::map_keys) {
             if (computeArguments(calleeId)) {
@@ -101,43 +112,6 @@ void SignatureAnalyzer::computeArgumentsAndReturnValues() {
 
         canceled_.poll();
     } while (changed);
-}
-
-bool SignatureAnalyzer::isRealRead(const Term *term) {
-    assert(term != NULL);
-    assert(term->isRead());
-
-    return !nc::contains(speculativeTerms_, term);
-}
-
-bool SignatureAnalyzer::isRealWrite(const Term *term) {
-    assert(term != NULL);
-    assert(term->isWrite());
-
-    return !nc::contains(speculativeTerms_, term);
-}
-
-void SignatureAnalyzer::computeSpeculativeTerms() {
-    foreach (const auto &calleeAndReferrers, id2referrers_) {
-        const auto &returnValueLocation = nc::find(id2returnValue_, calleeAndReferrers.first);
-
-        auto handleSpeculativeReturnValueTerms = [&](const std::vector<std::pair<MemoryLocation, const Term *>> &list) {
-            foreach (const auto &locationAndTerm, list) {
-                if (locationAndTerm.first.covers(returnValueLocation)) {
-                    speculativeTerms_.erase(locationAndTerm.second);
-                } else {
-                    speculativeTerms_.insert(locationAndTerm.second);
-                }
-            }
-        };
-
-        foreach (const Call *call, calleeAndReferrers.second.calls) {
-            handleSpeculativeReturnValueTerms(hooks_.getCallHook(call)->speculativeReturnValueTerms());
-        }
-        foreach (const Return *ret, calleeAndReferrers.second.returns) {
-            handleSpeculativeReturnValueTerms(hooks_.getReturnHook(ret)->speculativeReturnValueTerms());
-        }
-    }
 }
 
 namespace {
@@ -370,7 +344,7 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUndefinedUses(const Function *
         auto term = termAndLocation.first;
         const auto &memoryLocation = termAndLocation.second;
 
-        if (term->isRead() && dataflow.getDefinitions(term).empty() && isRealRead(term)) {
+        if (memoryLocation && term->isRead() && dataflow.getDefinitions(term).empty() && intersect(term, memoryLocation)) {
             result.push_back(memoryLocation);
         }
     }
@@ -416,10 +390,10 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedDefines(const Call *call
 
     foreach (const auto &chunk, dataflow.getDefinitions(callHook->snapshotStatement()).chunks()) {
         foreach (const Term *term, chunk.definitions()) {
-            if (isRealWrite(term)) {
+            if (intersect(term, chunk.location())) {
                 bool used = false;
                 foreach (const auto &use, uses.getUses(term)) {
-                    if (isRealRead(use.term())) {
+                    if (intersect(use.term(), use.location())) {
                         used = true;
                         break;
                     }
@@ -443,19 +417,16 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUsedReturnValueLocations(const
 
     auto callHook = hooks_.getCallHook(call);
     auto function = call->basicBlock()->function();
-    auto &dataflow = *dataflows_.at(function);
     auto &uses = *function2uses_.at(function);
 
     foreach (const auto &locationAndTerm, callHook->speculativeReturnValueTerms()) {
         MemoryLocation usedPart;
 
         foreach (const auto &use, uses.getUses(locationAndTerm.second)) {
-            if (isRealRead(use.term())) {
-                usedPart = MemoryLocation::merge(usedPart, use.location());
-            }
+            usedPart.merge(intersect(use.term(), use.location()));
         }
 
-        if (usedPart && usedPart.addr() == dataflow.getMemoryLocation(locationAndTerm.second).addr()) {
+        if (usedPart && usedPart.addr() == locationAndTerm.first.addr()) {
             result.push_back(usedPart);
         }
     }
@@ -477,33 +448,41 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUnusedReturnValueLocations(con
         MemoryLocation unusedPart;
 
         foreach (const auto &chunk, dataflow.getDefinitions(locationAndTerm.second).chunks()) {
-            bool used = false;
-            bool defined = false;
-
             foreach (const Term *definition, chunk.definitions()) {
-                if (isRealWrite(definition)) {
-                    defined = true;
+                if (auto intersection = intersect(definition, chunk.location())) {
+                    bool used = false;
 
                     foreach (const auto &use, uses.getUses(definition)) {
-                        if (use.term() != locationAndTerm.second && isRealRead(use.term())) {
+                        if (use.term() != locationAndTerm.second && intersect(use.term(), use.location())) {
                             used = true;
                             break;
                         }
                     }
-                }
-            }
 
-            if (defined && !used) {
-                unusedPart = MemoryLocation::merge(unusedPart, chunk.location());
+                    if (!used) {
+                        unusedPart.merge(intersection);
+                    }
+                }
             }
         }
 
-        if (unusedPart && unusedPart.addr() == dataflow.getMemoryLocation(locationAndTerm.second).addr()) {
+        if (unusedPart && unusedPart.addr() == locationAndTerm.first.addr()) {
             result.push_back(unusedPart);
         }
     }
 
     return result;
+}
+
+MemoryLocation SignatureAnalyzer::intersect(const Term *term, const MemoryLocation &memoryLocation) {
+    assert(term);
+    assert(memoryLocation);
+
+    if (auto calleeId = nc::find(speculativeReturnValueTerm2calleeId_, term)) {
+        return MemoryLocation::intersect(nc::find(id2returnValue_, calleeId), memoryLocation);
+    } else {
+        return memoryLocation;
+    }
 }
 
 void SignatureAnalyzer::computeSignatures() {

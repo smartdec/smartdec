@@ -55,6 +55,7 @@ public:
      *
      * \param dataflow Dataflow.
      */
+    explicit
     Uses(const Dataflow &dataflow);
 
     /**

@@ -10,7 +10,6 @@
 #include <QCoreApplication>
 
 #include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 
 #include <nc/common/CancellationToken.h>
 #include <nc/common/LogToken.h>
@@ -74,6 +73,9 @@ class SignatureAnalyzer {
     /** Mapping from a function to the list of returns in it.*/
     boost::unordered_map<const Function *, std::vector<const Return *>> function2returns_;
 
+    /** Mapping of terms that represent potential return values in the hooks to callee ids. */
+    boost::unordered_map<const Term *, CalleeId> speculativeReturnValueTerm2calleeId_;
+
     /** Mapping from a function to the term use information for this function. */
     boost::unordered_map<const Function *, std::unique_ptr<dflow::Uses>> function2uses_;
 
@@ -87,24 +89,19 @@ class SignatureAnalyzer {
     /** Mapping from a callee id to the estimated return value location. */
     boost::unordered_map<CalleeId, MemoryLocation> id2returnValue_;
 
-    /** Terms that represent potential return values in the hooks. */
-    boost::unordered_set<const Term *> speculativeTerms_;
-
 public:
     /**
      * Constructor.
      *
      * \param signatures An object where to store reconstructed signatures.
      * \param image Executable image.
-     * \param functions Functions.
      * \param dataflows Dataflows.
      * \param hooks Hooks manager.
      * \param canceled Cancellation token.
      * \param log Log token.
      */
-    SignatureAnalyzer(Signatures &signatures, const image::Image &image, const Functions &functions,
-        const dflow::Dataflows &dataflows, const Hooks &hooks, const CancellationToken &canceled,
-        const LogToken &log);
+    SignatureAnalyzer(Signatures &signatures, const image::Image &image, const dflow::Dataflows &dataflows,
+                      const Hooks &hooks, const CancellationToken &canceled, const LogToken &log);
 
     /**
      * Destructor.
@@ -115,32 +112,19 @@ public:
 
 private:
     /**
+     * Precomputes various useful mappings.
+     */
+    void computeMappings();
+
+    /**
+     * Precomputes uses information.
+     */
+    void computeUses();
+
+    /**
      * Computes locations of arguments for all functions.
      */
     void computeArgumentsAndReturnValues();
-
-    /**
-     * \param term Valid pointer to a read term.
-     *
-     * \return True if the term is a read that belongs to some instruction
-     *         or is a read of a return value created by ReturnHook, and
-     *         this term belongs to the signature.
-     */
-    bool isRealRead(const Term *term);
-
-    /**
-     * \param term Valid pointer to a write term.
-     *
-     * \return True if the term is a write that belongs to some instruction
-     *         or is a write of return value created by CallHook, and
-     *         this term belongs to the signature.
-     */
-    bool isRealWrite(const Term *term);
-
-    /**
-     * Computes the terms representing potential arguments inserted by hooks.
-     */
-    void computeSpeculativeTerms();
 
     /**
      * Recomputes arguments of the function with the given callee id
@@ -194,6 +178,16 @@ private:
      *         return and never read.
      */
     std::vector<MemoryLocation> getUnusedReturnValueLocations(const Return *ret);
+
+    /**
+     * \param term Valid pointer to a term.
+     * \param memoryLocation Valid memory location.
+     *
+     * \return memoryLocation, if term is not a speculative return term.
+     *         If it is, then the intersection of the currently assumed return
+     *         value location and memoryLocation is returned.
+     */
+    MemoryLocation intersect(const Term *term, const MemoryLocation &memoryLocation);
 
     /**
      * Computes and sets signatures for all callee ids.

@@ -155,6 +155,21 @@ public:
     void merge(const MemoryLocation &that) {
         *this = merge(*this, that);
     }
+
+    static MemoryLocation intersect(const MemoryLocation &a, const MemoryLocation &b) {
+        if (!a || !b || a.domain() != b.domain()) {
+            return MemoryLocation();
+        } else {
+            auto addr = std::max(a.addr(), b.addr());
+            auto endAddr = std::min(a.endAddr(), b.endAddr());
+
+            if (addr < endAddr) {
+                return MemoryLocation(a.domain(), addr, endAddr - addr);
+            } else {
+                return MemoryLocation();
+            }
+        }
+    }
 };
 
 /**
