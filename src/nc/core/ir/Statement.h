@@ -82,7 +82,7 @@ public:
     };
 
 private:
-    BasicBlock *basicBlock_; ///< Basic block this statement is a part of.
+    BasicBlock *basicBlock_; ///< Basic block to which this statement belongs.
     const arch::Instruction *instruction_; ///< Instruction from which this statement was generated.
 
 public:
@@ -94,14 +94,21 @@ public:
     Statement(int kind): kind_(kind), basicBlock_(NULL), instruction_(NULL) {}
 
     /**
-     * \return Basic block that this statement is a part of.
+     * \return Pointer to the basic block to which this statement belongs.
+     *         Can be NULL.
      */
-    BasicBlock *basicBlock() const { return basicBlock_; }
+    BasicBlock *basicBlock() { return basicBlock_; }
 
     /**
-     * Sets basic block that this statement is a part of.
+     * \return Pointer to the basic block to which this statement belongs.
+     *         Can be NULL.
+     */
+    const BasicBlock *basicBlock() const { return basicBlock_; }
+
+    /**
+     * Sets the pointer to the basic block to which this statement belongs.
      *
-     * \param[in] basicBlock Basic block.
+     * \param[in] basicBlock Pointer to the basic block. Can be NULL.
      */
     void setBasicBlock(BasicBlock *basicBlock) { basicBlock_ = basicBlock; }
 

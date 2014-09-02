@@ -54,7 +54,7 @@ private:
     boost::optional<ByteAddr> address_; ///< Address of basic block.
     boost::optional<ByteAddr> successorAddress_; ///< Address of the end of the basic block.
     Statements statements_; ///< Statements.
-    const Function *function_; ///< Function this basic block belongs to.
+    Function *function_; ///< Function this basic block belongs to.
 
 public:
     /**
@@ -96,6 +96,11 @@ public:
     /**
      * \return Pointer to the function this basic block belongs to. Can be NULL.
      */
+    Function *function() { return function_; }
+
+    /**
+     * \return Pointer to the function this basic block belongs to. Can be NULL.
+     */
     const Function *function() const { return function_; }
 
     /**
@@ -103,7 +108,7 @@ public:
      *
      * \param function Pointer to the function. Can be NULL.
      */
-    void setFunction(const Function *function) { function_ = function; }
+    void setFunction(Function *function) { function_ = function; }
 
     /**
      * \return Statements of the basic block.

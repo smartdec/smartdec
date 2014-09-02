@@ -52,6 +52,8 @@ set(SOURCES
     ir/Functions.h
     ir/FunctionsGenerator.cpp
     ir/FunctionsGenerator.h
+    ir/Inlining.cpp
+    ir/Inlining.h
     ir/Jump.cpp
     ir/Jump.h
     ir/JumpTarget.cpp
@@ -123,8 +125,6 @@ set(SOURCES
     ir/dflow/Utils.h
     ir/dflow/Value.cpp
     ir/dflow/Value.h
-    ir/inlining/CallInliner.cpp
-    ir/inlining/CallInliner.h
     ir/misc/ArrayAccess.h
     ir/misc/BoundsCheck.h
     ir/misc/PatternRecognition.cpp
