@@ -46,7 +46,7 @@ namespace likec {
 class Statement: public TreeNode {
     NC_CLASS_WITH_KINDS(Statement, statementKind)
 
-    const ir::Statement *statement_; ///< Formulae statement that this statement was created from.
+    const ir::Statement *statement_; ///< IR statement from which this statement was created.
 
 public:
     enum {
@@ -78,12 +78,12 @@ public:
     {}
 
     /**
-     * \return Formulae statement that this statement was created from.
+     * \return Pointer to the IR statement from which this statement was created. Can be NULL.
      */
     const ir::Statement *statement() const { return statement_; }
 
     /**
-     * \param[in] statement Formulae statement that this statement was created from.
+     * \param[in] statement Valid pointer to a statement.
      */
     void setStatement(const ir::Statement *statement) {
         assert(statement != NULL);
