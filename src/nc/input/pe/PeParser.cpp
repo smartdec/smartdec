@@ -31,10 +31,13 @@
 #include <nc/common/Conversions.h>
 #include <nc/common/Foreach.h>
 #include <nc/common/LogToken.h>
+#include <nc/common/Types.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Reader.h>
+#include <nc/core/image/Relocation.h>
 #include <nc/core/image/Section.h>
 #include <nc/core/image/ZeroByteSource.h>
 #include <nc/core/input/ParseError.h>
@@ -80,7 +83,26 @@ bool seekFileHeader(QIODevice *source) {
     return true;
 }
 
-template<class IMAGE_OPTIONAL_HEADER>
+union IMPORT_LOOKUP_TABLE_ENTRY32 {
+    struct {
+        uint32_t Name : 31;
+        uint32_t IsOrdinal : 1;
+    };
+    uint32_t RawValue;
+};
+
+union IMPORT_LOOKUP_TABLE_ENTRY64 {
+    struct {
+        uint64_t Name : 63;
+        uint64_t IsOrdinal : 1;
+    };
+    uint64_t RawValue;
+};
+
+static_assert(sizeof(IMPORT_LOOKUP_TABLE_ENTRY32) == sizeof(uint32_t), "");
+static_assert(sizeof(IMPORT_LOOKUP_TABLE_ENTRY64) == sizeof(uint64_t), "");
+
+template<class IMAGE_OPTIONAL_HEADER, class IMPORT_LOOKUP_TABLE_ENTRY>
 class PeParserImpl {
     Q_DECLARE_TR_FUNCTIONS(PeParserPrivate)
 
@@ -313,15 +335,58 @@ private:
             return;
         }
 
-        auto address = optionalHeader_.ImageBase + optionalHeader_.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
+        auto reader = core::image::Reader(image_);
 
         IMAGE_IMPORT_DESCRIPTOR descriptor;
-        while (image_->readBytes(address, reinterpret_cast<char *>(&descriptor), sizeof(descriptor)) == sizeof(descriptor)) {
+        for (auto descriptorAddress = optionalHeader_.ImageBase + optionalHeader_.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
+             image_->readBytes(descriptorAddress, reinterpret_cast<char *>(&descriptor), sizeof(descriptor)) == sizeof(descriptor);
+             descriptorAddress += sizeof(descriptor))
+        {
             if (descriptor.Characteristics == 0) {
                 break;
             }
-            // TODO: imports.
-            address += sizeof(descriptor);
+
+            peByteOrder.convertFrom(descriptor.Characteristics);
+            peByteOrder.convertFrom(descriptor.Name);
+            peByteOrder.convertFrom(descriptor.FirstThunk);
+
+            auto dllName = reader.readAsciizString(descriptor.Name + optionalHeader_.ImageBase, 1024);
+            log_.debug(tr("Found imports from DLL: %1").arg(dllName));
+
+            log_.debug(tr("Parsing import lookup table."));
+            parseImportLookupTable(descriptor.Characteristics + optionalHeader_.ImageBase);
+
+            log_.debug(tr("Parsing import address table."));
+            parseImportLookupTable(descriptor.FirstThunk + optionalHeader_.ImageBase);
+        }
+    }
+
+    void parseImportLookupTable(ByteAddr virtualAddress) {
+        auto reader = core::image::Reader(image_);
+
+        IMPORT_LOOKUP_TABLE_ENTRY entry;
+        for (auto entryAddress = virtualAddress;
+             image_->readBytes(entryAddress, reinterpret_cast<char *>(&entry), sizeof(entry)) == sizeof(entry);
+             entryAddress += sizeof(entry))
+        {
+            if (entry.RawValue == 0) {
+                break;
+            }
+
+            peByteOrder.convertFrom(entry);
+
+            if (entry.IsOrdinal) {
+                log_.debug(tr("Found an import by ordinal value: %1").arg(entry.Name));
+            } else {
+                auto name = reader.readAsciizString(
+                    optionalHeader_.ImageBase + entry.Name + sizeof(IMAGE_IMPORT_BY_NAME::Hint), 1024);
+
+                log_.debug(tr("Found an import by name: %1").arg(name));
+
+                image_->addRelocation(std::make_unique<core::image::Relocation>(
+                    entryAddress, image_->addSymbol(std::make_unique<core::image::Symbol>(
+                                      core::image::SymbolType::FUNCTION, std::move(name), boost::none))));
+            }
         }
     }
 };
@@ -366,10 +431,12 @@ void PeParser::doParse(QIODevice *source, core::image::Image *image, const LogTo
     peByteOrder.convertFrom(optionalHeaderMagic);
     switch (optionalHeaderMagic) {
         case IMAGE_NT_OPTIONAL_HDR32_MAGIC:
-            PeParserImpl<IMAGE_OPTIONAL_HEADER32>(source, image, log, fileHeader).parse();
+            log.debug(tr("Parsing as a PE32 file."));
+            PeParserImpl<IMAGE_OPTIONAL_HEADER32, IMPORT_LOOKUP_TABLE_ENTRY32>(source, image, log, fileHeader).parse();
             break;
         case IMAGE_NT_OPTIONAL_HDR64_MAGIC:
-            PeParserImpl<IMAGE_OPTIONAL_HEADER32>(source, image, log, fileHeader).parse();
+            log.debug(("Parsing as a PE32+ file."));
+            PeParserImpl<IMAGE_OPTIONAL_HEADER64, IMPORT_LOOKUP_TABLE_ENTRY64>(source, image, log, fileHeader).parse();
             break;
         default:
             throw core::input::ParseError(tr("Unknown optional header magic: 0x%1").arg(optionalHeaderMagic, 0, 16));
