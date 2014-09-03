@@ -353,11 +353,11 @@ private:
             auto dllName = reader.readAsciizString(descriptor.Name + optionalHeader_.ImageBase, 1024);
             log_.debug(tr("Found imports from DLL: %1").arg(dllName));
 
-            parseImportAddressTable(descriptor.FirstThunk + optionalHeader_.ImageBase);
+            parseImportAddressTable(dllName, descriptor.FirstThunk + optionalHeader_.ImageBase);
         }
     }
 
-    void parseImportAddressTable(ByteAddr virtualAddress) {
+    void parseImportAddressTable(const QString &dllName, ByteAddr virtualAddress) {
         auto reader = core::image::Reader(image_);
 
         IMPORT_LOOKUP_TABLE_ENTRY entry;
@@ -373,6 +373,11 @@ private:
 
             if (entry.IsOrdinal) {
                 log_.debug(tr("Found an import by ordinal value: %1").arg(entry.Name));
+
+                image_->addRelocation(std::make_unique<core::image::Relocation>(
+                    entryAddress,
+                    image_->addSymbol(std::make_unique<core::image::Symbol>(
+                        core::image::SymbolType::FUNCTION, tr("%1:%2").arg(dllName).arg(entry.Name), boost::none))));
             } else {
                 auto name = reader.readAsciizString(
                     optionalHeader_.ImageBase + entry.Name + sizeof(IMAGE_IMPORT_BY_NAME::Hint), 1024);
