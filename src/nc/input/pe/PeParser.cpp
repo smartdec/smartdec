@@ -79,15 +79,7 @@ bool seekFileHeader(QIODevice *source) {
     return true;
 }
 
-struct Pe32 {
-    typedef IMAGE_OPTIONAL_HEADER32 IMAGE_OPTIONAL_HEADER;
-};
-
-struct Pe64 {
-    typedef IMAGE_OPTIONAL_HEADER64 IMAGE_OPTIONAL_HEADER;
-};
-
-template<class Pe>
+template<class IMAGE_OPTIONAL_HEADER>
 class PeParserImpl {
     Q_DECLARE_TR_FUNCTIONS(PeParserPrivate)
 
@@ -97,7 +89,7 @@ class PeParserImpl {
 
     ByteAddr optionalHeaderOffset_;
     IMAGE_FILE_HEADER &fileHeader_;
-    typename Pe::IMAGE_OPTIONAL_HEADER optionalHeader_;
+    IMAGE_OPTIONAL_HEADER optionalHeader_;
 
 public:
     PeParserImpl(QIODevice *source, core::image::Image *image, const LogToken &log, IMAGE_FILE_HEADER &fileHeader):
@@ -105,7 +97,7 @@ public:
     {}
 
     void parse() {
-        optionalHeaderOffset_ = source_->pos();
+        optionalHeaderOffset_ = source_->pos() - sizeof(optionalHeader_.Magic);
 
         parseFileHeader();
         parseOptionalHeader();
@@ -116,6 +108,13 @@ public:
 
 private:
     void parseFileHeader() {
+        /*
+         * fileHeader_.Characteristics contains endianness flags:
+         * IMAGE_FILE_BYTES_REVERSED_LO for little endian,
+         * IMAGE_FILE_BYTES_REVERSED_HI for big endian.
+         * However, it is unclear how to get these flags without
+         * knowing the endianness in which Characteristics are stored...
+         */
         peByteOrder.convertFrom(fileHeader_.PointerToSymbolTable);
         peByteOrder.convertFrom(fileHeader_.NumberOfSymbols);
         peByteOrder.convertFrom(fileHeader_.NumberOfSections);
@@ -325,14 +324,29 @@ void PeParser::doParse(QIODevice *source, core::image::Image *image, const LogTo
     switch (fileHeader.Machine) {
         case IMAGE_FILE_MACHINE_I386:
             image->setArchitecture(QLatin1String("i386"));
-            PeParserImpl<Pe32>(source, image, log, fileHeader).parse();
             break;
         case IMAGE_FILE_MACHINE_AMD64:
             image->setArchitecture(QLatin1String("x86-64"));
-            PeParserImpl<Pe64>(source, image, log, fileHeader).parse();
             break;
         default:
-            throw core::input::ParseError(tr("Unknown machine id: %1.").arg(fileHeader.Machine));
+            throw core::input::ParseError(tr("Unknown machine id: 0x%1.").arg(fileHeader.Machine, 0, 16));
+    }
+
+    WORD optionalHeaderMagic;
+    if (source->read(reinterpret_cast<char *>(&optionalHeaderMagic), sizeof(optionalHeaderMagic)) != sizeof(optionalHeaderMagic)) {
+        throw core::input::ParseError(tr("Cannot read magic of the optional header."));
+    }
+
+    peByteOrder.convertFrom(optionalHeaderMagic);
+    switch (optionalHeaderMagic) {
+        case IMAGE_NT_OPTIONAL_HDR32_MAGIC:
+            PeParserImpl<IMAGE_OPTIONAL_HEADER32>(source, image, log, fileHeader).parse();
+            break;
+        case IMAGE_NT_OPTIONAL_HDR64_MAGIC:
+            PeParserImpl<IMAGE_OPTIONAL_HEADER32>(source, image, log, fileHeader).parse();
+            break;
+        default:
+            throw core::input::ParseError(tr("Unknown optional header magic: 0x%1").arg(optionalHeaderMagic, 0, 16));
     }
 
     image->setDemangler("msvc");
