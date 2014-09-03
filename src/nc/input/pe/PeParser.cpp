@@ -36,6 +36,7 @@
 #include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/ZeroByteSource.h>
 #include <nc/core/input/ParseError.h>
 
 #include "pe.h"
@@ -169,14 +170,39 @@ private:
             section->setData(sectionHeader.Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA);
             section->setBss(sectionHeader.Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA);
 
-            auto pos = source_->pos();
-            if (!section->isBss()) {
+            if (sectionHeader.SizeOfRawData == 0) {
+                log_.debug(tr("Section %1 has no raw data.").arg(section->name()));
+                section->setExternalByteSource(std::make_unique<core::image::ZeroByteSource>(section->addr(), section->size()));
+            } else {
+                log_.debug(tr("Reading contents of section %1 (size of raw data = 0x%2).").arg(section->name()).arg(sectionHeader.SizeOfRawData));
+
+                QByteArray bytes;
+
+                auto pos = source_->pos();
                 if (source_->seek(sectionHeader.PointerToRawData)) {
-                    section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(
-                        section->addr(), source_->read(sectionHeader.SizeOfRawData)));
+                    bytes = source_->read(sectionHeader.SizeOfRawData);
+                } else {
+                    log_.warning(tr("Could not seek to the data of section %1.").arg(section->name()));
                 }
+                source_->seek(pos);
+
+                if (static_cast<DWORD>(bytes.size()) != sectionHeader.SizeOfRawData) {
+                    log_.warning(tr("Could read only 0x%1 bytes of section %2, although its raw size is 0x%3.")
+                                     .arg(bytes.size(), 0, 16)
+                                     .arg(section->name())
+                                     .arg(sectionHeader.SizeOfRawData));
+                }
+
+                /* Zero-extend if necessary. */
+                if (bytes.size() < section->size()) {
+                    auto oldSize = bytes.size();
+                    bytes.resize(section->size());
+                    memset(bytes.data() + oldSize, 0, bytes.size() - oldSize);
+                }
+
+                section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(
+                    section->addr(), std::move(bytes)));
             }
-            source_->seek(pos);
 
             image_->addSection(std::move(section));
         }
