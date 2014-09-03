@@ -353,15 +353,11 @@ private:
             auto dllName = reader.readAsciizString(descriptor.Name + optionalHeader_.ImageBase, 1024);
             log_.debug(tr("Found imports from DLL: %1").arg(dllName));
 
-            log_.debug(tr("Parsing import lookup table."));
-            parseImportLookupTable(descriptor.Characteristics + optionalHeader_.ImageBase);
-
-            log_.debug(tr("Parsing import address table."));
-            parseImportLookupTable(descriptor.FirstThunk + optionalHeader_.ImageBase);
+            parseImportAddressTable(descriptor.FirstThunk + optionalHeader_.ImageBase);
         }
     }
 
-    void parseImportLookupTable(ByteAddr virtualAddress) {
+    void parseImportAddressTable(ByteAddr virtualAddress) {
         auto reader = core::image::Reader(image_);
 
         IMPORT_LOOKUP_TABLE_ENTRY entry;
