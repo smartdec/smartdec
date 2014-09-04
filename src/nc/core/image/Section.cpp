@@ -24,8 +24,6 @@
 
 #include "Section.h"
 
-#include "ZeroByteSource.h"
-
 namespace nc {
 namespace core {
 namespace image {
@@ -38,12 +36,28 @@ Section::Section(const QString &name, ByteAddr addr, ByteSize size):
 {}
 
 ByteSize Section::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
+    auto offset = addr - addr_;
+
+    if (offset < 0 || offset >= size_) {
+        return 0;
+    }
+
+    size = std::min(size, size_ - offset);
+
     if (externalByteSource()) {
         return externalByteSource()->readBytes(addr, buf, size);
-    } else if (isBss()) {
-        return ZeroByteSource(this->addr(), this->size()).readBytes(addr, buf, size);
     } else {
-        return 0;
+        auto copiedSize = std::min(size, content_.size() - offset);
+        if (copiedSize > 0) {
+            memcpy(buf, content_.constData() + offset, copiedSize);
+        }
+
+        auto zeroedSize = std::min(size, offset + size - content_.size());
+        if (zeroedSize > 0) {
+            memset(static_cast<char *>(buf) + size - zeroedSize, 0, zeroedSize);
+        }
+
+        return size;
     }
 }
 

@@ -20,8 +20,6 @@ set(SOURCES
     arch/Instructions.h
     arch/Register.h
     arch/Registers.h
-    image/BufferByteSource.cpp
-    image/BufferByteSource.h
     image/ByteSource.h
     image/Image.cpp
     image/Image.h
@@ -32,8 +30,6 @@ set(SOURCES
     image/Section.h
     image/Symbol.cpp
     image/Symbol.h
-    image/ZeroByteSource.cpp
-    image/ZeroByteSource.h
     input/ParseError.cpp
     input/ParseError.h
     input/Parser.cpp

@@ -32,7 +32,6 @@
 #include <nc/common/Range.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
 #include <nc/core/image/Relocation.h>
@@ -214,8 +213,18 @@ private:
 
             if (!section->isBss()) {
                 if (source_->seek(shdr.sh_offset)) {
-                    section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(
-                        section->addr(), source_->read(shdr.sh_size)));
+                    auto bytes = source_->read(shdr.sh_size);
+
+                    if (bytes.size() != static_cast<int>(shdr.sh_size)) {
+                        log_.warning(tr("Could read only 0x%1 bytes of section %2, although its size is 0x%3.")
+                                         .arg(bytes.size(), 0, 16)
+                                         .arg(section->name())
+                                         .arg(shdr.sh_size));
+                    }
+
+                    section->setContent(std::move(bytes));
+                } else {
+                    log_.warning(tr("Could not seek to the data of section %1.").arg(section->name()));
                 }
             }
 

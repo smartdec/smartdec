@@ -27,6 +27,7 @@
 
 #include <memory> /* std::unique_ptr */
 
+#include <QByteArray>
 #include <QString>
 
 #include <nc/common/Types.h>
@@ -56,6 +57,7 @@ class Section: public ByteSource {
     bool isData_; ///< True if the section contains data.
     bool isBss_; ///< True if the section is bss.
 
+    QByteArray content_; ///< Data contained in the section.
     std::unique_ptr<ByteSource> externalByteSource_; ///< External source of this section's bytes.
 
 public:
@@ -204,6 +206,13 @@ public:
     ByteSource *externalByteSource() const { return externalByteSource_.get(); }
 
     /**
+     * Sets the content of the section.
+     *
+     * \param content New content.
+     */
+    void setContent(QByteArray content) { content_ = std::move(content); }
+
+    /**
      * Sets the external byte source with the content of the section.
      *
      * \param byteSource Pointer to the new external byte source. Can be NULL.
@@ -212,6 +221,9 @@ public:
 
     /**
      * Reads a sequence of bytes from the section.
+     * Delegates the reading to the external byte source, if set.
+     * If not set, reads from the QByteArray given to setContent().
+     * If the array is smaller than the section, reading from beyond the array yields zeroes.
      */
     ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 };

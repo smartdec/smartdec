@@ -34,12 +34,10 @@
 #include <nc/common/Types.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/image/BufferByteSource.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
 #include <nc/core/image/Relocation.h>
 #include <nc/core/image/Section.h>
-#include <nc/core/image/ZeroByteSource.h>
 #include <nc/core/input/ParseError.h>
 
 #include "pe.h"
@@ -194,7 +192,6 @@ private:
 
             if (sectionHeader.SizeOfRawData == 0) {
                 log_.debug(tr("Section %1 has no raw data.").arg(section->name()));
-                section->setExternalByteSource(std::make_unique<core::image::ZeroByteSource>(section->addr(), section->size()));
             } else {
                 log_.debug(tr("Reading contents of section %1 (size of raw data = 0x%2).").arg(section->name()).arg(sectionHeader.SizeOfRawData));
 
@@ -215,15 +212,7 @@ private:
                                      .arg(sectionHeader.SizeOfRawData));
                 }
 
-                /* Zero-extend if necessary. */
-                if (bytes.size() < section->size()) {
-                    auto oldSize = bytes.size();
-                    bytes.resize(section->size());
-                    memset(bytes.data() + oldSize, 0, bytes.size() - oldSize);
-                }
-
-                section->setExternalByteSource(std::make_unique<core::image::BufferByteSource>(
-                    section->addr(), std::move(bytes)));
+                section->setContent(std::move(bytes));
             }
 
             image_->addSection(std::move(section));
