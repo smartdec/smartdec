@@ -124,7 +124,7 @@ public:
     bool isAllocated() const { return isAllocated_; }
 
     /**
-     * Sets whether the section is readable.
+     * Sets whether the section is allocated.
      *
      * \param[in] isAllocated Whether the section is mapped to the memory when the program is executed.
      */
