@@ -27,6 +27,8 @@
 
 #include <boost/noncopyable.hpp>
 
+#include <nc/core/ir/calling/CalleeId.h>
+
 #include "CodeGenerator.h"
 
 namespace nc {
@@ -52,18 +54,20 @@ namespace cgen {
  * Generator of function declarations.
  */
 class DeclarationGenerator: boost::noncopyable {
-    CodeGenerator &parent_; ///< Parent code generator.
-    const calling::FunctionSignature *signature_; ///< Signature of the function.
-    likec::FunctionDeclaration *declaration_; ///< Function's declaration.
+    CodeGenerator &parent_;
+    calling::CalleeId calleeId_;
+    const calling::FunctionSignature *signature_;
+    likec::FunctionDeclaration *declaration_;
 
 public:
     /**
      * Constructor.
      *
      * \param parent Parent code generator.
+     * \param calleeId Id of the function.
      * \param signature Valid pointer to the function's signature.
      */
-    DeclarationGenerator(CodeGenerator &parent, const calling::FunctionSignature *signature);
+    DeclarationGenerator(CodeGenerator &parent, const calling::CalleeId &calleeId, const calling::FunctionSignature *signature);
 
     /**
      * Virtual destructor.

@@ -57,7 +57,7 @@ class Image: public ByteSource {
     const arch::Architecture *architecture_; ///< Architecture.
     std::vector<std::unique_ptr<Section>> sections_; ///< The list of sections.
     std::vector<std::unique_ptr<Symbol>> symbols_; ///< The list of symbols.
-    boost::unordered_map<std::pair<ConstantValue, SymbolType::Type>, Symbol *> value2symbol_; ///< Mapping from value and symbol type to a symbol with this value and type.
+    boost::unordered_map<ConstantValue, Symbol *> value2symbol_; ///< Mapping from value to the symbol with this value.
     std::vector<std::unique_ptr<Relocation>> relocations_; ///< The list of relocations.
     boost::unordered_map<ByteAddr, Relocation *> address2relocation_; ///< Mapping from an address to the relocation with this address.
     std::unique_ptr<mangling::Demangler> demangler_; ///< Demangler.
@@ -157,11 +157,10 @@ public:
      * Finds a symbol with a given type and value.
      *
      * \param value Value of the symbol.
-     * \param type Type of the symbol.
      *
-     * \return Pointer to a symbol with the given type and value. Can be NULL.
+     * \return Pointer to a symbol with the given value. Can be NULL.
      */
-    const Symbol *getSymbol(ConstantValue value, SymbolType type) const;
+    const Symbol *getSymbol(ConstantValue value) const;
 
     /**
      * Adds an information about relocation.

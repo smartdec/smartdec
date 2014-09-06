@@ -58,8 +58,7 @@ class Tree: boost::noncopyable {
     std::multimap<const Type *, std::unique_ptr<ArrayType> > arrayTypes_; ///< Arrays of other types.
     const ErroneousType erroneousType_; ///< Erroneous type.
 
-    public:
-
+public:
     /**
      * Class constructor.
      */
@@ -215,13 +214,6 @@ class Tree: boost::noncopyable {
      * \return Type which is the result of "usual arithmetic conversion" of both types.
      */
     const Type *usualArithmeticConversion(const Type *leftType, const Type *rightType);
-
-    /**
-     * \param name Some string.
-     *
-     * \return A string similar to the given one which is safe to be used as an identifier.
-     */
-    static QString cleanName(const QString &name);
 };
 
 } // namespace likec

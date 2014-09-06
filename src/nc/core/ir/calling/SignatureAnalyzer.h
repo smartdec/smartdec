@@ -21,11 +21,6 @@
 namespace nc {
 
 namespace core {
-
-namespace image {
-    class Image;
-}
-
 namespace ir {
 
 class Call;
@@ -52,7 +47,6 @@ class SignatureAnalyzer {
     Q_DECLARE_TR_FUNCTIONS(SignatureAnalyzer)
 
     Signatures &signatures_;
-    const image::Image &image_;
     const dflow::Dataflows &dataflows_;
     const Hooks &hooks_;
     const CancellationToken &canceled_;
@@ -94,14 +88,13 @@ public:
      * Constructor.
      *
      * \param signatures An object where to store reconstructed signatures.
-     * \param image Executable image.
      * \param dataflows Dataflows.
      * \param hooks Hooks manager.
      * \param canceled Cancellation token.
      * \param log Log token.
      */
-    SignatureAnalyzer(Signatures &signatures, const image::Image &image, const dflow::Dataflows &dataflows,
-                      const Hooks &hooks, const CancellationToken &canceled, const LogToken &log);
+    SignatureAnalyzer(Signatures &signatures, const dflow::Dataflows &dataflows, const Hooks &hooks,
+                      const CancellationToken &canceled, const LogToken &log);
 
     /**
      * Destructor.
@@ -201,15 +194,6 @@ private:
      * \param calleeId Valid callee id.
      */
     void computeSignatures(const CalleeId &calleeId);
-
-    /**
-     * Chooses a name for a function with the given callee id and
-     * sets it in the signature.
-     *
-     * \param calleeId Valid callee id.
-     * \param signature Signature.
-     */
-    void computeName(const CalleeId &calleeId, FunctionSignature &signature);
 };
 
 } // namespace calling

@@ -240,7 +240,7 @@ CalleeId getCalleeId(const Function *function) {
     assert(function != NULL);
 
     if (function->entry() && function->entry()->address()) {
-        return CalleeId(*function->entry()->address(), CalleeId::entryAddr);
+        return CalleeId(EntryAddress(*function->entry()->address()));
     } else {
         return CalleeId(function);
     }
@@ -251,9 +251,9 @@ CalleeId getCalleeId(const Call *call, const dflow::Dataflow &dataflow) {
 
     auto targetValue = dataflow.getValue(call->target());
     if (targetValue->abstractValue().isConcrete()) {
-        return CalleeId(targetValue->abstractValue().asConcrete().value(), CalleeId::entryAddr);
+        return EntryAddress(targetValue->abstractValue().asConcrete().value());
     } else if (call->instruction()) {
-        return CalleeId(call->instruction()->addr(), CalleeId::callAddr);
+        return CallAddress(call->instruction()->addr());
     } else {
         return CalleeId();
     }

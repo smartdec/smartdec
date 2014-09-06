@@ -26,6 +26,7 @@
 #include <nc/config.h>
 
 #include <cassert>
+#include <functional>
 
 #include <nc/common/Types.h>
 #include <nc/common/Unreachable.h>
@@ -38,25 +39,30 @@ class Function;
 
 namespace calling {
 
+class CallAddress {
+    ByteAddr value_;
+
+public:
+    explicit CallAddress(ByteAddr value): value_(value) {}
+
+    ByteAddr value() const { return value_; }
+};
+
+class EntryAddress {
+    ByteAddr value_;
+
+public:
+    explicit EntryAddress(ByteAddr value): value_(value) {}
+
+    ByteAddr value() const { return value_; }
+};
+
 /**
  * An immutable class with value semantics used to identify functions
  * being called, even when their addresses are not known.
  */
 class CalleeId {
-    /**
-     * Helper enum to disambiguate constructors.
-     */
-    enum Entry {};
-
-    /**
-     * Helper enum to disambiguate constructors.
-     */
-    enum Call {};
-
 public:
-    static const auto entryAddr = static_cast<Entry>(0);
-    static const auto callAddr = static_cast<Call>(0);
-
     /**
      * Kind of the id.
      */
@@ -87,10 +93,10 @@ public:
      *
      * \param address Function's entry address.
      */
-    CalleeId(ByteAddr address, Entry):
+    CalleeId(EntryAddress address):
         kind_(ENTRY_ADDR)
     {
-        data_.entryAddress = address;
+        data_.entryAddress = address.value();
     }
 
     /**
@@ -98,10 +104,10 @@ public:
      *
      * \param address Function's entry address.
      */
-    CalleeId(ByteAddr address, Call):
+    CalleeId(CallAddress address):
         kind_(CALL_ADDR)
     {
-        data_.callAddress = address;
+        data_.callAddress = address.value();
     }
 
     /**

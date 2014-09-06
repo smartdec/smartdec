@@ -44,8 +44,6 @@ class FunctionSignature {
     std::vector<std::shared_ptr<const Term>> arguments_; ///< Terms representing the arguments.
     bool variadic_; ///< True if the function is variadic.
     std::shared_ptr<const Term> returnValue_; ///< Term representing the return value.
-    QString name_; ///< Name of the function.
-    QString comment_; ///< Comment to generate before the function's declaration.
 
 public:
     /**
@@ -86,31 +84,6 @@ public:
      * \param term Valid pointer to the term.
      */
     void setReturnValue(std::shared_ptr<Term> term) { returnValue_ = std::move(term); }
-
-    /**
-     * \return Name of the function.
-     */
-    const QString &name() const { return name_; }
-
-    /**
-     * Sets the function name.
-     *
-     * \param name New name.
-     */
-    void setName(QString name) { name_ = std::move(name); }
-
-    /**
-     * \return Comment to generate before the function's declaration.
-     */
-    const QString &comment() const { return comment_; }
-
-    /**
-     * Appends some text to the comment which will be generated before
-     * the function's declaration.
-     *
-     * \param text Text to append.
-     */
-    void addComment(QString text);
 };
 
 } // namespace calling

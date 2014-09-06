@@ -74,7 +74,6 @@ set(SOURCES
     ir/calling/Convention.h
     ir/calling/EntryHook.cpp
     ir/calling/EntryHook.h
-    ir/calling/FunctionSignature.cpp
     ir/calling/FunctionSignature.h
     ir/calling/Hooks.cpp
     ir/calling/Hooks.h
@@ -107,6 +106,8 @@ set(SOURCES
     ir/cgen/DeclarationGenerator.h
     ir/cgen/DefinitionGenerator.cpp
     ir/cgen/DefinitionGenerator.h
+    ir/cgen/NameGenerator.cpp
+    ir/cgen/NameGenerator.h
     ir/cgen/SwitchContext.h
     ir/dflow/Dataflow.cpp
     ir/dflow/Dataflow.h

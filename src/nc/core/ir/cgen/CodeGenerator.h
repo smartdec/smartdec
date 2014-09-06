@@ -45,6 +45,7 @@ namespace image {
 namespace likec {
     class FunctionDeclaration;
     class FunctionDefinition;
+    class Expression;
     class StructType;
     class Tree;
     class Type;
@@ -92,37 +93,16 @@ namespace cgen {
  * LikeC code generator.
  */
 class CodeGenerator: boost::noncopyable {
-    /** Abstract syntax tree to generate code in. */
     likec::Tree &tree_;
-
-    /** Executable image being decompiled. */
     const image::Image &image_;
-
-    /** Intermediate representation of functions. */
     const Functions &functions_;
-
-    /** Hooks manager. */
     const calling::Hooks &hooks_;
-
-    /** Signatures of the functions. */
     const calling::Signatures &signatures_;
-
-    /** Dataflow information for all functions. */
     const dflow::Dataflows &dataflows_;
-
-    /** Reconstructed variables. */
     const vars::Variables &variables_;
-
-    /** Reduced control-flow graphs. */
     const cflow::Graphs &graphs_;
-
-    /** Liveness information for all functions. */
     const liveness::Livenesses &livenesses_;
-
-    /** Information about types. */
     const types::Types &types_;
-
-    /** Cancellation token. */
     const CancellationToken &cancellationToken_;
 
     /** Types being translated to LikeC. */
@@ -255,13 +235,23 @@ public:
     likec::VariableDeclaration *makeGlobalVariableDeclaration(const vars::Variable *variable);
 
     /**
-     * Creates function's declaration, if it was not yet, and adds it to the compilation unit.
+     * \param[in] memoryLocation Valid memory location.
+     * \param[in] type Valid pointer to its type.
      *
-     * \param[in] signature Valid pointer to the signature of the function.
-     *
-     * \return Valid pointer to the declaration for a function with this signature.
+     * \return Pointer to the expression representing the initial value of this location.
+     *         Can be NULL.
      */
-    likec::FunctionDeclaration *makeFunctionDeclaration(const calling::FunctionSignature *signature);
+    std::unique_ptr<likec::Expression> makeInitialValue(const MemoryLocation &memoryLocation, const likec::Type *type);
+
+    /**
+     * Creates a function's declaration, if it was not yet, and adds it to the compilation unit.
+     *
+     * \param[in] addr Address of a function.
+     *
+     * \return Pointer to the declaration for a function with this address.
+     *         Will be NULL if no signature is known for the function at this address.
+     */
+    likec::FunctionDeclaration *makeFunctionDeclaration(ByteAddr addr);
 
     /**
      * Creates function's definition and adds it to the compilation unit.

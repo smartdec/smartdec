@@ -26,8 +26,6 @@
 
 #include <nc/common/make_unique.h>
 
-#include <nc/core/arch/Architecture.h>
-#include <nc/core/arch/Registers.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Terms.h>
@@ -41,13 +39,16 @@
 #include <nc/core/likec/FunctionDeclaration.h>
 #include <nc/core/likec/Tree.h>
 
+#include "NameGenerator.h"
+
 namespace nc {
 namespace core {
 namespace ir {
 namespace cgen {
 
-DeclarationGenerator::DeclarationGenerator(CodeGenerator &parent, const calling::FunctionSignature *signature):
+DeclarationGenerator::DeclarationGenerator(CodeGenerator &parent, const calling::CalleeId &calleeId, const calling::FunctionSignature *signature):
     parent_(parent),
+    calleeId_(calleeId),
     signature_(signature),
     declaration_(NULL)
 {
@@ -61,10 +62,11 @@ void DeclarationGenerator::setDeclaration(likec::FunctionDeclaration *declaratio
 }
 
 std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclaration() {
-    auto functionDeclaration = std::make_unique<likec::FunctionDeclaration>(tree(),
-        signature()->name(), makeReturnType(), signature()->variadic());
+    auto nameAndComment = NameGenerator(parent().image()).getFunctionName(calleeId_);
 
-    functionDeclaration->setComment(signature()->comment());
+    auto functionDeclaration = std::make_unique<likec::FunctionDeclaration>(tree(),
+        std::move(nameAndComment.name()), makeReturnType(), signature()->variadic());
+    functionDeclaration->setComment(std::move(nameAndComment.comment()));
 
     setDeclaration(functionDeclaration.get());
 
@@ -83,22 +85,13 @@ const likec::Type *DeclarationGenerator::makeReturnType() {
 }
 
 likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const Term *term) {
-    QString name;
-
-    if (auto access = term->asMemoryLocationAccess()) {
-        if (auto reg = parent().image().architecture()->registers()->getRegister(access->memoryLocation())) {
-            name = reg->lowercaseName();
-        }
-    }
-
-    if (name.isEmpty()) {
-        name = QString("a%1").arg(declaration()->arguments().size() + 1);
-    }
+    auto nameAndComment = NameGenerator(parent().image()).getArgumentName(term, declaration()->arguments().size() + 1);
 
     auto argumentDeclaration = std::make_unique<likec::ArgumentDeclaration>(tree(),
-        name, parent().makeType(parent().types().getType(term)));
-    auto result = argumentDeclaration.get();
+        std::move(nameAndComment.name()), parent().makeType(parent().types().getType(term)));
+    argumentDeclaration->setComment(std::move(nameAndComment.comment()));
 
+    auto result = argumentDeclaration.get();
     declaration()->addArgument(std::move(argumentDeclaration));
 
     return result;

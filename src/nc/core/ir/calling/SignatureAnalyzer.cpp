@@ -35,10 +35,9 @@ namespace core {
 namespace ir {
 namespace calling {
 
-SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const image::Image &image,
-                                     const dflow::Dataflows &dataflows, const Hooks &hooks,
+SignatureAnalyzer::SignatureAnalyzer(Signatures &signatures, const dflow::Dataflows &dataflows, const Hooks &hooks,
                                      const CancellationToken &canceled, const LogToken &log)
-    : signatures_(signatures), image_(image), dataflows_(dataflows), hooks_(hooks), canceled_(canceled), log_(log)
+    : signatures_(signatures), dataflows_(dataflows), hooks_(hooks), canceled_(canceled), log_(log)
 {}
 
 SignatureAnalyzer::~SignatureAnalyzer() {}
@@ -533,9 +532,6 @@ void SignatureAnalyzer::computeSignatures(const CalleeId &calleeId) {
     assert(calleeId);
 
     auto functionSignature = std::make_shared<FunctionSignature>();
-
-    computeName(calleeId, *functionSignature);
-
     auto convention = hooks_.conventions().getConvention(calleeId);
     auto argumentFactory = ArgumentFactory(convention);
 
@@ -571,41 +567,6 @@ void SignatureAnalyzer::computeSignatures(const CalleeId &calleeId) {
         callSignature->setReturnValue(functionSignature->returnValue());
 
         signatures_.setSignature(call, callSignature);
-    }
-}
-
-void SignatureAnalyzer::computeName(const CalleeId &calleeId, FunctionSignature &signature) {
-    assert(calleeId);
-
-    if (calleeId.entryAddress()) {
-        /* Take the name of the corresponding symbol, if possible. */
-        auto symbol = image_.getSymbol(*calleeId.entryAddress(), image::SymbolType::FUNCTION);
-        if (!symbol) {
-            symbol = image_.getSymbol(*calleeId.entryAddress(), image::SymbolType::NOTYPE);
-        }
-        if (symbol) {
-            signature.setName(likec::Tree::cleanName(symbol->name()));
-
-            if (signature.name() != symbol->name()) {
-                signature.addComment(symbol->name());
-            }
-
-            QString demangledName = image_.demangler()->demangle(symbol->name());
-            if (demangledName.contains('(')) {
-                signature.addComment(demangledName);
-            }
-        }
-
-        if (signature.name().isEmpty()) {
-            /* Invent a name based on the entry address. */
-            signature.setName(QString(QLatin1String("func_%1"))
-                .arg(*calleeId.entryAddress(), 0, 16));
-        }
-    } else if (calleeId.function()) {
-        signature.setName(QString(QLatin1String("func_noentry_%1"))
-            .arg(reinterpret_cast<uintptr_t>(calleeId.function()), 0, 16));
-    } else {
-        /* Function is unknown, leave the name empty. */
     }
 }
 

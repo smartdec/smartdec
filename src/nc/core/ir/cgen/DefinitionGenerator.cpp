@@ -31,7 +31,6 @@
 
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instruction.h>
-#include <nc/core/arch/Registers.h>
 #include <nc/core/image/Image.h>
 #ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
 #include <nc/core/image/Reader.h>
@@ -86,6 +85,7 @@
 #include <nc/core/likec/VariableIdentifier.h>
 #include <nc/core/likec/While.h>
 
+#include "NameGenerator.h"
 #include "SwitchContext.h"
 
 namespace nc {
@@ -94,7 +94,7 @@ namespace ir {
 namespace cgen {
 
 DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *function, const CancellationToken &canceled):
-    DeclarationGenerator(parent, parent.signatures().getSignature(function).get()),
+    DeclarationGenerator(parent, calling::CalleeId(function), parent.signatures().getSignature(function).get()),
     function_(function),
     dataflow_(*parent.dataflows().at(function)),
     graph_(*parent.graphs().at(function)),
@@ -115,10 +115,12 @@ void DefinitionGenerator::setDefinition(likec::FunctionDefinition *definition) {
 }
 
 std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition() {
-    auto functionDefinition = std::make_unique<likec::FunctionDefinition>(tree(),
-        signature()->name(), makeReturnType(), signature()->variadic());
+    auto nameAndComment = NameGenerator(parent().image()).getFunctionName(function_);
 
-    functionDefinition->setComment(signature()->comment());
+    auto functionDefinition = std::make_unique<likec::FunctionDefinition>(tree(),
+        std::move(nameAndComment.name()), makeReturnType(), signature()->variadic());
+
+    functionDefinition->setComment(std::move(nameAndComment.comment()));
 
     setDefinition(functionDefinition.get());
 
@@ -161,19 +163,11 @@ likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(co
 
     likec::VariableDeclaration *&result = variableDeclarations_[variable];
     if (!result) {
-        QString name(QLatin1String("v"));
-
-        if (auto reg = parent().image().architecture()->registers()->getRegister(variable->memoryLocation())) {
-            name = reg->lowercaseName();
-            if (name.isEmpty() || name[name.size() - 1].isDigit()) {
-                name.push_back('_');
-            }
-        }
-
-        name = QString(QLatin1String("%1%2")).arg(name).arg(variableDeclarations_.size());
+        auto nameAndComment = NameGenerator(parent().image()).getLocalVariableName(variable->memoryLocation(), variableDeclarations_.size());
 
         auto variableDeclaration = std::make_unique<likec::VariableDeclaration>(tree(),
-            name, parent().makeVariableType(variable));
+            std::move(nameAndComment.name()), parent().makeVariableType(variable));
+        variableDeclaration->setComment(std::move(nameAndComment.comment()));
 
         result = variableDeclaration.get();
         definition()->block()->addDeclaration(std::move(variableDeclaration));
@@ -685,8 +679,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             auto targetValue = dataflow_.getValue(call->target());
             if (targetValue->abstractValue().isConcrete()) {
-                if (auto functionSignature = parent().signatures().getSignature(targetValue->abstractValue().asConcrete().value()).get()) {
-                    auto functionDeclaration = parent().makeFunctionDeclaration(functionSignature);
+                if (auto functionDeclaration = parent().makeFunctionDeclaration(targetValue->abstractValue().asConcrete().value())) {
                     target = std::make_unique<likec::FunctionIdentifier>(tree(), functionDeclaration);
                     target->setTerm(call->target());
                 }
@@ -1007,8 +1000,8 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
     const types::Type *type = parent().types().getType(term);
 
 #ifdef NC_PREFER_FUNCTIONS_TO_CONSTANTS
-    if (auto signature = parent().signatures().getSignature(value.value()).get()) {
-        return std::make_unique<likec::FunctionIdentifier>(tree(), parent().makeFunctionDeclaration(signature));
+    if (auto functionDeclaration = parent().makeFunctionDeclaration(value.value())) {
+        return std::make_unique<likec::FunctionIdentifier>(tree(), functionDeclaration);
     }
 #endif
 

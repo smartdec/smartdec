@@ -93,14 +93,14 @@ const Symbol *Image::addSymbol(std::unique_ptr<Symbol> symbol) {
     symbols_.push_back(std::move(symbol));
 
     if (result->value()) {
-        value2symbol_[std::make_pair(*result->value(), result->type())] = result;
+        value2symbol_[*result->value()] = result;
     }
 
     return result;
 }
 
-const Symbol *Image::getSymbol(ConstantValue value, SymbolType type) const {
-    return nc::find(value2symbol_, std::make_pair(value, type));
+const Symbol *Image::getSymbol(ConstantValue value) const {
+    return nc::find(value2symbol_, value);
 }
 
 const Relocation *Image::addRelocation(std::unique_ptr<Relocation> relocation) {

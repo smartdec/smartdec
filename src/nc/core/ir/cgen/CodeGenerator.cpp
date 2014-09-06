@@ -29,7 +29,6 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/core/arch/Architecture.h>
-#include <nc/core/arch/Registers.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Reader.h>
 #include <nc/core/image/Relocation.h>
@@ -48,6 +47,7 @@
 #include <nc/core/likec/Typecast.h>
 
 #include "DefinitionGenerator.h"
+#include "NameGenerator.h"
 
 namespace nc {
 namespace core {
@@ -174,78 +174,20 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
     assert(variable != NULL);
     assert(variable->isGlobal());
 
-    if (likec::VariableDeclaration *result = nc::find(variableDeclarations_, variable)) {
+    if (auto result = nc::find(variableDeclarations_, variable)) {
         return result;
     } else {
-        QString name;
-        QString comment;
-
-        if (variable->memoryLocation().domain() == MemoryDomain::MEMORY &&
-            variable->memoryLocation().addr() % CHAR_BIT == 0)
-        {
-            ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
-
-            if (auto relocation = image().getRelocation(addr)) {
-                if (name.isEmpty()) {
-                    name = relocation->symbol()->name();
-                    // TODO: try to demangle.
-                }
-            }
-
-            auto symbol = image().getSymbol(addr, image::SymbolType::OBJECT);
-            if (!symbol) {
-                symbol = image().getSymbol(addr, image::SymbolType::NOTYPE);
-            }
-            if (symbol) {
-                if (name.isEmpty()) {
-                    name = symbol->name();
-                } else {
-                    comment += '\n';
-                    comment += symbol->name();
-                }
-            }
-        }
-
-        if (name.isEmpty()) {
-            if (auto reg = image().architecture()->registers()->getRegister(variable->memoryLocation())) {
-                name = reg->lowercaseName();
-            }
-        }
-
-        if (name.isEmpty()) {
-            name = QString("g%1").arg(variable->memoryLocation().addr() / CHAR_BIT, 0, 16);
-        }
-
         auto type = makeVariableType(variable);
-
-        std::unique_ptr<likec::Expression> initialValue;
-
-        if (variable->memoryLocation().domain() == MemoryDomain::MEMORY &&
-            variable->memoryLocation().addr() % CHAR_BIT == 0 &&
-            variable->memoryLocation().size() % CHAR_BIT == 0 &&
-            type->isScalar())
-        {
-            ByteAddr addr = variable->memoryLocation().addr() / CHAR_BIT;
-            ByteSize size = variable->memoryLocation().size() / CHAR_BIT;
-
-            if (auto value = image::Reader(&image()).readInt<ConstantValue>(addr, size, image().architecture()->byteOrder())) {
-                if (auto integerType = type->as<likec::IntegerType>()) {
-                    initialValue = std::make_unique<likec::IntegerConstant>(tree(), *value, integerType);
-                } else {
-                    initialValue = std::make_unique<likec::Typecast>(tree(),
-                        type,
-                        std::make_unique<likec::IntegerConstant>(tree(), *value, tree().makeIntegerType(type->size(), true)));
-                }
-            }
-        }
+        auto initialValue = makeInitialValue(variable->memoryLocation(), type);
+        auto nameAndComment = NameGenerator(image_).getGlobalVariableName(variable->memoryLocation());
 
         auto declaration = std::make_unique<likec::VariableDeclaration>(tree(),
-            likec::Tree::cleanName(name),
+            std::move(nameAndComment.name()),
             type,
             std::move(initialValue));
-        declaration->setComment(comment.simplified());
-        result = declaration.get();
+        declaration->setComment(std::move(nameAndComment.comment()));
 
+        result = declaration.get();
         tree().root()->addDeclaration(std::move(declaration));
         variableDeclarations_[variable] = result;
 
@@ -253,14 +195,43 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
     }
 }
 
-likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(const calling::FunctionSignature *signature) {
-    assert(signature != NULL);
+std::unique_ptr<likec::Expression> CodeGenerator::makeInitialValue(const MemoryLocation &memoryLocation, const likec::Type *type) {
+    assert(memoryLocation);
+    assert(type != NULL);
+
+    if (memoryLocation.domain() == MemoryDomain::MEMORY &&
+        memoryLocation.addr() % CHAR_BIT == 0 &&
+        memoryLocation.size() % CHAR_BIT == 0 &&
+        type->isScalar())
+    {
+        ByteAddr addr = memoryLocation.addr() / CHAR_BIT;
+        ByteSize size = memoryLocation.size() / CHAR_BIT;
+
+        if (auto value = image::Reader(&image()).readInt<ConstantValue>(addr, size, image().architecture()->byteOrder())) {
+            if (auto integerType = type->as<likec::IntegerType>()) {
+                return std::make_unique<likec::IntegerConstant>(tree(), *value, integerType);
+            } else {
+                return std::make_unique<likec::Typecast>(tree(),
+                    type,
+                    std::make_unique<likec::IntegerConstant>(tree(), *value, tree().makeIntegerType(type->size(), true)));
+            }
+        }
+    }
+
+    return NULL;
+}
+
+likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(ByteAddr addr) {
+    auto signature = signatures().getSignature(addr).get();
+    if (!signature) {
+        return NULL;
+    }
 
     if (auto declaration = nc::find(signature2declaration_, signature)) {
         return declaration;
     }
 
-    DeclarationGenerator generator(*this, signature);
+    DeclarationGenerator generator(*this, calling::EntryAddress(addr), signature);
     tree().root()->addDeclaration(generator.createDeclaration());
     return generator.declaration();
 }

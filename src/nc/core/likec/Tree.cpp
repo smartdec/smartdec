@@ -150,24 +150,6 @@ const Type *Tree::usualArithmeticConversion(const Type *leftType, const Type *ri
     return makeErroneousType();
 }
 
-QString Tree::cleanName(const QString &name) {
-    QString result;
-    result.reserve(name.size());
-
-    bool skipped = true;
-    foreach (QChar c, name) {
-        if (c.isLetterOrNumber() || c == '_') {
-            result += c;
-            skipped = false;
-        } else if (!skipped) {
-            result += '_';
-            skipped = true;
-        }
-    }
-
-    return result;
-}
-
 } // namespace likec
 } // namespace core
 } // namespace nc

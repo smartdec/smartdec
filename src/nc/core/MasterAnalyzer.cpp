@@ -42,6 +42,7 @@
 #include <nc/core/ir/cflow/GraphBuilder.h>
 #include <nc/core/ir/cflow/StructureAnalyzer.h>
 #include <nc/core/ir/cgen/CodeGenerator.h>
+#include <nc/core/ir/cgen/NameGenerator.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/DataflowAnalyzer.h>
 #include <nc/core/ir/liveness/Livenesses.h>
@@ -124,8 +125,8 @@ void MasterAnalyzer::dataflowAnalysis(Context &context, ir::Function *function) 
 void MasterAnalyzer::reconstructSignatures(Context &context) const {
     context.logToken().info(tr("Reconstructing function signatures."));
 
-    ir::calling::SignatureAnalyzer(*context.signatures(), *context.image(), *context.dataflows(),
-                                   *context.hooks(), context.cancellationToken(), context.logToken())
+    ir::calling::SignatureAnalyzer(*context.signatures(), *context.dataflows(), *context.hooks(),
+        context.cancellationToken(), context.logToken())
         .analyze();
 }
 
@@ -253,19 +254,7 @@ void MasterAnalyzer::decompile(Context &context) const {
 }
 
 QString MasterAnalyzer::getFunctionName(Context &context, const ir::Function *function) const {
-    if (function->entry() && function->entry()->address()) {
-        ir::calling::FunctionSignature *signature = NULL;
-        if (context.signatures()) {
-            signature = context.signatures()->getSignature(function).get();
-        }
-        if (signature) {
-            return tr("function at address %1 (%2)").arg(*function->entry()->address(), 0, 16).arg(signature->name());
-        } else {
-            return tr("function at address %1").arg(*function->entry()->address(), 0, 16);
-        }
-    } else {
-        return tr("function with unknown address");
-    }
+    return ir::cgen::NameGenerator(*context.image()).getFunctionName(function).name();
 }
 
 } // namespace core
