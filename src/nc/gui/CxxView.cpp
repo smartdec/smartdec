@@ -74,7 +74,7 @@ void CxxView::setDocument(CxxDocument *document) {
     /* No signals until we are in a consistent state. */
     textEdit()->blockSignals(true);
 
-    textEdit()->setDocument(document);
+    TextView::setDocument(document);
     highlighter_->setDocument(document);
     document_ = document;
 

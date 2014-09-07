@@ -133,6 +133,11 @@ TextView::TextView(const QString &title, QWidget *parent):
     connect(selectFontAction_, SIGNAL(triggered()), this, SLOT(selectFont()));
 }
 
+void TextView::setDocument(QTextDocument *document) {
+    textEdit_->setDocument(document);
+    setFont(font());
+}
+
 void TextView::updatePositionStatus() {
     QTextCursor cursor = textEdit()->textCursor();
     int line = cursor.blockNumber() + 1;
@@ -244,12 +249,9 @@ void TextView::zoomOut(int delta) {
     zoomIn(-delta);
 }
 
-QFont TextView::font() const {
-    return textEdit()->document()->defaultFont();
-}
-
 void TextView::setFont(const QFont &font) {
-    textEdit()->document()->setDefaultFont(font);
+    font_ = font;
+    textEdit()->document()->setDefaultFont(font_);
 }
 
 void TextView::selectFont() {

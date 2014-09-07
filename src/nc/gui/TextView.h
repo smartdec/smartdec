@@ -34,6 +34,7 @@
 QT_BEGIN_NAMESPACE
 class QMenu;
 class QPlainTextEdit;
+class QTextDocument;
 QT_END_NAMESPACE
 
 namespace nc { namespace gui {
@@ -68,6 +69,9 @@ class TextView: public QDockWidget {
     /** Action for showing font selection dialog. */
     QAction *selectFontAction_;
 
+    /** Font to be used in the underlying document. */
+    QFont font_;
+
 public:
     /**
      * Class constructor.
@@ -81,6 +85,16 @@ public:
      * \return Valid pointer to the text widget.
      */
     QPlainTextEdit *textEdit() const { return textEdit_; }
+
+    /**
+     * Sets the document shown in the text edit widget.
+     *
+     * \param document Pointer to the document. Can be NULL.
+     *
+     * Use this method instead of QPlainTextEdit::setDocument() in order to
+     * keep the font configuration intact.
+     */
+    void setDocument(QTextDocument *document);
 
 public Q_SLOTS:
     /**
@@ -122,7 +136,7 @@ public Q_SLOTS:
     /**
      * \return The font used for showing the text document.
      */
-    QFont font() const;
+    const QFont &font() const { return font_; }
 
     /**
      * Sets the font used for showing the text document.
