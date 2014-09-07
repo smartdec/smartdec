@@ -26,6 +26,8 @@
 
 #include <algorithm>
 
+#include <QBrush>
+#include <QColor>
 #include <QStringList>
 
 #include <nc/common/CheckedCast.h>
@@ -57,6 +59,15 @@ void InstructionsModel::setInstructions(const std::shared_ptr<const core::arch::
     }
 }
 
+void InstructionsModel::setHighlightedInstructions(std::vector<const core::arch::Instruction *> instructions) {
+    beginResetModel();
+
+    std::sort(instructions.begin(), instructions.end());
+    highlightedInstructions_ = std::move(instructions);
+
+    endResetModel();
+}
+
 void InstructionsModel::updateContents() {
     beginResetModel();
 
@@ -71,6 +82,7 @@ void InstructionsModel::updateContents() {
     }
 
     instructionsVector_.swap(vector);
+    highlightedInstructions_.clear();
 
     endResetModel();
 }
@@ -130,6 +142,13 @@ QVariant InstructionsModel::data(const QModelIndex &index, int role) const {
         switch (index.column()) {
             case IMC_INSTRUCTION: return tr("%1:\t%2").arg(instruction->addr(), 0, 16).arg(instruction->toString());
             default: unreachable();
+        }
+    } else if (role == Qt::BackgroundRole) {
+        auto instruction = getInstruction(index);
+        assert(instruction);
+
+        if (std::binary_search(highlightedInstructions_.begin(), highlightedInstructions_.end(), instruction)) {
+            return QBrush(QColor(Qt::lightGray));
         }
     }
     return QVariant();

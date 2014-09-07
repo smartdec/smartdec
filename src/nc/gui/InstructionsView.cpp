@@ -24,13 +24,9 @@
 
 #include "InstructionsView.h"
 
-#include <QAction>
-#include <QMenu>
 #include <QTreeView>
 
 #include <nc/common/Foreach.h>
-
-#include <nc/core/arch/Instruction.h>
 
 #include "InstructionsModel.h"
 
@@ -80,28 +76,11 @@ void InstructionsView::updateSelection() {
 }
 
 void InstructionsView::highlightInstructions(const std::vector<const core::arch::Instruction *> &instructions, bool ensureVisible) {
-    QModelIndex index;
+    model()->setHighlightedInstructions(instructions);
 
-    disconnect(treeView()->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-               this, SLOT(updateSelection()));
-
-    treeView()->selectionModel()->clearSelection();
-
-    if (model()) {
-        foreach (const auto &instruction, instructions) {
-            index = model()->getIndex(instruction);
-            treeView()->selectionModel()->select(index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-        }
+    if (ensureVisible && !instructions.empty()) {
+        treeView()->scrollTo(model()->getIndex(instructions.back()));
     }
-
-    if (ensureVisible) {
-        treeView()->scrollTo(index);
-    }
-
-    connect(treeView()->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-            this, SLOT(updateSelection()));
-
-    updateSelection();
 }
 
 }} // namespace nc::gui

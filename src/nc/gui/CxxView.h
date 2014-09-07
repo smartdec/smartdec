@@ -25,8 +25,6 @@
 
 #include <nc/config.h>
 
-#include <QTextCursor>
-
 #include <boost/optional.hpp>
 
 #include <nc/common/Types.h>
@@ -82,8 +80,7 @@ class CxxView: public TextView {
     /** Syntax highlighter for C++ code. */
     CppSyntaxHighlighter *highlighter_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -136,8 +133,7 @@ class CxxView: public TextView {
      */
     const core::likec::LabelIdentifier *getSelectedLabelIdentifier() const;
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Sets the document being viewed.
      *
@@ -161,8 +157,7 @@ class CxxView: public TextView {
      */
     void highlightInstructions(const std::vector<const core::arch::Instruction *> &instructions, bool ensureVisible = true);
 
-    Q_SIGNALS:
-
+Q_SIGNALS:
     /**
      * Signal emitted when the set of currently selected LikeC tree nodes is changed.
      */
@@ -183,8 +178,7 @@ class CxxView: public TextView {
      */
     void termSelectionChanged();
 
-    private Q_SLOTS:
-
+private Q_SLOTS:
     /**
      * Updates information about current selections.
      */
@@ -210,8 +204,7 @@ class CxxView: public TextView {
      */
     void gotoLabel();
 
-    private:
-
+private:
     /**
      * Generates the tooltip text displaying the declaration of the function or the variable in a given position.
      *
@@ -221,8 +214,7 @@ class CxxView: public TextView {
      */
     QString getDeclarationTooltip(int position);
     
-    private Q_SLOTS:
-
+private Q_SLOTS:
     /**
      * Populates the context menu being created.
      *
@@ -230,8 +222,7 @@ class CxxView: public TextView {
      */
     void populateContextMenu(QMenu *menu);
 
-    protected:
-    
+protected:
     virtual bool eventFilter(QObject *watched, QEvent *event) override;
 };
 

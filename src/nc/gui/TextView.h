@@ -89,7 +89,7 @@ public Q_SLOTS:
      * \param[in] ranges        Vector of ranges to be highlighted.
      * \param[in] ensureVisible Ensure that changes in highlighting are visible.
      */
-    void highlight(const std::vector<TextRange> &ranges, bool ensureVisible = true);
+    void highlight(std::vector<TextRange> ranges, bool ensureVisible = true);
 
     /**
      * Moves cursor to given position.

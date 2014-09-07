@@ -95,7 +95,7 @@ public:
      *
      * \return Text ranges of code generated from the instruction.
      */
-    const std::vector<TextRange> &getRanges(const core::arch::Instruction *instruction) {
+    const std::vector<TextRange> &getRanges(const core::arch::Instruction *instruction) const {
         return nc::find(instruction2ranges_, instruction);
     }
 
@@ -104,7 +104,7 @@ public:
      *
      * \return All the tree nodes using this declaration.
      */
-    const std::vector<const core::likec::TreeNode *> getUses(const core::likec::Declaration *declaration) {
+    const std::vector<const core::likec::TreeNode *> &getUses(const core::likec::Declaration *declaration) const {
         return nc::find(declaration2uses_, declaration);
     }
 

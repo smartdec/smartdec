@@ -57,8 +57,7 @@ class InstructionsView: public TreeView {
     /** Instructions currently selected in text. */
     std::vector<const core::arch::Instruction *> selectedInstructions_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -83,8 +82,7 @@ class InstructionsView: public TreeView {
      */
     const std::vector<const core::arch::Instruction *> &selectedInstructions() const { return selectedInstructions_; }
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Highlights given instructions.
      *
@@ -93,8 +91,7 @@ class InstructionsView: public TreeView {
      */
     void highlightInstructions(const std::vector<const core::arch::Instruction *> &instructions, bool ensureVisible = true);
 
-    Q_SIGNALS:
-
+Q_SIGNALS:
     /**
      * Signal emitted when the set of currently selected instructions is changed.
      */
@@ -110,8 +107,7 @@ class InstructionsView: public TreeView {
      */
     void decompileSelectedInstructions();
 
-    private Q_SLOTS:
-
+private Q_SLOTS:
     /**
      * Updates information about current selections.
      */

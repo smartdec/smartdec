@@ -268,7 +268,7 @@ void CxxView::highlightNodes(const std::vector<const core::likec::TreeNode *> &n
     }
 #endif
 
-    highlight(ranges, ensureVisible);
+    highlight(std::move(ranges), ensureVisible);
 }
 
 void CxxView::highlightInstructions(const std::vector<const core::arch::Instruction *> &instructions, bool ensureVisible) {
@@ -283,7 +283,7 @@ void CxxView::highlightInstructions(const std::vector<const core::arch::Instruct
         ranges.insert(ranges.end(), instructionRanges.begin(), instructionRanges.end());
     }
 
-    highlight(ranges, ensureVisible);
+    highlight(std::move(ranges), ensureVisible);
 }
 
 QString CxxView::getDeclarationTooltip(int position) {
