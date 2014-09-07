@@ -40,8 +40,7 @@ class Range {
     T start_; ///< Start of the range.
     T end_; ///< End of the range.
 
-    public:
-
+public:
     /**
      * Constructor of an invalid range.
      */
@@ -60,12 +59,12 @@ class Range {
     }
 
     /**
-     * \return Start of the range --- the first value in the range.
+     * \return Start of the range --- the first position in the range.
      */
     T start() const { return start_; }
 
     /**
-     * \return End of the range --- the first value after start not in the range.
+     * \return End of the range --- the first position not in the range.
      */
     T end() const { return end_; }
 
@@ -80,11 +79,32 @@ class Range {
     T center() const { return start() + length() / 2; }
 
     /**
-     * \param value Integer value.
+     * \param position Position.
      *
      * \return True if the range contains given position, false otherwise.
      */
-    bool contains(T value) const { return start() <= value && value < end(); }
+    bool contains(T position) const { return start() <= position && position < end(); }
+
+    /**
+     * \return True iff *this and that are disjoint ranges.
+     */
+    bool disjoint(const Range<T> &that) const {
+        return this->end() <= that.start() || that.end() <= this->start();
+    }
+
+    /**
+     * \return True iff *this and that are overlapping ranges.
+     */
+    bool overlaps(const Range<T> &that) const {
+        return !disjoint(that);
+    }
+
+    /**
+     * \return This range shifted by the given offset.
+     */
+    Range<T> shifted(T offset) const {
+        return Range<T>(start() + offset, end() + offset);
+    }
 
     /**
      * \return Non-zero pointer if and only if the range is valid.

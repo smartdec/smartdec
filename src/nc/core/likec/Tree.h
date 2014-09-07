@@ -130,7 +130,7 @@ public:
      * \param[in] out Output stream.
      * \param[in] callback Print callback.
      */
-    void print(QTextStream &out, PrintCallback<const TreeNode> *callback = 0) const;
+    void print(QTextStream &out, PrintCallback<const TreeNode *> *callback = 0) const;
 
     /**
      * \return Void type.

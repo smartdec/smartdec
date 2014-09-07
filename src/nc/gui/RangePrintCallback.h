@@ -23,6 +23,8 @@
 
 #pragma once
 
+// TODO: remove
+
 #include <QTextStream>
 
 #include <nc/common/PrintCallback.h>
@@ -41,8 +43,7 @@ class RangePrintCallback: public PrintCallback<T> {
     QTextStream &stream_; ///< Stream in which objects are printed.
     std::vector<int> stack_; ///< Start positions of objects.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -50,11 +51,11 @@ class RangePrintCallback: public PrintCallback<T> {
      */
     RangePrintCallback(QTextStream &stream): stream_(stream) {}
 
-    virtual void onStartPrinting(T * /*node*/) override {
+    void onStartPrinting(T * /*node*/) override {
         stack_.push_back(getPosition());
     }
 
-    virtual void onEndPrinting(T *node) override {
+    void onEndPrinting(T *node) override {
         assert(!stack_.empty());
 
         onRange(node, TextRange(stack_.back(), getPosition()));
@@ -70,8 +71,7 @@ class RangePrintCallback: public PrintCallback<T> {
      */
     virtual void onRange(T *object, const TextRange &range) = 0;
 
-    private:
-
+private:
     int getPosition() const {
         if (stream_.string()) {
             return stream_.string()->size();

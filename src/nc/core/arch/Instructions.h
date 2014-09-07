@@ -108,7 +108,7 @@ public:
      * \param out Output stream.
      * \param callback Pointer to the print callback. Can be NULL.
      */
-    void print(QTextStream &out, PrintCallback<const Instruction> *callback = NULL) const;
+    void print(QTextStream &out, PrintCallback<const Instruction *> *callback = NULL) const;
 };
 
 }}} // namespace nc::core::arch

@@ -65,7 +65,7 @@ bool Instructions::remove(const Instruction *instruction) {
     }
 }
 
-void Instructions::print(QTextStream &out, PrintCallback<const Instruction> *callback) const {
+void Instructions::print(QTextStream &out, PrintCallback<const Instruction *> *callback) const {
     if (all().empty()) {
         return;
     }

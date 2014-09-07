@@ -42,7 +42,7 @@ void Tree::rewriteRoot() {
     }
 }
 
-void Tree::print(QTextStream &out, PrintCallback<const TreeNode> *callback) const {
+void Tree::print(QTextStream &out, PrintCallback<const TreeNode *> *callback) const {
     PrintContext context(out, callback);
 
     root()->print(context);

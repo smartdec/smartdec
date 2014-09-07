@@ -30,7 +30,7 @@ namespace nc {
 /**
  * Callback template class used to report events when something starts or ends printing.
  *
- * \tparam T Type of objects passed to callback.
+ * \tparam T Type of objects passed to the callback.
  */
 template<class T>
 class PrintCallback {
@@ -41,14 +41,14 @@ class PrintCallback {
      *
      * \param[in] what What starts printing.
      */
-    virtual void onStartPrinting(T *what) = 0;
+    virtual void onStartPrinting(T what) = 0;
 
     /**
      * Callback function called when something ends being printed.
      *
      * \param[in] what What ends printing.
      */
-    virtual void onEndPrinting(T *what) = 0;
+    virtual void onEndPrinting(T what) = 0;
 
     /**
      * Virtual destructor.

@@ -24,6 +24,8 @@
 
 #include "CxxDocument.h"
 
+#include <algorithm>
+
 #include <QBuffer>
 #include <QPlainTextDocumentLayout>
 #include <QTextStream>
@@ -44,7 +46,7 @@
 #include <nc/core/likec/VariableDeclaration.h>
 #include <nc/core/likec/VariableIdentifier.h>
 
-#include "RangePrintCallback.h"
+#include "RangeTreeBuilder.h"
 
 namespace nc { namespace gui {
 
@@ -61,8 +63,46 @@ void CxxDocument::setContext(const std::shared_ptr<const core::Context> &context
     }
 }
 
+namespace {
+
+QString printTree(const core::likec::Tree &tree, RangeTree &rangeTree) {
+    class Callback: public PrintCallback<const core::likec::TreeNode *> {
+        RangeTreeBuilder builder_;
+        const QString &out_;
+
+    public:
+        Callback(RangeTree &tree, const QString &out) : builder_(tree), out_(out) {}
+
+        void onStartPrinting(const core::likec::TreeNode *node) override {
+            builder_.onStart((void *)(node), out_.size());
+        }
+        void onEndPrinting(const core::likec::TreeNode *node) override {
+            builder_.onEnd((void *)(node), out_.size());
+        }
+    };
+
+    QString result;
+    QTextStream stream(&result);
+    Callback callback(rangeTree, result);
+
+    tree.print(stream, &callback);
+
+    return result;
+}
+
+} // anonymous namespace
+
 void CxxDocument::updateContents() {
-    tracker_.clear();
+    if (!context() || !context()->tree()) {
+        clear();
+        rangeTree_.setRoot(NULL);
+        return;
+    }
+
+    setPlainText(printTree(*context()->tree(), rangeTree_));
+
+    // TODO: remove
+#if 0
     instruction2ranges_.clear();
 
     if (!context()) {
@@ -80,8 +120,6 @@ void CxxDocument::updateContents() {
         {}
 
         void onRange(const core::likec::TreeNode *node, const TextRange &range) override {
-            document_->tracker_.addRange(node, range);
-
             const core::ir::Statement *statement;
             const core::ir::Term *term;
             const core::arch::Instruction *instruction;
@@ -108,16 +146,7 @@ void CxxDocument::updateContents() {
             }
         };
     };
-
-    QString text;
-    QTextStream stream(&text);
-
-    if (context()->tree()) {
-        Callback callback(stream, this);
-        context()->tree()->print(stream, &callback);
-    }
-
-    setPlainText(text);
+#endif
 }
 
 void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,

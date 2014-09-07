@@ -33,8 +33,10 @@
 #include <QTextDocument>
 
 #include <nc/common/Range.h>
+#include <nc/common/Types.h>
 
-#include "RangeTracker.h"
+#include "RangeTree.h"
+#include "TextRange.h"
 
 namespace nc {
 
@@ -66,8 +68,7 @@ namespace gui {
 class CxxDocument: public QTextDocument {
     Q_OBJECT
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -87,10 +88,7 @@ class CxxDocument: public QTextDocument {
      */
     const std::shared_ptr<const core::Context> &context() const { return context_; }
 
-    /**
-     * \return Tracker of tree nodes' positions in the text.
-     */
-    const RangeTracker<const core::likec::TreeNode> &tracker() const { return tracker_; }
+    const RangeTree &rangeTree() const { return rangeTree_; }
 
     /**
      * \param instruction Valid pointer to an instruction.
@@ -131,20 +129,17 @@ class CxxDocument: public QTextDocument {
     void getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
                    const core::ir::Term *&term, const core::arch::Instruction *&instruction);
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Regenerates the listing.
      */
     void updateContents();
 
-    private:
-
+private:
     /** Associated Context instance. */
     std::shared_ptr<const core::Context> context_;
 
-    /** Tracker of nodes' positions in the text. */
-    RangeTracker<const core::likec::TreeNode> tracker_;
+    RangeTree rangeTree_;
 
     /** Mapping from an instruction to text ranges of code generated from this instruction. */
     boost::unordered_map<const core::arch::Instruction *, std::vector<TextRange>> instruction2ranges_;

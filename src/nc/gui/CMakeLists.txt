@@ -56,6 +56,9 @@ set(SOURCES
     MainWindow.cpp
     ParentTracker.h
     Project.cpp
+    RangeNode.h
+    RangeTree.cpp
+    RangeTree.h
     SearchWidget.cpp
     SectionsModel.cpp
     SectionsView.cpp

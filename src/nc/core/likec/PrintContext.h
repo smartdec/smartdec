@@ -43,7 +43,7 @@ class TreeNode;
  */
 class PrintContext {
     QTextStream &out_; ///< Output stream.
-    PrintCallback<const TreeNode> *callback_; ///< Print callback.
+    PrintCallback<const TreeNode *> *callback_; ///< Print callback.
     int indentSize_; ///< Size of single indent.
     int indent_; ///< Current total indent.
 
@@ -55,7 +55,7 @@ class PrintContext {
      * \param[in] out Output stream.
      * \param[in] callback Pointer to print callback. Can be NULL.
      */
-    PrintContext(QTextStream &out, PrintCallback<const TreeNode> *callback):
+    PrintContext(QTextStream &out, PrintCallback<const TreeNode *> *callback):
         out_(out), callback_(callback), indentSize_(4), indent_(0)
     {}
 
@@ -67,7 +67,7 @@ class PrintContext {
     /**
      * \return Pointer to print callback. Can be NULL.
      */
-    PrintCallback<const TreeNode> *callback() const { return callback_; }
+    PrintCallback<const TreeNode *> *callback() const { return callback_; }
 
     /**
      * \return Size of single indent.

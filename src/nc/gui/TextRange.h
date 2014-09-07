@@ -23,6 +23,8 @@
 
 #pragma once
 
+// TODO: remove
+
 #include <nc/common/RangeClass.h>
 
 namespace nc { namespace gui {
