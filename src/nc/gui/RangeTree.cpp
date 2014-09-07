@@ -8,8 +8,6 @@
 #include <nc/common/make_unique.h>
 #include <nc/core/likec/Tree.h>
 
-#include "RangeNode.h"
-
 namespace nc {
 namespace gui {
 

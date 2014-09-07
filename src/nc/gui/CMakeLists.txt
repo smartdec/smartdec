@@ -59,6 +59,7 @@ set(SOURCES
     RangeNode.h
     RangeTree.cpp
     RangeTree.h
+    RangeTreeBuilder.h
     SearchWidget.cpp
     SectionsModel.cpp
     SectionsView.cpp
