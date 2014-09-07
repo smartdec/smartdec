@@ -34,6 +34,7 @@ public:
 
     Range<int> getRange(const RangeNode *node) const;
 
+    void handleRemoval(int position, int nchars);
     void handleInsertion(int position, int nchars);
 };
 

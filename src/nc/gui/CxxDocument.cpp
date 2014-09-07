@@ -28,7 +28,6 @@
 
 #include <QPlainTextDocumentLayout>
 #include <QTextStream>
-#include <QtDebug>
 
 #include <nc/core/Context.h>
 
@@ -193,8 +192,12 @@ void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::S
 }
 
 void CxxDocument::onContentsChange(int position, int charsRemoved, int charsAdded) {
-    qDebug() << "position = " << position << " removed = " << charsRemoved << " added = " << charsAdded;
-    rangeTree_.handleInsertion(position, charsAdded);
+    if (charsRemoved > 0) {
+        rangeTree_.handleRemoval(position, charsRemoved);
+    }
+    if (charsAdded > 0) {
+        rangeTree_.handleInsertion(position, charsAdded);
+    }
 }
 
 }} // namespace nc::gui

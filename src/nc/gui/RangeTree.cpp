@@ -3,11 +3,6 @@
 
 #include "RangeTree.h"
 
-#include <stack>
-
-#include <nc/common/make_unique.h>
-#include <nc/core/likec/Tree.h>
-
 namespace nc {
 namespace gui {
 
@@ -20,33 +15,46 @@ void RangeTree::setRoot(std::unique_ptr<RangeNode> root) {
     root_ = std::move(root);
 }
 
+namespace {
+
+std::vector<RangeNode>::iterator getFirstChildNotToTheLeftOf(RangeNode &node, int offset) {
+    return std::lower_bound(node.children().begin(), node.children().end(), offset,
+                            [](const RangeNode &node, int offset) { return node.endOffset() <= offset; });
+}
+
+RangeNode *getChildAtOffset(RangeNode &node, int offset) {
+    auto i = getFirstChildNotToTheLeftOf(node, offset);
+
+    if (i != node.children().end() && i->range().contains(offset)) {
+        return &*i;
+    } else {
+        return NULL;
+    }
+}
+
+} // anonymous namespace
+
 const RangeNode *RangeTree::getLeafAt(int position) const {
     if (!root_ || !root_->range().contains(position)) {
         return NULL;
     }
 
-    const RangeNode *node = root_.get();
-
-    while (true) {
-        auto i = std::lower_bound(node->children().begin(), node->children().end(), position,
-                                  [](const RangeNode &node, int offset) { return node.endOffset() <= offset; });
-
-        if (i == node->children().end() || !i->range().contains(position)) {
-            return node;
-        }
-
-        node = &*i;
+    auto node = root_.get();
+    while (auto child = getChildAtOffset(*node, position)) {
+        node = child;
         position -= node->offset();
     }
+    return node;
 }
 
 namespace {
 
-void getNodesInRange(const RangeNode &node, const Range<int> &range, std::vector<const RangeNode *> &result) {
-    result.push_back(&node);
+void getNodesInRange(RangeNode &node, const Range<int> &range, std::vector<const RangeNode *> &result) {
+    if (range.start() <= 0 && node.size() <= range.end()) {
+        result.push_back(&node);
+    }
 
-    auto i = std::lower_bound(node.children().begin(), node.children().end(), range.start(),
-                              [](const RangeNode &node, int offset) { return node.endOffset() <= offset; });
+    auto i = getFirstChildNotToTheLeftOf(node, range.start());
     auto iend = node.children().end();
 
     for (; i != iend && i->offset() < range.end(); ++i) {
@@ -84,15 +92,56 @@ Range<int> RangeTree::getRange(const RangeNode *node) const {
 
 namespace {
 
-void doHandleInsertion(RangeNode &node, int position, int nchars) {
+void doHandleRemoval(RangeNode &node, int offset, int nchars) {
+    if (offset < 0) {
+        nchars += offset;
+        offset = 0;
+    }
+
+    if (nchars + offset > node.size()) {
+        nchars = node.size() - offset;
+    }
+
+    if (nchars <= 0) {
+        return;
+    }
+
+    node.setSize(node.size() - nchars);
+
+    auto i = getFirstChildNotToTheLeftOf(node, offset);
+
+    for (auto iend = node.children().end(); i != iend; ++i) {
+        if (i->offset() < offset + nchars) {
+            doHandleRemoval(*i, offset - i->offset(), nchars);
+            if (offset < i->offset()) {
+                i->setOffset(offset);
+            }
+        } else {
+            i->setOffset(i->offset() - nchars);
+        }
+    }
+}
+
+} // anonymous namespace
+
+void RangeTree::handleRemoval(int position, int nchars) {
+    if (root_ && root_->range().contains(position)) {
+        doHandleRemoval(*root_, position, nchars);
+    }
+}
+
+namespace {
+
+void doHandleInsertion(RangeNode &node, int offset, int nchars) {
+    assert(offset <= node.size());
+
     node.setSize(node.size() + nchars);
 
-    auto i = std::lower_bound(node.children().begin(), node.children().end(), position,
-                              [](const RangeNode &node, int offset) { return node.endOffset() <= offset; });
+    auto i = getFirstChildNotToTheLeftOf(node, offset);
 
     if (i != node.children().end()) {
-        if (i->range().contains(position)) {
-            doHandleInsertion(*i, position - i->offset(), nchars);
+        if (i->range().contains(offset)) {
+            doHandleInsertion(*i, offset - i->offset(), nchars);
             ++i;
         }
 
