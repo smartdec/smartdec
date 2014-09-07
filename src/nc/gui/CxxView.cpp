@@ -286,10 +286,12 @@ void CxxView::highlightInstructions(const std::vector<const core::arch::Instruct
     highlight(ranges, ensureVisible);
 }
 
-QString CxxView::getDeclarationTooltip(int /*position*/) {
+QString CxxView::getDeclarationTooltip(int position) {
     QString tooltipText;
-#if 0
-    if (auto node = document()->tracker().getObject(position)) {
+
+    if (auto rangeNode = document()->rangeTree().getLeafAt(position)) {
+        auto node = (const core::likec::TreeNode *)rangeNode->data();
+
         if (auto expression = node->as<core::likec::Expression>()) {
             QTextStream stream(&tooltipText, QIODevice::ReadWrite);
             core::likec::PrintContext context(stream, NULL);
@@ -301,7 +303,7 @@ QString CxxView::getDeclarationTooltip(int /*position*/) {
             }
         }
     }
-#endif
+
     return tooltipText;
 }
 
