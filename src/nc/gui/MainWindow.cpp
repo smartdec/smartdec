@@ -386,7 +386,7 @@ void MainWindow::open(std::unique_ptr<Project> project) {
     symbolsView_->model()->setImage();
     disassemblyDialog_->setImage();
     instructionsChanged();
-    cxxView_->document()->setContext();
+    treeChanged();
     inspectorView_->model()->setContext();
 
     /* Log messages to the log window. */
@@ -423,11 +423,14 @@ void MainWindow::instructionsChanged() {
     if (instructionsView_->model()) {
         instructionsView_->model()->deleteLater();
     }
-    instructionsView_->setModel(new InstructionsModel(instructionsView_, project()->instructions()));
+    instructionsView_->setModel(new InstructionsModel(this, project()->instructions()));
 }
 
 void MainWindow::treeChanged() {
-    cxxView_->document()->setContext(project()->context());
+    if (cxxView_->document()) {
+        cxxView_->document()->deleteLater();
+    }
+    cxxView_->setDocument(new CxxDocument(this, project()->context()));
     inspectorView_->model()->setContext(project()->context());
 }
 

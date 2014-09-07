@@ -26,7 +26,6 @@
 
 #include <algorithm>
 
-#include <QBuffer>
 #include <QPlainTextDocumentLayout>
 #include <QTextStream>
 
@@ -49,19 +48,6 @@
 #include "RangeTreeBuilder.h"
 
 namespace nc { namespace gui {
-
-CxxDocument::CxxDocument(QObject *parent):
-    QTextDocument(parent)
-{
-    setDocumentLayout(new QPlainTextDocumentLayout(this));
-}
-
-void CxxDocument::setContext(const std::shared_ptr<const core::Context> &context) {
-    if (context != context_) {
-        context_ = context;
-        updateContents();
-    }
-}
 
 namespace {
 
@@ -92,17 +78,20 @@ QString printTree(const core::likec::Tree &tree, RangeTree &rangeTree) {
 
 } // anonymous namespace
 
-void CxxDocument::updateContents() {
-    if (!context() || !context()->tree()) {
-        clear();
-        rangeTree_.setRoot(NULL);
-        return;
+CxxDocument::CxxDocument(QObject *parent, std::shared_ptr<const core::Context> context):
+    QTextDocument(parent), context_(std::move(context))
+{
+    setDocumentLayout(new QPlainTextDocumentLayout(this));
+
+    if (context_ && context_->tree()) {
+        setPlainText(printTree(*context_->tree(), rangeTree_));
     }
+}
 
-    setPlainText(printTree(*context()->tree(), rangeTree_));
 
-    // TODO: remove
+// TODO: remove
 #if 0
+void CxxDocument::updateContents() {
     instruction2ranges_.clear();
 
     if (!context()) {
@@ -146,8 +135,8 @@ void CxxDocument::updateContents() {
             }
         };
     };
-#endif
 }
+#endif
 
 void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
                             const core::ir::Term *&term, const core::arch::Instruction *&instruction)

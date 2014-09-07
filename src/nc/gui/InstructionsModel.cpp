@@ -85,9 +85,6 @@ QModelIndex InstructionsModel::getIndex(const core::arch::Instruction *instructi
 }
 
 int InstructionsModel::rowCount(const QModelIndex &parent) const {
-    if (!instructions()) {
-        return 0;
-    }
     if (parent == QModelIndex()) {
         return checked_cast<int>(instructionsVector_.size());
     } else {
@@ -100,9 +97,6 @@ int InstructionsModel::columnCount(const QModelIndex & /*parent*/) const {
 }
 
 QModelIndex InstructionsModel::index(int row, int column, const QModelIndex &parent) const {
-    if (!instructions()) {
-        return QModelIndex();
-    }
     if (row < rowCount(parent)) {
         return createIndex(row, column, const_cast<core::arch::Instruction *>(instructionsVector_[row]));
     } else {

@@ -64,11 +64,6 @@ public:
     void setHighlightedInstructions(std::vector<const core::arch::Instruction *> instructions);
 
     /**
-     * \return Pointer to the associated set of instructions. Can be NULL.
-     */
-    const std::shared_ptr<const core::arch::Instructions> &instructions() const { return instructions_; }
-
-    /**
      * \param index Model index.
      *
      * \return Pointer to the instruction associated with the index. Can be NULL.
@@ -82,11 +77,11 @@ public:
      */
     QModelIndex getIndex(const core::arch::Instruction *instruction) const;
 
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    virtual QModelIndex parent(const QModelIndex &index) const override;
-    virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QModelIndex parent(const QModelIndex &index) const override;
+    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
 
 private:
     /** Associated set of instructions. */
@@ -97,11 +92,6 @@ private:
 
     /** Sorted vector of instructions that must be highlighted. */
     std::vector<const core::arch::Instruction *> highlightedInstructions_;
-
-    /**
-     * Updates the contents of the model.
-     */
-    void updateContents();
 };
 
 }} // namespace nc::gui

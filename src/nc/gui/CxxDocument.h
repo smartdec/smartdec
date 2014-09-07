@@ -72,21 +72,10 @@ public:
     /**
      * Constructor.
      *
-     * \param parent    Pointer to the parent object. Can be NULL.
-     */
-    CxxDocument(QObject *parent = NULL);
-
-    /**
-     * Sets the associated context instance.
-     *
+     * \param parent  Pointer to the parent object. Can be NULL.
      * \param context Pointer to the context. Can be NULL.
      */
-    void setContext(const std::shared_ptr<const core::Context> &context = std::shared_ptr<const core::Context>());
-
-    /**
-     * \return Pointer to the associated context instance. Can be NULL.
-     */
-    const std::shared_ptr<const core::Context> &context() const { return context_; }
+    CxxDocument(QObject *parent = NULL, std::shared_ptr<const core::Context> context = NULL);
 
     const RangeTree &rangeTree() const { return rangeTree_; }
 
@@ -128,12 +117,6 @@ public:
      */
     void getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
                    const core::ir::Term *&term, const core::arch::Instruction *&instruction);
-
-public Q_SLOTS:
-    /**
-     * Regenerates the listing.
-     */
-    void updateContents();
 
 private:
     /** Associated Context instance. */

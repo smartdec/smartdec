@@ -86,7 +86,7 @@ public:
      *
      * \param[in] parent Pointer to the parent widget. Can be NULL.
      */
-    CxxView(QWidget *parent = 0);
+    CxxView(QWidget *parent = NULL);
 
     /**
      * \return Pointer to the C++ document being viewed. Can be NULL.
