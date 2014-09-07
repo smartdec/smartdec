@@ -128,7 +128,6 @@ void MainWindow::createWidgets() {
     connect(cxxView_, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateCxxContextMenu(QMenu *)));
 
     sectionsView_ = new SectionsView(this);
-    sectionsView_->setModel(new SectionsModel(this));
     sectionsView_->setObjectName("SectionsView");
     addDockWidget(Qt::RightDockWidgetArea, sectionsView_);
     sectionsView_->hide();
@@ -136,7 +135,6 @@ void MainWindow::createWidgets() {
     connect(sectionsView_, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateSectionsContextMenu(QMenu *)));
 
     symbolsView_ = new SymbolsView(this);
-    symbolsView_->setModel(new SymbolsModel(this));
     symbolsView_->setObjectName("SymbolsView");
     addDockWidget(Qt::RightDockWidgetArea, symbolsView_);
     symbolsView_->hide();
@@ -144,7 +142,6 @@ void MainWindow::createWidgets() {
     connect(symbolsView_, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateSymbolsContextMenu(QMenu *)));
 
     inspectorView_ = new InspectorView(this);
-    inspectorView_->setModel(new InspectorModel(this));
     inspectorView_->setObjectName("InspectorView");
     addDockWidget(Qt::RightDockWidgetArea, inspectorView_);
     inspectorView_->hide();
@@ -382,12 +379,9 @@ void MainWindow::open(std::unique_ptr<Project> project) {
 
     project_ = std::move(project);
 
-    sectionsView_->model()->setImage();
-    symbolsView_->model()->setImage();
-    disassemblyDialog_->setImage();
+    imageChanged();
     instructionsChanged();
     treeChanged();
-    inspectorView_->model()->setContext();
 
     /* Log messages to the log window. */
     project_->setLogToken(logToken_);
@@ -407,15 +401,19 @@ void MainWindow::open(std::unique_ptr<Project> project) {
     connect(cancelAllAction_, SIGNAL(triggered()), project_.get(), SLOT(cancelAll()));
 
     updateGuiState();
-
-    imageChanged();
-    instructionsChanged();
-    treeChanged();
 }
 
 void MainWindow::imageChanged() {
-    sectionsView_->model()->setImage(project()->image());
-    symbolsView_->model()->setImage(project()->image());
+    if (sectionsView_->model()) {
+        sectionsView_->model()->deleteLater();
+    }
+    sectionsView_->setModel(new SectionsModel(this, project()->image()));
+
+    if (symbolsView_->model()) {
+        symbolsView_->model()->deleteLater();
+    }
+    symbolsView_->setModel(new SymbolsModel(this, project()->image()));
+
     disassemblyDialog_->setImage(project()->image());
 }
 
@@ -431,7 +429,11 @@ void MainWindow::treeChanged() {
         cxxView_->document()->deleteLater();
     }
     cxxView_->setDocument(new CxxDocument(this, project()->context()));
-    inspectorView_->model()->setContext(project()->context());
+
+    if (inspectorView_->model()) {
+        inspectorView_->model()->deleteLater();
+    }
+    inspectorView_->setModel(new InspectorModel(this, project()->context()));
 }
 
 void MainWindow::populateInstructionsContextMenu(QMenu *menu) {

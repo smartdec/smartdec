@@ -51,37 +51,34 @@ class InspectorItem;
 class InspectorModel: public QAbstractItemModel {
     Q_OBJECT
 
-    public:
+    /** Associated immutable context instance. */
+    std::shared_ptr<const core::Context> context_;
 
+    /** Root tree item. */
+    std::unique_ptr<InspectorItem> root_;
+
+    /** Mapping from LikeC nodes to their parents. */
+    boost::unordered_map<const core::likec::TreeNode *, const core::likec::TreeNode *> node2parent_;
+
+public:
     /**
      * Constructor.
      *
      * \param parent  Pointer to the parent object. Can be NULL.
+     * \param context Pointer to the context. Can be NULL.
      */
-    InspectorModel(QObject *parent = NULL);
+    InspectorModel(QObject *parent = NULL, std::shared_ptr<const core::Context> context = NULL);
 
     /**
      * Destructor.
      */
     ~InspectorModel();
 
-    /**
-     * Sets the associated context instance.
-     *
-     * \param context Pointer to the context. Can be NULL.
-     */
-    void setContext(const std::shared_ptr<const core::Context> &context = std::shared_ptr<const core::Context>());
-
-    /**
-     * \return Pointer to the associated context instance. Can be NULL.
-     */
-    const std::shared_ptr<const core::Context> &context() const { return context_; }
-
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    virtual QModelIndex parent(const QModelIndex &index) const override;
-    virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QModelIndex parent(const QModelIndex &index) const override;
+    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
 
     /**
      * \return Valid pointer to the root tree item.
@@ -115,28 +112,6 @@ class InspectorModel: public QAbstractItemModel {
      * \param item Valid pointer to a tree item.
      */
     void expand(InspectorItem *item) const;
-
-    private:
-
-    /** Associated immutable context instance. */
-    std::shared_ptr<const core::Context> context_;
-
-    /** Root tree item. */
-    std::unique_ptr<InspectorItem> root_;
-
-    /** Mapping from LikeC nodes to their parents. */
-    boost::unordered_map<const core::likec::TreeNode *, const core::likec::TreeNode *> node2parent_;
-
-    /**
-     * Computes mapping from LikeC nodes to their parents, if not done yet.
-     */
-    void computeParentRelation();
-
-    /**
-     * Updates the contents of the model.
-     * Currently it effectively clears the model.
-     */
-    void updateContents();
 };
 
 }} // namespace nc::gui

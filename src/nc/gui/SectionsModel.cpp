@@ -42,34 +42,20 @@ enum SectionsModelColumns {
     COL_COUNT
 };
 
-SectionsModel::SectionsModel(QObject *parent):
-    QAbstractItemModel(parent)
-{
-    updateContents();
-}
-
-void SectionsModel::setImage(const std::shared_ptr<const core::image::Image> &image) {
-    if (image != image_) {
-        image_ = image;
-        updateContents();
-    }
-}
-
-void SectionsModel::updateContents() {
-    beginResetModel();
-    endResetModel();
-}
+SectionsModel::SectionsModel(QObject *parent, std::shared_ptr<const core::image::Image> image):
+    QAbstractItemModel(parent), image_(std::move(image))
+{}
 
 const core::image::Section *SectionsModel::getSection(const QModelIndex &index) const {
     return static_cast<const core::image::Section *>(index.internalPointer());
 }
 
 int SectionsModel::rowCount(const QModelIndex &parent) const {
-    if (!image()) {
+    if (!image_) {
         return 0;
     }
     if (parent == QModelIndex()) {
-        return static_cast<int>(image()->sections().size());
+        return static_cast<int>(image_->sections().size());
     } else {
         return 0;
     }
@@ -80,11 +66,11 @@ int SectionsModel::columnCount(const QModelIndex & /*parent*/) const {
 }
 
 QModelIndex SectionsModel::index(int row, int column, const QModelIndex &parent) const {
-    if (!image()) {
+    if (!image_) {
         return QModelIndex();
     }
     if (row < rowCount(parent)) {
-        return createIndex(row, column, (void *)image()->sections()[row]);
+        return createIndex(row, column, (void *)image_->sections()[row]);
     } else {
         return QModelIndex();
     }

@@ -64,34 +64,15 @@
 
 namespace nc { namespace gui {
 
-InspectorModel::InspectorModel(QObject *parent):
-    QAbstractItemModel(parent)
+InspectorModel::InspectorModel(QObject *parent, std::shared_ptr<const core::Context> context):
+    QAbstractItemModel(parent), context_(std::move(context)), root_(new InspectorItem(""))
 {
-    updateContents();
+    if (context_ && context_->tree()) {
+        root_->setNode(context_->tree()->root());
+    }
 }
 
 InspectorModel::~InspectorModel() {}
-
-void InspectorModel::setContext(const std::shared_ptr<const core::Context> &context) {
-    if (context != context_) {
-        context_ = context;
-        updateContents();
-    }
-}
-
-void InspectorModel::updateContents() {
-    beginResetModel();
-
-    node2parent_.clear();
-
-    root_.reset(new InspectorItem(""));
-
-    if (context() && context()->tree()) {
-        root_->setNode(context()->tree()->root());
-    }
-
-    endResetModel();
-}
 
 InspectorItem *InspectorModel::getItem(const QModelIndex &index) const {
     if (index == QModelIndex()) {
@@ -611,7 +592,7 @@ void InspectorModel::expand(InspectorItem *item) const {
     if (item->node()) {
         detail::expand(item, item->node());
     } else if (item->term()) {
-        detail::expand(item, item->term(), context().get());
+        detail::expand(item, item->term(), context_.get());
     } else if (item->statement()) {
         detail::expand(item, item->statement());
     } else if (item->instruction()) {
@@ -659,17 +640,15 @@ QVariant InspectorModel::data(const QModelIndex &index, int role) const {
     return QVariant();
 }
 
-inline void InspectorModel::computeParentRelation() {
-    if (!node2parent_.empty() || !context()->tree()) {
-        return;
+const core::likec::TreeNode *InspectorModel::getParent(const core::likec::TreeNode *node) {
+    if (context_ == NULL || context_->tree() == NULL) {
+        return NULL;
     }
 
-    ParentTracker tracker(node2parent_);
-    tracker(context()->tree()->root());
-}
-
-const core::likec::TreeNode *InspectorModel::getParent(const core::likec::TreeNode *node) {
-    computeParentRelation();
+    if (node2parent_.empty()) {
+        ParentTracker tracker(node2parent_);
+        tracker(context_->tree()->root());
+    }
 
     return nc::find(node2parent_, node);
 }

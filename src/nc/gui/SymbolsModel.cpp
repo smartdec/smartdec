@@ -21,34 +21,20 @@ enum SymbolsModelColumns {
     COL_COUNT
 };
 
-SymbolsModel::SymbolsModel(QObject *parent):
-    QAbstractItemModel(parent)
-{
-    updateContents();
-}
-
-void SymbolsModel::setImage(const std::shared_ptr<const core::image::Image> &image) {
-    if (image != image_) {
-        image_ = image;
-        updateContents();
-    }
-}
-
-void SymbolsModel::updateContents() {
-    beginResetModel();
-    endResetModel();
-}
+SymbolsModel::SymbolsModel(QObject *parent, std::shared_ptr<const core::image::Image> image):
+    QAbstractItemModel(parent), image_(std::move(image))
+{}
 
 const core::image::Symbol *SymbolsModel::getSymbol(const QModelIndex &index) const {
     return static_cast<const core::image::Symbol *>(index.internalPointer());
 }
 
 int SymbolsModel::rowCount(const QModelIndex &parent) const {
-    if (!image()) {
+    if (!image_) {
         return 0;
     }
     if (parent == QModelIndex()) {
-        return checked_cast<int>(image()->symbols().size());
+        return checked_cast<int>(image_->symbols().size());
     } else {
         return 0;
     }
@@ -59,11 +45,11 @@ int SymbolsModel::columnCount(const QModelIndex & /*parent*/) const {
 }
 
 QModelIndex SymbolsModel::index(int row, int column, const QModelIndex &parent) const {
-    if (!image()) {
+    if (!image_) {
         return QModelIndex();
     }
     if (row < rowCount(parent)) {
-        return createIndex(row, column, (void *)image()->symbols()[row]);
+        return createIndex(row, column, (void *)image_->symbols()[row]);
     } else {
         return QModelIndex();
     }

@@ -26,6 +26,8 @@ namespace gui {
 class SymbolsModel: public QAbstractItemModel {
     Q_OBJECT
 
+    std::shared_ptr<const core::image::Image> image_;
+
 public:
     enum {
         SortRole = Qt::UserRole
@@ -34,21 +36,10 @@ public:
     /**
      * Constructor.
      *
-     * \param parent  Pointer to the parent object. Can be NULL.
+     * \param parent    Pointer to the parent object. Can be NULL.
+     * \param image     Pointer to the image. Can be NULL.
      */
-    SymbolsModel(QObject *parent = NULL);
-
-    /**
-     * Sets the associated executable image.
-     *
-     * \param image Pointer to the executable image. Can be NULL.
-     */
-    void setImage(const std::shared_ptr<const core::image::Image> &image = std::shared_ptr<const core::image::Image>());
-
-    /**
-     * \return Pointer to the associated executable image. Can be NULL.
-     */
-    const std::shared_ptr<const core::image::Image> &image() const { return image_; }
+    SymbolsModel(QObject *parent = NULL, std::shared_ptr<const core::image::Image> image = NULL);
 
     /**
      * \param index Model index.
@@ -57,21 +48,12 @@ public:
      */
     const core::image::Symbol *getSymbol(const QModelIndex &index) const;
 
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    virtual QModelIndex parent(const QModelIndex &index) const override;
-    virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
-    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-
-private:
-    /** Associated executable image. */
-    std::shared_ptr<const core::image::Image> image_;
-
-    /**
-     * Updates the contents of the model.
-     */
-    void updateContents();
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QModelIndex parent(const QModelIndex &index) const override;
+    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 };
 
 }} // namespace nc::gui
