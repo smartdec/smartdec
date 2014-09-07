@@ -558,7 +558,11 @@ void MainWindow::setDecompileAutomatically(bool value) {
 }
 
 void MainWindow::highlightInstructionsInCxx() {
-    if (cxxView_->isVisible()) {
+    /*
+     * We avoid trying to highlight too many text ranges in the C++ view.
+     * QTextEdit's extra selections might be slow when there is too many of them.
+     */
+    if (cxxView_->isVisible() && instructionsView_->selectedInstructions().size() < 1000) {
         /* Block signals, in order to avoid backfire. */
         cxxView_->blockSignals(true);
         cxxView_->highlightInstructions(instructionsView_->selectedInstructions());
@@ -591,13 +595,14 @@ void MainWindow::highlightTreeInInstructions() {
 }
 
 void MainWindow::highlightCxxInTree() {
-    if (inspectorView_->isVisible()) {
-        /* Prevent things from getting slow... */
-        if (cxxView_->selectedNodes().size() < 100) {
-            inspectorView_->blockSignals(true);
-            inspectorView_->highlightNodes(cxxView_->selectedNodes());
-            inspectorView_->blockSignals(false);
-        }
+    /*
+     * We avoid trying to highlight too many nodes in the inspector,
+     * as it is slow: each node must be searched and selected.
+     */
+    if (inspectorView_->isVisible() && cxxView_->selectedNodes().size() < 100) {
+        inspectorView_->blockSignals(true);
+        inspectorView_->highlightNodes(cxxView_->selectedNodes());
+        inspectorView_->blockSignals(false);
     }
 }
 
