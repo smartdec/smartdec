@@ -36,7 +36,6 @@
 #include <nc/common/Types.h>
 
 #include "RangeTree.h"
-#include "TextRange.h"
 
 namespace nc {
 

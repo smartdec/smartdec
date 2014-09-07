@@ -249,7 +249,7 @@ void CxxView::highlightNodes(const std::vector<const core::likec::TreeNode *> &n
         return;
     }
 
-    std::vector<TextRange> ranges;
+    std::vector<Range<int>> ranges;
     ranges.reserve(nodes.size());
 
     foreach (auto node, nodes) {
@@ -264,7 +264,7 @@ void CxxView::highlightInstructions(const std::vector<const core::arch::Instruct
         return;
     }
 
-    std::vector<TextRange> ranges;
+    std::vector<Range<int>> ranges;
 
     foreach (const core::arch::Instruction *instruction, instructions) {
         document()->getRanges(instruction, ranges);

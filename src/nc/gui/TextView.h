@@ -29,7 +29,7 @@
 
 #include <vector>
 
-#include "TextRange.h"
+#include <nc/common/RangeClass.h>
 
 QT_BEGIN_NAMESPACE
 class QMenu;
@@ -48,7 +48,7 @@ class TextView: public QDockWidget {
     QPlainTextEdit *textEdit_;
 
     /** Current highlighting. */
-    std::vector<TextRange> highlighting_;
+    std::vector<Range<int>> highlighting_;
 
     /** Action for saving the text being shown. */
     QAction *saveAsAction_;
@@ -89,7 +89,7 @@ public Q_SLOTS:
      * \param[in] ranges        Vector of ranges to be highlighted.
      * \param[in] ensureVisible Ensure that changes in highlighting are visible.
      */
-    void highlight(std::vector<TextRange> ranges, bool ensureVisible = true);
+    void highlight(std::vector<Range<int>> ranges, bool ensureVisible = true);
 
     /**
      * Moves cursor to given position.

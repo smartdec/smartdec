@@ -165,10 +165,10 @@ void TextView::populateContextMenu(QMenu *menu) {
     menu->addSeparator();
 }
 
-void TextView::highlight(std::vector<TextRange> ranges, bool ensureVisible) {
+void TextView::highlight(std::vector<Range<int>> ranges, bool ensureVisible) {
     QList<QTextEdit::ExtraSelection> selections;
 
-    foreach (const TextRange &range, ranges) {
+    foreach (const auto &range, ranges) {
         QTextEdit::ExtraSelection selection;
         selection.cursor = textEdit()->textCursor();
         selection.cursor.setPosition(range.start());
@@ -181,7 +181,7 @@ void TextView::highlight(std::vector<TextRange> ranges, bool ensureVisible) {
         std::sort(ranges.begin(), ranges.end());
 
         if (ensureVisible) {
-            std::vector<TextRange> difference;
+            std::vector<Range<int>> difference;
 
             set_difference(
                 ranges.begin(), ranges.end(),
