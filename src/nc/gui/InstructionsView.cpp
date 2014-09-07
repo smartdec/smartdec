@@ -76,10 +76,12 @@ void InstructionsView::updateSelection() {
 }
 
 void InstructionsView::highlightInstructions(const std::vector<const core::arch::Instruction *> &instructions, bool ensureVisible) {
-    model()->setHighlightedInstructions(instructions);
+    if (model()) {
+        model()->setHighlightedInstructions(instructions);
 
-    if (ensureVisible && !instructions.empty()) {
-        treeView()->scrollTo(model()->getIndex(instructions.back()));
+        if (ensureVisible && !instructions.empty()) {
+            treeView()->scrollTo(model()->getIndex(instructions.back()));
+        }
     }
 }
 

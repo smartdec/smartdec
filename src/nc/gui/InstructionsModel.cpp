@@ -43,17 +43,18 @@ enum InstructionsModelColumns {
     IMC_COUNT
 };
 
-InstructionsModel::InstructionsModel(QObject *parent):
-    QAbstractItemModel(parent)
+InstructionsModel::InstructionsModel(QObject *parent, std::shared_ptr<const core::arch::Instructions> instructions):
+    QAbstractItemModel(parent),
+    instructions_(std::move(instructions))
 {
-    updateContents();
-}
+    std::vector<const core::arch::Instruction *> vector;
 
-void InstructionsModel::setInstructions(const std::shared_ptr<const core::arch::Instructions> &instructions) {
-    if (instructions != instructions_) {
-        instructions_ = instructions;
+    if (instructions_) {
+        instructionsVector_.reserve(instructions_->size());
 
-        updateContents();
+        foreach (const auto &instruction, instructions_->all()) {
+            instructionsVector_.push_back(instruction.get());
+        }
     }
 }
 
@@ -62,25 +63,6 @@ void InstructionsModel::setHighlightedInstructions(std::vector<const core::arch:
 
     std::sort(instructions.begin(), instructions.end());
     highlightedInstructions_ = std::move(instructions);
-
-    endResetModel();
-}
-
-void InstructionsModel::updateContents() {
-    beginResetModel();
-
-    std::vector<const core::arch::Instruction *> vector;
-
-    if (instructions()) {
-        vector.reserve(instructions()->size());
-
-        foreach (const auto &instruction, instructions()->all()) {
-            vector.push_back(instruction.get());
-        }
-    }
-
-    instructionsVector_.swap(vector);
-    highlightedInstructions_.clear();
 
     endResetModel();
 }

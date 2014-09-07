@@ -108,7 +108,6 @@ void MainWindow::createWidgets() {
     statusBar()->addPermanentWidget(statusProgressBar_, 0);
 
     instructionsView_ = new InstructionsView(this);
-    instructionsView_->setModel(new InstructionsModel(this));
     instructionsView_->setObjectName("InstructionsView");
     addDockWidget(Qt::LeftDockWidgetArea, instructionsView_);
 
@@ -386,7 +385,7 @@ void MainWindow::open(std::unique_ptr<Project> project) {
     sectionsView_->model()->setImage();
     symbolsView_->model()->setImage();
     disassemblyDialog_->setImage();
-    instructionsView_->model()->setInstructions();
+    instructionsChanged();
     cxxView_->document()->setContext();
     inspectorView_->model()->setContext();
 
@@ -421,7 +420,10 @@ void MainWindow::imageChanged() {
 }
 
 void MainWindow::instructionsChanged() {
-    instructionsView_->model()->setInstructions(project()->instructions());
+    if (instructionsView_->model()) {
+        instructionsView_->model()->deleteLater();
+    }
+    instructionsView_->setModel(new InstructionsModel(instructionsView_, project()->instructions()));
 }
 
 void MainWindow::treeChanged() {

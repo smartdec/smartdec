@@ -52,15 +52,9 @@ public:
      * Constructor.
      *
      * \param parent  Pointer to the parent object. Can be NULL.
-     */
-    InstructionsModel(QObject *parent = NULL);
-
-    /**
-     * Sets the instructions being shown in the model.
-     *
      * \param instructions Pointer to the set of instructions. Can be NULL.
      */
-    void setInstructions(const std::shared_ptr<const core::arch::Instructions> &instructions = std::shared_ptr<const core::arch::Instructions>());
+    InstructionsModel(QObject *parent = NULL, std::shared_ptr<const core::arch::Instructions> instructions = NULL);
 
     /**
      * Sets the set of instructions that must be highlighted.
