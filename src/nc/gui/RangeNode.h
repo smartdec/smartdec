@@ -37,24 +37,17 @@ public:
     void *data() const { return data_; }
 
     int offset() const { return offset_; }
+    void setOffset(int offset) { assert(offset >= 0); offset_ = offset; }
+
     int size() const { assert(size_ >= 0); return size_; }
     void setSize(int size) { assert(size >= 0); size_ = size; }
+
     int endOffset() const { return offset() + size(); }
 
     Range<int> range() const { return make_range(offset(), endOffset()); }
 
+    std::vector<RangeNode> &children() { return children_; }
     const std::vector<RangeNode> &children() const { return children_; }
-
-    const RangeNode *getChildContaining(int offset) const {
-        auto i = std::lower_bound(children_.begin(), children_.end(), offset,
-                                  [](const RangeNode &node, int offset) { return node.endOffset() <= offset; });
-
-        if (i == children_.end() || !i->range().contains(offset)) {
-            return NULL;
-        }
-
-        return &*i;
-    }
 
     RangeNode *addChild(RangeNode node) {
         assert(children_.empty() || children_.back().endOffset() <= node.offset());

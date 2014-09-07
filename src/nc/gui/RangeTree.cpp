@@ -26,18 +26,23 @@ const RangeNode *RangeTree::getLeafAt(int position) const {
     }
 
     const RangeNode *node = root_.get();
-    while (auto child = node->getChildContaining(position)) {
-        node = child;
+
+    while (true) {
+        auto i = std::lower_bound(node->children().begin(), node->children().end(), position,
+                                  [](const RangeNode &node, int offset) { return node.endOffset() <= offset; });
+
+        if (i == node->children().end() || !i->range().contains(position)) {
+            return node;
+        }
+
+        node = &*i;
         position -= node->offset();
     }
-    return node;
 }
 
 namespace {
 
 void getNodesInRange(const RangeNode &node, const Range<int> &range, std::vector<const RangeNode *> &result) {
-    assert(node.range().overlaps(range.shifted(node.offset())));
-
     result.push_back(&node);
 
     auto i = std::lower_bound(node.children().begin(), node.children().end(), range.start(),
@@ -75,6 +80,34 @@ Range<int> RangeTree::getRange(const RangeNode *node) const {
         offset += current->offset();
     }
     return make_range(offset, offset + node->size());
+}
+
+namespace {
+
+void doHandleInsertion(RangeNode &node, int position, int nchars) {
+    node.setSize(node.size() + nchars);
+
+    auto i = std::lower_bound(node.children().begin(), node.children().end(), position,
+                              [](const RangeNode &node, int offset) { return node.endOffset() <= offset; });
+
+    if (i != node.children().end()) {
+        if (i->range().contains(position)) {
+            doHandleInsertion(*i, position - i->offset(), nchars);
+            ++i;
+        }
+
+        for (auto iend = node.children().end(); i != iend; ++i) {
+            i->setOffset(i->offset() + nchars);
+        }
+    }
+}
+
+} // anonymous namespace
+
+void RangeTree::handleInsertion(int position, int nchars) {
+    if (root_ && root_->range().contains(position)) {
+        doHandleInsertion(*root_, position, nchars);
+    }
 }
 
 }} // namespace nc::gui

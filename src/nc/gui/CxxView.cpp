@@ -51,6 +51,8 @@ CxxView::CxxView(QWidget *parent):
 {
     highlighter_ = new CppSyntaxHighlighter(this);
 
+    textEdit()->setTextInteractionFlags(Qt::TextEditorInteraction);
+
     connect(textEdit(), SIGNAL(cursorPositionChanged()), this, SLOT(updateSelection()));
     connect(textEdit(), SIGNAL(selectionChanged()), this, SLOT(updateSelection()));
     connect(textEdit(), SIGNAL(textChanged()), this, SLOT(updateSelection()));

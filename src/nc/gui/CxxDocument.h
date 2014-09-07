@@ -140,6 +140,9 @@ public:
 
 private:
     void computeReverseMappings(const RangeNode *rangeNode);
+
+private Q_SLOTS:
+    void onContentsChange(int position, int charsRemoved, int charsAdded);
 };
 
 }} // namespace nc::gui

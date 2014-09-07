@@ -28,6 +28,7 @@
 
 #include <QPlainTextDocumentLayout>
 #include <QTextStream>
+#include <QtDebug>
 
 #include <nc/core/Context.h>
 
@@ -89,6 +90,8 @@ CxxDocument::CxxDocument(QObject *parent, std::shared_ptr<const core::Context> c
             computeReverseMappings(rangeTree_.root());
         }
     }
+
+    connect(this, SIGNAL(contentsChange(int, int, int)), this, SLOT(onContentsChange(int, int, int)));
 }
 
 void CxxDocument::computeReverseMappings(const RangeNode *rangeNode) {
@@ -187,6 +190,11 @@ void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::S
     if (statement) {
         instruction = statement->instruction();
     }
+}
+
+void CxxDocument::onContentsChange(int position, int charsRemoved, int charsAdded) {
+    qDebug() << "position = " << position << " removed = " << charsRemoved << " added = " << charsAdded;
+    rangeTree_.handleInsertion(position, charsAdded);
 }
 
 }} // namespace nc::gui

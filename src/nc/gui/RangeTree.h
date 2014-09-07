@@ -33,6 +33,8 @@ public:
     std::vector<const RangeNode *> getNodesIn(const Range<int> &range) const;
 
     Range<int> getRange(const RangeNode *node) const;
+
+    void handleInsertion(int position, int nchars);
 };
 
 }} // namespace nc::gui
