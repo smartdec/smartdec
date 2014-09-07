@@ -26,8 +26,7 @@
 
 #include <algorithm>
 
-#include <QBrush>
-#include <QColor>
+#include <QPalette>
 #include <QStringList>
 
 #include <nc/common/CheckedCast.h>
@@ -148,7 +147,7 @@ QVariant InstructionsModel::data(const QModelIndex &index, int role) const {
         assert(instruction);
 
         if (std::binary_search(highlightedInstructions_.begin(), highlightedInstructions_.end(), instruction)) {
-            return QBrush(QColor(Qt::lightGray));
+            return QPalette().alternateBase();
         }
     }
     return QVariant();

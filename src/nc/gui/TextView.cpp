@@ -173,7 +173,7 @@ void TextView::highlight(std::vector<TextRange> ranges, bool ensureVisible) {
         selection.cursor = textEdit()->textCursor();
         selection.cursor.setPosition(range.start());
         selection.cursor.setPosition(range.end(), QTextCursor::KeepAnchor);
-        selection.format.setBackground(QBrush(QColor(Qt::lightGray)));
+        selection.format.setBackground(QPalette().alternateBase());
         selections.append(selection);
     }
 
