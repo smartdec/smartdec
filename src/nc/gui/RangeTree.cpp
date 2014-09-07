@@ -137,10 +137,10 @@ void doHandleInsertion(RangeNode &node, int offset, int nchars) {
 
     node.setSize(node.size() + nchars);
 
-    auto i = getFirstChildNotToTheLeftOf(node, offset);
+    auto i = getFirstChildNotToTheLeftOf(node, offset - 1);
 
     if (i != node.children().end()) {
-        if (i->range().contains(offset)) {
+        if (i->range().contains(offset) || i->endOffset() == offset) {
             doHandleInsertion(*i, offset - i->offset(), nchars);
             ++i;
         }
