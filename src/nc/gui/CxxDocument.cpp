@@ -85,58 +85,88 @@ CxxDocument::CxxDocument(QObject *parent, std::shared_ptr<const core::Context> c
 
     if (context_ && context_->tree()) {
         setPlainText(printTree(*context_->tree(), rangeTree_));
+        if (rangeTree_.root()) {
+            computeReverseMappings(rangeTree_.root());
+        }
     }
 }
 
+void CxxDocument::computeReverseMappings(const RangeNode *rangeNode) {
+    auto node = (const core::likec::TreeNode *)rangeNode->data();
 
-// TODO: remove
-#if 0
-void CxxDocument::updateContents() {
-    instruction2ranges_.clear();
+    node2rangeNode_[node] = rangeNode;
 
-    if (!context()) {
-        clear();
-        return;
+    const core::ir::Statement *statement;
+    const core::ir::Term *term;
+    const core::arch::Instruction *instruction;
+
+    getOrigin(node, statement, term, instruction);
+
+    if (instruction) {
+        instruction2rangeNodes_[instruction].push_back(rangeNode);
     }
 
-    class Callback: public RangePrintCallback<const core::likec::TreeNode> {
-        CxxDocument *document_;
+    if (auto *expression = node->as<core::likec::Expression>()) {
+        if (auto *identifier = expression->as<core::likec::FunctionIdentifier>()) {
+            declaration2uses_[identifier->declaration()].push_back(identifier);
+        } else if (auto *identifier = expression->as<core::likec::LabelIdentifier>()) {
+            declaration2uses_[identifier->declaration()].push_back(identifier);
+        } else if (auto *identifier = expression->as<core::likec::VariableIdentifier>()) {
+            declaration2uses_[identifier->declaration()].push_back(identifier);
+        }
+    } else if (auto *statement = node->as<core::likec::Statement>()) {
+        if (auto *labelStatement = statement->as<core::likec::LabelStatement>()) {
+            declaration2uses_[labelStatement->label()].push_back(labelStatement);
+            label2statement_[labelStatement->label()] = labelStatement;
+        }
+    }
 
-        public:
-
-        Callback(QTextStream &stream, CxxDocument *document):
-            RangePrintCallback(stream), document_(document)
-        {}
-
-        void onRange(const core::likec::TreeNode *node, const TextRange &range) override {
-            const core::ir::Statement *statement;
-            const core::ir::Term *term;
-            const core::arch::Instruction *instruction;
-
-            document_->getOrigin(node, statement, term, instruction);
-
-            if (instruction) {
-                document_->instruction2ranges_[instruction].push_back(range);
-            }
-
-            if (auto *expression = node->as<core::likec::Expression>()) {
-                if (auto *identifier = expression->as<core::likec::FunctionIdentifier>()) {
-                    document_->declaration2uses_[identifier->declaration()].push_back(identifier);
-                } else if (auto *identifier = expression->as<core::likec::LabelIdentifier>()) {
-                    document_->declaration2uses_[identifier->declaration()].push_back(identifier);
-                } else if (auto *identifier = expression->as<core::likec::VariableIdentifier>()) {
-                    document_->declaration2uses_[identifier->declaration()].push_back(identifier);
-                }
-            } else if (auto *statement = node->as<core::likec::Statement>()) {
-                if (auto *labelStatement = statement->as<core::likec::LabelStatement>()) {
-                    document_->declaration2uses_[labelStatement->label()].push_back(labelStatement);
-                    document_->label2statement_[labelStatement->label()] = labelStatement;
-                }
-            }
-        };
-    };
+    foreach (const auto &child, rangeNode->children()) {
+        computeReverseMappings(&child);
+    }
 }
-#endif
+
+const core::likec::TreeNode *CxxDocument::getLeafAt(int position) const {
+    if (auto rangeNode = rangeTree_.getLeafAt(position)) {
+        return (const core::likec::TreeNode *)rangeNode->data();
+    }
+    return NULL;
+}
+
+std::vector<const core::likec::TreeNode *> CxxDocument::getNodesIn(const Range<int> &range) const {
+    auto rangeNodes = rangeTree_.getNodesIn(range);
+
+    std::vector<const core::likec::TreeNode *> result;
+    result.reserve(result.size());
+
+    foreach (auto rangeNode, rangeNodes) {
+        result.push_back((const core::likec::TreeNode *)rangeNode->data());
+    }
+
+    return result;
+}
+
+Range<int> CxxDocument::getRange(const core::likec::TreeNode *node) const {
+    assert(node != NULL);
+    if (auto rangeNode = nc::find(node2rangeNode_, node)) {
+        return rangeTree_.getRange(rangeNode);
+    }
+    return Range<int>();
+}
+
+void CxxDocument::getRanges(const core::arch::Instruction *instruction, std::vector<Range<int>> &result) const {
+    assert(instruction != NULL);
+
+    const auto &rangeNodes = nc::find(instruction2rangeNodes_, instruction);
+
+    result.reserve(result.size() + rangeNodes.size());
+
+    foreach (auto rangeNode, rangeNodes) {
+        if (auto range = rangeTree_.getRange(rangeNode)) {
+            result.push_back(range);
+        }
+    }
+}
 
 void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
                             const core::ir::Term *&term, const core::arch::Instruction *&instruction)

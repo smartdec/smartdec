@@ -93,12 +93,10 @@ void CxxView::updateSelection() {
         QTextCursor cursor = textEdit()->textCursor();
         if (cursor.hasSelection()) {
             Range<int> range(cursor.selectionStart(), cursor.selectionEnd());
-            foreach (auto rangeNode, document()->rangeTree().getNodesIn(range)) {
-                nodes.push_back((const core::likec::TreeNode *)rangeNode->data());
-            }
+            nodes = document()->getNodesIn(range);
         } else {
-            if (auto rangeNode = document()->rangeTree().getLeafAt(cursor.position())) {
-                nodes.push_back((const core::likec::TreeNode *)rangeNode->data());
+            if (auto node = document()->getLeafAt(cursor.position())) {
+                nodes.push_back(node);
             }
         }
 
@@ -182,35 +180,29 @@ const core::likec::LabelIdentifier *CxxView::getSelectedLabelIdentifier() const 
 }
 
 void CxxView::gotoFunctionDeclaration() {
-#if 0
     if (auto identifier = getSelectedFunctionIdentifier()) {
-        if (auto range = document()->tracker().getRange(identifier->declaration())) {
+        if (auto range = document()->getRange(identifier->declaration())) {
             moveCursor(range.start());
         }
     }
-#endif
 }
 
 void CxxView::gotoVariableDeclaration() {
-#if 0
     if (auto identifier = getSelectedVariableIdentifier()) {
-        if (auto range = document()->tracker().getRange(identifier->declaration())) {
+        if (auto range = document()->getRange(identifier->declaration())) {
             moveCursor(range.start());
         }
     }
-#endif
 }
 
 void CxxView::gotoLabel() {
-#if 0
     if (auto identifier = getSelectedLabelIdentifier()) {
         if (auto statement = document()->getLabelStatement(identifier->declaration())) {
-            if (auto range = document()->tracker().getRange(statement)) {
+            if (auto range = document()->getRange(statement)) {
                 moveCursor(range.start());
             }
         }
     }
-#endif
 }
 
 void CxxView::highlightReferences() {
@@ -260,13 +252,9 @@ void CxxView::highlightNodes(const std::vector<const core::likec::TreeNode *> &n
     std::vector<TextRange> ranges;
     ranges.reserve(nodes.size());
 
-#if 0
-    foreach (const core::likec::TreeNode *node, nodes) {
-        if (TextRange range = document()->tracker().getRange(node)) {
-            ranges.push_back(range);
-        }
+    foreach (auto node, nodes) {
+        ranges.push_back(document()->getRange(node));
     }
-#endif
 
     highlight(std::move(ranges), ensureVisible);
 }
@@ -279,8 +267,7 @@ void CxxView::highlightInstructions(const std::vector<const core::arch::Instruct
     std::vector<TextRange> ranges;
 
     foreach (const core::arch::Instruction *instruction, instructions) {
-        auto &instructionRanges = document()->getRanges(instruction);
-        ranges.insert(ranges.end(), instructionRanges.begin(), instructionRanges.end());
+        document()->getRanges(instruction, ranges);
     }
 
     highlight(std::move(ranges), ensureVisible);
@@ -289,9 +276,7 @@ void CxxView::highlightInstructions(const std::vector<const core::arch::Instruct
 QString CxxView::getDeclarationTooltip(int position) {
     QString tooltipText;
 
-    if (auto rangeNode = document()->rangeTree().getLeafAt(position)) {
-        auto node = (const core::likec::TreeNode *)rangeNode->data();
-
+    if (auto node = document()->getLeafAt(position)) {
         if (auto expression = node->as<core::likec::Expression>()) {
             QTextStream stream(&tooltipText, QIODevice::ReadWrite);
             core::likec::PrintContext context(stream, NULL);

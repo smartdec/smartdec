@@ -142,6 +142,11 @@ inline bool operator!=(const Range<T> &a, const Range<T> &b) {
     return a.start() != b.start() || a.end() != b.end();
 }
 
+template<class T>
+Range<T> make_range(T start, T end) {
+    return Range<T>(start, end);
+}
+
 } // namespace nc
 
 /* vim:set et sts=4 sw=4: */

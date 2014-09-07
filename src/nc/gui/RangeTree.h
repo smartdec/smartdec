@@ -26,9 +26,13 @@ public:
     RangeTree();
     ~RangeTree();
 
+    const RangeNode *root() const { return root_.get(); }
     void setRoot(std::unique_ptr<RangeNode> root);
+
     const RangeNode *getLeafAt(int position) const;
     std::vector<const RangeNode *> getNodesIn(const Range<int> &range) const;
+
+    Range<int> getRange(const RangeNode *node) const;
 };
 
 }} // namespace nc::gui

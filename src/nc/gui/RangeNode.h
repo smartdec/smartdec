@@ -9,6 +9,7 @@
 #include <cassert>
 #include <vector>
 
+#include <nc/common/Foreach.h>
 #include <nc/common/RangeClass.h>
 
 namespace nc {
@@ -24,10 +25,11 @@ class RangeNode {
     int offset_;
     int size_;
     std::vector<RangeNode> children_;
+    RangeNode *parent_;
 
 public:
     RangeNode(void *data, int offset):
-        data_(data), offset_(offset), size_(-1)
+        data_(data), offset_(offset), size_(-1), parent_(NULL)
     {
         assert(offset >= 0);
     }
@@ -39,7 +41,7 @@ public:
     void setSize(int size) { assert(size >= 0); size_ = size; }
     int endOffset() const { return offset() + size(); }
 
-    Range<int> range() const { return Range<int>(offset(), endOffset()); }
+    Range<int> range() const { return make_range(offset(), endOffset()); }
 
     const std::vector<RangeNode> &children() const { return children_; }
 
@@ -58,6 +60,15 @@ public:
         assert(children_.empty() || children_.back().endOffset() <= node.offset());
         children_.push_back(std::move(node));
         return &children_.back();
+    }
+
+    const RangeNode *parent() const { return parent_; }
+
+    void updateParentPointers() {
+        foreach (auto &child, children_) {
+            child.parent_ = this;
+            child.updateParentPointers();
+        }
     }
 };
 

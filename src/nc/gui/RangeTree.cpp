@@ -61,6 +61,22 @@ std::vector<const RangeNode *> RangeTree::getNodesIn(const Range<int> &range) co
     return result;
 }
 
+Range<int> RangeTree::getRange(const RangeNode *node) const {
+    assert(node != NULL);
+    assert(root_ != NULL);
+
+    if (node->parent() == NULL && node != root_.get()) {
+        root_->updateParentPointers();
+        assert(node->parent() != NULL);
+    }
+
+    int offset = 0;
+    for (auto current = node; current != root_.get(); current = current->parent()) {
+        offset += current->offset();
+    }
+    return make_range(offset, offset + node->size());
+}
+
 }} // namespace nc::gui
 
 /* vim:set et sts=4 sw=4: */
