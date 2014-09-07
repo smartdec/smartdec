@@ -27,7 +27,6 @@
 #include <algorithm>
 
 #include <QPalette>
-#include <QStringList>
 
 #include <nc/common/CheckedCast.h>
 #include <nc/common/Foreach.h>
