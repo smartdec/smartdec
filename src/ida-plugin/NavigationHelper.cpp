@@ -45,13 +45,13 @@ NavigationHelper::NavigationHelper(gui::MainWindow *mainWindow):
     QObject(mainWindow), mainWindow_(mainWindow)
 {
     jumpFromInstructionsViewAction_ = new QAction(tr("Show in IDA"), this);
-    jumpFromInstructionsViewAction_->setShortcut(Qt::Key_X);
+    jumpFromInstructionsViewAction_->setShortcut(Qt::CTRL + Qt::Key_Backspace);
     jumpFromInstructionsViewAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     connect(jumpFromInstructionsViewAction_, SIGNAL(triggered()), this, SLOT(jumpFromInstructionsView()));
     mainWindow_->instructionsView()->treeView()->addAction(jumpFromInstructionsViewAction_);
 
     jumpFromCxxViewAction_ = new QAction(tr("Show in IDA"), this);
-    jumpFromCxxViewAction_->setShortcut(Qt::Key_X);
+    jumpFromCxxViewAction_->setShortcut(Qt::CTRL + Qt::Key_Backspace);
     jumpFromCxxViewAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     connect(jumpFromCxxViewAction_, SIGNAL(triggered()), this, SLOT(jumpFromCxxView()));
     mainWindow_->cxxView()->textEdit()->addAction(jumpFromCxxViewAction_);
