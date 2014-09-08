@@ -205,7 +205,7 @@ void DefinitionGenerator::addLabels(const BasicBlock *basicBlock, likec::Block *
     assert(block != NULL);
 
     /* Add usual label. */
-    block->addStatement(std::make_unique<likec::LabelStatement>(tree(), makeLabel(basicBlock)));
+    block->addStatement(std::make_unique<likec::LabelStatement>(tree(), std::make_unique<likec::LabelIdentifier>(tree(), makeLabel(basicBlock))));
 
     /* Add case labels. */
     if (basicBlock->address()) {

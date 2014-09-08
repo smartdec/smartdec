@@ -35,7 +35,7 @@ namespace likec {
 LabelIdentifier::LabelIdentifier(Tree &tree, LabelDeclaration *declaration):
     Expression(tree, LABEL_IDENTIFIER), declaration_(declaration)
 {
-    declaration_->addReference();
+    declaration_->incReferenceCount();
 }
 
 void LabelIdentifier::doPrint(PrintContext &context) const {

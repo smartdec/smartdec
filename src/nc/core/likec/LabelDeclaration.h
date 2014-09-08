@@ -51,9 +51,9 @@ public:
     LabelDeclaration *rewrite() override { return this; }
 
     /**
-     * Increments reference count.
+     * Increments reference count by the given delta.
      */
-    void addReference() { ++referenceCount_; }
+    void incReferenceCount(int delta = 1) { referenceCount_ += delta; }
 
     /**
      * \return Reference count.

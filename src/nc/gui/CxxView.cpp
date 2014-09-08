@@ -218,6 +218,7 @@ void CxxView::highlightReferences() {
     if (selectedNodes().size() == 1) {
         const core::likec::TreeNode *node = selectedNodes().front();
 
+        // TODO: refactor using getReference() from CxxDocument.
         if (auto *declaration = node->as<core::likec::Declaration>()) {
             if (declaration->is<core::likec::VariableDeclaration>()) {
                 auto &uses = document()->getUses(declaration);
@@ -234,11 +235,6 @@ void CxxView::highlightReferences() {
                 nodes.insert(nodes.end(), uses.begin(), uses.end());
             } else if (auto *identifier = expression->as<core::likec::FunctionIdentifier>()) {
                 auto &uses = document()->getUses(identifier->declaration());
-                nodes.insert(nodes.end(), uses.begin(), uses.end());
-            }
-        } else if (auto *statement = node->as<core::likec::Statement>()) {
-            if (auto *labelStatement = statement->as<core::likec::LabelStatement>()) {
-                auto &uses = document()->getUses(labelStatement->label());
                 nodes.insert(nodes.end(), uses.begin(), uses.end());
             }
         }

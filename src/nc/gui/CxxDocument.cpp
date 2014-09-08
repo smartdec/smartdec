@@ -85,10 +85,6 @@ const core::likec::Declaration *getDeclaration(const core::likec::TreeNode *node
         } else if (auto *identifier = expression->as<core::likec::VariableIdentifier>()) {
             return identifier->declaration();
         }
-    } else if (auto *statement = node->as<core::likec::Statement>()) {
-        if (auto *labelStatement = statement->as<core::likec::LabelStatement>()) {
-            return labelStatement->label();
-        }
     }
     return NULL;
 }
@@ -137,7 +133,7 @@ void CxxDocument::computeReverseMappings(const RangeNode *rangeNode) {
 
     if (auto *statement = node->as<core::likec::Statement>()) {
         if (auto *labelStatement = statement->as<core::likec::LabelStatement>()) {
-            label2statement_[labelStatement->label()] = labelStatement;
+            label2statement_[labelStatement->identifier()->declaration()] = labelStatement;
         }
     }
 
