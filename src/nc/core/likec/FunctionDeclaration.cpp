@@ -35,14 +35,16 @@ namespace likec {
 
 FunctionDeclaration::FunctionDeclaration(Tree &tree, QString identifier, const Type *returnType, bool variadic):
     Declaration(tree, FUNCTION_DECLARATION, std::move(identifier)),
-    type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic))
+    type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic)),
+    functionIdentifier_(new FunctionIdentifier(tree, this))
 {
     assert(returnType != NULL);
 }
 
 FunctionDeclaration::FunctionDeclaration(Tree &tree, int declarationKind, QString identifier, const Type *returnType, bool variadic):
     Declaration(tree, declarationKind, std::move(identifier)),
-    type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic))
+    type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic)),
+    functionIdentifier_(new FunctionIdentifier(tree, this))
 {
     assert(returnType != NULL);
 }
@@ -61,7 +63,9 @@ void FunctionDeclaration::doCallOnChildren(const std::function<void(TreeNode *)>
 void FunctionDeclaration::doPrint(PrintContext &context) const {
     printComment(context);
 
-    context.out() << *type()->returnType() << ' ' << identifier() << '(';
+    context.out() << *type()->returnType() << ' ';
+    functionIdentifier()->print(context);
+    context.out() << '(';
 
     bool comma = false;
     foreach (const auto &argument, arguments_) {

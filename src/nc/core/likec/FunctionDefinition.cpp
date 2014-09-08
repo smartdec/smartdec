@@ -51,7 +51,9 @@ FunctionDefinition *FunctionDefinition::rewrite() {
 void FunctionDefinition::doPrint(PrintContext &context) const {
     printComment(context);
 
-    context.out() << *type()->returnType() << " " << identifier() << '(';
+    context.out() << *type()->returnType() << ' ';
+    functionIdentifier()->print(context);
+    context.out() << '(';
 
     bool comma = false;
     foreach (const auto &argument, arguments()) {

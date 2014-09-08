@@ -69,7 +69,7 @@ public:
     const Type *type() const { return type_; }
 
     /**
-     * \return Valid pointer to the variable identifier node.
+     * \return Valid pointer to the variable identifier used in the declaration.
      */
     const VariableIdentifier *variableIdentifier() const { return variableIdentifier_.get(); }
 

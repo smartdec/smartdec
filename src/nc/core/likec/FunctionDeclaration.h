@@ -28,10 +28,11 @@
 #include <vector>
 #include <memory>
 
+#include "ArgumentDeclaration.h"
 #include "Commentable.h"
 #include "Declaration.h"
+#include "FunctionIdentifier.h"
 #include "FunctionPointerType.h"
-#include "ArgumentDeclaration.h"
 
 namespace nc {
 namespace core {
@@ -43,6 +44,7 @@ namespace likec {
 class FunctionDeclaration: public Declaration, public Commentable {
     std::unique_ptr<FunctionPointerType> type_; ///< Type of pointer to this function.
     std::vector<std::unique_ptr<ArgumentDeclaration> > arguments_; ///< Function arguments.
+    std::unique_ptr<FunctionIdentifier> functionIdentifier_;
 
 public:
     /**
@@ -72,6 +74,11 @@ public:
      * \return Type of pointer to this function.
      */
     const FunctionPointerType *type() const { return type_.get(); }
+
+    /**
+     * \return Valid pointer to the function identifier used in the declaration.
+     */
+    const FunctionIdentifier *functionIdentifier() const { return functionIdentifier_.get(); }
 
     /**
      * Function arguments.
