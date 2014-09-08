@@ -73,6 +73,7 @@ class CxxDocument: public QTextDocument {
     boost::unordered_map<const core::arch::Instruction *, std::vector<const RangeNode *>> instruction2rangeNodes_;
     boost::unordered_map<const core::likec::Declaration *, std::vector<const core::likec::TreeNode *>> declaration2uses_;
     boost::unordered_map<const core::likec::LabelDeclaration *, const core::likec::LabelStatement *> label2statement_;
+    bool refactoring_;
 
 public:
     /**
@@ -121,7 +122,7 @@ public:
      *
      * \return Pointer to the matching label statement. Can be NULL.
      */
-    const core::likec::LabelStatement *getLabelStatement(const core::likec::LabelDeclaration *declaration) {
+    const core::likec::LabelStatement *getLabelStatement(const core::likec::LabelDeclaration *declaration) const {
         assert(declaration != NULL);
         return nc::find(label2statement_, declaration);
     }
@@ -138,11 +139,15 @@ public:
     static void getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
                           const core::ir::Term *&term, const core::arch::Instruction *&instruction);
 
-private:
-    void computeReverseMappings(const RangeNode *rangeNode);
-
 private Q_SLOTS:
     void onContentsChange(int position, int charsRemoved, int charsAdded);
+
+private:
+    void computeReverseMappings(const RangeNode *rangeNode);
+    void handleRefactoring(const std::vector<const RangeNode *> &modifiedRangeNodes);
+    void handleRefactoring(const RangeNode *modifiedRangeNode);
+    QString getText(const Range<int> &range) const;
+    void replaceText(const Range<int> &range, const QString &text);
 };
 
 }} // namespace nc::gui

@@ -76,10 +76,31 @@ QString printTree(const core::likec::Tree &tree, RangeTree &rangeTree) {
     return result;
 }
 
+const core::likec::Declaration *getDeclaration(const core::likec::TreeNode *node) {
+    if (auto *expression = node->as<core::likec::Expression>()) {
+        if (auto *identifier = expression->as<core::likec::FunctionIdentifier>()) {
+            return identifier->declaration();
+        } else if (auto *identifier = expression->as<core::likec::LabelIdentifier>()) {
+            return identifier->declaration();
+        } else if (auto *identifier = expression->as<core::likec::VariableIdentifier>()) {
+            return identifier->declaration();
+        }
+    } else if (auto *statement = node->as<core::likec::Statement>()) {
+        if (auto *labelStatement = statement->as<core::likec::LabelStatement>()) {
+            return labelStatement->label();
+        }
+    }
+    return NULL;
+}
+
+inline const core::likec::TreeNode *getNode(const RangeNode *rangeNode) {
+    return (const core::likec::TreeNode *)rangeNode->data();
+}
+
 } // anonymous namespace
 
 CxxDocument::CxxDocument(QObject *parent, std::shared_ptr<const core::Context> context):
-    QTextDocument(parent), context_(std::move(context))
+    QTextDocument(parent), context_(std::move(context)), refactoring_(false)
 {
     setDocumentLayout(new QPlainTextDocumentLayout(this));
 
@@ -94,7 +115,9 @@ CxxDocument::CxxDocument(QObject *parent, std::shared_ptr<const core::Context> c
 }
 
 void CxxDocument::computeReverseMappings(const RangeNode *rangeNode) {
-    auto node = (const core::likec::TreeNode *)rangeNode->data();
+    assert(rangeNode != NULL);
+
+    auto node = getNode(rangeNode);
 
     node2rangeNode_[node] = rangeNode;
 
@@ -108,17 +131,12 @@ void CxxDocument::computeReverseMappings(const RangeNode *rangeNode) {
         instruction2rangeNodes_[instruction].push_back(rangeNode);
     }
 
-    if (auto *expression = node->as<core::likec::Expression>()) {
-        if (auto *identifier = expression->as<core::likec::FunctionIdentifier>()) {
-            declaration2uses_[identifier->declaration()].push_back(identifier);
-        } else if (auto *identifier = expression->as<core::likec::LabelIdentifier>()) {
-            declaration2uses_[identifier->declaration()].push_back(identifier);
-        } else if (auto *identifier = expression->as<core::likec::VariableIdentifier>()) {
-            declaration2uses_[identifier->declaration()].push_back(identifier);
-        }
-    } else if (auto *statement = node->as<core::likec::Statement>()) {
+    if (auto declaration = getDeclaration(node)) {
+        declaration2uses_[declaration].push_back(node);
+    }
+
+    if (auto *statement = node->as<core::likec::Statement>()) {
         if (auto *labelStatement = statement->as<core::likec::LabelStatement>()) {
-            declaration2uses_[labelStatement->label()].push_back(labelStatement);
             label2statement_[labelStatement->label()] = labelStatement;
         }
     }
@@ -128,9 +146,30 @@ void CxxDocument::computeReverseMappings(const RangeNode *rangeNode) {
     }
 }
 
+void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
+                            const core::ir::Term *&term, const core::arch::Instruction *&instruction)
+{
+    statement = NULL;
+    term = NULL;
+    instruction = NULL;
+
+    if (auto stmt = node->as<core::likec::Statement>()) {
+        statement = stmt->statement();
+    } else if (auto expr = node->as<core::likec::Expression>()) {
+        term = expr->term();
+        if (term) {
+            statement = term->statement();
+        }
+    }
+
+    if (statement) {
+        instruction = statement->instruction();
+    }
+}
+
 const core::likec::TreeNode *CxxDocument::getLeafAt(int position) const {
     if (auto rangeNode = rangeTree_.getLeafAt(position)) {
-        return (const core::likec::TreeNode *)rangeNode->data();
+        return getNode(rangeNode);
     }
     return NULL;
 }
@@ -142,7 +181,7 @@ std::vector<const core::likec::TreeNode *> CxxDocument::getNodesIn(const Range<i
     result.reserve(result.size());
 
     foreach (auto rangeNode, rangeNodes) {
-        result.push_back((const core::likec::TreeNode *)rangeNode->data());
+        result.push_back(getNode(rangeNode));
     }
 
     return result;
@@ -170,34 +209,55 @@ void CxxDocument::getRanges(const core::arch::Instruction *instruction, std::vec
     }
 }
 
-void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
-                            const core::ir::Term *&term, const core::arch::Instruction *&instruction)
-{
-    statement = NULL;
-    term = NULL;
-    instruction = NULL;
-
-    if (const core::likec::Statement *stmt = node->as<core::likec::Statement>()) {
-        statement = stmt->statement();
-    } else if (const core::likec::Expression *expr = node->as<core::likec::Expression>()) {
-        term = expr->term();
-        if (term) {
-            statement = term->statement();
-        }
+void CxxDocument::onContentsChange(int position, int charsRemoved, int charsAdded) {
+    if (charsRemoved > 0) {
+        handleRefactoring(rangeTree_.handleRemoval(position, charsRemoved));
     }
-
-    if (statement) {
-        instruction = statement->instruction();
+    if (charsAdded > 0) {
+        handleRefactoring(rangeTree_.handleInsertion(position, charsAdded));
     }
 }
 
-void CxxDocument::onContentsChange(int position, int charsRemoved, int charsAdded) {
-    if (charsRemoved > 0) {
-        rangeTree_.handleRemoval(position, charsRemoved);
+void CxxDocument::handleRefactoring(const std::vector<const RangeNode *> &modifiedRangeNodes) {
+    if (!refactoring_) {
+        refactoring_ = true;
+        foreach (auto rangeNode, modifiedRangeNodes) {
+            handleRefactoring(rangeNode);
+        }
+        refactoring_ = false;
     }
-    if (charsAdded > 0) {
-        rangeTree_.handleInsertion(position, charsAdded);
+}
+
+void CxxDocument::handleRefactoring(const RangeNode *modifiedRangeNode) {
+    auto modifiedNode = getNode(modifiedRangeNode);
+
+    if (auto declaration = getDeclaration(modifiedNode)) {
+        auto newText = getText(rangeTree_.getRange(modifiedRangeNode));
+
+        foreach (auto use, nc::find(declaration2uses_, declaration)) {
+            if (use != modifiedNode) {
+                replaceText(getRange(use), newText);
+            }
+        }
     }
+}
+
+QString CxxDocument::getText(const Range<int> &range) const {
+    QTextCursor cursor(const_cast<CxxDocument *>(this));
+    cursor.setPosition(range.start());
+    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, range.length());
+    return cursor.selectedText();
+}
+
+void CxxDocument::replaceText(const Range<int> &range, const QString &text) {
+    QTextCursor cursor(this);
+    cursor.setPosition(range.start());
+    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, range.length());
+    cursor.removeSelectedText();
+    cursor.insertText(text);
+
+    /* For some reason the above document modifications do not raise the signal. */
+    Q_EMIT(contentsChange(range.start(), range.length(), text.size()));
 }
 
 }} // namespace nc::gui

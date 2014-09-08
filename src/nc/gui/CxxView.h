@@ -204,6 +204,13 @@ private Q_SLOTS:
      */
     void gotoLabel();
 
+    /**
+     * Populates the context menu being created.
+     *
+     * \param menu Valid pointer to the menu being created.
+     */
+    void populateContextMenu(QMenu *menu);
+
 private:
     /**
      * Generates the tooltip text displaying the declaration of the function or the variable in a given position.
@@ -214,14 +221,6 @@ private:
      */
     QString getDeclarationTooltip(int position);
     
-private Q_SLOTS:
-    /**
-     * Populates the context menu being created.
-     *
-     * \param menu Valid pointer to the menu being created.
-     */
-    void populateContextMenu(QMenu *menu);
-
 protected:
     virtual bool eventFilter(QObject *watched, QEvent *event) override;
 };
