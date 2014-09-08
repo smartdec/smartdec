@@ -49,7 +49,7 @@ const RangeNode *RangeTree::getLeafAt(int position) const {
 
 namespace {
 
-void getNodesInRange(RangeNode &node, const Range<int> &range, std::vector<const RangeNode *> &result) {
+void doGetNodesIn(RangeNode &node, const Range<int> &range, std::vector<const RangeNode *> &result) {
     if (range.start() <= 0 && node.size() <= range.end()) {
         result.push_back(&node);
     }
@@ -58,7 +58,7 @@ void getNodesInRange(RangeNode &node, const Range<int> &range, std::vector<const
     auto iend = node.children().end();
 
     for (; i != iend && i->offset() < range.end(); ++i) {
-        getNodesInRange(*i, range.shifted(-i->offset()), result);
+        doGetNodesIn(*i, range.shifted(-i->offset()), result);
     }
 }
 
@@ -66,10 +66,8 @@ void getNodesInRange(RangeNode &node, const Range<int> &range, std::vector<const
 
 std::vector<const RangeNode *> RangeTree::getNodesIn(const Range<int> &range) const {
     std::vector<const RangeNode *> result;
-    if (root_) {
-        if (root_->range().overlaps(range)) {
-            getNodesInRange(*root_, range, result);
-        }
+    if (root_ && root_->range().overlaps(range)) {
+        doGetNodesIn(*root_, range, result);
     }
     return result;
 }
@@ -92,7 +90,7 @@ Range<int> RangeTree::getRange(const RangeNode *node) const {
 
 namespace {
 
-void doHandleRemoval(RangeNode &node, int offset, int nchars) {
+void doHandleRemoval(RangeNode &node, int offset, int nchars, std::vector<const RangeNode *> &modified) {
     if (offset < 0) {
         nchars += offset;
         offset = 0;
@@ -107,12 +105,13 @@ void doHandleRemoval(RangeNode &node, int offset, int nchars) {
     }
 
     node.setSize(node.size() - nchars);
+    modified.push_back(&node);
 
     auto i = getFirstChildNotToTheLeftOf(node, offset);
 
     for (auto iend = node.children().end(); i != iend; ++i) {
         if (i->offset() < offset + nchars) {
-            doHandleRemoval(*i, offset - i->offset(), nchars);
+            doHandleRemoval(*i, offset - i->offset(), nchars, modified);
             if (offset < i->offset()) {
                 i->setOffset(offset);
             }
@@ -124,24 +123,27 @@ void doHandleRemoval(RangeNode &node, int offset, int nchars) {
 
 } // anonymous namespace
 
-void RangeTree::handleRemoval(int position, int nchars) {
+std::vector<const RangeNode *> RangeTree::handleRemoval(int position, int nchars) {
+    std::vector<const RangeNode *> result;
     if (root_ && root_->range().contains(position)) {
-        doHandleRemoval(*root_, position, nchars);
+        doHandleRemoval(*root_, position, nchars, result);
     }
+    return result;
 }
 
 namespace {
 
-void doHandleInsertion(RangeNode &node, int offset, int nchars) {
+void doHandleInsertion(RangeNode &node, int offset, int nchars, std::vector<const RangeNode *> &modified) {
     assert(offset <= node.size());
 
     node.setSize(node.size() + nchars);
+    modified.push_back(&node);
 
     auto i = getFirstChildNotToTheLeftOf(node, offset - 1);
 
     if (i != node.children().end()) {
         if (i->range().contains(offset) || i->endOffset() == offset) {
-            doHandleInsertion(*i, offset - i->offset(), nchars);
+            doHandleInsertion(*i, offset - i->offset(), nchars, modified);
             ++i;
         }
 
@@ -153,10 +155,12 @@ void doHandleInsertion(RangeNode &node, int offset, int nchars) {
 
 } // anonymous namespace
 
-void RangeTree::handleInsertion(int position, int nchars) {
+std::vector<const RangeNode *> RangeTree::handleInsertion(int position, int nchars) {
+    std::vector<const RangeNode *> result;
     if (root_ && root_->range().contains(position)) {
-        doHandleInsertion(*root_, position, nchars);
+        doHandleInsertion(*root_, position, nchars, result);
     }
+    return result;
 }
 
 }} // namespace nc::gui

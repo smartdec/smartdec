@@ -34,8 +34,8 @@ public:
 
     Range<int> getRange(const RangeNode *node) const;
 
-    void handleRemoval(int position, int nchars);
-    void handleInsertion(int position, int nchars);
+    std::vector<const RangeNode *> handleRemoval(int position, int nchars);
+    std::vector<const RangeNode *> handleInsertion(int position, int nchars);
 };
 
 }} // namespace nc::gui
