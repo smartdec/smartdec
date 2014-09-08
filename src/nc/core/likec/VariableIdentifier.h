@@ -26,11 +26,12 @@
 #include <nc/config.h>
 
 #include "Expression.h"
-#include "VariableDeclaration.h"
 
 namespace nc {
 namespace core {
 namespace likec {
+
+class VariableDeclaration;
 
 /**
  * Variable identifier.
@@ -59,7 +60,7 @@ public:
      */
     const VariableDeclaration *declaration() const { return declaration_; }
 
-    const Type *getType() const override { return declaration_->type(); }
+    const Type *getType() const override;
 
 protected:
     void doPrint(PrintContext &context) const override;

@@ -31,6 +31,7 @@
 #include "Commentable.h"
 #include "Declaration.h"
 #include "Expression.h"
+#include "VariableIdentifier.h"
 
 namespace nc {
 namespace core {
@@ -43,6 +44,7 @@ class Type;
  */
 class VariableDeclaration: public Declaration, public Commentable {
     const Type *type_; ///< Type of this variable.
+    std::unique_ptr<VariableIdentifier> variableIdentifier_; ///< Variable identifier node. Needed for refactoring.
     std::unique_ptr<Expression> initialValue_; ///< Initial value of this variable.
 
 public:
@@ -55,7 +57,8 @@ public:
      * \param[in] initialValue Pointer to the expression representing the initial value. Can be NULL.
      */
     VariableDeclaration(Tree &tree, QString identifier, const Type *type, std::unique_ptr<Expression> initialValue = NULL):
-        Declaration(tree, VARIABLE_DECLARATION, std::move(identifier)), type_(type), initialValue_(std::move(initialValue))
+        Declaration(tree, VARIABLE_DECLARATION, std::move(identifier)), type_(type),
+        variableIdentifier_(new VariableIdentifier(tree, this)), initialValue_(std::move(initialValue))
     {
         assert(type != NULL);
     }
@@ -64,6 +67,11 @@ public:
      * \return Valid pointer to the type of this variable.
      */
     const Type *type() const { return type_; }
+
+    /**
+     * \return Valid pointer to the variable identifier node.
+     */
+    const VariableIdentifier *variableIdentifier() const { return variableIdentifier_.get(); }
 
     /**
      * \return Pointer to the expression representing the initial value. Can be NULL.

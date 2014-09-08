@@ -32,6 +32,8 @@ namespace core {
 namespace likec {
 
 void VariableDeclaration::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(variableIdentifier_.get());
+
     if (initialValue_) {
         fun(initialValue_.get());
     }
@@ -47,10 +49,11 @@ VariableDeclaration *VariableDeclaration::rewrite() {
 void VariableDeclaration::doPrint(PrintContext &context) const {
     printComment(context);
 
-    context.out() << *type() << ' ' << identifier();
-    if (initialValue_) {
+    context.out() << *type() << ' ';
+    variableIdentifier()->print(context);
+    if (initialValue()) {
         context.out() << " = ";
-        initialValue_->print(context);
+        initialValue()->print(context);
     }
     context.out() << ';';
 }

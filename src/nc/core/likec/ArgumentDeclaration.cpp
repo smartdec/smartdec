@@ -32,7 +32,8 @@ namespace core {
 namespace likec {
 
 void ArgumentDeclaration::doPrint(PrintContext &context) const {
-    context.out() << *type() << ' ' << identifier();
+    context.out() << *type() << ' ';
+    variableIdentifier()->print(context);
 }
 
 } // namespace likec
