@@ -57,6 +57,7 @@ CxxView::CxxView(QWidget *parent):
     connect(textEdit(), SIGNAL(selectionChanged()), this, SLOT(updateSelection()));
     connect(textEdit(), SIGNAL(textChanged()), this, SLOT(updateSelection()));
 
+    connect(textEdit(), SIGNAL(textChanged()), this, SLOT(highlightReferences()));
     connect(this, SIGNAL(nodeSelectionChanged()), this, SLOT(highlightReferences()));
 
     textEdit()->viewport()->installEventFilter(this);
@@ -278,6 +279,7 @@ void CxxView::highlightInstructions(const std::vector<const core::arch::Instruct
 QString CxxView::getDeclarationTooltip(int position) {
     QString tooltipText;
 
+    // TODO: this must show refactored text.
     if (auto node = document()->getLeafAt(position)) {
         if (auto expression = node->as<core::likec::Expression>()) {
             QTextStream stream(&tooltipText, QIODevice::ReadWrite);
