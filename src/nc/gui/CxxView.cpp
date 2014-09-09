@@ -57,7 +57,6 @@ CxxView::CxxView(QWidget *parent):
     connect(this, SIGNAL(nodeSelectionChanged()), this, SLOT(highlightReferences()));
 
     textEdit()->viewport()->installEventFilter(this);
-    textEdit()->setMouseTracking(true);
 
     connect(this, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateContextMenu(QMenu *)));
 }
