@@ -143,11 +143,11 @@ const likec::StructType *CodeGenerator::makeStructuralType(const types::Type *ty
 
         if (offsetValue >= 0 && offsetType->pointee() && offsetType->pointee()->size()) {
             if (offsetValue > type->size() / CHAR_BIT) {
-                typeDeclaration->type()->addMember(new likec::MemberDeclaration(
+                typeDeclaration->type()->addMember(std::make_unique<likec::MemberDeclaration>(
                     tree_, QString("pad%1").arg(offsetValue),
                     tree_.makeArrayType(tree_.makeIntegerType(CHAR_BIT, false), offsetValue - type->size() / CHAR_BIT)));
             }
-            typeDeclaration->type()->addMember(new likec::MemberDeclaration(
+            typeDeclaration->type()->addMember(std::make_unique<likec::MemberDeclaration>(
                 tree_, QString("f%1").arg(offsetValue), makeType(offsetType->pointee())));
         }
     }

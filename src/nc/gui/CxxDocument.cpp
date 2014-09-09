@@ -24,8 +24,6 @@
 
 #include "CxxDocument.h"
 
-#include <algorithm>
-
 #include <QPlainTextDocumentLayout>
 #include <QTextStream>
 

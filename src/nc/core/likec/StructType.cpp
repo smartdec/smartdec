@@ -30,9 +30,9 @@ namespace nc {
 namespace core {
 namespace likec {
 
-void StructType::addMember(MemberDeclaration *memberDeclaration) {
-    members_.push_back(std::unique_ptr<MemberDeclaration>(memberDeclaration));
+void StructType::addMember(std::unique_ptr<MemberDeclaration> memberDeclaration) {
     setSize(size() + memberDeclaration->type()->sizeOf());
+    members_.push_back(std::move(memberDeclaration));
 }
 
 const MemberDeclaration *StructType::getMember(BitSize offset) const {
