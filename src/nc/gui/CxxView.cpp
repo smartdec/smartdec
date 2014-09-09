@@ -29,15 +29,12 @@
 #include <QTextStream>
 
 #include <nc/core/likec/Expression.h>
-#include <nc/core/likec/FunctionDeclaration.h>
-#include <nc/core/likec/FunctionIdentifier.h>
+#include <nc/core/likec/FunctionDefinition.h>
 #include <nc/core/likec/IntegerConstant.h>
-#include <nc/core/likec/LabelDeclaration.h>
 #include <nc/core/likec/LabelIdentifier.h>
 #include <nc/core/likec/LabelStatement.h>
 #include <nc/core/likec/Statement.h>
 #include <nc/core/likec/VariableDeclaration.h>
-#include <nc/core/likec/VariableIdentifier.h>
 #include <nc/core/likec/PrintContext.h>
 
 #include "CppSyntaxHighlighter.h"
@@ -218,24 +215,15 @@ void CxxView::highlightReferences() {
     if (selectedNodes().size() == 1) {
         const core::likec::TreeNode *node = selectedNodes().front();
 
-        // TODO: refactor using getReference() from CxxDocument.
-        if (auto *declaration = node->as<core::likec::Declaration>()) {
+        auto declaration = node->as<core::likec::Declaration>();
+        if (!declaration) {
+            declaration = CxxDocument::getDeclaration(node);
+        }
+        if (declaration) {
+            const auto &uses = document()->getUses(declaration);
+            nodes.insert(nodes.end(), uses.begin(), uses.end());
             if (declaration->is<core::likec::VariableDeclaration>()) {
-                auto &uses = document()->getUses(declaration);
                 nodes.push_back(declaration);
-                nodes.insert(nodes.end(), uses.begin(), uses.end());
-            }
-        } else if (auto *expression = node->as<core::likec::Expression>()) {
-            if (auto *identifier = expression->as<core::likec::VariableIdentifier>()) {
-                auto &uses = document()->getUses(identifier->declaration());
-                nodes.push_back(identifier->declaration());
-                nodes.insert(nodes.end(), uses.begin(), uses.end());
-            } else if (auto *identifier = expression->as<core::likec::LabelIdentifier>()) {
-                auto &uses = document()->getUses(identifier->declaration());
-                nodes.insert(nodes.end(), uses.begin(), uses.end());
-            } else if (auto *identifier = expression->as<core::likec::FunctionIdentifier>()) {
-                auto &uses = document()->getUses(identifier->declaration());
-                nodes.insert(nodes.end(), uses.begin(), uses.end());
             }
         }
     }

@@ -139,6 +139,13 @@ public:
     static void getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
                           const core::ir::Term *&term, const core::arch::Instruction *&instruction);
 
+    /**
+     * \param node Valid pointer to a tree node.
+     *
+     * \return Declaration of whatever identifier this node is. Can be NULL.
+     */
+    static const core::likec::Declaration *getDeclaration(const core::likec::TreeNode *node);
+
 private Q_SLOTS:
     void onContentsChange(int position, int charsRemoved, int charsAdded);
 

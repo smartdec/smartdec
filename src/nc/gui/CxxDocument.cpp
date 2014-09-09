@@ -74,19 +74,6 @@ QString printTree(const core::likec::Tree &tree, RangeTree &rangeTree) {
     return result;
 }
 
-const core::likec::Declaration *getDeclaration(const core::likec::TreeNode *node) {
-    if (auto *expression = node->as<core::likec::Expression>()) {
-        if (auto *identifier = expression->as<core::likec::FunctionIdentifier>()) {
-            return identifier->declaration();
-        } else if (auto *identifier = expression->as<core::likec::LabelIdentifier>()) {
-            return identifier->declaration();
-        } else if (auto *identifier = expression->as<core::likec::VariableIdentifier>()) {
-            return identifier->declaration();
-        }
-    }
-    return NULL;
-}
-
 inline const core::likec::TreeNode *getNode(const RangeNode *rangeNode) {
     return (const core::likec::TreeNode *)rangeNode->data();
 }
@@ -137,27 +124,6 @@ void CxxDocument::computeReverseMappings(const RangeNode *rangeNode) {
 
     foreach (const auto &child, rangeNode->children()) {
         computeReverseMappings(&child);
-    }
-}
-
-void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
-                            const core::ir::Term *&term, const core::arch::Instruction *&instruction)
-{
-    statement = NULL;
-    term = NULL;
-    instruction = NULL;
-
-    if (auto stmt = node->as<core::likec::Statement>()) {
-        statement = stmt->statement();
-    } else if (auto expr = node->as<core::likec::Expression>()) {
-        term = expr->term();
-        if (term) {
-            statement = term->statement();
-        }
-    }
-
-    if (statement) {
-        instruction = statement->instruction();
     }
 }
 
@@ -228,7 +194,7 @@ void CxxDocument::handleRefactoring(const RangeNode *modifiedRangeNode) {
     if (auto declaration = getDeclaration(modifiedNode)) {
         auto newText = getText(rangeTree_.getRange(modifiedRangeNode));
 
-        foreach (auto use, nc::find(declaration2uses_, declaration)) {
+        foreach (auto use, getUses(declaration)) {
             if (use != modifiedNode) {
                 replaceText(getRange(use), newText);
             }
@@ -264,6 +230,43 @@ void CxxDocument::replaceText(const Range<int> &range, const QString &text) {
      * so that we can mirror the changes in the RangeTree.
      */
     Q_EMIT(contentsChange(range.start(), range.length(), text.size()));
+}
+
+void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
+                            const core::ir::Term *&term, const core::arch::Instruction *&instruction)
+{
+    assert(node != NULL);
+
+    statement = NULL;
+    term = NULL;
+    instruction = NULL;
+
+    if (auto stmt = node->as<core::likec::Statement>()) {
+        statement = stmt->statement();
+    } else if (auto expr = node->as<core::likec::Expression>()) {
+        term = expr->term();
+        if (term) {
+            statement = term->statement();
+        }
+    }
+
+    if (statement) {
+        instruction = statement->instruction();
+    }
+}
+
+const core::likec::Declaration *CxxDocument::getDeclaration(const core::likec::TreeNode *node) {
+    assert(node != NULL);
+    if (auto *expression = node->as<core::likec::Expression>()) {
+        if (auto *identifier = expression->as<core::likec::FunctionIdentifier>()) {
+            return identifier->declaration();
+        } else if (auto *identifier = expression->as<core::likec::LabelIdentifier>()) {
+            return identifier->declaration();
+        } else if (auto *identifier = expression->as<core::likec::VariableIdentifier>()) {
+            return identifier->declaration();
+        }
+    }
+    return NULL;
 }
 
 }} // namespace nc::gui
