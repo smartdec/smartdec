@@ -108,6 +108,11 @@ public:
     void getRanges(const core::arch::Instruction *instruction, std::vector<Range<int>> &result) const;
 
     /**
+     * \return Text in the given range.
+     */
+    QString getText(const Range<int> &range) const;
+
+    /**
      * \param declaration Valid pointer to a declaration tree node.
      *
      * \return All the tree nodes using this declaration.
@@ -153,7 +158,6 @@ private:
     void computeReverseMappings(const RangeNode *rangeNode);
     void handleRefactoring(const std::vector<const RangeNode *> &modifiedRangeNodes);
     void handleRefactoring(const RangeNode *modifiedRangeNode);
-    QString getText(const Range<int> &range) const;
     void replaceText(const Range<int> &range, const QString &text);
 };
 

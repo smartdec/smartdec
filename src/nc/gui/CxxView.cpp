@@ -26,7 +26,6 @@
 
 #include <QMenu>
 #include <QPlainTextEdit>
-#include <QTextStream>
 
 #include <nc/core/likec/Expression.h>
 #include <nc/core/likec/FunctionDefinition.h>
@@ -260,24 +259,30 @@ void CxxView::highlightInstructions(const std::vector<const core::arch::Instruct
     highlight(std::move(ranges), ensureVisible);
 }
 
-QString CxxView::getDeclarationTooltip(int position) {
-    QString tooltipText;
+QString CxxView::getDeclarationTooltip(int position) const {
+    const auto maxLineCount = 5;
 
-    // TODO: this must show refactored text.
     if (auto node = document()->getLeafAt(position)) {
-        if (auto expression = node->as<core::likec::Expression>()) {
-            QTextStream stream(&tooltipText, QIODevice::ReadWrite);
-            core::likec::PrintContext context(stream, NULL);
-
-            if (auto variable = expression->as<core::likec::VariableIdentifier>()) {
-                variable->declaration()->print(context);
-            } else if (auto function = expression->as<core::likec::FunctionIdentifier>()) {
-                function->declaration()->core::likec::FunctionDeclaration::doPrint(context);
+        if (auto declaration = document()->getDeclaration(node)) {
+            if (auto range = document()->getRange(declaration)) {
+                auto text = document()->getText(range);
+                int lineCount = 0;
+                for (int i = 0; i < text.size(); ++i) {
+                    if (text[i] == QChar::ParagraphSeparator) {
+                        text[i] = '\n';
+                        if (++lineCount == maxLineCount) {
+                            text.truncate(i + 1);
+                            text += tr("...");
+                            break;
+                        }
+                    }
+                }
+                return text;
             }
         }
     }
 
-    return tooltipText;
+    return QString();
 }
 
 void CxxView::populateContextMenu(QMenu *menu) {

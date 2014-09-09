@@ -96,8 +96,6 @@ public:
 
 protected:
     void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
-
-public:
     void doPrint(PrintContext &context) const override;
 };
 

@@ -219,7 +219,7 @@ private:
      *
      * \return Generated tooltip text.
      */
-    QString getDeclarationTooltip(int position);
+    QString getDeclarationTooltip(int position) const;
     
 protected:
     virtual bool eventFilter(QObject *watched, QEvent *event) override;
