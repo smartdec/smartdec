@@ -758,7 +758,7 @@ public:
                 }
                 break;
             }
-            case UD_Imovsx: {
+            case UD_Imovsx: case UD_Imovsxd: {
                 auto operand0 = operand(0);
                 auto operand1 = operand(1);
 
