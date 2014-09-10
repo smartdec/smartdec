@@ -10,7 +10,6 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/image/Image.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
@@ -19,8 +18,6 @@
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/Uses.h>
 #include <nc/core/ir/dflow/Value.h>
-#include <nc/core/likec/Tree.h>
-#include <nc/core/mangling/Demangler.h>
 
 #include "CallHook.h"
 #include "Convention.h"
