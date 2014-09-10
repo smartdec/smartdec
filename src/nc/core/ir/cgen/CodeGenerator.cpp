@@ -179,7 +179,7 @@ likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const v
     } else {
         auto type = makeVariableType(variable);
         auto initialValue = makeInitialValue(variable->memoryLocation(), type);
-        auto nameAndComment = NameGenerator(image_).getGlobalVariableName(variable->memoryLocation());
+        auto nameAndComment = nameGenerator().getGlobalVariableName(variable->memoryLocation());
 
         auto declaration = std::make_unique<likec::VariableDeclaration>(tree(),
             std::move(nameAndComment.name()),

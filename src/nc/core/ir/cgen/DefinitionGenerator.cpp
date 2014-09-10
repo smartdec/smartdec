@@ -85,7 +85,6 @@
 #include <nc/core/likec/VariableIdentifier.h>
 #include <nc/core/likec/While.h>
 
-#include "NameGenerator.h"
 #include "SwitchContext.h"
 
 namespace nc {
@@ -115,7 +114,7 @@ void DefinitionGenerator::setDefinition(likec::FunctionDefinition *definition) {
 }
 
 std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition() {
-    auto nameAndComment = NameGenerator(parent().image()).getFunctionName(function_);
+    auto nameAndComment = parent().nameGenerator().getFunctionName(function_);
 
     auto functionDefinition = std::make_unique<likec::FunctionDefinition>(tree(),
         std::move(nameAndComment.name()), makeReturnType(), signature()->variadic());
@@ -163,7 +162,7 @@ likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(co
 
     likec::VariableDeclaration *&result = variableDeclarations_[variable];
     if (!result) {
-        auto nameAndComment = NameGenerator(parent().image()).getLocalVariableName(variable->memoryLocation(), variableDeclarations_.size());
+        auto nameAndComment = parent().nameGenerator().getLocalVariableName(variable->memoryLocation(), variableDeclarations_.size());
 
         auto variableDeclaration = std::make_unique<likec::VariableDeclaration>(tree(),
             std::move(nameAndComment.name()), parent().makeVariableType(variable));

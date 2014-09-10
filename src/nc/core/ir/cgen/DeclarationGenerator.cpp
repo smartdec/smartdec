@@ -39,8 +39,6 @@
 #include <nc/core/likec/FunctionDeclaration.h>
 #include <nc/core/likec/Tree.h>
 
-#include "NameGenerator.h"
-
 namespace nc {
 namespace core {
 namespace ir {
@@ -62,7 +60,7 @@ void DeclarationGenerator::setDeclaration(likec::FunctionDeclaration *declaratio
 }
 
 std::unique_ptr<likec::FunctionDeclaration> DeclarationGenerator::createDeclaration() {
-    auto nameAndComment = NameGenerator(parent().image()).getFunctionName(calleeId_);
+    auto nameAndComment = parent().nameGenerator().getFunctionName(calleeId_);
 
     auto functionDeclaration = std::make_unique<likec::FunctionDeclaration>(tree(),
         std::move(nameAndComment.name()), makeReturnType(), signature()->variadic());
@@ -85,7 +83,7 @@ const likec::Type *DeclarationGenerator::makeReturnType() {
 }
 
 likec::ArgumentDeclaration *DeclarationGenerator::makeArgumentDeclaration(const Term *term) {
-    auto nameAndComment = NameGenerator(parent().image()).getArgumentName(term, declaration()->arguments().size() + 1);
+    auto nameAndComment = parent().nameGenerator().getArgumentName(term, declaration()->arguments().size() + 1);
 
     auto argumentDeclaration = std::make_unique<likec::ArgumentDeclaration>(tree(),
         std::move(nameAndComment.name()), parent().makeType(parent().types().getType(term)));

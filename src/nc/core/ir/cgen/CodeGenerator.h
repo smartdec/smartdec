@@ -32,6 +32,8 @@
 
 #include <nc/core/ir/MemoryLocation.h>
 
+#include "NameGenerator.h"
+
 namespace nc {
 
 class CancellationToken;
@@ -104,6 +106,7 @@ class CodeGenerator: boost::noncopyable {
     const liveness::Livenesses &livenesses_;
     const types::Types &types_;
     const CancellationToken &cancellationToken_;
+    const NameGenerator nameGenerator_;
 
     /** Types being translated to LikeC. */
     std::vector<const ir::types::Type *> typeCreationStack_;
@@ -141,7 +144,7 @@ public:
     ):
         tree_(tree), image_(image), functions_(functions), hooks_(hooks), signatures_(signatures),
         dataflows_(dataflows), variables_(variables), graphs_(graphs), livenesses_(livenesses),
-        types_(types), cancellationToken_(cancellationToken)
+        types_(types), cancellationToken_(cancellationToken), nameGenerator_(image)
     {}
 
     /**
@@ -198,6 +201,8 @@ public:
      * \return Cancellation token.
      */
     const CancellationToken &cancellationToken() const { return cancellationToken_; }
+
+    const NameGenerator &nameGenerator() const { return nameGenerator_; }
 
     /**
      * Translates input program into LikeC compilation unit.
