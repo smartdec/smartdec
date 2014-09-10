@@ -15,7 +15,6 @@ Should have $subj in `CxxView`, similar to "Go to Declaration".
 
 Refactoring
 -----------
-Refactoring must be designed and implemented.
 Currently, it is unclear how to remember the names given by the user and reuse them in further decompilations.
 Related to this topic: changing calling convention by the user.
 
