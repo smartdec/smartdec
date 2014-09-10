@@ -41,24 +41,32 @@ class FunctionIdentifier: public Expression {
 
 public:
     /**
-     * Class constructor.
-     *
      * \param[in] tree Owning tree.
-     * \param[in] declaration Function declaration.
+     * \param[in] declaration Valid pointer to a function declaration.
      */
     FunctionIdentifier(Tree &tree, FunctionDeclaration *declaration):
         Expression(tree, FUNCTION_IDENTIFIER), declaration_(declaration)
-    {}
+    {
+        assert(declaration != NULL);
+    }
 
     /**
-     * \return Variable declaration.
+     * \return Valid pointer to the function declaration.
      */
     FunctionDeclaration *declaration() { return declaration_; }
 
     /**
-     * \return Variable declaration.
+     * \return Valid pointer to the function declaration.
      */
     const FunctionDeclaration *declaration() const { return declaration_; }
+
+    /**
+     * \param declaration Valid pointer to the function declaration.
+     */
+    void setDeclaration(FunctionDeclaration *declaration) {
+        assert(declaration != NULL);
+        declaration_ = declaration;
+    }
 
     const Type *getType() const override;
 

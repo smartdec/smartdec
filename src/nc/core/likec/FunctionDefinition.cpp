@@ -50,29 +50,8 @@ FunctionDefinition *FunctionDefinition::rewrite() {
 
 void FunctionDefinition::doPrint(PrintContext &context) const {
     printComment(context);
-
-    context.out() << *type()->returnType() << ' ';
-    functionIdentifier()->print(context);
-    context.out() << '(';
-
-    bool comma = false;
-    foreach (const auto &argument, arguments()) {
-        if (comma) {
-            context.out() << ", ";
-        } else {
-            comma = true;
-        }
-        argument->print(context);
-    }
-
-    if (type()->variadic()) {
-        if (comma) {
-            context.out() << ", ";
-        }
-        context.out() << "...";
-    }
-    
-    context.out() << ") ";
+    printSignature(context);
+    context.out() << ' ';
     block_->print(context);
 }
 

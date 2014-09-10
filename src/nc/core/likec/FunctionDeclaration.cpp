@@ -54,6 +54,10 @@ void FunctionDeclaration::addArgument(std::unique_ptr<ArgumentDeclaration> argum
     arguments_.push_back(std::move(argument));
 }
 
+FunctionDeclaration *FunctionDeclaration::rewrite() {
+    return this;
+}
+
 void FunctionDeclaration::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     foreach (const auto &argument, arguments_) {
         fun(argument.get());
@@ -62,7 +66,11 @@ void FunctionDeclaration::doCallOnChildren(const std::function<void(TreeNode *)>
 
 void FunctionDeclaration::doPrint(PrintContext &context) const {
     printComment(context);
+    printSignature(context);
+    context.out() << ';';
+}
 
+void FunctionDeclaration::printSignature(PrintContext &context) const {
     context.out() << *type()->returnType() << ' ';
     functionIdentifier()->print(context);
     context.out() << '(';
@@ -84,7 +92,7 @@ void FunctionDeclaration::doPrint(PrintContext &context) const {
         context.out() << "...";
     }
     
-    context.out() << ");";
+    context.out() << ')';
 }
 
 } /* namespace likec */

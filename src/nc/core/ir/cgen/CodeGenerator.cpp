@@ -246,7 +246,12 @@ void CodeGenerator::setFunctionDeclaration(const calling::FunctionSignature *sig
     assert(signature != NULL);
     assert(declaration != NULL);
 
-    signature2declaration_[signature] = declaration;
+    auto &currentDeclaration = signature2declaration_[signature];
+    if (currentDeclaration == NULL) {
+        currentDeclaration = declaration;
+    } else {
+        declaration->setFirstDeclaration(currentDeclaration);
+    }
 }
 
 } // namespace cgen

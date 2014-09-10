@@ -92,11 +92,22 @@ public:
      */
     void addArgument(std::unique_ptr<ArgumentDeclaration> argument);
 
-    FunctionDeclaration *rewrite() override { return this; }
+    /**
+     * \param declaration Valid pointer to the first declaration of the function.
+     */
+    void setFirstDeclaration(FunctionDeclaration *declaration) { functionIdentifier_->setDeclaration(declaration); }
+
+    /**
+     * \return Valid pointer to the first declaration of the function.
+     */
+    FunctionDeclaration *getFirstDeclaration() { return functionIdentifier_->declaration(); }
+
+    FunctionDeclaration *rewrite() override;
 
 protected:
     void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
     void doPrint(PrintContext &context) const override;
+    void printSignature(PrintContext &context) const;
 };
 
 } // namespace likec

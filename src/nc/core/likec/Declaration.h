@@ -39,7 +39,7 @@ namespace likec {
 class Declaration: public TreeNode {
     NC_CLASS_WITH_KINDS(Declaration, declarationKind)
 
-    const QString identifier_; ///< Identifier.
+    const QString identifier_;
 
 public:
 
@@ -68,7 +68,7 @@ public:
     {}
 
     /**
-     * \return Identifier.
+     * \return Name of declared entity.
      */
     const QString &identifier() const { return identifier_; }
 
