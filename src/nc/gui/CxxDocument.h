@@ -95,7 +95,7 @@ public:
     std::vector<const core::likec::TreeNode *> getNodesIn(const Range<int> &range) const;
 
     /**
-     * \param instruction Valid pointer to a tree node.
+     * \param node Valid pointer to a tree node.
      *
      * \return Text range occupied by this node.
      */
