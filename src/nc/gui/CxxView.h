@@ -122,8 +122,7 @@ public:
     boost::optional<ConstantValue> getIntegerUnderCursor() const;
 
     /**
-     * \return Pointer to the declaration under cursor or to the declaration of
-     *         the identifier under cursor. Can be NULL.
+     * \return Pointer to the declaration of the identifier under cursor. Can be NULL.
      */
     const core::likec::Declaration *getDeclarationOfIdentifierUnderCursor() const;
 

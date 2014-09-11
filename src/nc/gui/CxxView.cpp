@@ -155,11 +155,7 @@ const core::likec::TreeNode *CxxView::getNodeUnderCursor() const {
 
 const core::likec::Declaration *CxxView::getDeclarationOfIdentifierUnderCursor() const {
     if (auto node = getNodeUnderCursor()) {
-        if (auto declaration = node->as<core::likec::Declaration>()) {
-            return declaration;
-        } else {
-            return document()->getDeclaration(node);
-        }
+        return document()->getDeclaration(node);
     }
     return NULL;
 }
@@ -259,17 +255,7 @@ QString CxxView::getDeclarationTooltip(int position) const {
 
 void CxxView::rename() {
     if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
-        QString oldName;
-        if (auto functionDeclaration = declaration->as<core::likec::FunctionDeclaration>()) {
-            oldName = document()->getText(document()->getRange(functionDeclaration->functionIdentifier()));
-        } else if (auto functionDefinition = declaration->as<core::likec::FunctionDefinition>()) {
-            oldName = document()->getText(document()->getRange(functionDefinition->functionIdentifier()));
-        } else if (auto variableDeclaration = declaration->as<core::likec::VariableDeclaration>()) {
-            oldName = document()->getText(document()->getRange(variableDeclaration->variableIdentifier()));
-        } else {
-            return;
-        }
-
+        auto oldName = document()->getText(document()->getRange(getNodeUnderCursor()));
         auto newName = QInputDialog::getText(this, tr("Rename"), tr("New name:"), QLineEdit::Normal, oldName);
         if (!newName.isEmpty()) {
             document()->rename(declaration, newName);
