@@ -61,6 +61,14 @@ class CppSyntaxHighlighter;
 class CxxView: public TextView {
     Q_OBJECT
 
+    /** Syntax highlighter for C++ code. */
+    CppSyntaxHighlighter *highlighter_;
+
+    QAction *gotoLabelAction_;
+    QAction *gotoDeclarationAction_;
+    QAction *gotoDefinitionAction_;
+    QAction *renameAction_;
+
     /** Pointer to the C++ document being viewed. */
     CxxDocument *document_;
 
@@ -75,9 +83,6 @@ class CxxView: public TextView {
 
     /** Instructions currently selected in text. */
     std::vector<const core::arch::Instruction *> selectedInstructions_;
-
-    /** Syntax highlighter for C++ code. */
-    CppSyntaxHighlighter *highlighter_;
 
 public:
     /**

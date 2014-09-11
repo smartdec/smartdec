@@ -24,6 +24,7 @@
 
 #include "CxxView.h"
 
+#include <QAction>
 #include <QInputDialog>
 #include <QMenu>
 #include <QPlainTextEdit>
@@ -45,6 +46,30 @@ CxxView::CxxView(QWidget *parent):
     document_(NULL)
 {
     highlighter_ = new CppSyntaxHighlighter(this);
+
+    gotoLabelAction_ = new QAction(tr("Go to Label"), this);
+    gotoLabelAction_->setShortcut(Qt::CTRL + Qt::Key_Backslash);
+    gotoLabelAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    textEdit()->addAction(gotoLabelAction_);
+    connect(gotoLabelAction_, SIGNAL(triggered()), this, SLOT(gotoLabel()));
+
+    gotoDeclarationAction_ = new QAction(tr("Go to Declaration"), this);
+    gotoDeclarationAction_->setShortcut(Qt::CTRL + Qt::Key_BracketLeft);
+    gotoDeclarationAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    textEdit()->addAction(gotoDeclarationAction_);
+    connect(gotoDeclarationAction_, SIGNAL(triggered()), this, SLOT(gotoDeclaration()));
+
+    gotoDefinitionAction_ = new QAction(tr("Go to Declaration"), this);
+    gotoDefinitionAction_->setShortcut(Qt::CTRL + Qt::Key_BracketRight);
+    gotoDefinitionAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    textEdit()->addAction(gotoDefinitionAction_);
+    connect(gotoDefinitionAction_, SIGNAL(triggered()), this, SLOT(gotoDefinition()));
+
+    renameAction_ = new QAction(tr("Rename..."), this);
+    renameAction_->setShortcut(Qt::Key_F2);
+    renameAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    textEdit()->addAction(renameAction_);
+    connect(renameAction_, SIGNAL(triggered()), this, SLOT(rename()));
 
     textEdit()->setTextInteractionFlags(Qt::TextEditorInteraction);
 
@@ -187,8 +212,10 @@ void CxxView::gotoDefinition() {
     if (auto definition = getDefinitionOfFunctionUnderCursor()) {
         if (auto range = document()->getRange(definition)) {
             moveCursor(range.start());
+            return;
         }
     }
+    gotoDeclaration();
 }
 
 void CxxView::gotoLabel() {
@@ -290,17 +317,16 @@ void CxxView::populateContextMenu(QMenu *menu) {
     menu->addSeparator();
 
     if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
-        // TODO: Add Actions with hotkeys.
-        menu->addAction(tr("Rename..."), this, SLOT(rename()));
         if (declaration->is<core::likec::LabelDeclaration>()) {
-            menu->addAction(tr("Go to Label"), this, SLOT(gotoLabel()));
+            menu->addAction(gotoLabelAction_);
         } else {
-            menu->addAction(tr("Go to Declaration"), this, SLOT(gotoDeclaration()));
+            menu->addAction(gotoDeclarationAction_);
 
             if (getDefinitionOfFunctionUnderCursor()) {
-                menu->addAction(tr("Go to Definition"), this, SLOT(gotoDefinition()));
+                menu->addAction(gotoDefinitionAction_);
             }
         }
+        menu->addAction(renameAction_);
     }
 }
 
