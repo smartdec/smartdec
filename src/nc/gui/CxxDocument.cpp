@@ -34,6 +34,7 @@
 
 #include <nc/core/likec/Expression.h>
 #include <nc/core/likec/FunctionDeclaration.h>
+#include <nc/core/likec/FunctionDefinition.h>
 #include <nc/core/likec/FunctionIdentifier.h>
 #include <nc/core/likec/LabelDeclaration.h>
 #include <nc/core/likec/LabelIdentifier.h>
@@ -114,6 +115,9 @@ void CxxDocument::computeReverseMappings(const RangeNode *rangeNode) {
 
     if (auto declaration = getDeclaration(node)) {
         declaration2uses_[declaration].push_back(node);
+        if (auto definition = declaration->as<core::likec::FunctionDefinition>()) {
+            functionDeclaration2definition_[definition->getFirstDeclaration()] = definition;
+        }
     }
 
     if (auto *statement = node->as<core::likec::Statement>()) {

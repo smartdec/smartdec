@@ -160,9 +160,32 @@ const core::likec::Declaration *CxxView::getDeclarationOfIdentifierUnderCursor()
     return NULL;
 }
 
+const core::likec::FunctionDefinition *CxxView::getDefinitionOfFunctionUnderCursor() const {
+    if (auto node = getNodeUnderCursor()) {
+        if (auto declaration = node->as<core::likec::Declaration>()) {
+            if (auto functionDeclaration = declaration->as<core::likec::FunctionDeclaration>()) {
+                return document()->getFunctionDefinition(functionDeclaration);
+            }
+        } else if (auto expression = node->as<core::likec::Expression>()) {
+            if (auto functionIdentifier = expression->as<core::likec::FunctionIdentifier>()) {
+                return document()->getFunctionDefinition(functionIdentifier->declaration());
+            }
+        }
+    }
+    return NULL;
+}
+
 void CxxView::gotoDeclaration() {
     if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
         if (auto range = document()->getRange(declaration)) {
+            moveCursor(range.start());
+        }
+    }
+}
+
+void CxxView::gotoDefinition() {
+    if (auto definition = getDefinitionOfFunctionUnderCursor()) {
+        if (auto range = document()->getRange(definition)) {
             moveCursor(range.start());
         }
     }
@@ -267,13 +290,17 @@ void CxxView::populateContextMenu(QMenu *menu) {
     menu->addSeparator();
 
     if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
-        if (declaration->is<core::likec::FunctionDeclaration>() || declaration->is<core::likec::FunctionDefinition>() ||
-            declaration->is<core::likec::VariableDeclaration>()) {
-            menu->addAction(tr("Go to Declaration"), this, SLOT(gotoDeclaration()));
-        } else if (declaration->is<core::likec::LabelDeclaration>()) {
-            menu->addAction(tr("Go to Label"), this, SLOT(gotoLabel()));
-        }
+        // TODO: Add Actions with hotkeys.
         menu->addAction(tr("Rename..."), this, SLOT(rename()));
+        if (declaration->is<core::likec::LabelDeclaration>()) {
+            menu->addAction(tr("Go to Label"), this, SLOT(gotoLabel()));
+        } else {
+            menu->addAction(tr("Go to Declaration"), this, SLOT(gotoDeclaration()));
+
+            if (getDefinitionOfFunctionUnderCursor()) {
+                menu->addAction(tr("Go to Definition"), this, SLOT(gotoDefinition()));
+            }
+        }
     }
 }
 

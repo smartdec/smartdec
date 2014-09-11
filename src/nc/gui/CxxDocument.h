@@ -53,9 +53,11 @@ namespace core {
 
     namespace likec {
         class Declaration;
-        class TreeNode;
+        class FunctionDeclaration;
+        class FunctionDefinition;
         class LabelDeclaration;
         class LabelStatement;
+        class TreeNode;
     }
 }
 
@@ -73,6 +75,7 @@ class CxxDocument: public QTextDocument {
     boost::unordered_map<const core::arch::Instruction *, std::vector<const RangeNode *>> instruction2rangeNodes_;
     boost::unordered_map<const core::likec::Declaration *, std::vector<const core::likec::TreeNode *>> declaration2uses_;
     boost::unordered_map<const core::likec::LabelDeclaration *, const core::likec::LabelStatement *> label2statement_;
+    boost::unordered_map<const core::likec::FunctionDeclaration *, const core::likec::FunctionDefinition *> functionDeclaration2definition_;
 
 public:
     /**
@@ -124,6 +127,11 @@ public:
     const core::likec::LabelStatement *getLabelStatement(const core::likec::LabelDeclaration *declaration) const {
         assert(declaration != NULL);
         return nc::find(label2statement_, declaration);
+    }
+
+    const core::likec::FunctionDefinition *getFunctionDefinition(const core::likec::FunctionDeclaration *declaration) const {
+        assert(declaration != NULL);
+        return nc::find(functionDeclaration2definition_, declaration);
     }
 
     /**

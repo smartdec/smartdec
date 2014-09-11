@@ -45,6 +45,7 @@ namespace core {
 
     namespace likec {
         class Declaration;
+        class FunctionDefinition;
         class TreeNode;
     }
 }
@@ -126,6 +127,11 @@ public:
      */
     const core::likec::Declaration *getDeclarationOfIdentifierUnderCursor() const;
 
+    /**
+     * \return Pointer to the declaration of the function whose identifier or declaration is under cursor. Can be NULL.
+     */
+    const core::likec::FunctionDefinition *getDefinitionOfFunctionUnderCursor() const;
+
 public Q_SLOTS:
     /**
      * Sets the document being viewed.
@@ -186,6 +192,11 @@ private Q_SLOTS:
      * Goes to the declaration of the identifier under cursor.
      */
     void gotoDeclaration();
+
+    /**
+     * Goes to the definition of the function under cursor.
+     */
+    void gotoDefinition();
 
     /**
      * Goes to the label under cursor.

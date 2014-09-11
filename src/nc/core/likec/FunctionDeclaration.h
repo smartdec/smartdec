@@ -100,7 +100,7 @@ public:
     /**
      * \return Valid pointer to the first declaration of the function.
      */
-    FunctionDeclaration *getFirstDeclaration() { return functionIdentifier_->declaration(); }
+    FunctionDeclaration *getFirstDeclaration() const { return functionIdentifier_->declaration(); }
 
     FunctionDeclaration *rewrite() override;
 

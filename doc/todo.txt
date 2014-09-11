@@ -9,10 +9,6 @@ Changing Font in TreeView-based widgets
 ---------------------------------------
 Can be implemented by a proxy model implementing the font role.
 
-Go to Definition
-----------------
-Should have $subj in `CxxView`, similar to "Go to Declaration".
-
 Refactoring
 -----------
 Currently, it is unclear how to remember the names given by the user and reuse them in further decompilations.
