@@ -232,12 +232,12 @@ void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::S
 
 const core::likec::Declaration *CxxDocument::getDeclaration(const core::likec::TreeNode *node) {
     assert(node != NULL);
-    if (auto *expression = node->as<core::likec::Expression>()) {
-        if (auto *identifier = expression->as<core::likec::FunctionIdentifier>()) {
+    if (auto expression = node->as<core::likec::Expression>()) {
+        if (auto identifier = expression->as<core::likec::FunctionIdentifier>()) {
             return identifier->declaration();
-        } else if (auto *identifier = expression->as<core::likec::LabelIdentifier>()) {
+        } else if (auto identifier = expression->as<core::likec::LabelIdentifier>()) {
             return identifier->declaration();
-        } else if (auto *identifier = expression->as<core::likec::VariableIdentifier>()) {
+        } else if (auto identifier = expression->as<core::likec::VariableIdentifier>()) {
             return identifier->declaration();
         }
     }
