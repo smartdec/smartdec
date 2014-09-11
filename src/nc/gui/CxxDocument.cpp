@@ -194,12 +194,6 @@ QString CxxDocument::getText(const Range<int> &range) const {
 }
 
 void CxxDocument::replaceText(const Range<int> &range, const QString &text) {
-    /*
-     * Block signals, so that nobody observes one state of text,
-     * and an inconsistent with it state of RangeTree.
-     */
-    blockSignals(true);
-
     QTextCursor cursor(this);
     cursor.beginEditBlock();
     cursor.setPosition(range.end());
@@ -207,15 +201,6 @@ void CxxDocument::replaceText(const Range<int> &range, const QString &text) {
     cursor.removeSelectedText();
     cursor.insertText(text);
     cursor.endEditBlock();
-
-    blockSignals(false);
-
-    /*
-     * For some reason the above document modifications do not raise the signal,
-     * even without blockSignals(). And we need to notify at least ourselves,
-     * so that we can mirror the changes in the RangeTree.
-     */
-    Q_EMIT(contentsChange(range.start(), range.length(), text.size()));
 }
 
 void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::Statement *&statement,
