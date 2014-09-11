@@ -60,17 +60,6 @@ template<class Integer>
 bool hexStringToInt(const QString &s, Integer *target);
 
 /**
- * Converts hex string representation of a byte (hex string of length 2) 
- * to unsigned char.
- * 
- * \param[in] s                        Hex string.
- * \param[out] target                  Pointer to target byte.
- * 
- * \return                             Whether conversion was successful.
- */
-bool hexStringToByte(const QString &s, unsigned char *target = NULL);
-
-/**
  * Converts C-like string representation of an integer to an integer.
  *
  * \tparam Integer                     Integer class to convert to.

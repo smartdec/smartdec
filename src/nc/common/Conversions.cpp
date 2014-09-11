@@ -129,13 +129,6 @@ bool stringToInt(const QString &s, Integer *target) {
     return true;
 }
 
-bool hexStringToByte(const QString &s, unsigned char *target) {
-    if(s.size() != 2)
-        return false;
-
-    return hexStringToInt(s, target);
-}
-
 /* Generate explicit instantiations. */
 
 #define FOR_ALL_INTEGER_TYPES_I(r, data, elem)                                  \
