@@ -73,7 +73,6 @@ class CxxDocument: public QTextDocument {
     boost::unordered_map<const core::arch::Instruction *, std::vector<const RangeNode *>> instruction2rangeNodes_;
     boost::unordered_map<const core::likec::Declaration *, std::vector<const core::likec::TreeNode *>> declaration2uses_;
     boost::unordered_map<const core::likec::LabelDeclaration *, const core::likec::LabelStatement *> label2statement_;
-    bool refactoring_;
 
 public:
     /**
@@ -108,11 +107,6 @@ public:
     void getRanges(const core::arch::Instruction *instruction, std::vector<Range<int>> &result) const;
 
     /**
-     * \return Text in the given range.
-     */
-    QString getText(const Range<int> &range) const;
-
-    /**
      * \param declaration Valid pointer to a declaration tree node.
      *
      * \return All the tree nodes using this declaration.
@@ -131,6 +125,20 @@ public:
         assert(declaration != NULL);
         return nc::find(label2statement_, declaration);
     }
+
+    /**
+     * Replaces the text of all identifiers referring to the given declaration
+     * with the given name.
+     *
+     * \param declaration Valid pointer to a declaration.
+     * \param newName New name.
+     */
+    void rename(const core::likec::Declaration *declaration, const QString &newName);
+
+    /**
+     * \return Text in the given range.
+     */
+    QString getText(const Range<int> &range) const;
 
     /**
      * For a node, computes statement, term, and instruction, from which
@@ -156,8 +164,6 @@ private Q_SLOTS:
 
 private:
     void computeReverseMappings(const RangeNode *rangeNode);
-    void handleRefactoring(const std::vector<const RangeNode *> &modifiedRangeNodes);
-    void handleRefactoring(const RangeNode *modifiedRangeNode);
     void replaceText(const Range<int> &range, const QString &text);
 };
 

@@ -44,10 +44,8 @@ namespace core {
     }
 
     namespace likec {
-        class FunctionIdentifier;
-        class LabelIdentifier;
+        class Declaration;
         class TreeNode;
-        class VariableIdentifier;
     }
 }
 
@@ -114,24 +112,20 @@ public:
     const std::vector<const core::arch::Instruction *> &selectedInstructions() const { return selectedInstructions_; }
 
     /**
+     * \return Pointer to the node under cursor. Can be NULL.
+     */
+    const core::likec::TreeNode *getNodeUnderCursor() const;
+
+    /**
      * \return Integer under cursor, if any, or boost::none otherwise.
      */
-    boost::optional<ConstantValue> getSelectedInteger() const;
+    boost::optional<ConstantValue> getIntegerUnderCursor() const;
 
     /**
-     * \return Pointer to the function identifier under cursor. Can be NULL.
+     * \return Pointer to the declaration under cursor or to the declaration of
+     *         the identifier under cursor. Can be NULL.
      */
-    const core::likec::FunctionIdentifier *getSelectedFunctionIdentifier() const;
-
-    /**
-     * \return Pointer to the variable identifier under cursor. Can be NULL.
-     */
-    const core::likec::VariableIdentifier *getSelectedVariableIdentifier() const;
-
-    /**
-     * \return Pointer to the label identifier under cursor. Can be NULL.
-     */
-    const core::likec::LabelIdentifier *getSelectedLabelIdentifier() const;
+    const core::likec::Declaration *getDeclarationOfIdentifierUnderCursor() const;
 
 public Q_SLOTS:
     /**
@@ -190,19 +184,19 @@ private Q_SLOTS:
     void highlightReferences();
 
     /**
-     * Goes to the declaration of the function under cursor.
+     * Goes to the declaration of the identifier under cursor.
      */
-    void gotoFunctionDeclaration();
-
-    /**
-     * Goes to the declaration of the variable under cursor.
-     */
-    void gotoVariableDeclaration();
+    void gotoDeclaration();
 
     /**
      * Goes to the label under cursor.
      */
     void gotoLabel();
+
+    /**
+     * Renames whatever is under cursor into whatever the user says.
+     */
+    void rename();
 
     /**
      * Populates the context menu being created.

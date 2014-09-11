@@ -24,17 +24,16 @@
 
 #include "CxxView.h"
 
+#include <QInputDialog>
 #include <QMenu>
 #include <QPlainTextEdit>
 
+#include <nc/common/Conversions.h>
 #include <nc/core/likec/Expression.h>
 #include <nc/core/likec/FunctionDefinition.h>
-#include <nc/core/likec/IntegerConstant.h>
-#include <nc/core/likec/LabelIdentifier.h>
+#include <nc/core/likec/LabelDeclaration.h>
 #include <nc/core/likec/LabelStatement.h>
-#include <nc/core/likec/Statement.h>
 #include <nc/core/likec/VariableDeclaration.h>
-#include <nc/core/likec/PrintContext.h>
 
 #include "CppSyntaxHighlighter.h"
 #include "CxxDocument.h"
@@ -135,69 +134,48 @@ void CxxView::updateSelection() {
     }
 }
 
-boost::optional<ConstantValue> CxxView::getSelectedInteger() const {
-    if (selectedNodes().size() == 1) {
-        const core::likec::TreeNode *node = selectedNodes().front();
-        if (auto expression = node->as<core::likec::Expression>()) {
-            if (auto constant = expression->as<core::likec::IntegerConstant>()) {
-                return constant->value().value();
-            }
-        }
+boost::optional<ConstantValue> CxxView::getIntegerUnderCursor() const {
+    auto cursor = textEdit()->textCursor();
+    cursor.movePosition(QTextCursor::StartOfWord);
+    cursor.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
+
+    ConstantValue value;
+    if (stringToInt(cursor.selectedText(), &value)) {
+        return value;
     }
     return boost::none;
 }
 
-const core::likec::FunctionIdentifier *CxxView::getSelectedFunctionIdentifier() const {
-    if (selectedNodes().size() == 1) {
-        const core::likec::TreeNode *node = selectedNodes().front();
-        if (auto expression = node->as<core::likec::Expression>()) {
-            return expression->as<core::likec::FunctionIdentifier>();
+const core::likec::TreeNode *CxxView::getNodeUnderCursor() const {
+    return document()->getLeafAt(textEdit()->textCursor().position());
+}
+
+const core::likec::Declaration *CxxView::getDeclarationOfIdentifierUnderCursor() const {
+    if (auto node = getNodeUnderCursor()) {
+        if (auto declaration = node->as<core::likec::Declaration>()) {
+            return declaration;
+        } else {
+            return document()->getDeclaration(node);
         }
     }
     return NULL;
 }
 
-const core::likec::VariableIdentifier *CxxView::getSelectedVariableIdentifier() const {
-    if (selectedNodes().size() == 1) {
-        const core::likec::TreeNode *node = selectedNodes().front();
-        if (auto expression = node->as<core::likec::Expression>()) {
-            return expression->as<core::likec::VariableIdentifier>();
-        }
-    }
-    return NULL;
-}
-
-const core::likec::LabelIdentifier *CxxView::getSelectedLabelIdentifier() const {
-    if (selectedNodes().size() == 1) {
-        const core::likec::TreeNode *node = selectedNodes().front();
-        if (auto expression = node->as<core::likec::Expression>()) {
-            return expression->as<core::likec::LabelIdentifier>();
-        }
-    }
-    return NULL;
-}
-
-void CxxView::gotoFunctionDeclaration() {
-    if (auto identifier = getSelectedFunctionIdentifier()) {
-        if (auto range = document()->getRange(identifier->declaration())) {
-            moveCursor(range.start());
-        }
-    }
-}
-
-void CxxView::gotoVariableDeclaration() {
-    if (auto identifier = getSelectedVariableIdentifier()) {
-        if (auto range = document()->getRange(identifier->declaration())) {
+void CxxView::gotoDeclaration() {
+    if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
+        if (auto range = document()->getRange(declaration)) {
             moveCursor(range.start());
         }
     }
 }
 
 void CxxView::gotoLabel() {
-    if (auto identifier = getSelectedLabelIdentifier()) {
-        if (auto statement = document()->getLabelStatement(identifier->declaration())) {
-            if (auto range = document()->getRange(statement)) {
-                moveCursor(range.start());
+    if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
+        if (auto labelDeclaration = declaration->as<core::likec::LabelDeclaration>()) {
+            if (auto statement = document()->getLabelStatement(labelDeclaration)) {
+                if (auto range = document()->getRange(statement)) {
+                    moveCursor(range.start());
+                }
             }
         }
     }
@@ -210,21 +188,14 @@ void CxxView::highlightReferences() {
 
     std::vector<const core::likec::TreeNode *> nodes;
 
-    if (selectedNodes().size() == 1) {
-        const core::likec::TreeNode *node = selectedNodes().front();
-
-        auto declaration = node->as<core::likec::Declaration>();
-        if (!declaration) {
-            declaration = CxxDocument::getDeclaration(node);
-        }
-        if (declaration) {
-            const auto &uses = document()->getUses(declaration);
-            nodes.insert(nodes.end(), uses.begin(), uses.end());
-            if (declaration->is<core::likec::VariableDeclaration>()) {
-                nodes.push_back(declaration);
-            }
+    if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
+        const auto &uses = document()->getUses(declaration);
+        nodes.insert(nodes.end(), uses.begin(), uses.end());
+        if (declaration->is<core::likec::VariableDeclaration>()) {
+            nodes.push_back(declaration);
         }
     }
+
 
     highlightNodes(nodes, false);
 }
@@ -284,17 +255,37 @@ QString CxxView::getDeclarationTooltip(int position) const {
     return QString();
 }
 
+void CxxView::rename() {
+    if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
+        QString oldName;
+        if (auto functionDeclaration = declaration->as<core::likec::FunctionDeclaration>()) {
+            oldName = document()->getText(document()->getRange(functionDeclaration->functionIdentifier()));
+        } else if (auto functionDefinition = declaration->as<core::likec::FunctionDefinition>()) {
+            oldName = document()->getText(document()->getRange(functionDefinition->functionIdentifier()));
+        } else if (auto variableDeclaration = declaration->as<core::likec::VariableDeclaration>()) {
+            oldName = document()->getText(document()->getRange(variableDeclaration->variableIdentifier()));
+        } else {
+            return;
+        }
+
+        auto newName = QInputDialog::getText(this, tr("Rename"), tr("New name:"), QLineEdit::Normal, oldName);
+        if (!newName.isEmpty()) {
+            document()->rename(declaration, newName);
+        }
+    }
+}
+
 void CxxView::populateContextMenu(QMenu *menu) {
     menu->addSeparator();
 
-    if (getSelectedFunctionIdentifier()) {
-        menu->addAction(tr("Go to Function's Declaration"), this, SLOT(gotoFunctionDeclaration()));
-    }
-    if (getSelectedVariableIdentifier()) {
-        menu->addAction(tr("Go to Variable's Declaration"), this, SLOT(gotoVariableDeclaration()));
-    }
-    if (getSelectedLabelIdentifier()) {
-        menu->addAction(tr("Go to Label"), this, SLOT(gotoLabel()));
+    if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
+        if (declaration->is<core::likec::FunctionDeclaration>() || declaration->is<core::likec::FunctionDefinition>() ||
+            declaration->is<core::likec::VariableDeclaration>()) {
+            menu->addAction(tr("Go to Declaration"), this, SLOT(gotoDeclaration()));
+        } else if (declaration->is<core::likec::LabelDeclaration>()) {
+            menu->addAction(tr("Go to Label"), this, SLOT(gotoLabel()));
+        }
+        menu->addAction(tr("Rename..."), this, SLOT(rename()));
     }
 }
 

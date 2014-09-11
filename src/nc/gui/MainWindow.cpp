@@ -446,7 +446,7 @@ void MainWindow::populateInstructionsContextMenu(QMenu *menu) {
 }
 
 void MainWindow::populateCxxContextMenu(QMenu *menu) {
-    if (auto address = cxxView_->getSelectedInteger()) {
+    if (auto address = cxxView_->getIntegerUnderCursor()) {
         menu->addAction(tr("Jump to address %1").arg(*address, 0, 16), this, SLOT(jumpToSelectedAddress()));
     }
 }
@@ -607,7 +607,7 @@ void MainWindow::highlightCxxInTree() {
 }
 
 void MainWindow::jumpToSelectedAddress() {
-    if (auto address = cxxView_->getSelectedInteger()) {
+    if (auto address = cxxView_->getIntegerUnderCursor()) {
         if (jumpToAddress(*address)) {
             instructionsView_->show();
         }

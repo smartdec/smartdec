@@ -81,7 +81,7 @@ inline const core::likec::TreeNode *getNode(const RangeNode *rangeNode) {
 } // anonymous namespace
 
 CxxDocument::CxxDocument(QObject *parent, std::shared_ptr<const core::Context> context):
-    QTextDocument(parent), context_(std::move(context)), refactoring_(false)
+    QTextDocument(parent), context_(std::move(context))
 {
     setDocumentLayout(new QPlainTextDocumentLayout(this));
 
@@ -171,34 +171,18 @@ void CxxDocument::getRanges(const core::arch::Instruction *instruction, std::vec
 
 void CxxDocument::onContentsChange(int position, int charsRemoved, int charsAdded) {
     if (charsRemoved > 0) {
-        handleRefactoring(rangeTree_.handleRemoval(position, charsRemoved));
+        rangeTree_.handleRemoval(position, charsRemoved);
     }
     if (charsAdded > 0) {
-        handleRefactoring(rangeTree_.handleInsertion(position, charsAdded));
+        rangeTree_.handleInsertion(position, charsAdded);
     }
 }
 
-void CxxDocument::handleRefactoring(const std::vector<const RangeNode *> &modifiedRangeNodes) {
-    if (!refactoring_) {
-        refactoring_ = true;
-        foreach (auto rangeNode, modifiedRangeNodes) {
-            handleRefactoring(rangeNode);
-        }
-        refactoring_ = false;
-    }
-}
+void CxxDocument::rename(const core::likec::Declaration *declaration, const QString &newName) {
+    assert(declaration != NULL);
 
-void CxxDocument::handleRefactoring(const RangeNode *modifiedRangeNode) {
-    auto modifiedNode = getNode(modifiedRangeNode);
-
-    if (auto declaration = getDeclaration(modifiedNode)) {
-        auto newText = getText(rangeTree_.getRange(modifiedRangeNode));
-
-        foreach (auto use, getUses(declaration)) {
-            if (use != modifiedNode) {
-                replaceText(getRange(use), newText);
-            }
-        }
+    foreach (auto use, getUses(declaration)) {
+        replaceText(getRange(use), newName);
     }
 }
 
@@ -217,10 +201,12 @@ void CxxDocument::replaceText(const Range<int> &range, const QString &text) {
     blockSignals(true);
 
     QTextCursor cursor(this);
-    cursor.setPosition(range.start());
-    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, range.length());
+    cursor.beginEditBlock();
+    cursor.setPosition(range.end());
+    cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, range.length());
     cursor.removeSelectedText();
     cursor.insertText(text);
+    cursor.endEditBlock();
 
     blockSignals(false);
 
