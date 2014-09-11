@@ -147,7 +147,10 @@ boost::optional<ConstantValue> CxxView::getIntegerUnderCursor() const {
 }
 
 const core::likec::TreeNode *CxxView::getNodeUnderCursor() const {
-    return document()->getLeafAt(textEdit()->textCursor().position());
+    if (document()) {
+        return document()->getLeafAt(textEdit()->textCursor().position());
+    }
+    return NULL;
 }
 
 const core::likec::Declaration *CxxView::getDeclarationOfIdentifierUnderCursor() const {
@@ -196,7 +199,6 @@ void CxxView::highlightReferences() {
         }
     }
 
-
     highlightNodes(nodes, false);
 }
 
@@ -206,8 +208,8 @@ void CxxView::highlightNodes(const std::vector<const core::likec::TreeNode *> &n
     }
 
     std::vector<Range<int>> ranges;
-    ranges.reserve(nodes.size());
 
+    ranges.reserve(nodes.size());
     foreach (auto node, nodes) {
         ranges.push_back(document()->getRange(node));
     }
