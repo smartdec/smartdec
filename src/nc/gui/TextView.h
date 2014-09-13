@@ -48,7 +48,7 @@ class TextView: public QDockWidget {
     /** QPlainTextEdit instance used for showing text. */
     QPlainTextEdit *textEdit_;
 
-    /** Current highlighting. */
+    /** Highlighted ranges. */
     std::vector<Range<int>> highlighting_;
 
     /** Action for saving the text being shown. */
@@ -113,7 +113,6 @@ public Q_SLOTS:
      */
     void moveCursor(int position, bool ensureVisible = true);
 
-public Q_SLOTS:
     /**
      * Lets the user choose a file name and saves the text into this file.
      */
@@ -133,11 +132,13 @@ public Q_SLOTS:
      */
     void zoomOut(int delta = 1);
 
+public:
     /**
      * \return The font used for showing the text document.
      */
     const QFont &font() const { return font_; }
 
+public Q_SLOTS:
     /**
      * Sets the font used for showing the text document.
      */
@@ -165,6 +166,11 @@ Q_SIGNALS:
     void status(const QString &message = QString());
 
 private Q_SLOTS:
+    /**
+     * Updates extra selections in the textView() to show highlighted ranges.
+     */
+    void updateExtraSelections();
+
     /**
      * Generates a status signal reporting current position.
      */

@@ -90,9 +90,6 @@ void CxxView::setDocument(CxxDocument *document) {
         return;
     }
 
-    /* QTextEdit crashes when extra selections get out of range. */
-    textEdit()->setExtraSelections(QList<QTextEdit::ExtraSelection>());
-
     /* No signals until we are in a consistent state. */
     textEdit()->blockSignals(true);
 

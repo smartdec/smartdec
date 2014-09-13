@@ -164,8 +164,6 @@ void CxxDocument::getRanges(const core::arch::Instruction *instruction, std::vec
 
     const auto &rangeNodes = nc::find(instruction2rangeNodes_, instruction);
 
-    result.reserve(result.size() + rangeNodes.size());
-
     foreach (auto rangeNode, rangeNodes) {
         if (auto range = rangeTree_.getRange(rangeNode)) {
             result.push_back(range);

@@ -58,6 +58,8 @@ TextView::TextView(const QString &title, QWidget *parent):
     textEdit_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(textEdit_, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(showContextMenu(const QPoint &)));
     connect(this, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateContextMenu(QMenu *)));
+    connect(textEdit_->horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(updateExtraSelections()));
+    connect(textEdit_->verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(updateExtraSelections()));
 
     auto searchWidget = new SearchWidget(std::make_unique<TextEditSearcher>(textEdit_), this);
     searchWidget->hide();
@@ -134,6 +136,10 @@ TextView::TextView(const QString &title, QWidget *parent):
 }
 
 void TextView::setDocument(QTextDocument *document) {
+    /* QTextEdit crashes when extra selections get out of range. */
+    textEdit()->setExtraSelections(QList<QTextEdit::ExtraSelection>());
+    highlighting_.clear();
+
     textEdit_->setDocument(document);
     setFont(font());
 }
@@ -171,17 +177,6 @@ void TextView::populateContextMenu(QMenu *menu) {
 }
 
 void TextView::highlight(std::vector<Range<int>> ranges, bool ensureVisible) {
-    QList<QTextEdit::ExtraSelection> selections;
-
-    foreach (const auto &range, ranges) {
-        QTextEdit::ExtraSelection selection;
-        selection.cursor = textEdit()->textCursor();
-        selection.cursor.setPosition(range.start());
-        selection.cursor.setPosition(range.end(), QTextCursor::KeepAnchor);
-        selection.format.setBackground(QPalette().alternateBase());
-        selections.append(selection);
-    }
-
     if (!ranges.empty()) {
         std::sort(ranges.begin(), ranges.end());
 
@@ -211,6 +206,28 @@ void TextView::highlight(std::vector<Range<int>> ranges, bool ensureVisible) {
         highlighting_.swap(ranges);
     } else {
         highlighting_.clear();
+    }
+
+    updateExtraSelections();
+}
+
+void TextView::updateExtraSelections() {
+    auto size = textEdit()->viewport()->size();
+    auto firstVisiblePosition = textEdit()->cursorForPosition(QPoint(0, 0)).position();
+    auto lastVisiblePosition = textEdit()->cursorForPosition(QPoint(size.width() - 1, size.height() - 1)).position();
+
+    auto first = std::lower_bound(highlighting_.begin(), highlighting_.end(), firstVisiblePosition,
+                                  [](const Range<int> &range, int pos) { return range.end() < pos; });
+
+    QList<QTextEdit::ExtraSelection> selections;
+
+    for (auto i = first; i != highlighting_.end() && i->start() <= lastVisiblePosition; ++i) {
+        QTextEdit::ExtraSelection selection;
+        selection.cursor = textEdit()->textCursor();
+        selection.cursor.setPosition(i->start());
+        selection.cursor.setPosition(i->end(), QTextCursor::KeepAnchor);
+        selection.format.setBackground(QPalette().alternateBase());
+        selections.append(selection);
     }
 
     textEdit()->setExtraSelections(selections);
@@ -267,8 +284,10 @@ bool TextView::eventFilter(QObject *watched, QEvent *event) {
             disconnect(textEdit_, SIGNAL(cursorPositionChanged()), this, SLOT(updatePositionStatus()));
         }
     }
-    if (watched == textEdit() || watched == textEdit()->viewport()) {
-        if (event->type() == QEvent::Wheel) {
+    if (watched == textEdit()->viewport()) {
+        if (event->type() == QEvent::Resize) {
+            updateExtraSelections();
+        } else if (event->type() == QEvent::Wheel) {
             auto wheelEvent = static_cast<QWheelEvent *>(event);
 
             if (wheelEvent->orientation() == Qt::Vertical && wheelEvent->modifiers() & Qt::ControlModifier) {

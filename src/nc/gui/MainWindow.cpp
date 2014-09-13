@@ -558,11 +558,7 @@ void MainWindow::setDecompileAutomatically(bool value) {
 }
 
 void MainWindow::highlightInstructionsInCxx() {
-    /*
-     * We avoid trying to highlight too many text ranges in the C++ view.
-     * QTextEdit's extra selections might be slow when there is too many of them.
-     */
-    if (cxxView_->isVisible() && instructionsView_->selectedInstructions().size() < 1000) {
+    if (cxxView_->isVisible()) {
         /* Block signals, in order to avoid backfire. */
         cxxView_->blockSignals(true);
         cxxView_->highlightInstructions(instructionsView_->selectedInstructions());
