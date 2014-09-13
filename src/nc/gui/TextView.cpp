@@ -141,7 +141,7 @@ void TextView::setDocument(QTextDocument *document) {
     highlighting_.clear();
 
     textEdit_->setDocument(document);
-    setFont(font());
+    setDocumentFont(documentFont());
 }
 
 void TextView::updatePositionStatus() {
@@ -257,22 +257,26 @@ void TextView::saveAs() {
 }
 
 void TextView::zoomIn(int delta) {
-    QFont f = font();
-    f.setPointSize(std::max(f.pointSize() + delta, 1));
-    setFont(f);
+    QFont font = documentFont();
+    font.setPointSize(std::max(font.pointSize() + delta, 1));
+    setDocumentFont(font);
 }
 
 void TextView::zoomOut(int delta) {
     zoomIn(-delta);
 }
 
-void TextView::setFont(const QFont &font) {
-    font_ = font;
-    textEdit()->document()->setDefaultFont(font_);
+const QFont &TextView::documentFont() const {
+    return textEdit()->font();
+}
+
+void TextView::setDocumentFont(const QFont &font) {
+    textEdit()->setFont(font);
+    textEdit()->document()->setDefaultFont(font);
 }
 
 void TextView::selectFont() {
-    setFont(QFontDialog::getFont(NULL, font(), this));
+    setDocumentFont(QFontDialog::getFont(NULL, documentFont(), this));
 }
 
 bool TextView::eventFilter(QObject *watched, QEvent *event) {

@@ -69,9 +69,6 @@ class TextView: public QDockWidget {
     /** Action for showing font selection dialog. */
     QAction *selectFontAction_;
 
-    /** Font to be used in the underlying document. */
-    QFont font_;
-
 public:
     /**
      * Class constructor.
@@ -136,13 +133,13 @@ public:
     /**
      * \return The font used for showing the text document.
      */
-    const QFont &font() const { return font_; }
+    const QFont &documentFont() const;
 
 public Q_SLOTS:
     /**
      * Sets the font used for showing the text document.
      */
-    void setFont(const QFont &font);
+    void setDocumentFont(const QFont &font);
 
     /**
      * Lets the user select the font used for showing the document.

@@ -277,7 +277,7 @@ void MainWindow::loadSettings() {
     foreach (QObject *child, children()) {
         if (auto textView = qobject_cast<TextView *>(child)) {
             if (!textView->objectName().isEmpty()) {
-                textView->setFont(settings_->value(textView->objectName() + ".font").value<QFont>());
+                textView->setDocumentFont(settings_->value(textView->objectName() + ".font").value<QFont>());
             }
         }
     }
@@ -293,7 +293,7 @@ void MainWindow::saveSettings() {
     foreach (QObject *child, children()) {
         if (auto textView = qobject_cast<TextView *>(child)) {
             if (!textView->objectName().isEmpty()) {
-                settings_->setValue(textView->objectName() + ".font", textView->font());
+                settings_->setValue(textView->objectName() + ".font", textView->documentFont());
             }
         }
     }
