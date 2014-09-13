@@ -5,15 +5,6 @@ Yegor Derevenets <yegor.derevenets@gmail.com>
 
 Here is a list of things that should be done, sorted by descending priority.
 
-Changing Font in TreeView-based widgets
----------------------------------------
-Can be implemented by a proxy model implementing the font role.
-
-Refactoring
------------
-Currently, it is unclear how to remember the names given by the user and reuse them in further decompilations.
-Related to this topic: changing calling convention by the user.
-
 ARM
 ---
 Support for ARM architecture is wanted.
@@ -37,6 +28,11 @@ Session Saving in IDA
 ---------------------
 One should restore SmartDec windows in IDA on reopening the project.
 Depends on <<SessionSaving>>.
+
+Refactoring
+-----------
+Currently, it is unclear how to remember the names given by the user and reuse them in further decompilations.
+Related to this topic: changing calling convention by the user.
 
 Eliminating Term Access Types
 -----------------------------
