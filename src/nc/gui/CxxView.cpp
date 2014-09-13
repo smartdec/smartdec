@@ -275,12 +275,18 @@ void CxxView::highlightInstructions(const std::vector<const core::arch::Instruct
 }
 
 QString CxxView::getDeclarationTooltip(int position) const {
-    const auto maxLineCount = 5;
+    const int maxLength = 1024;
+    const int maxLineCount = 5;
 
     if (auto node = document()->getLeafAt(position)) {
         if (auto declaration = document()->getDeclaration(node)) {
             if (auto range = document()->getRange(declaration)) {
+                if (range.length() > maxLength) {
+                    range = make_range(range.start(), range.start() + maxLength);
+                }
+
                 auto text = document()->getText(range);
+
                 int lineCount = 0;
                 for (int i = 0; i < text.size(); ++i) {
                     if (text[i] == QChar::ParagraphSeparator) {
