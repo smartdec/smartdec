@@ -369,7 +369,7 @@ private:
                         core::image::SymbolType::FUNCTION, tr("%1:%2").arg(dllName).arg(entry.Name), boost::none))));
             } else {
                 auto name = reader.readAsciizString(
-                    optionalHeader_.ImageBase + entry.Name + sizeof(IMAGE_IMPORT_BY_NAME::Hint), 1024);
+                    optionalHeader_.ImageBase + entry.Name + sizeof(IMAGE_IMPORT_BY_NAME().Hint), 1024);
 
                 log_.debug(tr("Found an import by name: %1").arg(name));
 
