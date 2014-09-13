@@ -26,6 +26,7 @@
 #include <nc/config.h>
 
 #include <QDockWidget>
+#include <QEvent>
 
 #include <vector>
 
@@ -45,29 +46,14 @@ namespace nc { namespace gui {
 class TextView: public QDockWidget {
     Q_OBJECT
 
-    /** QPlainTextEdit instance used for showing text. */
     QPlainTextEdit *textEdit_;
-
-    /** Highlighted ranges. */
-    std::vector<Range<int>> highlighting_;
-
-    /** Action for saving the text being shown. */
     QAction *saveAsAction_;
-
-    /** Action for showing the text search widget. */
     QAction *openSearchAction_;
-
-    /** Action for finding a next occurrence of a string. */
     QAction *findNextAction_;
-
-    /** Action for finding a previous occurrence of a string. */
     QAction *findPreviousAction_;
-
-    /** Action for showing the go to line widget. */
     QAction *openGotoLineAction_;
-
-    /** Action for showing font selection dialog. */
     QAction *selectFontAction_;
+    std::vector<Range<int>> highlighting_;
 
 public:
     /**
@@ -188,7 +174,7 @@ private Q_SLOTS:
     void populateContextMenu(QMenu *menu);
 
 protected:
-    virtual bool eventFilter(QObject *watched, QEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 };
 
 }} // namespace nc::gui

@@ -42,23 +42,14 @@ namespace nc { namespace gui {
 class TreeView: public QDockWidget {
     Q_OBJECT
 
-    /** Tree widget. */
     QTreeView *treeView_;
-
-    /** Action for copying the currently selected text. */
     QAction *copyAction_;
-
-    /** Action for showing the text search widget. */
     QAction *openSearchAction_;
-
-    /** Action for finding a next occurrence of a string. */
     QAction *findNextAction_;
-
-    /** Action for finding a previous occurrence of a string. */
     QAction *findPreviousAction_;
+    QAction *selectFontAction_;
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -72,15 +63,44 @@ class TreeView: public QDockWidget {
      */
     QTreeView *treeView() const { return treeView_; }
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Copies currently selected text in the clipboard.
      */
     void copy();
 
-    Q_SIGNALS:
+public:
+    /**
+     * \return The font used for showing the text document.
+     */
+    const QFont &documentFont() const;
 
+public Q_SLOTS:
+    /**
+     * Makes the default font of text edit delta points larger.
+     *
+     * \param delta Points size difference.
+     */
+    void zoomIn(int delta = 1);
+
+    /**
+     * Makes the default font of text edit delta points smaller.
+     *
+     * \param delta Points size difference.
+     */
+    void zoomOut(int delta = 1);
+
+    /**
+     * Sets the font used for showing the text document.
+     */
+    void setDocumentFont(const QFont &font);
+
+    /**
+     * Lets the user select the font used for showing the document.
+     */
+    void selectFont();
+
+Q_SIGNALS:
     /**
      * This signal is emitted when a context menu is being created.
      * Intercept this signal to populate the menu with some actions.
@@ -89,8 +109,7 @@ class TreeView: public QDockWidget {
      */
     void contextMenuCreated(QMenu *menu);
 
-    private Q_SLOTS:
-
+private Q_SLOTS:
     /**
      * Shows a context menu for the child tree widget.
      *
@@ -104,6 +123,9 @@ class TreeView: public QDockWidget {
      * \param menu Valid pointer to the menu being created.
      */
     void populateContextMenu(QMenu *menu);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 };
 
 }} // namespace nc::gui

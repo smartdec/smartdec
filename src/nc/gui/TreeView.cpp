@@ -27,10 +27,13 @@
 #include <QAction>
 #include <QApplication>
 #include <QClipboard>
+#include <QEvent>
+#include <QFontDialog>
 #include <QMenu>
 #include <QTreeView>
 #include <QVBoxLayout>
 #include <QtAlgorithms>
+#include <QWheelEvent>
 
 #include <nc/common/make_unique.h>
 #include <nc/common/Foreach.h>
@@ -46,6 +49,8 @@ TreeView::TreeView(const QString &title, QWidget *parent):
     treeView_ = new QTreeView(this);
 
     treeView_->setContextMenuPolicy(Qt::CustomContextMenu);
+    treeView_->viewport()->installEventFilter(this);
+
     connect(treeView_, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(showContextMenu(const QPoint &)));
     connect(this, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateContextMenu(QMenu *)));
 
@@ -97,6 +102,11 @@ TreeView::TreeView(const QString &title, QWidget *parent):
 
     connect(closeEverythingAction, SIGNAL(triggered()), searchWidget, SLOT(deactivate()));
     connect(closeEverythingAction, SIGNAL(triggered()), treeView_, SLOT(setFocus()));
+
+    selectFontAction_ = new QAction(tr("Select Font..."), this);
+    addAction(selectFontAction_);
+
+    connect(selectFontAction_, SIGNAL(triggered()), this, SLOT(selectFont()));
 }
 
 void TreeView::showContextMenu(const QPoint &pos) {
@@ -112,17 +122,17 @@ void TreeView::showContextMenu(const QPoint &pos) {
 void TreeView::populateContextMenu(QMenu *menu) {
     if (!treeView_->selectionModel()->selectedIndexes().isEmpty()) {
         menu->addSeparator();
-        menu->addAction(tr("Copy"), this, SLOT(copy()), QKeySequence::Copy);
+        menu->addAction(copyAction_);
     }
 
     menu->addSeparator();
     menu->addAction(tr("Select All"), treeView(), SLOT(selectAll()), QKeySequence::SelectAll);
-
     menu->addSeparator();
     menu->addAction(openSearchAction_);
     menu->addAction(findNextAction_);
     menu->addAction(findPreviousAction_);
-
+    menu->addSeparator();
+    menu->addAction(selectFontAction_);
     menu->addSeparator();
 }
 
@@ -157,6 +167,46 @@ void TreeView::copy() {
     }
 
     QApplication::clipboard()->setText(text);
+}
+
+void TreeView::zoomIn(int delta) {
+    QFont font = documentFont();
+    font.setPointSize(std::max(font.pointSize() + delta, 1));
+    setDocumentFont(font);
+}
+
+void TreeView::zoomOut(int delta) {
+    zoomIn(-delta);
+}
+
+const QFont &TreeView::documentFont() const {
+    return treeView()->font();
+}
+
+void TreeView::setDocumentFont(const QFont &font) {
+    treeView()->setFont(font);
+}
+
+void TreeView::selectFont() {
+    setDocumentFont(QFontDialog::getFont(NULL, documentFont(), this));
+}
+
+bool TreeView::eventFilter(QObject *watched, QEvent *event) {
+    if (watched == treeView()->viewport()) {
+        if (event->type() == QEvent::Wheel) {
+            auto wheelEvent = static_cast<QWheelEvent *>(event);
+
+            if (wheelEvent->orientation() == Qt::Vertical && wheelEvent->modifiers() & Qt::ControlModifier) {
+                if (wheelEvent->delta() > 0) {
+                    zoomIn(1 + wheelEvent->delta() / 360);
+                } else {
+                    zoomOut(1 - wheelEvent->delta() / 360);
+                }
+                return true;
+            }
+        }
+    }
+    return QDockWidget::eventFilter(watched, event);
 }
 
 }} // namespace nc::gui

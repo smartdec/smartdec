@@ -279,6 +279,10 @@ void MainWindow::loadSettings() {
             if (!textView->objectName().isEmpty()) {
                 textView->setDocumentFont(settings_->value(textView->objectName() + ".font").value<QFont>());
             }
+        } else if (auto treeView = qobject_cast<TreeView *>(child)) {
+            if (!treeView->objectName().isEmpty()) {
+                treeView->setDocumentFont(settings_->value(treeView->objectName() + ".font").value<QFont>());
+            }
         }
     }
 }
@@ -294,6 +298,10 @@ void MainWindow::saveSettings() {
         if (auto textView = qobject_cast<TextView *>(child)) {
             if (!textView->objectName().isEmpty()) {
                 settings_->setValue(textView->objectName() + ".font", textView->documentFont());
+            }
+        } else if (auto treeView = qobject_cast<TreeView *>(child)) {
+            if (!treeView->objectName().isEmpty()) {
+                settings_->setValue(treeView->objectName() + ".font", treeView->documentFont());
             }
         }
     }

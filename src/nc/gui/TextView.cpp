@@ -37,6 +37,7 @@
 #include <QScrollBar>
 #include <QTextStream>
 #include <QVBoxLayout>
+#include <QWheelEvent>
 
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
