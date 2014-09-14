@@ -5,6 +5,10 @@ Yegor Derevenets <yegor.derevenets@gmail.com>
 
 Here is a list of things that should be done, sorted by descending priority.
 
+No-return Functions
+-------------------
+One should compute the set of no-return functions (or basic blocks, or addresses) and use this information when building the control-flow graph of the whole program, namely, chop basic blocks after no-return function calls.
+
 ARM
 ---
 Support for ARM architecture is wanted.
