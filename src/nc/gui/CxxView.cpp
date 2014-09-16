@@ -59,7 +59,7 @@ CxxView::CxxView(QWidget *parent):
     textEdit()->addAction(gotoDeclarationAction_);
     connect(gotoDeclarationAction_, SIGNAL(triggered()), this, SLOT(gotoDeclaration()));
 
-    gotoDefinitionAction_ = new QAction(tr("Go to Declaration"), this);
+    gotoDefinitionAction_ = new QAction(tr("Go to Definition"), this);
     gotoDefinitionAction_->setShortcut(Qt::CTRL + Qt::Key_BracketRight);
     gotoDefinitionAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     textEdit()->addAction(gotoDefinitionAction_);
