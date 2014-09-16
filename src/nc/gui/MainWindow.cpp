@@ -71,8 +71,8 @@
 
 namespace nc { namespace gui {
 
-MainWindow::MainWindow(QWidget *parent):
-    QMainWindow(parent)
+MainWindow::MainWindow(Branding branding, QWidget *parent):
+    QMainWindow(parent), branding_(std::move(branding))
 {
     setDockNestingEnabled(true);
     setTabPosition(Qt::AllDockWidgetAreas, QTabWidget::North);
@@ -88,7 +88,7 @@ MainWindow::MainWindow(QWidget *parent):
 
     logToken_ = LogToken(logger);
 
-    settings_ = new QSettings("decompilation.info", "SmartDec", this);
+    settings_ = new QSettings(branding_.organizationName(), branding_.applicationName(), this);
     loadSettings();
 
     updateGuiState();
@@ -218,7 +218,7 @@ void MainWindow::createActions() {
     aboutQtAction_ = new QAction(tr("About &Qt"), this);
     connect(aboutQtAction_, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
 
-    aboutAction_ = new QAction(tr("&About SmartDec"), this);
+    aboutAction_ = new QAction(tr("&About %1").arg(branding_.applicationName()), this);
     connect(aboutAction_, SIGNAL(triggered()), this, SLOT(about()));
 
     deleteSelectedInstructionsAction_ = new QAction(tr("Delete"), this);
@@ -314,9 +314,9 @@ void MainWindow::updateGuiState() {
     cancelAllAction_->setEnabled(project() != NULL && project()->commandQueue()->front() != NULL);
 
     if (project() && !project()->name().isEmpty()) {
-        setWindowTitle(tr("%1 - SmartDec").arg(project()->name()));
+        setWindowTitle(tr("%1 - %2").arg(project()->name()).arg(branding_.applicationName()));
     } else {
-        setWindowTitle(tr("SmartDec"));
+        setWindowTitle(branding_.applicationName());
     }
 
     if (project() && project()->commandQueue()->front() && !project()->commandQueue()->front()->isBackground()) {
@@ -647,24 +647,25 @@ void MainWindow::setStatusText(const QString &text) {
 }
 
 void MainWindow::about() {
-    QMessageBox::about(this, tr("About SmartDec"), tr(
-        "<h3>About SmartDec</h3>"
-        "<p>SmartDec is a retargetable native code to C/C++ decompiler.</p>"
-        "<p>This is version %1.</p>"
-        "<p>SmartDec supports the following architectures:<ul>"
+    QMessageBox::about(this, tr("About %1").arg(branding_.applicationName()), tr(
+        "<h3>About %1</h3>"
+        "<p>%1 is a native code to C/C++ decompiler.</p>"
+        "<p>This is version %2.</p>"
+        "<p>%1 supports the following architectures:<ul>"
         "<li>Intel x86,</li>"
         "<li>Intel x86-64.</li>"
         "</ul></p>"
-        "<p>SmartDec supports the following input file formats:<ul>"
+        "<p>%1 supports the following input file formats:<ul>"
         "<li>ELF (32 and 64-bit),</li>"
         "<li>PE (32 and 64-bit).</li>"
         "</ul></p>"
-        "<p>Report bugs to <a href=\"%2\">%2</a>.</p>"
-        "<p>The software is distributed under the <a href=\"%4\">%3</a> license.</p>")
-        .arg(QLatin1String(version))
-        .arg(QLatin1String(reportBugsTo))
-        .arg(QLatin1String(licenseName))
-        .arg(QLatin1String(licenseURL)));
+        "<p>Report bugs to <a href=\"mailto:%3\">%3</a>.</p>"
+        "<p>The software is distributed under the <a href=\"%5\">%4</a> license.</p>")
+        .arg(branding_.applicationName())
+        .arg(branding_.applicationVersion())
+        .arg(branding_.reportBugsTo())
+        .arg(branding_.licenseName())
+        .arg(branding_.licenseUrl()));
 }
 
 }} // namespace nc::gui

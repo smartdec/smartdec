@@ -1,13 +1,13 @@
-SmartDec: Build Instructions
-============================
+Nc: Build Instructions
+======================
 :toc:
 Yegor Derevenets <yegor.derevenets@gmail.com>
 
 Prerequisites
 -------------
 
-SmartDec is written in $$C++$$. So, you will need a C++ compiler to
-build it. The following compilers are known to work:
+Nc is written in $$C++$$. So, you will need a $$C++$$ compiler to build
+it. The following compilers are known to work:
 
     * http://gcc.gnu.org/[GCC] >= 4.6
     * http://llvm.clang.org[Clang] >= 3.1
@@ -15,7 +15,7 @@ build it. The following compilers are known to work:
     * http://mingw-w64.sourceforge.net/[MinGW-w64 GCC] >= 4.6
     * http://www.microsoft.com/[Microsoft Visual Studio] >= 2010
 
-The following software packages must be installed before SmartDec can be
+The following software packages must be installed before Nc can be
 built:
 
     * http://cmake.org/[CMake] >= 2.8
@@ -61,9 +61,8 @@ this.
 
 Building
 --------
-SmartDec is built using a tool called CMake. The build process consists
-of two steps: <<configuration_step,configuration>> and
-<<build_step,build>>.
+Nc is built using a tool called CMake. The build process consists of two
+steps: <<configuration_step,configuration>> and <<build_step,build>>.
 
 Setting up the Environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

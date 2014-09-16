@@ -29,6 +29,7 @@
 
 #include <memory> /* std::shared_ptr */
 
+#include <nc/common/Branding.h>
 #include <nc/common/Types.h>
 #include <nc/common/LogToken.h>
 
@@ -63,6 +64,8 @@ class SymbolsView;
 class MainWindow: public QMainWindow {
     Q_OBJECT
 
+    Branding branding_;
+
     InstructionsView *instructionsView_; ///< Instructions view.
     CxxView *cxxView_; ///< C++ view.
     SectionsView *sectionsView_; ///< Sections view.
@@ -86,7 +89,7 @@ class MainWindow: public QMainWindow {
     QAction *symbolsViewAction_; ///< Action for showing/hiding the symbols window.
     QAction *inspectorViewAction_; ///< Action for showing/hiding the tree inspector.
     QAction *logViewAction_; ///< Action for showing/hiding the log window.
-    QAction *aboutAction_; ///< Action for showing 'About SmartDec' dialog.
+    QAction *aboutAction_; ///< Action for showing 'About Application' dialog.
     QAction *aboutQtAction_; ///< Action for showing 'About Qt' dialog.
     QAction *deleteSelectedInstructionsAction_; ///< Action for deleting selected instructions.
     QAction *decompileSelectedInstructionsAction_; ///< Action for decompiling selected instructions.
@@ -101,9 +104,10 @@ public:
     /**
      * Constructor.
      *
+     * \param[in] branding  Branding.
      * \param[in] parent    Pointer to the parent widget. Can be NULL.
      */
-    MainWindow(QWidget *parent = NULL);
+    MainWindow(Branding branding, QWidget *parent = NULL);
 
     /**
      * Destructor.
@@ -353,7 +357,7 @@ private Q_SLOTS:
     void jumpToSymbolAddress();
 
     /**
-     * Shows 'About SmartDec' dialog.
+     * Shows 'About Application' dialog.
      */
     void about();
 };

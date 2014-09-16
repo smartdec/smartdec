@@ -31,6 +31,7 @@
 
 #include <boost/unordered_map.hpp>
 
+#include <nc/common/Branding.h>
 #include <nc/common/Types.h>
 
 #include "IdaPlugin.h"
@@ -48,14 +49,17 @@ namespace nc { namespace gui {
 namespace nc { namespace ida {
 
 /**
- * SmartDec IDA plugin.
+ * Decompiler IDA plugin.
  */
-class SmartDecPlugin: public QObject, public IdaPlugin {
-    Q_OBJECT;
-public:
-    SmartDecPlugin();
+class DecompilerPlugin: public QObject, public IdaPlugin {
+    Q_OBJECT
 
-    virtual ~SmartDecPlugin();
+    Branding branding_; 
+
+public:
+    DecompilerPlugin();
+
+    virtual ~DecompilerPlugin();
 
     /**
      * Decompiles the function under cursor.

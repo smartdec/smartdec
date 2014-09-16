@@ -126,26 +126,30 @@ void printRegionGraphs(nc::core::Context &context, QTextStream &out) {
 }
 
 void help() {
-    qout << "Usage: " << self << " [options] [--] file..." << endl;
-    qout << endl;
-    qout << "Options:" << endl;
-    qout << "  --help, -h                  Produce this help message and quit." << endl;
-    qout << "  --verbose, -v               Print progress information to stderr." << endl;
-    qout << "  --print-sections[=FILE]     Print information about sections of the executable file." << endl;
-    qout << "  --print-symbols[=FILE]      Print the symbols from the executable file." << endl;
-    qout << "  --print-instructions[=FILE] Print parsed instructions to the file." << endl;
-    qout << "  --print-cfg[=FILE]          Print control flow graph in DOT language to the file." << endl;
-    qout << "  --print-ir[=FILE]           Print intermediate representation in DOT language to the file." << endl;
-    qout << "  --print-regions[=FILE]      Print results of structural analysis in DOT language to the file." << endl;
-    qout << "  --print-cxx[=FILE]          Print reconstructed program into given file." << endl;
-    qout << endl;
-    qout << "Nocode is a command-line decompiler developed within the SmartDec project." << endl;
-    qout << "The program parses given files, decompiles them, and prints the requested" << endl;
-    qout << "information (by default, C++ code) to the specified files. When a file" << endl;
-    qout << "name is '-' or omitted, stdout is used." << endl;
-    qout << endl;
+    auto branding = nc::branding();
+    branding.setApplicationName("Nocode");
 
-    qout << "Version: " << nc::version << endl;
+    qout << "Usage: " << self << " [options] [--] file..." << endl
+         << endl
+         << "Options:" << endl
+         << "  --help, -h                  Produce this help message and quit." << endl
+         << "  --verbose, -v               Print progress information to stderr." << endl
+         << "  --print-sections[=FILE]     Print information about sections of the executable file." << endl
+         << "  --print-symbols[=FILE]      Print the symbols from the executable file." << endl
+         << "  --print-instructions[=FILE] Print parsed instructions to the file." << endl
+         << "  --print-cfg[=FILE]          Print control flow graph in DOT language to the file." << endl
+         << "  --print-ir[=FILE]           Print intermediate representation in DOT language to the file." << endl
+         << "  --print-regions[=FILE]      Print results of structural analysis in DOT language to the file." << endl
+         << "  --print-cxx[=FILE]          Print reconstructed program into given file." << endl
+         << endl
+         << branding.applicationName() << " is a command-line native code to C/C++ decompiler." << endl
+         << "It parses given files, decompiles them, and prints the requested" << endl
+         << "information (by default, C++ code) to the specified files." << endl
+         << "When a file name is '-' or omitted, stdout is used." << endl
+         << endl;
+
+    qout << "Version: " << branding.applicationVersion() << endl;
+
     qout << "Available architectures:";
     foreach (auto architecture, nc::core::arch::ArchitectureRepository::instance()->architectures()) {
         qout << " " << architecture->name();
@@ -156,8 +160,8 @@ void help() {
         qout << " " << parser->name();
     }
     qout << endl;
-    qout << "Report bugs to: " << nc::reportBugsTo << endl;
-    qout << "License: " << nc::licenseName << " <" << nc::licenseURL << ">" << endl;
+    qout << "Report bugs to: " << branding.reportBugsTo() << endl;
+    qout << "License: " << branding.licenseName() << " <" << branding.licenseUrl() << ">" << endl;
 }
 
 int main(int argc, char *argv[]) {

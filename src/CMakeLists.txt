@@ -131,7 +131,7 @@ add_subdirectory(3rd-party)
 add_subdirectory(demangler)
 add_subdirectory(nc)
 add_subdirectory(nocode)
-add_subdirectory(smartdec)
+add_subdirectory(snowman)
 
 if(${IDA_PLUGIN_ENABLED})
     add_subdirectory(ida-plugin)

@@ -22,7 +22,7 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "SmartDecPlugin.h"
+#include "DecompilerPlugin.h"
 
 #include <QApplication>
 #include <QAction>
@@ -55,7 +55,7 @@ const char *hexDumpMenuItem = "Hex dump";
 const char *decompileFunctionMenuItem = "Decompile a function";
 const char *decompileProgramMenuItem  = "Decompile a program";
 
-SmartDecPlugin *globalPluginInstance = NULL;
+DecompilerPlugin *globalPluginInstance = NULL;
 
 } // anonymous namespace
 
@@ -71,9 +71,12 @@ extern "C" {
     }
 }
 
-SmartDecPlugin::SmartDecPlugin():
+DecompilerPlugin::DecompilerPlugin():
     programWindow_(NULL)
 {
+    branding_ = nc::branding();
+    branding_.setApplicationName("Snowman");
+
     if (QApplication::instance() == NULL) {
         static int argc = 1;
         static char *argv[] = {const_cast<char *>("dummy.exe")};
@@ -95,21 +98,24 @@ SmartDecPlugin::SmartDecPlugin():
         &decompileFunctionCallback);
 
     IdaFrontend::print(tr(
-        "SmartDec plugin %1 loaded.\n"
-        "  Press %2 to decompile the function under cursor, %3 to decompile the whole program.\n"
-        "  Press %2 (%3) again to jump to the address under cursor.\n")
-        .arg(version).arg(decompileFunctionHotkey).arg(decompileProgramHotkey));
+        "%1 plugin %2 loaded.\n"
+        "  Press %3 to decompile the function under cursor, %4 to decompile the whole program.\n"
+        "  Press %3 (%4) again to jump to the address under cursor.\n")
+        .arg(branding_.applicationName())
+        .arg(branding_.applicationVersion())
+        .arg(decompileFunctionHotkey)
+        .arg(decompileProgramHotkey));
 }
 
-SmartDecPlugin::~SmartDecPlugin() {
+DecompilerPlugin::~DecompilerPlugin() {
     IdaFrontend::deleteMenuItem(tr("%1/%2").arg(subviewsMenuPath).arg(decompileFunctionMenuItem));
     IdaFrontend::deleteMenuItem(tr("%1/%2").arg(subviewsMenuPath).arg(decompileProgramMenuItem));
 }
 
-void SmartDecPlugin::decompileFunction() {
+void DecompilerPlugin::decompileFunction() {
     auto functionRanges = IdaFrontend::functionAddresses(IdaFrontend::screenAddress());
     if (functionRanges.empty()) {
-        QMessageBox::warning(NULL, tr("SmartDec"), tr("Please, put the text cursor inside a function that you would like to decompile."));
+        QMessageBox::warning(NULL, branding_.applicationName(), tr("Please, put the text cursor inside a function that you would like to decompile."));
         return;
     }
 
@@ -137,8 +143,8 @@ void SmartDecPlugin::decompileFunction() {
     function2window_[functionAddress] = window;
     window2function_[window] = functionAddress;
 }
-    
-void SmartDecPlugin::decompileProgram() {
+
+void DecompilerPlugin::decompileProgram() {
     if (programWindow_) {
         activateWindow(programWindow_);
         programWindow_->jumpToAddress(IdaFrontend::screenAddress());
@@ -154,8 +160,8 @@ void SmartDecPlugin::decompileProgram() {
     programWindow_ = window;
 }
 
-gui::MainWindow *SmartDecPlugin::createWindow() {
-    gui::MainWindow *window = new gui::MainWindow();
+gui::MainWindow *DecompilerPlugin::createWindow() {
+    gui::MainWindow *window = new gui::MainWindow(branding_);
     window->setWindowFlags(Qt::Widget);
     window->setAttribute(Qt::WA_DeleteOnClose);
 
@@ -170,7 +176,7 @@ gui::MainWindow *SmartDecPlugin::createWindow() {
 
     window->quitAction()->setEnabled(false);
     window->quitAction()->setVisible(false);
-    
+
     connect(window, SIGNAL(windowTitleChanged(const QString &)), widget, SLOT(setWindowTitle(const QString &)));
 
     window2widget_[window] = widget;
@@ -181,13 +187,13 @@ gui::MainWindow *SmartDecPlugin::createWindow() {
     return window;
 }
 
-void SmartDecPlugin::activateWindow(gui::MainWindow *window) {
+void DecompilerPlugin::activateWindow(gui::MainWindow *window) {
     assert(window != NULL);
 
     IdaFrontend::activateWidget(window2widget_[window]);
 }
 
-void SmartDecPlugin::windowDestroyed(QObject *object) {
+void DecompilerPlugin::windowDestroyed(QObject *object) {
     /*
      * checked_cast is not applicable here: destructor of
      * gui::MainWindow was already called.
@@ -204,7 +210,7 @@ void SmartDecPlugin::windowDestroyed(QObject *object) {
     window2widget_.erase(window);
 }
 
-std::unique_ptr<gui::Project> SmartDecPlugin::createIdaProject() const {
+std::unique_ptr<gui::Project> DecompilerPlugin::createIdaProject() const {
     auto project = std::make_unique<gui::Project>();
     auto image = project->image().get();
 
@@ -241,7 +247,7 @@ std::unique_ptr<gui::Project> SmartDecPlugin::createIdaProject() const {
     return project;
 }
 
-NC_IDA_REGISTER_PLUGIN(SmartDecPlugin);
+NC_IDA_REGISTER_PLUGIN(DecompilerPlugin);
 
 }} // namespace nc::ida
 

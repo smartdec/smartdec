@@ -1,5 +1,5 @@
-SmartDec: Things to be done
-===========================
+Nc: Things to be done
+=====================
 :toc:
 Yegor Derevenets <yegor.derevenets@gmail.com>
 
@@ -30,7 +30,7 @@ One should be able to store a session and reopen it, with all decompilation resu
 
 Session Saving in IDA
 ---------------------
-One should restore SmartDec windows in IDA on reopening the project.
+One should restore windows in IDA on reopening the project.
 Depends on <<SessionSaving>>.
 
 Refactoring

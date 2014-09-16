@@ -1,8 +1,8 @@
-SmartDec: Use of Programming Language and Libraries
-===================================================
+Nc: Use of Programming Language and Libraries
+=============================================
 :toc:
 
-SmartDec is written in $$C++$$ and uses the following libraries:
+Nc is written in $$C++$$ and uses the following libraries:
 
     * http://www.boost.org/[Boost] (header-only libraries),
     * http://qt-project.org/[Qt] (QtCore, QtGui components).

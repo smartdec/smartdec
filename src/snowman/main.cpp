@@ -26,12 +26,16 @@
 
 #include <QApplication>
 
+#include <nc/common/Branding.h>
 #include <nc/gui/MainWindow.h>
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
 
-    nc::gui::MainWindow mainWindow;
+    auto branding = nc::branding();
+    branding.setApplicationName("Snowman");
+
+    nc::gui::MainWindow mainWindow(std::move(branding));
 
     mainWindow.show();
 

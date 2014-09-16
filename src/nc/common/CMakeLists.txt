@@ -4,6 +4,7 @@ set(MOC_HEADERS
 
 set(SOURCES
     BitTwiddling.h
+    Branding.cpp
     Branding.h
     ByteOrder.h
     CancellationToken.cpp
@@ -33,6 +34,7 @@ set(SOURCES
     Types.h
     Unreachable.h
     Unused.h
+    Version.h
     ilist.h
     make_unique.h
 )
@@ -54,8 +56,8 @@ set(NC_REPORT_BUGS_TO "yegor.derevenets@gmail.com" CACHE STRING "Address for rep
 set(NC_LICENSE_NAME "CC BY-NC-ND 4.0" CACHE STRING "License name.")
 set(NC_LICENSE_URL "http://creativecommons.org/licenses/by-nc-nd/4.0/" CACHE STRING "License URL.")
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Branding.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/Branding.cpp" @ONLY)
-list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/Branding.cpp")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/Version.cpp" @ONLY)
+list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/Version.cpp")
 
 add_library(nc-common ${SOURCES})
 target_link_libraries(nc-common ${Boost_LIBRARIES} ${QT_LIBRARIES})
