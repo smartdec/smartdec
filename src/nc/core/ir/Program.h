@@ -54,8 +54,15 @@ public:
 private:
     typedef Range<ByteAddr> AddrRange;
 
+    class ToTheLeft {
+    public:
+        bool operator()(const AddrRange &a, const AddrRange &b) const {
+            return a.end() <= b.start() && a != b;
+        }
+    };
+
     BasicBlocks basicBlocks_; ///< Basic blocks.
-    std::map<AddrRange, BasicBlock *> range2basicBlock_; ///< Mapping of a range of addresses to the basic block covering the range.
+    std::map<AddrRange, BasicBlock *, ToTheLeft> range2basicBlock_; ///< Mapping of a range of addresses to the basic block covering the range.
     boost::unordered_map<ByteAddr, BasicBlock *> start2basicBlock_; ///< Mapping of an address to the basic block at this address.
     boost::unordered_set<ByteAddr> calledAddresses_; ///< Addresses having calls to them.
 

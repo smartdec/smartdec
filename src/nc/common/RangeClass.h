@@ -112,34 +112,19 @@ public:
     operator const void *() const { return start() <= end() ? this : 0; }
 };
 
-/**
- * Comparator for ranges providing partial order on them.
- *
- * \param a Range.
- * \param b Range.
- *
- * \return True iff a is to the left of b.
- *
- * \tparam T Type of range boundaries.
- */
 template<class T>
-inline bool operator<(const Range<T> &a, const Range<T> &b) {
-    return a.end() <= b.start() && a != b;
+inline bool operator==(const Range<T> &a, const Range<T> &b) {
+    return a.start() == b.start() && a.end() == b.end();
 }
 
-/**
- * Inequality comparator for ranges.
- *
- * \param a Range.
- * \param b Range.
- *
- * \return True iff a and b differ.
- *
- * \tparam T Type of range boundaries.
- */
 template<class T>
 inline bool operator!=(const Range<T> &a, const Range<T> &b) {
-    return a.start() != b.start() || a.end() != b.end();
+    return !(a == b);
+}
+
+template<class T>
+inline bool operator<(const Range<T> &a, const Range<T> &b) {
+    return a.start() < b.start() || (a.start() == b.start() && a.end() < b.end());
 }
 
 template<class T>
