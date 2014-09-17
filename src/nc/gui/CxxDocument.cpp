@@ -115,6 +115,9 @@ void CxxDocument::computeReverseMappings(const RangeNode *rangeNode) {
 
     if (auto declaration = getDeclaration(node)) {
         declaration2uses_[declaration].push_back(node);
+    }
+
+    if (auto declaration = node->as<core::likec::Declaration>()) {
         if (auto definition = declaration->as<core::likec::FunctionDefinition>()) {
             functionDeclaration2definition_[definition->getFirstDeclaration()] = definition;
         }
