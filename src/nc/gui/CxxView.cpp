@@ -177,7 +177,7 @@ const core::likec::TreeNode *CxxView::getNodeUnderCursor() const {
 
 const core::likec::Declaration *CxxView::getDeclarationOfIdentifierUnderCursor() const {
     if (auto node = getNodeUnderCursor()) {
-        return document()->getDeclaration(node);
+        return document()->getDeclarationOfIdentifier(node);
     }
     return NULL;
 }
@@ -276,13 +276,21 @@ void CxxView::highlightInstructions(const std::vector<const core::arch::Instruct
 
 QString CxxView::getDeclarationTooltip(int position) const {
     const int maxLength = 1024;
-    const int maxLineCount = 5;
+    const int maxLineCount = 10;
 
     if (auto node = document()->getLeafAt(position)) {
-        if (auto declaration = document()->getDeclaration(node)) {
+        if (auto declaration = document()->getDeclarationOfIdentifier(node)) {
+            if (auto functionDeclaration = declaration->as<core::likec::FunctionDeclaration>()) {
+                if (auto functionDefinition = document()->getFunctionDefinition(functionDeclaration)) {
+                    declaration = functionDefinition;
+                }
+            }
             if (auto range = document()->getRange(declaration)) {
+                bool truncated = false;
+
                 if (range.length() > maxLength) {
                     range = make_range(range.start(), range.start() + maxLength);
+                    truncated = true;
                 }
 
                 auto text = document()->getText(range);
@@ -293,10 +301,16 @@ QString CxxView::getDeclarationTooltip(int position) const {
                         text[i] = '\n';
                         if (++lineCount == maxLineCount) {
                             text.truncate(i + 1);
-                            text += tr("...");
+                            truncated = true;
                             break;
                         }
                     }
+                }
+                if (truncated) {
+                    if (!text.endsWith('\n')) {
+                        text += '\n';
+                    }
+                    text += tr("...");
                 }
                 return text;
             }

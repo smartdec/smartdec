@@ -113,7 +113,7 @@ void CxxDocument::computeReverseMappings(const RangeNode *rangeNode) {
         instruction2rangeNodes_[instruction].push_back(rangeNode);
     }
 
-    if (auto declaration = getDeclaration(node)) {
+    if (auto declaration = getDeclarationOfIdentifier(node)) {
         declaration2uses_[declaration].push_back(node);
     }
 
@@ -231,7 +231,7 @@ void CxxDocument::getOrigin(const core::likec::TreeNode *node, const core::ir::S
     }
 }
 
-const core::likec::Declaration *CxxDocument::getDeclaration(const core::likec::TreeNode *node) {
+const core::likec::Declaration *CxxDocument::getDeclarationOfIdentifier(const core::likec::TreeNode *node) {
     assert(node != NULL);
     if (auto expression = node->as<core::likec::Expression>()) {
         if (auto identifier = expression->as<core::likec::FunctionIdentifier>()) {

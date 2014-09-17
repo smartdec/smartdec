@@ -165,7 +165,7 @@ public:
      *
      * \return Declaration of whatever identifier this node is. Can be NULL.
      */
-    static const core::likec::Declaration *getDeclaration(const core::likec::TreeNode *node);
+    static const core::likec::Declaration *getDeclarationOfIdentifier(const core::likec::TreeNode *node);
 
 private Q_SLOTS:
     void onContentsChange(int position, int charsRemoved, int charsAdded);
