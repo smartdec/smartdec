@@ -234,7 +234,15 @@ void CxxView::highlightReferences() {
 
     std::vector<const core::likec::TreeNode *> nodes;
 
-    if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
+    auto declaration = getDeclarationOfIdentifierUnderCursor();
+    if (!declaration) {
+        if (auto node = getNodeUnderCursor()) {
+            if (auto decl = node->as<core::likec::Declaration>()) {
+                declaration = decl->as<core::likec::VariableDeclaration>();
+            }
+        }
+    }
+    if (declaration) {
         const auto &uses = document()->getUses(declaration);
         nodes.insert(nodes.end(), uses.begin(), uses.end());
         if (declaration->is<core::likec::VariableDeclaration>()) {
