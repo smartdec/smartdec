@@ -127,11 +127,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # This is used to produce standalone bundles on Windows.
 include(DeployQt4)
 
-# Prefix for installing external projects.
-set(EP_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/ep-prefix")
-include_directories("${EP_PREFIX}/include")
-link_directories("${EP_PREFIX}/lib")
-
 add_subdirectory(3rd-party)
 add_subdirectory(demangler)
 add_subdirectory(nc)
