@@ -269,19 +269,19 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
 void MainWindow::loadSettings() {
     if (parent() == NULL) {
-        restoreGeometry(settings_->value("geometry").toByteArray());
+        restoreGeometry(settings_->value("geometry", saveGeometry()).toByteArray());
     }
-    restoreState(settings_->value("windowState").toByteArray());
+    restoreState(settings_->value("windowState", saveState()).toByteArray());
     setDecompileAutomatically(settings_->value("decompileAutomatically", true).toBool());
 
     foreach (QObject *child, children()) {
         if (auto textView = qobject_cast<TextView *>(child)) {
             if (!textView->objectName().isEmpty()) {
-                textView->setDocumentFont(settings_->value(textView->objectName() + ".font").value<QFont>());
+                textView->setDocumentFont(settings_->value(textView->objectName() + ".font", textView->documentFont()).value<QFont>());
             }
         } else if (auto treeView = qobject_cast<TreeView *>(child)) {
             if (!treeView->objectName().isEmpty()) {
-                treeView->setDocumentFont(settings_->value(treeView->objectName() + ".font").value<QFont>());
+                treeView->setDocumentFont(settings_->value(treeView->objectName() + ".font", treeView->documentFont()).value<QFont>());
             }
         }
     }
