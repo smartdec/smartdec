@@ -42,6 +42,7 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
+#include "Colors.h"
 #include "GotoLineWidget.h"
 #include "SearchWidget.h"
 #include "TextEditSearcher.h"
@@ -227,7 +228,7 @@ void TextView::updateExtraSelections() {
         selection.cursor = textEdit()->textCursor();
         selection.cursor.setPosition(i->start());
         selection.cursor.setPosition(i->end(), QTextCursor::KeepAnchor);
-        selection.format.setBackground(QPalette().alternateBase());
+        selection.format.setBackground(QColor(highlightColor));
         selections.append(selection);
     }
 

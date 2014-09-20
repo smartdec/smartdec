@@ -26,7 +26,7 @@
 
 #include <algorithm>
 
-#include <QPalette>
+#include <QColor>
 
 #include <nc/common/CheckedCast.h>
 #include <nc/common/Foreach.h>
@@ -35,6 +35,8 @@
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
+
+#include "Colors.h"
 
 namespace nc { namespace gui {
 
@@ -122,7 +124,7 @@ QVariant InstructionsModel::data(const QModelIndex &index, int role) const {
         assert(instruction);
 
         if (std::binary_search(highlightedInstructions_.begin(), highlightedInstructions_.end(), instruction)) {
-            return QPalette().alternateBase();
+            return QColor(highlightColor);
         }
     }
     return QVariant();

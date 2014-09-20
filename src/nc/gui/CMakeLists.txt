@@ -33,6 +33,7 @@ set(MOC_HEADERS
 
 set(SOURCES
     Activity.cpp
+    Colors.h
     Command.cpp
     CommandQueue.cpp
     CppSyntaxHighlighter.cpp
