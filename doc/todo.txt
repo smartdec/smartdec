@@ -5,6 +5,14 @@ Yegor Derevenets <yegor.derevenets@gmail.com>
 
 Here is a list of things that should be done, sorted by descending priority.
 
+Reusing Running Demangler
+-------------------------
+Currently the demangler serves only one request.
+It should serve multiple requests.
+This will reduce tests running time by half.
+However, one must be careful about the destruction of QProcess.
+On Windows, destroying it in a thread to which it does not belong results in a crash.
+
 No-return Functions
 -------------------
 One should compute the set of no-return functions (or basic blocks, or addresses) and use this information when building the control-flow graph of the whole program, namely, chop basic blocks after no-return function calls.
