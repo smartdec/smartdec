@@ -4,6 +4,7 @@
 open Printf
 open Capstone
 open Arm64
+open Arm64_const
 
 
 let print_string_hex comment str =
@@ -52,6 +53,9 @@ let print_detail csh arch =
 	| CS_INFO_MIPS _ -> ();
 	| CS_INFO_PPC _ -> ();
 	| CS_INFO_X86 _ -> ();
+	| CS_INFO_SPARC _ -> ();
+	| CS_INFO_SYSZ _ -> ();
+	| CS_INFO_XCORE _ -> ();
 	| CS_INFO_ARM64 arm64 ->
 	if arm64.cc != _ARM64_CC_AL && arm64.cc != _ARM64_CC_INVALID then
 		printf "\tCode condition: %u\n" arm64.cc;

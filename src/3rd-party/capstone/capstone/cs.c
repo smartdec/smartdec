@@ -409,7 +409,7 @@ static void skipdata_opstr(char *opstr, const uint8_t *buffer, size_t size)
 // dynamicly allocate memory to contain disasm insn
 // NOTE: caller must free() the allocated memory itself to avoid memory leaking
 CAPSTONE_EXPORT
-size_t cs_disasm_ex(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, size_t count, cs_insn **insn)
+size_t cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, size_t count, cs_insn **insn)
 {
 	struct cs_struct *handle = (struct cs_struct *)(uintptr_t)ud;
 	MCInst mci;
@@ -460,6 +460,11 @@ size_t cs_disasm_ex(csh ud, const uint8_t *buffer, size_t size, uint64_t offset,
 		// save all the information for non-detailed mode
 		mci.flat_insn = insn_cache;
 		mci.flat_insn->address = offset;
+#ifdef CAPSTONE_DIET
+		// zero out mnemonic & op_str
+		mci.flat_insn->mnemonic[0] = '\0';
+		mci.flat_insn->op_str[0] = '\0';
+#endif
 
 		r = handle->disasm(ud, buffer, size, &mci, &insn_size, offset, handle->getinsn_info);
 		if (r) {
@@ -468,7 +473,6 @@ size_t cs_disasm_ex(csh ud, const uint8_t *buffer, size_t size, uint64_t offset,
 
 			mci.flat_insn->size = insn_size;
 			handle->printer(&mci, &ss, handle->printer_info);
-
 			fill_insn(handle, insn_cache, ss.buffer, &mci, handle->post_printer, buffer);
 
 			f++;
@@ -518,7 +522,7 @@ size_t cs_disasm_ex(csh ud, const uint8_t *buffer, size_t size, uint64_t offset,
 
 			if (handle->skipdata_setup.callback) {
 				skipdata_bytes = handle->skipdata_setup.callback(buffer_org, size_org,
-						offset - offset_org, handle->skipdata_setup.user_data);
+						(size_t)(offset - offset_org), handle->skipdata_setup.user_data);
 				if (skipdata_bytes > size)
 					// remaining data is not enough
 					break;
@@ -532,7 +536,7 @@ size_t cs_disasm_ex(csh ud, const uint8_t *buffer, size_t size, uint64_t offset,
 			// we have to skip some amount of data, depending on arch & mode
 			insn_cache->id = 0;	// invalid ID for this "data" instruction
 			insn_cache->address = offset;
-			insn_cache->size = skipdata_bytes;
+			insn_cache->size = (uint16_t) skipdata_bytes;
 			memcpy(insn_cache->bytes, buffer, skipdata_bytes);
 			strncpy(insn_cache->mnemonic, handle->skipdata_setup.mnemonic,
 					sizeof(insn_cache->mnemonic) - 1);
@@ -603,6 +607,13 @@ size_t cs_disasm_ex(csh ud, const uint8_t *buffer, size_t size, uint64_t offset,
 }
 
 CAPSTONE_EXPORT
+CAPSTONE_DEPRECATED
+size_t cs_disasm_ex(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, size_t count, cs_insn **insn)
+{
+	return cs_disasm(ud, buffer, size, offset, count, insn);
+}
+
+CAPSTONE_EXPORT
 void cs_free(cs_insn *insn, size_t count)
 {
 	size_t i;
@@ -640,6 +651,18 @@ const char *cs_insn_name(csh ud, unsigned int insn)
 	return handle->insn_name(ud, insn);
 }
 
+CAPSTONE_EXPORT
+const char *cs_group_name(csh ud, unsigned int group)
+{
+	struct cs_struct *handle = (struct cs_struct *)(uintptr_t)ud;
+
+	if (!handle || handle->group_name == NULL) {
+		return NULL;
+	}
+
+	return handle->group_name(ud, group);
+}
+
 static bool arr_exist(unsigned char *arr, unsigned char max, unsigned int id)
 {
 	int i;
@@ -653,7 +676,7 @@ static bool arr_exist(unsigned char *arr, unsigned char max, unsigned int id)
 }
 
 CAPSTONE_EXPORT
-bool cs_insn_group(csh ud, cs_insn *insn, unsigned int group_id)
+bool cs_insn_group(csh ud, const cs_insn *insn, unsigned int group_id)
 {
 	struct cs_struct *handle;
 	if (!ud)
@@ -680,7 +703,7 @@ bool cs_insn_group(csh ud, cs_insn *insn, unsigned int group_id)
 }
 
 CAPSTONE_EXPORT
-bool cs_reg_read(csh ud, cs_insn *insn, unsigned int reg_id)
+bool cs_reg_read(csh ud, const cs_insn *insn, unsigned int reg_id)
 {
 	struct cs_struct *handle;
 	if (!ud)
@@ -707,7 +730,7 @@ bool cs_reg_read(csh ud, cs_insn *insn, unsigned int reg_id)
 }
 
 CAPSTONE_EXPORT
-bool cs_reg_write(csh ud, cs_insn *insn, unsigned int reg_id)
+bool cs_reg_write(csh ud, const cs_insn *insn, unsigned int reg_id)
 {
 	struct cs_struct *handle;
 	if (!ud)
@@ -734,7 +757,7 @@ bool cs_reg_write(csh ud, cs_insn *insn, unsigned int reg_id)
 }
 
 CAPSTONE_EXPORT
-int cs_op_count(csh ud, cs_insn *insn, unsigned int op_type)
+int cs_op_count(csh ud, const cs_insn *insn, unsigned int op_type)
 {
 	struct cs_struct *handle;
 	unsigned int count = 0, i;
@@ -810,7 +833,7 @@ int cs_op_count(csh ud, cs_insn *insn, unsigned int op_type)
 }
 
 CAPSTONE_EXPORT
-int cs_op_index(csh ud, cs_insn *insn, unsigned int op_type,
+int cs_op_index(csh ud, const cs_insn *insn, unsigned int op_type,
 		unsigned int post)
 {
 	struct cs_struct *handle;

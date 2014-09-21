@@ -242,7 +242,7 @@ public class Capstone {
 
   private interface CS extends Library {
     public int cs_open(int arch, int mode, NativeLongByReference handle);
-    public NativeLong cs_disasm_ex(NativeLong handle, byte[] code, NativeLong code_len,
+    public NativeLong cs_disasm(NativeLong handle, byte[] code, NativeLong code_len,
         long addr, NativeLong count, PointerByReference insn);
     public void cs_free(Pointer p, NativeLong count);
     public int cs_close(NativeLongByReference handle);
@@ -262,8 +262,8 @@ public class Capstone {
   }
 
   // Capstone API version
-  public static final int CS_API_MAJOR = 2;
-  public static final int CS_API_MINOR = 2;
+  public static final int CS_API_MAJOR = 3;
+  public static final int CS_API_MINOR = 0;
 
   // architectures
   public static final int CS_ARCH_ARM = 0;
@@ -284,8 +284,12 @@ public class Capstone {
   public static final int CS_MODE_32 = 1 << 2;
   public static final int CS_MODE_64 = 1 << 3;
   public static final int CS_MODE_THUMB = 1 << 4;	  // ARM's Thumb mode, including Thumb-2
+  public static final int CS_MODE_MCLASS = 1 << 5;	  // ARM's Cortex-M series
   public static final int CS_MODE_MICRO = 1 << 4;	  // MicroMips mode (Mips arch)
   public static final int CS_MODE_N64 = 1 << 5;	      // Nintendo-64 mode (Mips arch)
+  public static final int CS_MODE_MIPS3 = 1 << 6;     // Mips III ISA
+  public static final int CS_MODE_MIPS32R6 = 1 << 7;  // Mips32r6 ISA
+  public static final int CS_MODE_MIPSGP64 = 1 << 8;  // General Purpose Registers are 64-bit wide (MIPS arch)
   public static final int CS_MODE_BIG_ENDIAN = 1 << 31;
   public static final int CS_MODE_V9 = 1 << 4;	      // SparcV9 mode (Sparc arch)
 
@@ -301,6 +305,9 @@ public class Capstone {
   public static final int CS_ERR_MEMSETUP = 8;
   public static final int CS_ERR_VERSION = 9;  //Unsupported version (bindings)
   public static final int CS_ERR_DIET = 10;  //Information irrelevant in diet engine
+  public static final int CS_ERR_SKIPDATA = 11;  //Access irrelevant data for "data" instruction in SKIPDATA mode
+  public static final int CS_ERR_X86_ATT = 12;  //X86 AT&T syntax is unsupported (opt-out at compile time)
+  public static final int CS_ERR_X86_INTEL = 13;  //X86 Intel syntax is unsupported (opt-out at compile time)
 
   // Capstone option type
   public static final int CS_OPT_SYNTAX = 1;  // Intel X86 asm syntax (CS_ARCH_X86 arch)
@@ -395,7 +402,7 @@ public class Capstone {
   public CsInsn[] disasm(byte[] code, long address, long count) {
     PointerByReference insnRef = new PointerByReference();
 
-    NativeLong c = cs.cs_disasm_ex(ns.csh, code, new NativeLong(code.length), address, new NativeLong(count), insnRef);
+    NativeLong c = cs.cs_disasm(ns.csh, code, new NativeLong(code.length), address, new NativeLong(count), insnRef);
 
     Pointer p = insnRef.getValue();
     _cs_insn byref = new _cs_insn(p);

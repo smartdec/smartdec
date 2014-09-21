@@ -32,7 +32,6 @@ let print_op csh i op =
 			printf "\t\t\toperands[%u].mem.disp: 0x%x\n" i mem.displ;
 		);
 	);
-
 	();;
 
 
@@ -42,6 +41,9 @@ let print_detail csh arch =
 	| CS_INFO_ARM64 _ -> ();
 	| CS_INFO_MIPS _ -> ();
 	| CS_INFO_X86 _ -> ();
+	| CS_INFO_SPARC _ -> ();
+	| CS_INFO_SYSZ _ -> ();
+	| CS_INFO_XCORE _ -> ();
 	| CS_INFO_PPC ppc ->
 
 	(* print all operands info (type & value) *)
@@ -54,7 +56,7 @@ let print_detail csh arch =
 
 let print_insn mode insn =
 	printf "0x%x\t%s\t%s\n" insn.address insn.mnemonic insn.op_str;
-	let csh = cs_open CS_ARCH_MIPS mode in
+	let csh = cs_open CS_ARCH_PPC mode in
 	match csh with
 	| None -> ()
 	| Some v -> print_detail v insn.arch

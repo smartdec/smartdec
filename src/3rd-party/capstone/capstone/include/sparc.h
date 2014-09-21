@@ -96,7 +96,7 @@ typedef struct cs_sparc_op {
 // Instruction structure
 typedef struct cs_sparc {
 	sparc_cc cc;	// code condition for this insn
-	sparc_hint hint;	// branch hint: encoding as bitwise OR of SPARC_HINT_*.
+	sparc_hint hint;	// branch hint: encoding as bitwise OR of sparc_hint.
 	// Number of operands of this instruction, 
 	// or 0 when instruction has no operand.
 	uint8_t op_count;
@@ -194,6 +194,9 @@ typedef enum sparc_reg {
 	SPARC_REG_SP,
 	SPARC_REG_Y,
 
+	// special register
+	SPARC_REG_XCC,
+
 	SPARC_REG_MAX,   // <-- mark the end of the list of registers
 
 	// extras
@@ -220,7 +223,6 @@ typedef enum sparc_insn {
 	SPARC_INS_ARRAY16,
 	SPARC_INS_ARRAY32,
 	SPARC_INS_ARRAY8,
-	SPARC_INS_BA,
 	SPARC_INS_B,
 	SPARC_INS_JMP,
 	SPARC_INS_BMASK,
@@ -460,7 +462,6 @@ typedef enum sparc_insn {
 	SPARC_INS_SUBXCC,
 	SPARC_INS_SUB,
 	SPARC_INS_SWAP,
-	SPARC_INS_TA,
 	SPARC_INS_TADDCCTV,
 	SPARC_INS_TADDCC,
 	SPARC_INS_T,
@@ -483,6 +484,10 @@ typedef enum sparc_insn {
 	SPARC_INS_XNOR,
 	SPARC_INS_XORCC,
 	SPARC_INS_XOR,
+
+	// alias instructions
+	SPARC_INS_RET,
+	SPARC_INS_RETL,
 
 	SPARC_INS_MAX,   // <-- mark the end of the list of instructions
 } sparc_insn;
