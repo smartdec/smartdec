@@ -163,7 +163,12 @@ private:
 
         switch (instr_->id) {
         case ARM_INS_B:
-            _[jump(operand(0))];
+        case ARM_INS_BX:
+            if (detail_->operands[0].reg == ARM_REG_LR) {
+                _[return_()];
+            } else {
+                _[jump(operand(0))];
+            }
             break;
         case ARM_INS_BL: /* FALLTHROUGH */
         case ARM_INS_BLX:
