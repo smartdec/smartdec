@@ -162,18 +162,32 @@ private:
         ArmExpressionFactoryCallback _(factory_, bodyBasicBlock, instruction_);
 
         switch (instr_->id) {
+        case ARM_INS_ADD: {
+            _[operand(0) ^= operand(1) + operand(2)];
+            if (detail_->update_flags) {
+                _[
+                    n ^= signed_(operand(0)) < constant(0),
+                    z ^= operand(0) == constant(0),
+                    c ^= intrinsic(),
+                    v ^= intrinsic()
+                ];
+            }
+            break;
+        }
         case ARM_INS_B:
-        case ARM_INS_BX:
+        case ARM_INS_BX: {
             if (detail_->operands[0].reg == ARM_REG_LR) {
                 _[return_()];
             } else {
                 _[jump(operand(0))];
             }
             break;
+        }
         case ARM_INS_BL: /* FALLTHROUGH */
-        case ARM_INS_BLX:
+        case ARM_INS_BLX: {
             _[call(operand(0))];
             break;
+        }
         case ARM_INS_CMP: {
             _[
                 n ^= intrinsic(),
@@ -268,6 +282,18 @@ private:
             break;
         }
         // TODO case ARM_INS_STRD:
+        case ARM_INS_SUB: {
+            _[operand(0) ^= operand(1) + operand(2)];
+            if (detail_->update_flags) {
+                _[
+                    n ^= signed_(operand(0)) < constant(0),
+                    z ^= operand(0) == constant(0),
+                    c ^= intrinsic(),
+                    v ^= intrinsic()
+                ];
+            }
+            break;
+        }
         default: {
             _(std::make_unique<core::ir::InlineAssembly>());
             break;
