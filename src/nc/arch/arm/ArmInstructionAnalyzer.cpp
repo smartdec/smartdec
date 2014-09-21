@@ -260,6 +260,18 @@ private:
             _[sp ^= sp - constant(4 * detail_->op_count)];
             break;
         }
+        case ARM_INS_RSB: {
+            _[operand(0) ^= operand(2) - operand(1)];
+            if (detail_->update_flags) {
+                _[
+                    n ^= signed_(operand(0)) < constant(0),
+                    z ^= operand(0) == constant(0),
+                    c ^= intrinsic(),
+                    v ^= intrinsic()
+                ];
+            }
+            break;
+        }
         case ARM_INS_STR:
         case ARM_INS_STRT:
         case ARM_INS_STREX: { // TODO: atomic
