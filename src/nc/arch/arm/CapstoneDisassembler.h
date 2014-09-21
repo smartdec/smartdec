@@ -97,7 +97,7 @@ public:
      */
     CapstoneInstructionPtr disassemble(ByteAddr pc, const void *buffer, ByteSize size, std::size_t count = 1) {
         cs_insn *insn;
-        count = cs_disasm_ex(handle_, reinterpret_cast<const uint8_t *>(buffer), size, pc, count, &insn);
+        count = cs_disasm(handle_, reinterpret_cast<const uint8_t *>(buffer), size, pc, count, &insn);
         return CapstoneInstructionPtr(insn, CapstoneDeleter(count));
     }
 
