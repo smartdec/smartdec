@@ -823,13 +823,21 @@ public:
             }
             case UD_Ipush: {
                 auto sp = architecture_->stackPointer();
-                auto operand0 = operand(0);
-                auto size = operand0.size();
+                const auto &op = ud_obj_.operand[0];
+                if (op.type == UD_OP_IMM) {
+                    _[
+                        regizter(sp) ^= regizter(sp) - constant(sp->size() / CHAR_BIT),
+                        *regizter(sp) ^= constant(getSignedValue(op, sp->size()), sp->size())
+                    ];
+                } else {
+                    auto operand0 = operand(0);
+                    auto size = operand0.size();
 
-                _[
-                    regizter(sp) ^= regizter(sp) - constant(size / CHAR_BIT),
-                    *regizter(sp) ^= std::move(operand0)
-                ];
+                    _[
+                        regizter(sp) ^= regizter(sp) - constant(size / CHAR_BIT),
+                        *regizter(sp) ^= std::move(operand0)
+                    ];
+                }
                 break;
             }
             case UD_Ipopfw: {
