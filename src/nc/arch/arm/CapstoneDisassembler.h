@@ -25,9 +25,10 @@ class CapstoneDeleter {
 
 public:
     explicit
-    CapstoneDeleter(std::size_t count): count_(count) {}
+    CapstoneDeleter(std::size_t count = 0): count_(count) {}
 
     void operator()(cs_insn *ptr) const {
+        assert(ptr == NULL || count_ > 0);
         cs_free(ptr, count_);
     }
 };
@@ -99,6 +100,18 @@ public:
         cs_insn *insn;
         count = cs_disasm(handle_, reinterpret_cast<const uint8_t *>(buffer), size, pc, count, &insn);
         return CapstoneInstructionPtr(insn, CapstoneDeleter(count));
+    }
+
+    /**
+     * Changes the mode to the given one.
+     *
+     * \param mode New mode.
+     */
+    void setMode(int mode) {
+        auto result = cs_option(handle_, CS_OPT_MODE, mode);
+        if (result != CS_ERR_OK) {
+            throw nc::Exception(cs_strerror(result));
+        }
     }
 
 private:

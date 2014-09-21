@@ -51,128 +51,124 @@ NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, below_or_equal)
 class ArmInstructionAnalyzerImpl {
     Q_DECLARE_TR_FUNCTIONS(ArmInstructionAnalyzerImpl)
 
-    const ArmArchitecture *architecture_;
-    std::vector<std::pair<int, CapstoneDisassembler>> disassemblers_;
+    CapstoneDisassembler disassembler_;
+    ArmExpressionFactory factory_;
+    core::ir::Program *program_;
+    const ArmInstruction *instruction_;
+    CapstoneInstructionPtr instr_;
     const cs_arm *detail_;
 
 public:
     ArmInstructionAnalyzerImpl(const ArmArchitecture *architecture):
-        architecture_(architecture)
-    {
-        assert(architecture_ != NULL);
-    }
+        disassembler_(CS_ARCH_ARM, CS_MODE_ARM), factory_(architecture)
+    {}
 
     void createStatements(const ArmInstruction *instruction, core::ir::Program *program) {
         assert(instruction != NULL);
         assert(program != NULL);
 
-        auto instr = disassemble(instruction);
-        assert(instr != NULL);
+        program_ = program;
+        instruction_ = instruction;
 
-        core::ir::BasicBlock *cachedDirectSuccessor = NULL;
-        auto directSuccessor = [&]() -> core::ir::BasicBlock * {
-            if (!cachedDirectSuccessor) {
-                cachedDirectSuccessor = program->createBasicBlock(instruction->endAddr());
+        instr_ = disassemble(instruction);
+        assert(instr_ != NULL);
+        detail_ = &instr_->detail->arm;
+
+        auto instructionBasicBlock = program_->getBasicBlockForInstruction(instruction_);
+
+        if (detail_->cc == ARM_CC_AL) {
+            createBody(instructionBasicBlock);
+        } else {
+            auto directSuccessor = program_->createBasicBlock(instruction_->endAddr());
+
+            auto bodyBasicBlock = program_->createBasicBlock();
+            createCondition(instructionBasicBlock, bodyBasicBlock, directSuccessor);
+            createBody(bodyBasicBlock);
+
+            if (!bodyBasicBlock->getTerminator()) {
+                using namespace core::irgen::expressions;
+                ArmExpressionFactoryCallback _(factory_, bodyBasicBlock, instruction);
+                _[jump(directSuccessor)];
             }
-            return cachedDirectSuccessor;
-        };
+        }
+    }
 
+private:
+    CapstoneInstructionPtr disassemble(const ArmInstruction *instruction) {
+        disassembler_.setMode(instruction->mode());
+        return disassembler_.disassemble(instruction->addr(), instruction->bytes(), instruction->size());
+    }
+
+    void createCondition(core::ir::BasicBlock *conditionBasicBlock, core::ir::BasicBlock *bodyBasicBlock, core::ir::BasicBlock *directSuccessor) {
         using namespace core::irgen::expressions;
 
-        ArmExpressionFactory factory(architecture_);
-        ArmExpressionFactoryCallback condition(factory, program->getBasicBlockForInstruction(instruction), instruction);
+        ArmExpressionFactoryCallback _(factory_, conditionBasicBlock, instruction_);
 
-        detail_ = &instr->detail->arm;
-
-        core::ir::BasicBlock *thenBasicBlock;
-
-        if (detail_->cc == ARM_CC_INVALID || detail_->cc == ARM_CC_AL) {
-            thenBasicBlock = condition.basicBlock();
-        } else {
-            thenBasicBlock = program->createBasicBlock();
-
-            switch (detail_->cc) {
-            case ARM_CC_INVALID:
-                throw core::irgen::InvalidInstructionException(tr("Invalid condition code."));
-            case ARM_CC_EQ:
-                condition[jump( z, thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_NE:
-                condition[jump(~z, thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_HS:
-                condition[jump( c, thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_LO:
-                condition[jump(~c, thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_MI:
-                condition[jump( n, thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_PL:
-                condition[jump(~n, thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_VS:
-                condition[jump( v, thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_VC:
-                condition[jump(~v, thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_HI:
-                condition[jump(choice(~below_or_equal, c & ~z), thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_LS:
-                condition[jump(choice(below_or_equal, ~c | z), thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_GE:
-                condition[jump(choice(~less, n == v), thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_LT:
-                condition[jump(choice(less, ~(n == v)), thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_GT:
-                condition[jump(choice(~less_or_equal, ~z & (n == v)), thenBasicBlock, directSuccessor())];
-                break;
-            case ARM_CC_LE:
-                condition[jump(choice(less_or_equal, z | ~(n == v)), thenBasicBlock, directSuccessor())];
-                break;
-            default:
-                unreachable();
-            };
-        }
-
-        ArmExpressionFactoryCallback then(factory, thenBasicBlock, instruction);
-
-        auto handleWriteback = [&]() {
-            if (detail_->op_count != 2 && detail_->op_count != 3) {
-                throw core::irgen::InvalidInstructionException(tr("Expected either two or three operands."));
-            }
-            if (detail_->operands[0].type != ARM_OP_REG) {
-                throw core::irgen::InvalidInstructionException(tr("Expected the first operand to be a register."));
-            }
-            if (detail_->operands[1].type != ARM_OP_MEM) {
-                throw core::irgen::InvalidInstructionException(tr("Expected the second operand to be a memory operand."));
-            }
-
-            if (detail_->op_count == 3) {
-                auto base = regizter(getRegister(detail_->operands[1].mem.base));
-                then[base ^= base + operand(2)];
-            } else if (detail_->writeback) {
-                auto base = regizter(getRegister(detail_->operands[1].mem.base));
-                then[base ^= base + constant(detail_->operands[1].mem.disp)];
-            }
+        switch (detail_->cc) {
+        case ARM_CC_INVALID:
+            throw core::irgen::InvalidInstructionException(tr("Invalid condition code."));
+        case ARM_CC_EQ:
+            _[jump( z, bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_NE:
+            _[jump(~z, bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_HS:
+            _[jump( c, bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_LO:
+            _[jump(~c, bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_MI:
+            _[jump( n, bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_PL:
+            _[jump(~n, bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_VS:
+            _[jump( v, bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_VC:
+            _[jump(~v, bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_HI:
+            _[jump(choice(~below_or_equal, c & ~z), bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_LS:
+            _[jump(choice(below_or_equal, ~c | z), bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_GE:
+            _[jump(choice(~less, n == v), bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_LT:
+            _[jump(choice(less, ~(n == v)), bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_GT:
+            _[jump(choice(~less_or_equal, ~z & (n == v)), bodyBasicBlock, directSuccessor)];
+            break;
+        case ARM_CC_LE:
+            _[jump(choice(less_or_equal, z | ~(n == v)), bodyBasicBlock, directSuccessor)];
+            break;
+        default:
+            unreachable();
         };
+    }
 
-        switch (instr->id) {
+    void createBody(core::ir::BasicBlock *bodyBasicBlock) {
+        using namespace core::irgen::expressions;
+
+        ArmExpressionFactoryCallback _(factory_, bodyBasicBlock, instruction_);
+
+        switch (instr_->id) {
         case ARM_INS_B:
-            then[jump(operand(0))];
+            _[jump(operand(0))];
             break;
         case ARM_INS_BL: /* FALLTHROUGH */
         case ARM_INS_BLX:
-            then[call(operand(0))];
+            _[call(operand(0))];
             break;
         case ARM_INS_CMP: {
-            then[
+            _[
                 n ^= intrinsic(),
                 c ^= unsigned_(operand(0)) < operand(1),
                 z ^= operand(0) == operand(1),
@@ -187,42 +183,42 @@ public:
         case ARM_INS_LDR:
         case ARM_INS_LDRT:
         case ARM_INS_LDREX: { // TODO: atomic
-            then[operand(0) ^= operand(1)];
-            handleWriteback();
+            _[operand(0) ^= operand(1)];
+            handleWriteback(bodyBasicBlock);
             break;
         }
         case ARM_INS_LDRH:
         case ARM_INS_LDRHT:
         case ARM_INS_LDREXH: { // TODO: atomic
-            then[operand(0) ^= zero_extend(operand(1, 16))];
-            handleWriteback();
+            _[operand(0) ^= zero_extend(operand(1, 16))];
+            handleWriteback(bodyBasicBlock);
             break;
         }
         case ARM_INS_LDRSH:
         case ARM_INS_LDRSHT: {
-            then[operand(0) ^= sign_extend(operand(1, 16))];
-            handleWriteback();
+            _[operand(0) ^= sign_extend(operand(1, 16))];
+            handleWriteback(bodyBasicBlock);
             break;
         }
         case ARM_INS_LDRB:
         case ARM_INS_LDRBT:
         case ARM_INS_LDREXB: { // TODO: atomic
-            then[operand(0) ^= zero_extend(operand(1, 8))];
-            handleWriteback();
+            _[operand(0) ^= zero_extend(operand(1, 8))];
+            handleWriteback(bodyBasicBlock);
             break;
         }
         case ARM_INS_LDRSB:
         case ARM_INS_LDRSBT: {
-            then[operand(0) ^= sign_extend(operand(1, 8))];
-            handleWriteback();
+            _[operand(0) ^= sign_extend(operand(1, 8))];
+            handleWriteback(bodyBasicBlock);
             break;
         }
         // TODO case ARM_INS_LDRD:
         case ARM_INS_MOV: {
             if (detail_->operands[0].reg == ARM_REG_PC) {
-                then[jump(operand(1))];
+                _[jump(operand(1))];
             } else {
-                then[operand(0) ^= operand(1)];
+                _[operand(0) ^= operand(1)];
                 if (detail_->update_flags) {
                     // TODO
                 }
@@ -232,49 +228,53 @@ public:
         case ARM_INS_STR:
         case ARM_INS_STRT:
         case ARM_INS_STREX: { // TODO: atomic
-            then[operand(1) ^= operand(0)];
-            handleWriteback();
+            _[operand(1) ^= operand(0)];
+            handleWriteback(bodyBasicBlock);
             break;
         }
         case ARM_INS_STRH:
         case ARM_INS_STRHT:
         case ARM_INS_STREXH: {
-            then[operand(1, 16) ^= truncate(operand(0))];
-            handleWriteback();
+            _[operand(1, 16) ^= truncate(operand(0))];
+            handleWriteback(bodyBasicBlock);
             break;
         }
         case ARM_INS_STRB:
         case ARM_INS_STRBT:
         case ARM_INS_STREXB: {
-            then[operand(1, 8) ^= truncate(operand(0))];
-            handleWriteback();
+            _[operand(1, 8) ^= truncate(operand(0))];
+            handleWriteback(bodyBasicBlock);
             break;
         }
         // TODO case ARM_INS_STRD:
         default: {
-            then(std::make_unique<core::ir::InlineAssembly>());
+            _(std::make_unique<core::ir::InlineAssembly>());
             break;
         }
         } /* switch */
-
-        if (then.basicBlock() != condition.basicBlock() && !then.basicBlock()->getTerminator()) {
-            then[jump(directSuccessor())];
-        }
     }
 
-private:
-    CapstoneDisassembler &getDisassembler(int mode) {
-        foreach (auto &modeAndDisassembler, disassemblers_) {
-            if (modeAndDisassembler.first == mode) {
-                return modeAndDisassembler.second;
-            }
+    void handleWriteback(core::ir::BasicBlock *bodyBasicBlock) {
+        if (detail_->op_count != 2 && detail_->op_count != 3) {
+            throw core::irgen::InvalidInstructionException(tr("Expected either two or three operands."));
         }
-        disassemblers_.push_back(std::make_pair(mode, CapstoneDisassembler(CS_ARCH_ARM, mode)));
-        return disassemblers_.back().second;
-    }
+        if (detail_->operands[0].type != ARM_OP_REG) {
+            throw core::irgen::InvalidInstructionException(tr("Expected the first operand to be a register."));
+        }
+        if (detail_->operands[1].type != ARM_OP_MEM) {
+            throw core::irgen::InvalidInstructionException(tr("Expected the second operand to be a memory operand."));
+        }
 
-    CapstoneInstructionPtr disassemble(const ArmInstruction *instruction) {
-        return getDisassembler(instruction->mode()).disassemble(instruction->addr(), instruction->bytes(), instruction->size());
+        using namespace core::irgen::expressions;
+        ArmExpressionFactoryCallback _(factory_, bodyBasicBlock, instruction_);
+
+        if (detail_->op_count == 3) {
+            auto base = regizter(getRegister(detail_->operands[1].mem.base));
+            _[base ^= base + operand(2)];
+        } else if (detail_->writeback) {
+            auto base = regizter(getRegister(detail_->operands[1].mem.base));
+            _[base ^= base + constant(detail_->operands[1].mem.disp)];
+        }
     }
 
     core::irgen::expressions::TermExpression operand(std::size_t index, SmallBitSize sizeHint = 32) const {
@@ -476,8 +476,7 @@ ArmInstructionAnalyzer::ArmInstructionAnalyzer(const ArmArchitecture *architectu
     impl_(std::make_unique<ArmInstructionAnalyzerImpl>(architecture))
 {}
 
-ArmInstructionAnalyzer::~ArmInstructionAnalyzer() {
-}
+ArmInstructionAnalyzer::~ArmInstructionAnalyzer() {}
 
 void ArmInstructionAnalyzer::doCreateStatements(const core::arch::Instruction *instruction, core::ir::Program *program) {
     impl_->createStatements(checked_cast<const ArmInstruction *>(instruction), program);
