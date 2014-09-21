@@ -46,6 +46,8 @@ NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, less)
 NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, less_or_equal)
 NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, below_or_equal)
 
+NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, sp)
+
 } // anonymous namespace
 
 class ArmInstructionAnalyzerImpl {
@@ -223,6 +225,13 @@ private:
                     // TODO
                 }
             }
+            break;
+        }
+        case ARM_INS_PUSH: {
+            for (int i = 0; i < detail_->op_count; ++i) {
+                _[*(sp - constant(4 * (detail_->op_count - i))) ^= operand(i)];
+            }
+            _[sp ^= sp - constant(4 * detail_->op_count)];
             break;
         }
         case ARM_INS_STR:
