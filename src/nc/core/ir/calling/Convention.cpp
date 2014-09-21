@@ -167,7 +167,7 @@ std::vector<MemoryLocation> Convention::sortArguments(std::vector<MemoryLocation
             }
         }
 
-        groupIsFilled = groupIsFilled || someGroupIsFilled;
+        someGroupIsFilled = someGroupIsFilled || groupIsFilled;
     }
 
     /* If some group was completely filled, copy the stack arguments. */
