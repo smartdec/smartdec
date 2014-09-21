@@ -227,6 +227,13 @@ private:
             }
             break;
         }
+        case ARM_INS_POP: {
+            for (int i = 0; i < detail_->op_count; ++i) {
+                _[operand(i) ^= *(sp - constant(4 * (detail_->op_count - i)))];
+            }
+            _[sp ^= sp + constant(4 * detail_->op_count)];
+            break;
+        }
         case ARM_INS_PUSH: {
             for (int i = 0; i < detail_->op_count; ++i) {
                 _[*(sp - constant(4 * (detail_->op_count - i))) ^= operand(i)];
