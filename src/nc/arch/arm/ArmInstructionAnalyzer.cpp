@@ -246,6 +246,17 @@ private:
             }
             break;
         }
+        case ARM_INS_ORR: {
+            _[operand(0) ^= operand(1) | operand(2)];
+            if (detail_->update_flags) {
+                _[
+                    n ^= signed_(operand(0)) < constant(0),
+                    z ^= operand(0) == constant(0),
+                    c ^= intrinsic()
+                ];
+            }
+            break;
+        }
         case ARM_INS_POP: {
             for (int i = 0; i < detail_->op_count; ++i) {
                 _[operand(i) ^= *(sp - constant(4 * (detail_->op_count - i)))];
