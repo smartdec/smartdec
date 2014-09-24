@@ -89,7 +89,7 @@ include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/3rd-party)
 
 # Find Boost.
 find_package(Boost 1.46.0 REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 
 # Find Qt4.
 find_package(Qt4 REQUIRED QtCore QtGui)
