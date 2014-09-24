@@ -47,6 +47,7 @@ NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, less_or_equal)
 NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, below_or_equal)
 
 NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, sp)
+NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, pc)
 
 } // anonymous namespace
 
@@ -164,19 +165,21 @@ private:
         switch (instr_->id) {
         case ARM_INS_ADD: {
             _[operand(0) ^= operand(1) + operand(2)];
-            if (detail_->update_flags) {
-                _[
-                    n ^= signed_(operand(0)) < constant(0),
-                    z ^= operand(0) == constant(0),
-                    c ^= intrinsic(),
-                    v ^= intrinsic()
-                ];
+            if (!handleWriteToPC(bodyBasicBlock)) {
+                if (detail_->update_flags) {
+                    _[
+                        n ^= signed_(operand(0)) < constant(0),
+                        z ^= operand(0) == constant(0),
+                        c ^= intrinsic(),
+                        v ^= intrinsic()
+                    ];
+                }
             }
             break;
         }
         case ARM_INS_B:
         case ARM_INS_BX: {
-            if (detail_->operands[0].reg == ARM_REG_LR) {
+            if (getOperandRegister(0) == ARM_REG_LR) {
                 _[return_()];
             } else {
                 _[jump(operand(0))];
@@ -236,10 +239,8 @@ private:
         }
         // TODO case ARM_INS_LDRD:
         case ARM_INS_MOV: {
-            if (detail_->operands[0].reg == ARM_REG_PC) {
-                _[jump(operand(1))];
-            } else {
-                _[operand(0) ^= operand(1)];
+            _[operand(0) ^= operand(1)];
+            if (!handleWriteToPC(bodyBasicBlock)) {
                 if (detail_->update_flags) {
                     // TODO
                 }
@@ -248,12 +249,14 @@ private:
         }
         case ARM_INS_ORR: {
             _[operand(0) ^= operand(1) | operand(2)];
-            if (detail_->update_flags) {
-                _[
-                    n ^= signed_(operand(0)) < constant(0),
-                    z ^= operand(0) == constant(0),
-                    c ^= intrinsic()
-                ];
+            if (!handleWriteToPC(bodyBasicBlock)) {
+                if (detail_->update_flags) {
+                    _[
+                        n ^= signed_(operand(0)) < constant(0),
+                        z ^= operand(0) == constant(0),
+                        c ^= intrinsic()
+                    ];
+                }
             }
             break;
         }
@@ -262,6 +265,9 @@ private:
                 _[operand(i) ^= *(sp - constant(4 * (detail_->op_count - i)))];
             }
             _[sp ^= sp + constant(4 * detail_->op_count)];
+            for (int i = 0; i < detail_->op_count; ++i) {
+                handleWriteToPC(bodyBasicBlock, i);
+            }
             break;
         }
         case ARM_INS_PUSH: {
@@ -273,13 +279,15 @@ private:
         }
         case ARM_INS_RSB: {
             _[operand(0) ^= operand(2) - operand(1)];
-            if (detail_->update_flags) {
-                _[
-                    n ^= signed_(operand(0)) < constant(0),
-                    z ^= operand(0) == constant(0),
-                    c ^= intrinsic(),
-                    v ^= intrinsic()
-                ];
+            if (!handleWriteToPC(bodyBasicBlock)) {
+                if (detail_->update_flags) {
+                    _[
+                        n ^= signed_(operand(0)) < constant(0),
+                        z ^= operand(0) == constant(0),
+                        c ^= intrinsic(),
+                        v ^= intrinsic()
+                    ];
+                }
             }
             break;
         }
@@ -307,13 +315,15 @@ private:
         // TODO case ARM_INS_STRD:
         case ARM_INS_SUB: {
             _[operand(0) ^= operand(1) + operand(2)];
-            if (detail_->update_flags) {
-                _[
-                    n ^= signed_(operand(0)) < constant(0),
-                    z ^= operand(0) == constant(0),
-                    c ^= intrinsic(),
-                    v ^= intrinsic()
-                ];
+            if (!handleWriteToPC(bodyBasicBlock)) {
+                if (detail_->update_flags) {
+                    _[
+                        n ^= signed_(operand(0)) < constant(0),
+                        z ^= operand(0) == constant(0),
+                        c ^= intrinsic(),
+                        v ^= intrinsic()
+                    ];
+                }
             }
             break;
         }
@@ -344,6 +354,30 @@ private:
         } else if (detail_->writeback) {
             auto base = regizter(getRegister(detail_->operands[1].mem.base));
             _[base ^= base + constant(detail_->operands[1].mem.disp)];
+        }
+    }
+
+    bool handleWriteToPC(core::ir::BasicBlock *bodyBasicBlock, int modifiedOperandIndex = 0) {
+        if (getOperandRegister(modifiedOperandIndex) == ARM_REG_PC) {
+            using namespace core::irgen::expressions;
+            ArmExpressionFactoryCallback _(factory_, bodyBasicBlock, instruction_);
+            _[jump(pc)];
+            return true;
+        }
+        return false;
+    }
+
+    unsigned int getOperandRegister(std::size_t index) const {
+        if (index >= detail_->op_count) {
+            throw core::irgen::InvalidInstructionException(tr("There is no operand %1.").arg(index));
+        }
+
+        const auto &operand = detail_->operands[index];
+
+        if (operand.type == ARM_OP_REG) {
+            return operand.reg;
+        } else {
+            return ARM_REG_INVALID;
         }
     }
 
