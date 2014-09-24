@@ -34,7 +34,7 @@ mark_as_advanced(
     CASPTONE_USE_DEFAULT_ALLOC)
 
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-    add_definitions(-Wno-extra)
+    add_definitions(-Wno-extra -Wno-unused-function -Wno-unknown-pragmas)
 endif()
 
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
