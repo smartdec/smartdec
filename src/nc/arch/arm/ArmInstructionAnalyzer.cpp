@@ -323,7 +323,7 @@ private:
         }
         // TODO case ARM_INS_STRD:
         case ARM_INS_SUB: {
-            _[operand(0) ^= operand(1) + operand(2)];
+            _[operand(0) ^= operand(1) - operand(2)];
             if (!handleWriteToPC(bodyBasicBlock)) {
                 if (detail_->update_flags) {
                     _[
