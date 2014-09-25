@@ -135,19 +135,19 @@ private:
             _[jump(~v, bodyBasicBlock, directSuccessor)];
             break;
         case ARM_CC_HI:
-            _[jump(choice(~below_or_equal, c & ~z), bodyBasicBlock, directSuccessor)];
+            _[jump(~choice(below_or_equal, ~c | z), bodyBasicBlock, directSuccessor)];
             break;
         case ARM_CC_LS:
             _[jump(choice(below_or_equal, ~c | z), bodyBasicBlock, directSuccessor)];
             break;
         case ARM_CC_GE:
-            _[jump(choice(~less, n == v), bodyBasicBlock, directSuccessor)];
+            _[jump(~choice(less, ~(n == v)), bodyBasicBlock, directSuccessor)];
             break;
         case ARM_CC_LT:
             _[jump(choice(less, ~(n == v)), bodyBasicBlock, directSuccessor)];
             break;
         case ARM_CC_GT:
-            _[jump(choice(~less_or_equal, ~z & (n == v)), bodyBasicBlock, directSuccessor)];
+            _[jump(~choice(less_or_equal, z | ~(n == v)), bodyBasicBlock, directSuccessor)];
             break;
         case ARM_CC_LE:
             _[jump(choice(less_or_equal, z | ~(n == v)), bodyBasicBlock, directSuccessor)];
