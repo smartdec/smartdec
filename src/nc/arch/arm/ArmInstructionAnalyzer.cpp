@@ -162,6 +162,15 @@ private:
 
         ArmExpressionFactoryCallback _(factory_, bodyBasicBlock, instruction_);
 
+        /*
+         * When executing an ARM instruction, PC reads as the address of the current instruction plus 8.
+         * When executing a Thumb instruction, PC reads as the address of the current instruction plus 4.
+         * Writing an address to PC causes a branch to that address.
+         */
+        _[
+            pc ^= constant(instruction_->addr() + 2 * instruction_->size())
+        ];
+
         switch (instr_->id) {
         case ARM_INS_ADD: {
             _[operand(0) ^= operand(1) + operand(2)];
