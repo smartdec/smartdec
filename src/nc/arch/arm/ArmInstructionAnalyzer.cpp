@@ -271,7 +271,9 @@ private:
         }
         case ARM_INS_POP: {
             for (int i = 0; i < detail_->op_count; ++i) {
-                _[operand(i) ^= *(sp - constant(4 * (detail_->op_count - i)))];
+                if (getOperandRegister(i) != ARM_REG_SP) {
+                    _[operand(i) ^= *(sp + constant(4 * i))];
+                }
             }
             _[sp ^= sp + constant(4 * detail_->op_count)];
             for (int i = 0; i < detail_->op_count; ++i) {
