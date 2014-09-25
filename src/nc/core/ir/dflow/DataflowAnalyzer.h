@@ -42,7 +42,7 @@ namespace arch {
 
 namespace ir {
 
-class Function;
+class CFG;
 class MemoryLocation;
 class Statement;
 class Term;
@@ -96,11 +96,11 @@ public:
 
     /**
      * Performs joint reaching definitions and constant propagation/folding
-     * analysis on the function given to the constructor.
+     * analysis on the given control flow graph.
      *
-     * \param[in] function  Valid pointer to the function.
+     * \param[in] cfg Control flow graph to run dataflow analysis on.
      */
-    void analyze(const Function *function);
+    void analyze(const CFG &cfg);
 
     /**
      * Executes a statement.

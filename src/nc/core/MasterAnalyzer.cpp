@@ -30,6 +30,7 @@
 #include <nc/core/Context.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/ir/BasicBlock.h>
+#include <nc/core/ir/CFG.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/FunctionsGenerator.h>
@@ -117,7 +118,7 @@ void MasterAnalyzer::dataflowAnalysis(Context &context, ir::Function *function) 
     context.hooks()->instrument(function, dataflow.get());
 
     ir::dflow::DataflowAnalyzer(*dataflow, context.image()->architecture(), context.cancellationToken(), context.logToken())
-        .analyze(function);
+        .analyze(ir::CFG(function->basicBlocks()));
 
     context.dataflows()->emplace(function, std::move(dataflow));
 }

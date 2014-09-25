@@ -33,7 +33,6 @@
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/CFG.h>
-#include <nc/core/ir/Function.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
@@ -65,18 +64,13 @@ void remove_if(Map &map, Pred pred) {
 
 } // anonymous namespace
 
-void DataflowAnalyzer::analyze(const Function *function) {
-    assert(function != NULL);
-
+void DataflowAnalyzer::analyze(const CFG &cfg) {
     /*
      * Returns true if the given term does not cover given memory location.
      */
     auto notCovered = [this](const MemoryLocation &mloc, const Term *term) -> bool {
         return !dataflow().getMemoryLocation(term).covers(mloc);
     };
-
-    /* Control flow graph to run abstract interpretation loop on. */
-    CFG cfg(function->basicBlocks());
 
     /* Mapping of a basic block to the definitions reaching its end. */
     boost::unordered_map<const BasicBlock *, ReachingDefinitions> outDefinitions;
@@ -91,7 +85,7 @@ void DataflowAnalyzer::analyze(const Function *function) {
         /*
          * Run abstract interpretation on all basic blocks.
          */
-        foreach (auto basicBlock, function->basicBlocks()) {
+        foreach (auto basicBlock, cfg.basicBlocks()) {
             ExecutionContext context(*this);
 
             /* Merge reaching definitions from predecessors. */
