@@ -814,7 +814,20 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
             return makeConstant(term, term->asConstant()->value());
         }
         case Term::INTRINSIC: {
-            return std::make_unique<likec::CallOperator>(tree(), std::make_unique<likec::String>(tree(), "intrinsic"));
+            auto intrinsic = term->as<Intrinsic>();
+            QString name;
+            switch (intrinsic->intrinsicKind()) {
+                case Intrinsic::UNDEFINED:
+                    name = QLatin1String("undefined");
+                    break;
+                case Intrinsic::ZERO_STACK_OFFSET:
+                    name = QLatin1String("zero stack offset");
+                    break;
+                default:
+                    name = QLatin1String("intrinsic");
+                    break;
+            }
+            return std::make_unique<likec::CallOperator>(tree(), std::make_unique<likec::String>(tree(), name));
         }
         case Term::MEMORY_LOCATION_ACCESS: {
             assert(!"The term must belong to a variable.");
