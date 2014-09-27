@@ -885,12 +885,17 @@ public:
             }
             case UD_Iret: {
                 auto sp = architecture_->stackPointer();
+                auto ip = architecture_->instructionPointer();
+
+                _[regizter(ip) ^= *regizter(sp)];
+                /* sp is incremented in call instruction. */
 
                 if (hasOperand(0)) {
                     _[regizter(sp) ^= regizter(sp) + zero_extend(operand(0))];
                 }
 
-                _[return_()];
+                _[jump(regizter(ip))];
+
                 break;
             }
             case UD_Ishl: {

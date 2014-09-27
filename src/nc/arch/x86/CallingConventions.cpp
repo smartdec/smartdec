@@ -20,8 +20,8 @@ AMD64CallingConvention::AMD64CallingConvention(const X86Architecture *architectu
 {
     setStackPointer(architecture->stackPointer()->memoryLocation());
 
-    setFirstArgumentOffset(64);
-    setArgumentAlignment(64);
+    setFirstArgumentOffset(architecture->bitness());
+    setArgumentAlignment(architecture->bitness());
 
     /* Used for integer and pointer arguments. */
     std::vector<core::ir::MemoryLocation> scalarArgs;
@@ -49,6 +49,10 @@ AMD64CallingConvention::AMD64CallingConvention(const X86Architecture *architectu
     addReturnValueLocation(X86Registers::xmm0()->memoryLocation());
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
+        std::make_unique<core::ir::MemoryLocationAccess>(core::ir::MemoryLocation(core::ir::MemoryDomain::STACK, 0, architecture->bitness())),
+        std::make_unique<core::ir::Intrinsic>(core::ir::Intrinsic::RETURN_ADDRESS, architecture->bitness())
+    ));
+    addEnterStatement(std::make_unique<core::ir::Assignment>(
         std::make_unique<core::ir::MemoryLocationAccess>(X86Registers::df()->memoryLocation()),
         std::make_unique<core::ir::Constant>(SizedValue(X86Registers::df()->size(), 0))
     ));
@@ -59,8 +63,8 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const X86Architecture
 {
     setStackPointer(architecture->stackPointer()->memoryLocation());
 
-    setFirstArgumentOffset(64);
-    setArgumentAlignment(64);
+    setFirstArgumentOffset(architecture->bitness());
+    setArgumentAlignment(architecture->bitness());
 
     /* Used for integer and pointer arguments. */
     std::vector<core::ir::MemoryLocation> scalarArgs;
@@ -82,6 +86,10 @@ Microsoft64CallingConvention::Microsoft64CallingConvention(const X86Architecture
     addReturnValueLocation(X86Registers::xmm0()->memoryLocation());
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
+        std::make_unique<core::ir::MemoryLocationAccess>(core::ir::MemoryLocation(core::ir::MemoryDomain::STACK, 0, architecture->bitness())),
+        std::make_unique<core::ir::Intrinsic>(core::ir::Intrinsic::RETURN_ADDRESS, architecture->bitness())
+    ));
+    addEnterStatement(std::make_unique<core::ir::Assignment>(
         std::make_unique<core::ir::MemoryLocationAccess>(X86Registers::df()->memoryLocation()),
         std::make_unique<core::ir::Constant>(SizedValue(X86Registers::df()->size(), 0))
     ));
@@ -92,12 +100,16 @@ Cdecl32CallingConvention::Cdecl32CallingConvention(const X86Architecture *archit
 {
     setStackPointer(architecture->stackPointer()->memoryLocation());
 
-    setFirstArgumentOffset(32);
-    setArgumentAlignment(32);
+    setFirstArgumentOffset(architecture->bitness());
+    setArgumentAlignment(architecture->bitness());
 
     addReturnValueLocation(X86Registers::eax()->memoryLocation());
     addReturnValueLocation(X86Registers::st0()->memoryLocation());
 
+    addEnterStatement(std::make_unique<core::ir::Assignment>(
+        std::make_unique<core::ir::MemoryLocationAccess>(core::ir::MemoryLocation(core::ir::MemoryDomain::STACK, 0, architecture->bitness())),
+        std::make_unique<core::ir::Intrinsic>(core::ir::Intrinsic::RETURN_ADDRESS, architecture->bitness())
+    ));
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         std::make_unique<core::ir::MemoryLocationAccess>(X86Registers::df()->memoryLocation()),
         std::make_unique<core::ir::Constant>(SizedValue(X86Registers::df()->size(), 0))
@@ -109,12 +121,16 @@ Cdecl16CallingConvention::Cdecl16CallingConvention(const X86Architecture *archit
 {
     setStackPointer(architecture->stackPointer()->memoryLocation());
 
-    setFirstArgumentOffset(16);
-    setArgumentAlignment(16);
+    setFirstArgumentOffset(architecture->bitness());
+    setArgumentAlignment(architecture->bitness());
 
     addReturnValueLocation(X86Registers::ax()->memoryLocation());
     addReturnValueLocation(X86Registers::st0()->memoryLocation());
 
+    addEnterStatement(std::make_unique<core::ir::Assignment>(
+        std::make_unique<core::ir::MemoryLocationAccess>(core::ir::MemoryLocation(core::ir::MemoryDomain::STACK, 0, architecture->bitness())),
+        std::make_unique<core::ir::Intrinsic>(core::ir::Intrinsic::RETURN_ADDRESS, architecture->bitness())
+    ));
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         std::make_unique<core::ir::MemoryLocationAccess>(X86Registers::df()->memoryLocation()),
         std::make_unique<core::ir::Constant>(SizedValue(X86Registers::df()->size(), 0))
@@ -126,13 +142,17 @@ Stdcall32CallingConvention::Stdcall32CallingConvention(const X86Architecture *ar
 {
     setStackPointer(architecture->stackPointer()->memoryLocation());
 
-    setFirstArgumentOffset(32);
-    setArgumentAlignment(32);
+    setFirstArgumentOffset(architecture->bitness());
+    setArgumentAlignment(architecture->bitness());
     setCalleeCleanup(true);
 
     addReturnValueLocation(X86Registers::ax()->memoryLocation());
     addReturnValueLocation(X86Registers::st0()->memoryLocation());
 
+    addEnterStatement(std::make_unique<core::ir::Assignment>(
+        std::make_unique<core::ir::MemoryLocationAccess>(core::ir::MemoryLocation(core::ir::MemoryDomain::STACK, 0, architecture->bitness())),
+        std::make_unique<core::ir::Intrinsic>(core::ir::Intrinsic::RETURN_ADDRESS, architecture->bitness())
+    ));
     addEnterStatement(std::make_unique<core::ir::Assignment>(
         std::make_unique<core::ir::MemoryLocationAccess>(X86Registers::df()->memoryLocation()),
         std::make_unique<core::ir::Constant>(SizedValue(X86Registers::df()->size(), 0))
