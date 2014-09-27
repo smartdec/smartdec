@@ -127,14 +127,6 @@ const Jump *BasicBlock::getJump() const {
     }
 }
 
-const Return *BasicBlock::getReturn() const {
-    if (statements().empty()) {
-        return NULL;
-    } else {
-        return statements().back()->as<Return>();
-    }
-}
-
 std::unique_ptr<BasicBlock> BasicBlock::split(ilist<Statement>::const_iterator position, const boost::optional<ByteAddr> &address) {
     /* Create a new basic block. */
     std::unique_ptr<BasicBlock> result(new BasicBlock(address));

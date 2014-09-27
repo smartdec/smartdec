@@ -48,8 +48,8 @@ namespace ir {
 
 class Call;
 class Function;
+class Jump;
 class Statement;
-class Return;
 
 namespace dflow {
     class Dataflow;
@@ -87,8 +87,14 @@ private:
     /** Calling convention detector. */
     ConventionDetector conventionDetector_;
 
-    /** Hooks inserted into a given function. */
-    boost::unordered_map<Function *, std::vector<Statement *>> insertedHooks_;
+    /** Mapping from a function to the callback inserted into its entry. */
+    boost::unordered_map<Function *, Statement *> function2callback_;
+
+    /** Mapping from a call to the callback inserted after the call. */
+    boost::unordered_map<Call *, Statement *> call2callback_;
+
+    /** Mapping from a jump to the callback inserted before the call. */
+    boost::unordered_map<Jump *, Statement *> jump2callback_;
 
     /** All entry hooks ever created. */
     std::map<std::tuple<const Function *, const Convention *, const FunctionSignature *>, std::unique_ptr<EntryHook>> entryHooks_;
@@ -103,10 +109,10 @@ private:
     boost::unordered_map<const Call *, CallHook *> lastCallHooks_;
 
     /** All return hooks ever created. */
-    std::map<std::tuple<const Return *, const Convention *, const FunctionSignature *>, std::unique_ptr<ReturnHook>> returnHooks_;
+    std::map<std::tuple<const Jump *, const Convention *, const FunctionSignature *>, std::unique_ptr<ReturnHook>> returnHooks_;
 
-    /** Mapping from a return to the last return hook used for instrumenting it. */
-    boost::unordered_map<const Return *, ReturnHook *> lastReturnHooks_;
+    /** Mapping from a return jump to the last return hook used for instrumenting it. */
+    boost::unordered_map<const Jump *, ReturnHook *> lastReturnHooks_;
 
 public:
     /**
@@ -163,12 +169,12 @@ public:
     const CallHook *getCallHook(const Call *call) const;
 
     /**
-     * \param ret Valid pointer to a return statement.
+     * \param ret Valid pointer to a return jump.
      *
-     * \return Pointer to the last ReturnHook used for instrumenting this return.
+     * \return Pointer to the last ReturnHook used for instrumenting this jump.
      *         Can be NULL.
      */
-    const ReturnHook *getReturnHook(const Return *ret) const;
+    const ReturnHook *getReturnHook(const Jump *jump) const;
 
     /**
      * Inserts callback statements into the function. When executed by
@@ -188,11 +194,6 @@ public:
      * \param function Valid pointer to a function.
      */
     void deinstrument(Function *function);
-
-    /**
-     * Undoes instrumentation of all the functions.
-     */
-    void deinstrumentAll();
 
 private:
     /**
@@ -229,20 +230,20 @@ private:
     void deinstrumentCall(Call *call);
 
     /**
-     * Creates a ReturnHook (if not done yet) and instruments the return with it.
-     * If the return was previously instrumented, deinstruments it.
+     * Creates a ReturnHook (if not done yet) and instruments the given return jump with it.
+     * If the jump was previously instrumented, deinstruments it.
      *
-     * \param ret Valid pointer to a return statement.
+     * \param jump Valid pointer to a return jump.
      */
-    void instrumentReturn(Return *ret);
+    void instrumentJump(Jump *jump);
 
     /**
      * Undoes the instrumentation of a return statement, if performed before.
      * Otherwise, does nothing.
      *
-     * \param ret Valid pointer to a return statement.
+     * \param jump Valid pointer to a return jump.
      */
-    void deinstrumentReturn(Return *ret);
+    void deinstrumentJump(Jump *jump);
 };
 
 /**

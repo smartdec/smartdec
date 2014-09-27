@@ -103,11 +103,6 @@ private:
 };
 
 /**
- * Class for return statements.
- */
-class ReturnStatement: public StatementBase<ReturnStatement> {};
-
-/**
  * Class for halt statements.
  */
 class HaltStatement: public StatementBase<HaltStatement> {};
@@ -824,12 +819,6 @@ call(E target) {
 }
 
 inline
-ReturnStatement
-return_() {
-    return ReturnStatement();
-}
-
-inline
 HaltStatement
 halt() {
     return HaltStatement();
@@ -1024,16 +1013,6 @@ protected:
         NC_UNUSED(expression);
 
         return std::unique_ptr<ir::Term>();
-    }
-
-    /**
-     * \param statement                Return statement to create IR statement from.
-     * \returns                        Newly created ir statement for the given statement.
-     */
-    std::unique_ptr<ir::Statement> doCreateStatement(ReturnStatement &statement) const {
-        NC_UNUSED(statement);
-
-        return std::make_unique<ir::Return>();
     }
 
     /**

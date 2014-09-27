@@ -54,6 +54,7 @@
 #include <nc/core/ir/cflow/Switch.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/Uses.h>
+#include <nc/core/ir/dflow/Utils.h>
 #include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/liveness/Livenesses.h>
 #include <nc/core/ir/types/Type.h>
@@ -653,7 +654,16 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
         case Statement::JUMP: {
             const Jump *jump = statement->asJump();
 
-            if (jump->isConditional()) {
+            if (dflow::isReturn(jump, dataflow_)) {
+                if (signature()->returnValue()) {
+                    if (auto returnHook = parent().hooks().getReturnHook(jump)) {
+                        return std::make_unique<likec::Return>(
+                            tree(),
+                            makeExpression(returnHook->getReturnValueTerm(signature()->returnValue().get())));
+                    }
+                }
+                return std::make_unique<likec::Return>(tree());
+            } else if (jump->isConditional()) {
                 auto thenJump = makeJump(jump->thenTarget(), nextBB, breakBB, continueBB);
                 auto elseJump = makeJump(jump->elseTarget(), nextBB, breakBB, continueBB);
                 auto condition = makeExpression(jump->condition());
@@ -711,16 +721,6 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
             }
 
             return std::make_unique<likec::ExpressionStatement>(tree(), std::move(callOperator));
-        }
-        case Statement::RETURN: {
-            if (signature()->returnValue()) {
-                if (auto returnHook = parent().hooks().getReturnHook(statement->asReturn())) {
-                    return std::make_unique<likec::Return>(
-                        tree(),
-                        makeExpression(returnHook->getReturnValueTerm(signature()->returnValue().get())));
-                }
-            }
-            return std::make_unique<likec::Return>(tree());
         }
         case Statement::HALT: {
             return NULL;
@@ -1189,10 +1189,12 @@ void DefinitionGenerator::computeInvisibleStatements() {
                         invisibleStatements_.insert(termAndClone.second->statement());
                     }
                 }
-            } else if (auto ret = statement->asReturn()) {
-                if (auto hook = parent().hooks().getReturnHook(ret)) {
-                    foreach (const auto &termAndClone, hook->returnValueTerms()) {
-                        invisibleStatements_.insert(termAndClone.second->statement());
+            } else if (auto jump = statement->asJump()) {
+                if (dflow::isReturn(jump, dataflow_)) {
+                    if (auto hook = parent().hooks().getReturnHook(jump)) {
+                        foreach (const auto &termAndClone, hook->returnValueTerms()) {
+                            invisibleStatements_.insert(termAndClone.second->statement());
+                        }
                     }
                 }
             }

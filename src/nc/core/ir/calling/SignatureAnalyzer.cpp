@@ -13,11 +13,13 @@
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
+#include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/Uses.h>
 #include <nc/core/ir/dflow/Value.h>
+#include <nc/core/ir/dflow/Utils.h>
 
 #include "CallHook.h"
 #include "Convention.h"
@@ -64,14 +66,16 @@ void SignatureAnalyzer::computeMappings() {
                     foreach (const auto &locationAndTerm, hooks_.getCallHook(call)->speculativeReturnValueTerms()) {
                         speculativeReturnValueTerm2calleeId_[locationAndTerm.second] = id;
                     }
-                } else if (auto ret = statement->asReturn()) {
-                    auto id = getCalleeId(function);
+                } else if (auto jump = statement->asJump()) {
+                    if (dflow::isReturn(jump, dataflow)) {
+                        auto id = getCalleeId(function);
 
-                    id2referrers_[id].returns.push_back(ret);
-                    function2returns_[function].push_back(ret);
+                        id2referrers_[id].returns.push_back(jump);
+                        function2returns_[function].push_back(jump);
 
-                    foreach (const auto &locationAndTerm, hooks_.getReturnHook(ret)->speculativeReturnValueTerms()) {
-                        speculativeReturnValueTerm2calleeId_[locationAndTerm.second] = id;
+                        foreach (const auto &locationAndTerm, hooks_.getReturnHook(jump)->speculativeReturnValueTerms()) {
+                            speculativeReturnValueTerm2calleeId_[locationAndTerm.second] = id;
+                        }
                     }
                 }
             }
@@ -430,13 +434,13 @@ std::vector<MemoryLocation> SignatureAnalyzer::getUsedReturnValueLocations(const
     return result;
 }
 
-std::vector<MemoryLocation> SignatureAnalyzer::getUnusedReturnValueLocations(const Return *ret) {
-    assert(ret != NULL);
+std::vector<MemoryLocation> SignatureAnalyzer::getUnusedReturnValueLocations(const Jump *jump) {
+    assert(jump != NULL);
 
     std::vector<MemoryLocation> result;
 
-    auto returnHook = hooks_.getReturnHook(ret);
-    auto function = ret->basicBlock()->function();
+    auto returnHook = hooks_.getReturnHook(jump);
+    auto function = jump->basicBlock()->function();
     auto &dataflow = *dataflows_.at(function);
     auto &uses = *function2uses_.at(function);
 

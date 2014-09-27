@@ -42,6 +42,7 @@
 #include <nc/core/ir/cflow/Graph.h>
 #include <nc/core/ir/cflow/Switch.h>
 #include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Utils.h>
 #include <nc/core/ir/dflow/Value.h>
 
 #include "Liveness.h"
@@ -90,14 +91,24 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
             const Jump *jump = statement->asJump();
 
             if (!std::binary_search(deadJumps_.begin(), deadJumps_.end(), jump)) {
-                if (jump->condition()) {
-                    makeLive(jump->condition());
-                }
-                if (jump->thenTarget().address()) {
-                    makeLive(jump->thenTarget().address());
-                }
-                if (jump->elseTarget().address()) {
-                    makeLive(jump->elseTarget().address());
+                if (dflow::isReturn(jump, dataflow_)) {
+                    if (auto signature = signatures_.getSignature(function_)) {
+                        if (signature->returnValue()) {
+                            if (auto returnHook = hooks_.getReturnHook(jump)) {
+                                makeLive(returnHook->getReturnValueTerm(signature->returnValue().get()));
+                            }
+                        }
+                    }
+                } else {
+                    if (jump->condition()) {
+                        makeLive(jump->condition());
+                    }
+                    if (jump->thenTarget().address()) {
+                        makeLive(jump->thenTarget().address());
+                    }
+                    if (jump->elseTarget().address()) {
+                        makeLive(jump->elseTarget().address());
+                    }
                 }
             }
             break;
@@ -115,18 +126,6 @@ void LivenessAnalyzer::computeLiveness(const Statement *statement) {
                 }
             }
 
-            break;
-        }
-        case Statement::RETURN: {
-            auto ret = statement->asReturn();
-
-            if (auto signature = signatures_.getSignature(function_)) {
-                if (signature->returnValue()) {
-                    if (auto returnHook = hooks_.getReturnHook(ret)) {
-                        makeLive(returnHook->getReturnValueTerm(signature->returnValue().get()));
-                    }
-                }
-            }
             break;
         }
         case Statement::HALT:

@@ -27,8 +27,6 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/ir/BasicBlock.h>
-#include <nc/core/ir/Function.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 
@@ -40,27 +38,27 @@ namespace core {
 namespace ir {
 namespace calling {
 
-EntryHook::EntryHook(const Convention *convention, const FunctionSignature *signature):
-    insertedStatementsCount_(0)
-{
+EntryHook::EntryHook(const Convention *convention, const FunctionSignature *signature) {
     assert(convention != NULL);
 
+    auto &statements = patch_.statements();
+
     if (convention->stackPointer()) {
-        statements_.push_back(std::make_unique<Assignment>(
+        statements.push_back(std::make_unique<Assignment>(
             std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
             std::make_unique<Intrinsic>(Intrinsic::ZERO_STACK_OFFSET, convention->stackPointer().size<SmallBitSize>())
         ));
     }
 
     foreach (auto statement, convention->entryStatements()) {
-        statements_.push_back(statement->clone());
+        statements.push_back(statement->clone());
     }
 
     auto createArgument = [&](const Term *term) {
         auto clone = term->clone();
         argumentTerms_[term] = clone.get();
 
-        statements_.push_back(std::make_unique<Assignment>(
+        statements.push_back(std::make_unique<Assignment>(
             std::move(clone),
             std::make_unique<Intrinsic>(Intrinsic::UNDEFINED, term->size())
         ));
@@ -70,30 +68,6 @@ EntryHook::EntryHook(const Convention *convention, const FunctionSignature *sign
         foreach (const auto &term, signature->arguments()) {
             createArgument(term.get());
         }
-    }
-}
-
-EntryHook::~EntryHook() {}
-
-void EntryHook::instrument(Function *function) {
-    if (!function->entry()) {
-        return;
-    }
-
-    while (!statements_.empty()) {
-        function->entry()->pushFront(statements_.pop_back());
-        ++insertedStatementsCount_;
-    }
-}
-
-void EntryHook::deinstrument(Function *function) {
-    if (!function->entry()) {
-        return;
-    }
-
-    while (insertedStatementsCount_ > 0) {
-        statements_.push_back(function->entry()->statements().pop_front());
-        --insertedStatementsCount_;
     }
 }
 

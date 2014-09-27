@@ -25,7 +25,7 @@ namespace ir {
 
 class Call;
 class Functions;
-class Return;
+class Jump;
 class Term;
 
 namespace dflow {
@@ -55,7 +55,7 @@ class SignatureAnalyzer {
     struct Referrers {
         std::vector<const Function *> functions;
         std::vector<const Call *> calls;
-        std::vector<const Return *> returns;
+        std::vector<const Jump *> returns;
     };
 
     /** Mapping from a callee id to the functions, calls, and returns with this id. */
@@ -65,7 +65,7 @@ class SignatureAnalyzer {
     boost::unordered_map<const Function *, std::vector<const Call *>> function2calls_;
 
     /** Mapping from a function to the list of returns in it.*/
-    boost::unordered_map<const Function *, std::vector<const Return *>> function2returns_;
+    boost::unordered_map<const Function *, std::vector<const Jump *>> function2returns_;
 
     /** Mapping of terms that represent potential return values in the hooks to callee ids. */
     boost::unordered_map<const Term *, CalleeId> speculativeReturnValueTerm2calleeId_;
@@ -164,13 +164,13 @@ private:
     std::vector<MemoryLocation> getUsedReturnValueLocations(const Call *call);
 
     /**
-     * \param[in] ret Valid pointer to a return statement.
+     * \param[in] jump Valid pointer to a return jump.
      *
      * \return List of memory locations within the locations where the
      *         return value can be passed, which are written before the
      *         return and never read.
      */
-    std::vector<MemoryLocation> getUnusedReturnValueLocations(const Return *ret);
+    std::vector<MemoryLocation> getUnusedReturnValueLocations(const Jump *jump);
 
     /**
      * \param term Valid pointer to a term.

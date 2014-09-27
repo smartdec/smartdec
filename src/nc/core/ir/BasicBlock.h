@@ -40,7 +40,6 @@ namespace ir {
 
 class Function;
 class Jump;
-class Return;
 class Statement;
 
 /**
@@ -198,12 +197,6 @@ public:
      *         is a jump, NULL otherwise.
      */
     const Jump *getJump() const;
-
-    /**
-     * \return Valid pointer to the last statement in the basic block if this
-     *         is a return, NULL otherwise.
-     */
-    const Return *getReturn() const;
 
     /**
      * Breaks the basic block into two parts. The first part contains the

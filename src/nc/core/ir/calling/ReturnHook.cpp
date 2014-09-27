@@ -24,7 +24,6 @@
 
 #include "ReturnHook.h"
 
-#include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 
@@ -39,13 +38,13 @@ namespace core {
 namespace ir {
 namespace calling {
 
-ReturnHook::ReturnHook(const Convention *convention, const FunctionSignature *signature):
-    insertedStatementsCount_(0)
-{
+ReturnHook::ReturnHook(const Convention *convention, const FunctionSignature *signature) {
     assert(convention != NULL);
 
+    auto &statements = patch_.statements();
+
     auto addReturnValueRead = [&](std::unique_ptr<Term> term) {
-        statements_.push_back(std::make_unique<Touch>(
+        statements.push_back(std::make_unique<Touch>(
             std::move(term),
             Term::READ
         ));
@@ -67,20 +66,6 @@ ReturnHook::ReturnHook(const Convention *convention, const FunctionSignature *si
 }
 
 ReturnHook::~ReturnHook() {}
-
-void ReturnHook::instrument(Return *ret) {
-    while (!statements_.empty()) {
-        ret->basicBlock()->insertBefore(ret, statements_.pop_front());
-        ++insertedStatementsCount_;
-    }
-}
-
-void ReturnHook::deinstrument(Return *ret) {
-    while (insertedStatementsCount_ > 0) {
-        statements_.push_front(ret->basicBlock()->erase(*--ret->basicBlock()->statements().get_iterator(ret)));
-        --insertedStatementsCount_;
-    }
-}
 
 } // namespace calling
 } // namespace ir

@@ -137,10 +137,6 @@ void expand(InspectorItem *item, const core::ir::Statement *statement) {
             item->addChild(tr("target"), call->target());
             break;
         }
-        case core::ir::Statement::RETURN: {
-            item->addComment("Return");
-            break;
-        }
         case core::ir::Statement::TOUCH: {
             auto *touch = statement->asTouch();
             item->addComment("Touch");

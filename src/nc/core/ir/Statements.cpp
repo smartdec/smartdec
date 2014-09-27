@@ -112,14 +112,6 @@ void Call::print(QTextStream &out) const {
     out << "call " << *target_ << endl;
 }
 
-std::unique_ptr<Statement> Return::doClone() const {
-    return std::make_unique<Return>();
-}
-
-void Return::print(QTextStream &out) const {
-    out << "return" << endl;
-}
-
 std::unique_ptr<Statement> Halt::doClone() const {
     return std::make_unique<Halt>();
 }

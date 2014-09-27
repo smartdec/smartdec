@@ -28,9 +28,11 @@
 
 #include <nc/common/Range.h>
 #include <nc/common/Unreachable.h>
+#include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Terms.h>
 
 #include "Dataflow.h"
+#include "Value.h"
 
 namespace nc {
 namespace core {
@@ -78,6 +80,18 @@ const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
     } while (!nc::contains(visited, term));
 
     return term;
+}
+
+bool isReturn(const Jump *jump, const Dataflow &dataflow) {
+    assert(jump != NULL);
+
+    if (jump->isConditional()) {
+        return false;
+    }
+    if (!jump->thenTarget().address()) {
+        return false;
+    }
+    return dataflow.getValue(jump->thenTarget().address())->isReturnAddress();
 }
 
 } // namespace dflow

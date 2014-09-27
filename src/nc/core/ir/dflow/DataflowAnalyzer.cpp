@@ -31,6 +31,7 @@
 #include <nc/common/Unreachable.h>
 
 #include <nc/core/arch/Architecture.h>
+#include <nc/core/arch/Instruction.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/CFG.h>
 #include <nc/core/ir/Jump.h>
@@ -176,9 +177,6 @@ void DataflowAnalyzer::execute(const Statement *statement, ExecutionContext &con
             computeValue(call->target(), context);
             break;
         }
-        case Statement::RETURN: {
-            break;
-        }
         case Statement::HALT: {
             break;
         }
@@ -248,6 +246,7 @@ Value *DataflowAnalyzer::computeValue(const Term *term, const ExecutionContext &
                     value->makeNotStackOffset();
                     value->makeNotProduct();
                     value->makeReturnAddress();
+                    break;
                 }
                 default: {
                     log_.warning(tr("%1: Unknown kind of intrinsic: %2.").arg(Q_FUNC_INFO).arg(intrinsic->intrinsicKind()));

@@ -27,7 +27,6 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
-#include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/MemoryDomain.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
@@ -42,22 +41,24 @@ namespace calling {
 
 CallHook::CallHook(const Convention *convention, const CallSignature *signature,
     const boost::optional<ByteSize> &stackArgumentsSize):
-    stackPointer_(NULL), snapshotStatement_(NULL), insertedStatementsCount_(0)
+    stackPointer_(NULL), snapshotStatement_(NULL)
 {
     assert(convention != NULL);
+
+    auto &statements = patch_.statements();
 
     if (convention->stackPointer()) {
         auto stackPointer = std::make_unique<MemoryLocationAccess>(convention->stackPointer());
         stackPointer_ = stackPointer.get();
 
-        statements_.push_back(std::make_unique<Touch>(
+        statements.push_back(std::make_unique<Touch>(
             std::move(stackPointer),
             Term::READ
         ));
     }
 
     auto addArgumentRead = [&](std::unique_ptr<Term> term) {
-        statements_.push_back(std::make_unique<Touch>(
+        statements.push_back(std::make_unique<Touch>(
             std::move(term),
             Term::READ
         ));
@@ -65,7 +66,7 @@ CallHook::CallHook(const Convention *convention, const CallSignature *signature,
 
     auto addReturnValueWrite = [&](std::unique_ptr<Term> term) {
         auto size = term->size();
-        statements_.push_back(std::make_unique<Assignment>(
+        statements.push_back(std::make_unique<Assignment>(
             std::move(term),
             std::make_unique<Intrinsic>(Intrinsic::UNDEFINED, size)
         ));
@@ -86,7 +87,7 @@ CallHook::CallHook(const Convention *convention, const CallSignature *signature,
     } else {
         auto snapshotStatement = std::make_unique<RememberReachingDefinitions>();
         snapshotStatement_ = snapshotStatement.get();
-        statements_.push_back(std::move(snapshotStatement));
+        statements.push_back(std::move(snapshotStatement));
 
         foreach (const auto &memoryLocation, convention->returnValueLocations()) {
             auto term = std::make_unique<MemoryLocationAccess>(memoryLocation);
@@ -98,7 +99,7 @@ CallHook::CallHook(const Convention *convention, const CallSignature *signature,
     if (convention->calleeCleanup() && stackArgumentsSize) {
         assert(convention->stackPointer());
 
-        statements_.push_back(std::make_unique<Assignment>(
+        statements.push_back(std::make_unique<Assignment>(
             std::make_unique<MemoryLocationAccess>(convention->stackPointer()),
             std::make_unique<BinaryOperator>(
                 BinaryOperator::ADD,
@@ -109,20 +110,6 @@ CallHook::CallHook(const Convention *convention, const CallSignature *signature,
 }
 
 CallHook::~CallHook() {}
-
-void CallHook::instrument(Call *call) {
-    while (!statements_.empty()) {
-        call->basicBlock()->insertAfter(call, statements_.pop_back());
-        ++insertedStatementsCount_;
-    }
-}
-
-void CallHook::deinstrument(Call *call) {
-    while (insertedStatementsCount_ > 0) {
-        statements_.push_back(call->basicBlock()->erase(*++call->basicBlock()->statements().get_iterator(call)));
-        --insertedStatementsCount_;
-    }
-}
 
 } // namespace calling
 } // namespace ir

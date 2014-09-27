@@ -30,16 +30,14 @@
 #include <boost/unordered_map.hpp>
 
 #include <nc/common/Range.h>
-#include <nc/common/ilist.h>
-
 #include <nc/core/ir/MemoryLocation.h>
+
+#include "Patch.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 
-class Return;
-class Statement;
 class Term;
 
 namespace calling {
@@ -51,17 +49,13 @@ class FunctionSignature;
  * Hook installed at a return site.
  */
 class ReturnHook {
-    /** Statements inserted during instrumentation. */
-    nc::ilist<Statement> statements_;
-
     /** Mapping of terms where return values may be kept to their clones. */
     boost::unordered_map<const Term *, const Term *> returnValueTerms_;
 
     /** Mapping from memory locations that can be used for returning values to terms. */
     std::vector<std::pair<MemoryLocation, const Term *>> speculativeReturnValueTerms_;
 
-    /** Number of inserted statements. */
-    std::size_t insertedStatementsCount_;
+    Patch patch_;
 
 public:
     /**
@@ -78,18 +72,9 @@ public:
     ~ReturnHook();
 
     /**
-     * Instruments a return statement.
-     *
-     * \param[in] ret Valid pointer to the return statement.
+     * \return Patch to be inserted at the return site.
      */
-    void instrument(Return *ret);
-
-    /**
-     * Deinstruments the previously instrumented return statement.
-     *
-     * \param[in] ret Valid pointer to the return statement.
-     */
-    void deinstrument(Return *ret);
+    Patch &patch() { return patch_; }
 
     /**
      * \param term Valid pointer to a term representing the return value

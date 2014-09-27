@@ -149,19 +149,6 @@ protected:
 };
 
 /**
- * Return from a function.
- */
-class Return: public Statement {
-public:
-    Return(): Statement(RETURN) {}
-
-    void print(QTextStream &out) const override;
-
-protected:
-    std::unique_ptr<Statement> doClone() const override;
-};
-
-/**
  * Return from a program.
  */
 class Halt: public Statement {
@@ -230,10 +217,6 @@ const Touch *Statement::asTouch() const {
 
 const Call *Statement::asCall() const {
     return as<Call>();
-}
-
-const Return *Statement::asReturn() const {
-    return as<Return>();
 }
 
 const Callback *Statement::asCallback() const {

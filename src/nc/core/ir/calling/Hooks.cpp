@@ -33,8 +33,10 @@
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
+#include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Utils.h>
 #include <nc/core/ir/dflow/Value.h>
 
 #include "Conventions.h"
@@ -79,10 +81,10 @@ const CallHook *Hooks::getCallHook(const Call *call) const {
     return nc::find(lastCallHooks_, call);
 }
 
-const ReturnHook *Hooks::getReturnHook(const Return *ret) const {
-    assert(ret != NULL);
+const ReturnHook *Hooks::getReturnHook(const Jump *jump) const {
+    assert(jump != NULL);
 
-    return nc::find(lastReturnHooks_, ret);
+    return nc::find(lastReturnHooks_, jump);
 }
 
 void Hooks::instrument(Function *function, const dflow::Dataflow *dataflow) {
@@ -91,21 +93,26 @@ void Hooks::instrument(Function *function, const dflow::Dataflow *dataflow) {
 
     deinstrument(function);
 
-    auto &hooks = insertedHooks_[function];
-    hooks.push_back(function->entry()->pushFront(std::make_unique<Callback>([=](){
-        instrumentEntry(function);
-    })));
+    if (function->entry()) {
+        function2callback_[function] = function->entry()->pushFront(std::make_unique<Callback>([=](){
+            instrumentEntry(function);
+        }));
+    }
 
     foreach (auto basicBlock, function->basicBlocks()) {
         foreach (auto statement, basicBlock->statements()) {
             if (auto call = statement->as<Call>()) {
-                hooks.push_back(basicBlock->insertAfter(call, std::make_unique<Callback>([=](){
+                call2callback_[call] = basicBlock->insertAfter(call, std::make_unique<Callback>([=](){
                     instrumentCall(call, *dataflow);
-                })));
-            } else if (auto ret = statement->as<Return>()) {
-                hooks.push_back(basicBlock->insertBefore(ret, std::make_unique<Callback>([=](){
-                    instrumentReturn(ret);
-                })));
+                }));
+            } else if (auto jump = statement->as<Jump>()) {
+                jump2callback_[jump] = basicBlock->insertBefore(jump, std::make_unique<Callback>([=](){
+                    if (dflow::isReturn(jump, *dataflow)) {
+                        instrumentJump(jump);
+                    } else {
+                        deinstrumentJump(jump);
+                    }
+                }));
             }
         }
     }
@@ -114,29 +121,28 @@ void Hooks::instrument(Function *function, const dflow::Dataflow *dataflow) {
 void Hooks::deinstrument(Function *function) {
     assert(function != NULL);
 
-    auto &hooks = insertedHooks_[function];
-
-    foreach (auto hook, hooks) {
-        hook->basicBlock()->erase(hook);
+    if (auto callback = nc::find(function2callback_, function)) {
+        deinstrumentEntry(function);
+        callback->basicBlock()->erase(callback);
+        function2callback_.erase(function);
     }
-
-    insertedHooks_.erase(function);
 
     foreach (auto basicBlock, function->basicBlocks()) {
         foreach (auto statement, basicBlock->statements()) {
             if (auto call = statement->as<Call>()) {
-                deinstrumentCall(call);
-            } else if (auto ret = statement->as<Return>()) {
-                deinstrumentReturn(ret);
+                if (auto callback = nc::find(call2callback_, call)) {
+                    deinstrumentCall(call);
+                    callback->basicBlock()->erase(callback);
+                    call2callback_.erase(call);
+                }
+            } else if (auto jump = statement->as<Jump>()) {
+                if (auto callback = nc::find(jump2callback_, jump)) {
+                    deinstrumentJump(jump);
+                    callback->basicBlock()->erase(callback);
+                    jump2callback_.erase(jump);
+                }
             }
         }
-    }
-}
-
-void Hooks::deinstrumentAll() {
-    /* deinstrument() can break iterators. */
-    while (!insertedHooks_.empty()) {
-        deinstrument(insertedHooks_.begin()->first);
     }
 }
 
@@ -153,10 +159,11 @@ void Hooks::instrumentEntry(Function *function) {
 
     if (entryHook.get() != lastEntryHook) {
         if (lastEntryHook) {
-            lastEntryHook->deinstrument(function);
+            lastEntryHook->patch().remove();
         }
         if (entryHook) {
-            entryHook->instrument(function);
+            auto callback = nc::find(function2callback_, function);
+            entryHook->patch().insertAfter(callback);
         }
         lastEntryHook = entryHook.get();
     }
@@ -166,7 +173,7 @@ void Hooks::deinstrumentEntry(Function *function) {
     auto &lastEntryHook = lastEntryHooks_[function];
 
     if (lastEntryHook) {
-        lastEntryHook->deinstrument(function);
+        lastEntryHook->patch().remove();
         lastEntryHook = NULL;
     }
 }
@@ -186,10 +193,11 @@ void Hooks::instrumentCall(Call *call, const dflow::Dataflow &dataflow) {
 
     if (callHook.get() != lastCallHook) {
         if (lastCallHook) {
-            lastCallHook->deinstrument(call);
+            lastCallHook->patch().remove();
         }
         if (callHook) {
-            callHook->instrument(call);
+            auto callback = nc::find(call2callback_, call);
+            callHook->patch().insertAfter(callback);
         }
         lastCallHook = callHook.get();
     }
@@ -199,39 +207,40 @@ void Hooks::deinstrumentCall(Call *call) {
     auto &lastCallHook = lastCallHooks_[call];
 
     if (lastCallHook) {
-        lastCallHook->deinstrument(call);
+        lastCallHook->patch().remove();
         lastCallHook = NULL;
     }
 }
 
-void Hooks::instrumentReturn(Return *ret) {
-    auto function = ret->basicBlock()->function();
+void Hooks::instrumentJump(Jump *jump) {
+    auto function = jump->basicBlock()->function();
     auto convention = getConvention(getCalleeId(function));
     auto signature = signatures_.getSignature(function).get();
-    auto &returnHook = returnHooks_[std::make_tuple(ret, convention, signature)];
+    auto &returnHook = returnHooks_[std::make_tuple(jump, convention, signature)];
 
     if (!returnHook) {
         returnHook = std::make_unique<ReturnHook>(convention, signature);
     }
 
-    auto &lastReturnHook = lastReturnHooks_[ret];
+    auto &lastReturnHook = lastReturnHooks_[jump];
 
     if (returnHook.get() != lastReturnHook) {
         if (lastReturnHook) {
-            lastReturnHook->deinstrument(ret);
+            lastReturnHook->patch().remove();
         }
         if (returnHook) {
-            returnHook->instrument(ret);
+            auto callback = nc::find(jump2callback_, jump);
+            returnHook->patch().insertAfter(callback);
         }
         lastReturnHook = returnHook.get();
     }
 }
 
-void Hooks::deinstrumentReturn(Return *ret) {
-    auto &lastReturnHook = lastReturnHooks_[ret];
+void Hooks::deinstrumentJump(Jump *jump) {
+    auto &lastReturnHook = lastReturnHooks_[jump];
 
     if (lastReturnHook) {
-        lastReturnHook->deinstrument(ret);
+        lastReturnHook->patch().remove();
         lastReturnHook = NULL;
     }
 }

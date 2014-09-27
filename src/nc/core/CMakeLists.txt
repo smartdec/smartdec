@@ -48,8 +48,6 @@ set(SOURCES
     ir/Functions.h
     ir/FunctionsGenerator.cpp
     ir/FunctionsGenerator.h
-    ir/Inlining.cpp
-    ir/Inlining.h
     ir/Jump.cpp
     ir/Jump.h
     ir/JumpTarget.cpp
@@ -77,6 +75,8 @@ set(SOURCES
     ir/calling/FunctionSignature.h
     ir/calling/Hooks.cpp
     ir/calling/Hooks.h
+    ir/calling/Patch.cpp
+    ir/calling/Patch.h
     ir/calling/ReturnHook.cpp
     ir/calling/ReturnHook.h
     ir/calling/SignatureAnalyzer.cpp

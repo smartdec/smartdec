@@ -52,7 +52,6 @@ class Callback;
 class Halt;
 class InlineAssembly;
 class Jump;
-class Return;
 class Term;
 class Touch;
 
@@ -73,7 +72,6 @@ public:
         ASSIGNMENT,     ///< Assignment.
         JUMP,           ///< Jump.
         CALL,           ///< Function call.
-        RETURN,         ///< Return from a function.
         HALT,           ///< Return from a program.
         TOUCH,          ///< Reads, writes, or kills a term.
         CALLBACK,       ///< Custom operation.
@@ -130,7 +128,7 @@ public:
      *         which can be only the last statement of a basic block.
      */
     bool isTerminator() const {
-        return is<Jump>() || is<Return>() || is<Halt>();
+        return is<Jump>() || is<Halt>();
     }
 
     /**
@@ -146,7 +144,6 @@ public:
     inline const Assignment *asAssignment() const;
     inline const Jump *asJump() const;
     inline const Call *asCall() const;
-    inline const Return *asReturn() const;
     inline const Touch *asTouch() const;
     inline const Callback *asCallback() const;
     
@@ -176,7 +173,6 @@ NC_REGISTER_STATEMENT_CLASS(nc::core::ir::InlineAssembly, nc::core::ir::Statemen
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Assignment,     nc::core::ir::Statement::ASSIGNMENT)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Jump,           nc::core::ir::Statement::JUMP)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Call,           nc::core::ir::Statement::CALL)
-NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Return,         nc::core::ir::Statement::RETURN)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Halt,           nc::core::ir::Statement::HALT)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Touch,          nc::core::ir::Statement::TOUCH)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Callback,       nc::core::ir::Statement::CALLBACK)

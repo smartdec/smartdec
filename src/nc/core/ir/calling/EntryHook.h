@@ -7,15 +7,14 @@
 
 #include <boost/unordered_map.hpp>
 
-#include <nc/common/ilist.h>
 #include <nc/common/Range.h>
+
+#include "Patch.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 
-class Function;
-class Statement;
 class Term;
 
 namespace calling {
@@ -27,14 +26,10 @@ class FunctionSignature;
  * Hook installed at function's entry.
  */
 class EntryHook {
-    /** Statements inserted during installation. */
-    nc::ilist<Statement> statements_;
-
     /** Mapping from argument terms to their clones. */
     boost::unordered_map<const Term *, const Term *> argumentTerms_;
 
-    /** Number of inserted statements. */
-    std::size_t insertedStatementsCount_;
+    Patch patch_;
 
 public:
     /**
@@ -46,23 +41,9 @@ public:
     EntryHook(const Convention *convention, const FunctionSignature *signature);
 
     /**
-     * Destructor.
+     * \return Patch to be inserted in the beginning of the function's entry.
      */
-    ~EntryHook();
-
-    /**
-     * Instruments a function.
-     *
-     * \param[in] function Valid pointer to the function.
-     */
-    void instrument(Function *function);
-
-    /**
-     * Deinstruments the previously instrumented function.
-     *
-     * \param[in] function Valid pointer to the function.
-     */
-    void deinstrument(Function *function);
+    Patch &patch() { return patch_; }
 
     /**
      * \param term Valid pointer to the term representing an argument

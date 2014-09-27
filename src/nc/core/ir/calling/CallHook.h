@@ -32,15 +32,15 @@
 
 #include <nc/common/Range.h>
 #include <nc/common/Types.h>
-#include <nc/common/ilist.h>
 
 #include <nc/core/ir/MemoryLocation.h>
+
+#include "Patch.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 
-class Call;
 class Statement;
 class Term;
 
@@ -56,9 +56,6 @@ class CallHook {
     /** Term for tracking stack pointer. */
     const Term *stackPointer_;
 
-    /** Statements inserted during instrumentation. */
-    nc::ilist<Statement> statements_;
-
     /** Statement for snapshotting reaching definitions. */
     const Statement *snapshotStatement_;
 
@@ -71,8 +68,7 @@ class CallHook {
     /** Mapping from memory locations that can be used for returning values to terms. */
     std::vector<std::pair<MemoryLocation, const Term *>> speculativeReturnValueTerms_;
 
-    /** Number of inserted statements. */
-    std::size_t insertedStatementsCount_;
+    Patch patch_;
 
 public:
     /**
@@ -90,18 +86,9 @@ public:
     ~CallHook();
 
     /**
-     * Instruments a call statement.
-     *
-     * \param[in] call Valid pointer to the call statement.
+     * \return Patch to be inserted at the call site.
      */
-    void instrument(Call *call);
-
-    /**
-     * Deinstruments the previously instrumented call statement.
-     *
-     * \param[in] call Valid pointer to the call statement.
-     */
-    void deinstrument(Call *call);
+    Patch &patch() { return patch_; }
 
     /**
      * \return Pointer to the statement used for snapshotting reaching definitions.

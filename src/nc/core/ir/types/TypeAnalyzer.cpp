@@ -30,6 +30,7 @@
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
+#include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
 #include <nc/core/ir/calling/CallHook.h>
@@ -38,6 +39,7 @@
 #include <nc/core/ir/calling/ReturnHook.h>
 #include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/dflow/Dataflows.h>
+#include <nc/core/ir/dflow/Utils.h>
 #include <nc/core/ir/dflow/Value.h>
 #include <nc/core/ir/liveness/Livenesses.h>
 #include <nc/core/ir/vars/Variables.h>
@@ -110,6 +112,8 @@ void TypeAnalyzer::uniteVariableTypes() {
 
 void TypeAnalyzer::uniteArgumentTypes() {
     foreach (auto function, functions_.list()) {
+        const auto &dataflow = *dataflows_.at(function);
+
         if (auto entryHook = hooks_.getEntryHook(function)) {
             if (auto signature = signatures_.getSignature(function)) {
                 foreach (const auto &term, signature->arguments()) {
@@ -131,11 +135,13 @@ void TypeAnalyzer::uniteArgumentTypes() {
                             }
                         }
                     }
-                } else if (auto ret = statement->asReturn()) {
-                    if (auto returnHook = hooks_.getReturnHook(ret)) {
-                        if (auto signature = signatures_.getSignature(function)) {
-                            if (auto returnValue = signature->returnValue().get()) {
-                                types_.getType(returnValue)->unionSet(types_.getType(returnHook->getReturnValueTerm(returnValue)));
+                } else if (auto jump = statement->asJump()) {
+                    if (dflow::isReturn(jump, dataflow)) {
+                        if (auto returnHook = hooks_.getReturnHook(jump)) {
+                            if (auto signature = signatures_.getSignature(function)) {
+                                if (auto returnValue = signature->returnValue().get()) {
+                                    types_.getType(returnValue)->unionSet(types_.getType(returnHook->getReturnValueTerm(returnValue)));
+                                }
                             }
                         }
                     }
