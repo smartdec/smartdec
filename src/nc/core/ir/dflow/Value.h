@@ -50,6 +50,9 @@ class Value {
     bool isProduct_; ///< Value was computed via multiplication.
     bool isNotProduct_; ///< Value was computed not via multiplication.
 
+    bool isReturnAddress_; ///< Value is a return address.
+    bool isNotReturnAddress_; ///< Value is not a return address.
+
 public:
     /**
      * Class constructor.
@@ -120,6 +123,26 @@ public:
      * Marks the value as being computed not via multiplication.
      */
     void makeNotProduct() { isNotProduct_ = true; }
+
+    /**
+     * \return True if the value is a return address.
+     */
+    bool isReturnAddress() const { return isReturnAddress_ && !isNotReturnAddress_; }
+
+    /**
+     * \return True if the value is a not return address.
+     */
+    bool isNotReturnAddress() const { return isNotReturnAddress_; }
+
+    /**
+     * Marks the value as being a return address.
+     */
+    void makeReturnAddress() { isReturnAddress_ = true; }
+
+    /**
+     * Marks the value as being not a return address.
+     */
+    void makeNotReturnAddress() { isNotReturnAddress_ = true; }
 };
 
 } // namespace dflow

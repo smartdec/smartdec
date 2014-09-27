@@ -233,13 +233,21 @@ Value *DataflowAnalyzer::computeValue(const Term *term, const ExecutionContext &
                     value->setAbstractValue(AbstractValue(term->size(), -1, -1));
                     value->makeNotStackOffset();
                     value->makeNotProduct();
+                    value->makeNotReturnAddress();
                     break;
                 }
                 case Intrinsic::ZERO_STACK_OFFSET: {
                     value->setAbstractValue(AbstractValue(term->size(), -1, -1));
                     value->makeStackOffset(0);
                     value->makeNotProduct();
+                    value->makeNotReturnAddress();
                     break;
+                }
+                case Intrinsic::RETURN_ADDRESS: {
+                    value->setAbstractValue(AbstractValue(term->size(), -1, -1));
+                    value->makeNotStackOffset();
+                    value->makeNotProduct();
+                    value->makeReturnAddress();
                 }
                 default: {
                     log_.warning(tr("%1: Unknown kind of intrinsic: %2.").arg(Q_FUNC_INFO).arg(intrinsic->intrinsicKind()));
@@ -424,6 +432,20 @@ Value *DataflowAnalyzer::computeValue(const Term *term, const MemoryLocation &me
         }
     }
 
+    /*
+     * Merge return address flag.
+     */
+    if (definitions.chunks().front().location() == memoryLocation) {
+        foreach (auto definition, definitions.chunks().front().definitions()) {
+            auto definitionValue = dataflow().getValue(definition);
+            if (definitionValue->isNotReturnAddress()) {
+                value->makeNotReturnAddress();
+            } else {
+                value->makeReturnAddress();
+            }
+        }
+    }
+
     return value;
 }
 
@@ -453,6 +475,8 @@ Value *DataflowAnalyzer::computeValue(const UnaryOperator *unary, const Executio
             value->makeNotProduct();
             break;
     }
+
+    value->makeNotReturnAddress();
 
     return value;
 }
@@ -522,6 +546,8 @@ Value *DataflowAnalyzer::computeValue(const BinaryOperator *binary, const Execut
             value->makeNotProduct();
             break;
     }
+
+    value->makeNotReturnAddress();
 
     return value;
 }

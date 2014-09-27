@@ -3,6 +3,10 @@
 
 #include "CallingConventions.h"
 
+#include <nc/common/make_unique.h>
+#include <nc/core/ir/Statements.h>
+#include <nc/core/ir/Terms.h>
+
 #include "ArmArchitecture.h"
 #include "ArmRegisters.h"
 
@@ -26,6 +30,11 @@ DefaultCallingConvention::DefaultCallingConvention():
     addArgumentGroup(std::move(args));
 
     addReturnValueLocation(ArmRegisters::r0()->memoryLocation());
+
+    addEnterStatement(std::make_unique<core::ir::Assignment>(
+        std::make_unique<core::ir::MemoryLocationAccess>(ArmRegisters::lr()->memoryLocation()),
+        std::make_unique<core::ir::Intrinsic>(core::ir::Intrinsic::RETURN_ADDRESS, ArmRegisters::lr()->size())
+    ));
 }
 
 }}} // namespace nc::arch::arm

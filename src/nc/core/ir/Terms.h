@@ -80,6 +80,7 @@ public:
         UNKNOWN,            ///< Unknown intrinsic.
         UNDEFINED,          ///< Undefined value, generally not a stack offset.
         ZERO_STACK_OFFSET,  ///< Undefined value, zero stack offset.
+        RETURN_ADDRESS,     ///< Return address (e.g. saved by a call instruction).
         USER = 1000         ///< First user intrinsic.
     };
 

@@ -823,6 +823,9 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
                 case Intrinsic::ZERO_STACK_OFFSET:
                     name = QLatin1String("zero stack offset");
                     break;
+                case Intrinsic::RETURN_ADDRESS:
+                    name = QLatin1String("return address");
+                    break;
                 default:
                     name = QLatin1String("intrinsic");
                     break;

@@ -188,11 +188,7 @@ private:
         }
         case ARM_INS_B:
         case ARM_INS_BX: {
-            if (getOperandRegister(0) == ARM_REG_LR) {
-                _[return_()];
-            } else {
-                _[jump(operand(0))];
-            }
+            _[jump(operand(0))];
             break;
         }
         case ARM_INS_BL: /* FALLTHROUGH */

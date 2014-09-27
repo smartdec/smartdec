@@ -190,6 +190,11 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
             } else if (value->isNotProduct()) {
                 valueItem->addChild(tr("is not a product"));
             }
+            if (value->isReturnAddress()) {
+                valueItem->addChild(tr("is a return address"));
+            } else if (value->isNotReturnAddress()) {
+                valueItem->addChild(tr("is not a return address"));
+            }
         }
 
         if (auto &memoryLocation = dataflow.getMemoryLocation(term)) {

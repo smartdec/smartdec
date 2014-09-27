@@ -76,7 +76,8 @@ bool success = test();
 Value::Value(SmallBitSize size):
     abstractValue_(size, 0, 0),
     isStackOffset_(false), isNotStackOffset_(false),
-    isProduct_(false), isNotProduct_(false)
+    isProduct_(false), isNotProduct_(false),
+    isReturnAddress_(false), isNotReturnAddress_(false)
 {}
 
 void Value::makeStackOffset(SignedConstantValue offset) {
