@@ -138,15 +138,22 @@ void IdaFrontend::createSections(core::image::Image *image) {
 }
 
 QString IdaFrontend::architecture() {
-    if (segment_t *segment = get_segm_by_name(".text")) {
-        switch (segment->bitness) {
-            case 0: return QLatin1String("8086");
-            case 1: return QLatin1String("i386");
-            case 2: return QLatin1String("x86-64");
+    if (inf.procName == QLatin1String("ARM")) {
+        return QLatin1String("arm-le");
+    } else if (inf.procName == QLatin1String("ARMB")) {
+        return QLatin1String("arm-be");
+    } else {
+        /* Assume x86 by default. */
+        if (segment_t *segment = get_segm_by_name(".text")) {
+            switch (segment->bitness) {
+                case 0: return QLatin1String("8086");
+                case 1: return QLatin1String("i386");
+                case 2: return QLatin1String("x86-64");
+            }
         }
-    }
 
-    return QLatin1String("i386");
+        return QLatin1String("i386");
+    }
 }
 
 std::vector<AddressRange> IdaFrontend::functionAddresses(ByteAddr address) {
