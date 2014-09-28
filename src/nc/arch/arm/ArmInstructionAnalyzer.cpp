@@ -252,6 +252,19 @@ private:
             }
             break;
         }
+        case ARM_INS_MOVT: {
+            auto reg = getRegister(getOperandRegister(0));
+            auto location = reg->memoryLocation().resized(16).shifted(16);
+            _[MemoryLocationExpression(location) ^= operand(1, 16)];
+            break;
+        }
+        case ARM_INS_MOVW: {
+            auto reg = getRegister(getOperandRegister(0));
+            auto location = reg->memoryLocation().resized(16);
+            _[MemoryLocationExpression(location) ^= operand(1, 16)];
+            handleWriteToPC(bodyBasicBlock);
+            break;
+        }
         case ARM_INS_ORR: {
             _[operand(0) ^= operand(1) | operand(2)];
             if (!handleWriteToPC(bodyBasicBlock)) {
