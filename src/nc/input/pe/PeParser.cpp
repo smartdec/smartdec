@@ -409,6 +409,10 @@ void PeParser::doParse(QIODevice *source, core::image::Image *image, const LogTo
         case IMAGE_FILE_MACHINE_AMD64:
             image->setArchitecture(QLatin1String("x86-64"));
             break;
+        case IMAGE_FILE_MACHINE_ARM: /* FALLTHROUGH */
+        case IMAGE_FILE_MACHINE_THUMB:
+            image->setArchitecture(QLatin1String("arm-le"));
+            break;
         default:
             throw core::input::ParseError(tr("Unknown machine id: 0x%1.").arg(fileHeader.Machine, 0, 16));
     }
