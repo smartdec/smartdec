@@ -327,6 +327,15 @@ private:
             }
             break;
         }
+        case ARM_INS_STMDB: {
+            for (int i = 1; i < detail_->op_count; ++i) {
+                _[*(operand(0) - constant(4 * (detail_->op_count - i - 1))) ^= operand(i)];
+            }
+            if (detail_->writeback) {
+                _[operand(0) ^= operand(0) - constant(4 * (detail_->op_count - 1))];
+            }
+            break;
+        }
         case ARM_INS_STR:
         case ARM_INS_STRT:
         case ARM_INS_STREX: { // TODO: atomic
