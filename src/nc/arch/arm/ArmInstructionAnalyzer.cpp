@@ -209,6 +209,22 @@ private:
             ];
             break;
         }
+        case ARM_INS_LDM: {
+            auto addr = MemoryLocationExpression(core::ir::MemoryLocation(core::ir::MemoryDomain::LAST_REGISTER, 0, 32));
+
+            _[addr ^= operand(0)];
+
+            for (int i = 1; i < detail_->op_count; ++i) {
+                _[operand(i) ^= *(addr + constant(4 * (i - 1)))];
+            }
+            if (detail_->writeback) {
+                _[operand(0) ^= addr + constant(4 * (detail_->op_count - 1))];
+            }
+            for (int i = 1; i < detail_->op_count; ++i) {
+                handleWriteToPC(bodyBasicBlock, i);
+            }
+            break;
+        }
         case ARM_INS_LDR:
         case ARM_INS_LDRT:
         case ARM_INS_LDREX: { // TODO: atomic
