@@ -31,6 +31,7 @@ set(SOURCES
     SizedValue.h
     StreamLogger.cpp
     StreamLogger.h
+    Subclass.h
     Types.h
     Unreachable.h
     Unused.h
