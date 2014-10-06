@@ -26,13 +26,10 @@
 #include <nc/config.h>
 
 #include <memory>
-#include <vector>
 
 #include <boost/noncopyable.hpp>
-#include <boost/unordered_map.hpp>
 
 #include <nc/common/Printable.h>
-#include <nc/common/Types.h>
 #include <nc/common/ilist.h>
 
 namespace nc {
@@ -41,6 +38,7 @@ namespace ir {
 
 class Function;
 
+// TODO: get rid of this class?
 /**
  * Functions in intermediate representation.
  */
@@ -51,9 +49,6 @@ public:
 private:
     /** List of functions. */
     FunctionList functions_;
-
-    /** Mapping from an entry address to the list of functions with this address. */
-    boost::unordered_map<ByteAddr, std::vector<Function *>> entry2functions_;
 
 public:
     /**
@@ -85,13 +80,6 @@ public:
      * \param[in] function Valid pointer to a function.
      */
     void addFunction(std::unique_ptr<Function> function);
-
-    /**
-     * \param address Entry address.
-     *
-     * \return Pointer to the functions with given entry address.
-     */
-    const std::vector<Function *> &getFunctionsAtAddress(ByteAddr address) const;
 
     /**
      * Prints the intermediate representation of all functions into a stream in DOT format.

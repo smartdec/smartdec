@@ -41,15 +41,7 @@ Functions::Functions() {}
 Functions::~Functions() {}
 
 void Functions::addFunction(std::unique_ptr<Function> function) {
-    if (function->entry() && function->entry()->address()) {
-        entry2functions_[*function->entry()->address()].push_back(function.get());
-    }
-
     functions_.push_back(std::move(function));
-}
-
-const std::vector<Function *> &Functions::getFunctionsAtAddress(ByteAddr address) const {
-    return nc::find(entry2functions_, address);
 }
 
 void Functions::print(QTextStream &out) const {
