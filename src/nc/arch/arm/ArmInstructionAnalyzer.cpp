@@ -229,33 +229,33 @@ private:
         case ARM_INS_LDRT:
         case ARM_INS_LDREX: { // TODO: atomic
             _[operand(0) ^= operand(1)];
-            handleWriteback(bodyBasicBlock);
+            handleWriteback(bodyBasicBlock, 1);
             break;
         }
         case ARM_INS_LDRH:
         case ARM_INS_LDRHT:
         case ARM_INS_LDREXH: { // TODO: atomic
             _[operand(0) ^= zero_extend(operand(1, 16))];
-            handleWriteback(bodyBasicBlock);
+            handleWriteback(bodyBasicBlock, 1);
             break;
         }
         case ARM_INS_LDRSH:
         case ARM_INS_LDRSHT: {
             _[operand(0) ^= sign_extend(operand(1, 16))];
-            handleWriteback(bodyBasicBlock);
+            handleWriteback(bodyBasicBlock, 1);
             break;
         }
         case ARM_INS_LDRB:
         case ARM_INS_LDRBT:
         case ARM_INS_LDREXB: { // TODO: atomic
             _[operand(0) ^= zero_extend(operand(1, 8))];
-            handleWriteback(bodyBasicBlock);
+            handleWriteback(bodyBasicBlock, 1);
             break;
         }
         case ARM_INS_LDRSB:
         case ARM_INS_LDRSBT: {
             _[operand(0) ^= sign_extend(operand(1, 8))];
-            handleWriteback(bodyBasicBlock);
+            handleWriteback(bodyBasicBlock, 1);
             break;
         }
         // TODO case ARM_INS_LDRD:
@@ -340,24 +340,33 @@ private:
         case ARM_INS_STRT:
         case ARM_INS_STREX: { // TODO: atomic
             _[operand(1) ^= operand(0)];
-            handleWriteback(bodyBasicBlock);
+            handleWriteback(bodyBasicBlock, 1);
             break;
         }
         case ARM_INS_STRH:
         case ARM_INS_STRHT:
         case ARM_INS_STREXH: {
             _[operand(1, 16) ^= truncate(operand(0))];
-            handleWriteback(bodyBasicBlock);
+            handleWriteback(bodyBasicBlock, 1);
             break;
         }
         case ARM_INS_STRB:
         case ARM_INS_STRBT:
         case ARM_INS_STREXB: {
             _[operand(1, 8) ^= truncate(operand(0))];
-            handleWriteback(bodyBasicBlock);
+            handleWriteback(bodyBasicBlock, 1);
             break;
         }
-        // TODO case ARM_INS_STRD:
+        case ARM_INS_STRD: {
+            /*
+             * Quote: "<Rt2> The second source register. This register must be <R(t+1)>."
+             * Here we rely on the fact that memory locations of consecutive registers
+             * are consecutive (see ArmRegisterTable.i).
+             */
+            _[operand(2, 64) ^= operand(0, 64)];
+            handleWriteback(bodyBasicBlock, 2);
+            break;
+        }
         case ARM_INS_SUB: {
             _[operand(0) ^= operand(1) - operand(2)];
             if (!handleWriteToPC(bodyBasicBlock)) {
@@ -379,26 +388,32 @@ private:
         } /* switch */
     }
 
-    void handleWriteback(core::ir::BasicBlock *bodyBasicBlock) {
-        if (detail_->op_count != 2 && detail_->op_count != 3) {
-            throw core::irgen::InvalidInstructionException(tr("Expected either two or three operands."));
+    void handleWriteback(core::ir::BasicBlock *bodyBasicBlock, int memOperandIndex) {
+        if (detail_->op_count != memOperandIndex + 1 && detail_->op_count != memOperandIndex + 2) {
+            throw core::irgen::InvalidInstructionException(tr("Strange number of registers."));
         }
-        if (detail_->operands[0].type != ARM_OP_REG) {
-            throw core::irgen::InvalidInstructionException(tr("Expected the first operand to be a register."));
+        for (int i = 0; i < memOperandIndex; ++i) {
+            if (detail_->operands[i].type != ARM_OP_REG) {
+                throw core::irgen::InvalidInstructionException(tr("Expected the first %1 operand(s) to be register(s).").arg(memOperandIndex));
+            }
         }
-        if (detail_->operands[1].type != ARM_OP_MEM) {
-            throw core::irgen::InvalidInstructionException(tr("Expected the second operand to be a memory operand."));
+        if (detail_->operands[memOperandIndex].type != ARM_OP_MEM) {
+            throw core::irgen::InvalidInstructionException(tr("Expected the %1s operand to be a memory operand.").arg(memOperandIndex));
         }
 
         using namespace core::irgen::expressions;
         ArmExpressionFactoryCallback _(factory_, bodyBasicBlock, instruction_);
 
-        if (detail_->op_count == 3) {
-            auto base = regizter(getRegister(detail_->operands[1].mem.base));
-            _[base ^= base + operand(2)];
+        if (detail_->op_count == memOperandIndex + 2) {
+            auto base = regizter(getRegister(detail_->operands[memOperandIndex].mem.base));
+            if (detail_->operands[memOperandIndex + 1].subtracted) {
+                _[base ^= base - operand(memOperandIndex + 1)];
+            } else {
+                _[base ^= base + operand(memOperandIndex + 1)];
+            }
         } else if (detail_->writeback) {
-            auto base = regizter(getRegister(detail_->operands[1].mem.base));
-            _[base ^= base + constant(detail_->operands[1].mem.disp)];
+            auto base = regizter(getRegister(detail_->operands[memOperandIndex].mem.base));
+            _[base ^= base + constant(detail_->operands[memOperandIndex].mem.disp)];
         }
     }
 
@@ -434,15 +449,9 @@ private:
         assert(index < boost::size(detail_->operands));
 
         const auto &operand = detail_->operands[index];
-        // TODO: shifts
         switch (operand.type) {
-            case ARM_OP_REG: {
-                auto reg = getRegister(operand.reg);
-                if (sizeHint > reg->size()) {
-                    throw core::irgen::InvalidInstructionException(tr("Size hint (%1) exceeds register size (%2).").arg(sizeHint).arg(reg->size()));
-                }
-                return std::make_unique<core::ir::MemoryLocationAccess>(reg->memoryLocation().resized(sizeHint));
-            }
+            case ARM_OP_REG:
+                return std::make_unique<core::ir::MemoryLocationAccess>(getRegister(operand.reg)->memoryLocation().resized(sizeHint));
             case ARM_OP_CIMM:
                 throw core::irgen::InvalidInstructionException(tr("Don't know how to deal with CIMM operands."));
             case ARM_OP_PIMM:
