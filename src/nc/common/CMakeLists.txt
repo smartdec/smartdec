@@ -18,7 +18,6 @@ set(SOURCES
     Exception.cpp
     Exception.h
     Foreach.h
-    Kinds.h
     LogToken.h
     Logger.cpp
     Logger.h

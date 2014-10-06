@@ -69,6 +69,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::CaseLabel, nc::core::likec::Statement::CASE_LABEL)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::CaseLabel, nc::core::likec::Statement::CASE_LABEL)
 
 /* vim:set et sts=4 sw=4: */

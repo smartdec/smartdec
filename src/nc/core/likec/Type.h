@@ -25,8 +25,8 @@
 
 #include <nc/config.h>
 
-#include <nc/common/Kinds.h>
 #include <nc/common/Printable.h>
+#include <nc/common/Subclass.h>
 #include <nc/common/Types.h>
 
 namespace nc {
@@ -39,7 +39,7 @@ namespace likec {
  * Type objects are usually created and owned by Tree (notable exception is FunctionDeclaration which creates and owns FunctionPointerType).
  */
 class Type: public Printable {
-    NC_CLASS_WITH_KINDS(Type, kind)
+    NC_BASE_CLASS(Type, kind)
 
     BitSize size_; ///< Type size in bits.
 

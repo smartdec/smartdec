@@ -44,7 +44,7 @@ namespace likec {
  * Base class for statement node.
  */
 class Statement: public TreeNode {
-    NC_CLASS_WITH_KINDS(Statement, statementKind)
+    NC_BASE_CLASS(Statement, statementKind)
 
     const ir::Statement *statement_; ///< IR statement from which this statement was created.
 
@@ -108,6 +108,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::TreeNode, nc::core::likec::Statement, nc::core::likec::TreeNode::STATEMENT)
+NC_SUBCLASS(nc::core::likec::TreeNode, nc::core::likec::Statement, nc::core::likec::TreeNode::STATEMENT)
 
 /* vim:set et sts=4 sw=4: */

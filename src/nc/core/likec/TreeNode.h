@@ -31,7 +31,7 @@
 #include <QString>
 
 #include <nc/common/Foreach.h>
-#include <nc/common/Kinds.h>
+#include <nc/common/Subclass.h>
 #include <nc/common/Unused.h>
 
 namespace nc {
@@ -45,7 +45,7 @@ class Tree;
  * Base class for tree nodes.
  */
 class TreeNode {
-    NC_CLASS_WITH_KINDS(TreeNode, nodeKind)
+    NC_BASE_CLASS(TreeNode, nodeKind)
 
     Tree &tree_; ///< Owning tree.
 

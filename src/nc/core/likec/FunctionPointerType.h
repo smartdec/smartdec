@@ -97,6 +97,6 @@ class FunctionPointerType: public Type {
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::FunctionPointerType, nc::core::likec::Type::FUNCTION_POINTER)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::FunctionPointerType, nc::core::likec::Type::FUNCTION_POINTER)
 
 /* vim:set et sts=4 sw=4: */

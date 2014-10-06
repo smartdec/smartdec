@@ -82,6 +82,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::IntegerConstant, nc::core::likec::Expression::INTEGER_CONSTANT)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::IntegerConstant, nc::core::likec::Expression::INTEGER_CONSTANT)
 
 /* vim:set et sts=4 sw=4: */

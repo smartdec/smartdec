@@ -32,8 +32,8 @@
 
 #include <QString>
 
-#include <nc/common/Kinds.h>
 #include <nc/common/Printable.h>
+#include <nc/common/Subclass.h>
 #include <nc/common/ilist.h>
 
 namespace nc {
@@ -61,7 +61,7 @@ class Touch;
  * Statements are supposed to be immutable <i>at the interface level</i>.
  */
 class Statement: public Printable, public nc::ilist_item, boost::noncopyable {
-    NC_CLASS_WITH_KINDS(Statement, kind)
+    NC_BASE_CLASS(Statement, kind)
 
 public:
     /**
@@ -167,7 +167,7 @@ protected:
  * \param KIND                         Statement kind.
  */
 #define NC_REGISTER_STATEMENT_CLASS(CLASS, KIND)                                \
-    NC_REGISTER_CLASS_KIND(nc::core::ir::Statement, CLASS, KIND)
+    NC_SUBCLASS(nc::core::ir::Statement, CLASS, KIND)
 
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::InlineAssembly, nc::core::ir::Statement::INLINE_ASSEMBLY)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Assignment,     nc::core::ir::Statement::ASSIGNMENT)

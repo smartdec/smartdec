@@ -25,8 +25,8 @@
 
 #include <nc/config.h>
 
-#include <nc/common/Kinds.h>
 #include <nc/common/Printable.h>
+#include <nc/common/Subclass.h>
 #include <nc/common/Types.h>
 
 #include <vector>
@@ -48,7 +48,7 @@ class Region;
  * Graph node.
  */
 class Node: public Printable {
-    NC_CLASS_WITH_KINDS(Node, nodeKind)
+    NC_BASE_CLASS(Node, nodeKind)
     friend class Edge;
 
 public:
@@ -141,7 +141,7 @@ public:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::ir::cflow::Node, nc::core::ir::cflow::BasicNode, nc::core::ir::cflow::Node::BASIC)
-NC_REGISTER_CLASS_KIND(nc::core::ir::cflow::Node, nc::core::ir::cflow::Region,    nc::core::ir::cflow::Node::REGION)
+NC_SUBCLASS(nc::core::ir::cflow::Node, nc::core::ir::cflow::BasicNode, nc::core::ir::cflow::Node::BASIC)
+NC_SUBCLASS(nc::core::ir::cflow::Node, nc::core::ir::cflow::Region,    nc::core::ir::cflow::Node::REGION)
 
 /* vim:set et sts=4 sw=4: */

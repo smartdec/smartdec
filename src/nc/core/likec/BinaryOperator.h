@@ -37,7 +37,7 @@ namespace likec {
  * Base class for binary operators.
  */
 class BinaryOperator: public Expression {
-    NC_CLASS_WITH_KINDS(BinaryOperator, operatorKind)
+    NC_BASE_CLASS(BinaryOperator, operatorKind)
 
     std::unique_ptr<Expression> left_; ///< Left operand.
     std::unique_ptr<Expression> right_; ///< Right operand.
@@ -155,6 +155,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::BinaryOperator, nc::core::likec::Expression::BINARY_OPERATOR)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::BinaryOperator, nc::core::likec::Expression::BINARY_OPERATOR)
 
 /* vim:set et sts=4 sw=4: */

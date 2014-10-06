@@ -48,7 +48,7 @@ class Type;
  * Expression is a statement.
  */
 class Expression: public TreeNode {
-    NC_CLASS_WITH_KINDS(Expression, expressionKind)
+    NC_BASE_CLASS(Expression, expressionKind)
 
     const ir::Term *term_; ///< Term this expression was created from.
 
@@ -121,6 +121,6 @@ public:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::TreeNode, nc::core::likec::Expression, nc::core::likec::TreeNode::EXPRESSION)
+NC_SUBCLASS(nc::core::likec::TreeNode, nc::core::likec::Expression, nc::core::likec::TreeNode::EXPRESSION)
 
 /* vim:set et sts=4 sw=4: */

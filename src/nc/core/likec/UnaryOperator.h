@@ -37,7 +37,7 @@ namespace likec {
  * Base class for unary operators.
  */
 class UnaryOperator: public Expression {
-    NC_CLASS_WITH_KINDS(UnaryOperator, operatorKind)
+    NC_BASE_CLASS(UnaryOperator, operatorKind)
     std::unique_ptr<Expression> operand_; ///< Operand.
 
 public:
@@ -110,6 +110,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::UnaryOperator, nc::core::likec::Expression::UNARY_OPERATOR)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::UnaryOperator, nc::core::likec::Expression::UNARY_OPERATOR)
 
 /* vim:set et sts=4 sw=4: */

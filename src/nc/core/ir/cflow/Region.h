@@ -41,7 +41,7 @@ class Switch;
  * Region is a set of nodes with a single entry and possibly multiple exits.
  */
 class Region: public Node {
-    NC_CLASS_WITH_KINDS(Region, regionKind)
+    NC_BASE_CLASS(Region, regionKind)
 
 public:
     /**
@@ -151,6 +151,6 @@ public:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::ir::cflow::Region, nc::core::ir::cflow::Switch, nc::core::ir::cflow::Region::SWITCH)
+NC_SUBCLASS(nc::core::ir::cflow::Region, nc::core::ir::cflow::Switch, nc::core::ir::cflow::Region::SWITCH)
 
 /* vim:set et sts=4 sw=4: */

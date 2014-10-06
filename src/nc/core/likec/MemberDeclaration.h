@@ -68,6 +68,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Declaration, nc::core::likec::MemberDeclaration, nc::core::likec::Declaration::MEMBER_DECLARATION)
+NC_SUBCLASS(nc::core::likec::Declaration, nc::core::likec::MemberDeclaration, nc::core::likec::Declaration::MEMBER_DECLARATION)
 
 /* vim:set et sts=4 sw=4: */

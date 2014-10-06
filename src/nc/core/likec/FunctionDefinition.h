@@ -85,6 +85,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Declaration, nc::core::likec::FunctionDefinition, nc::core::likec::Declaration::FUNCTION_DEFINITION)
+NC_SUBCLASS(nc::core::likec::Declaration, nc::core::likec::FunctionDefinition, nc::core::likec::Declaration::FUNCTION_DEFINITION)
 
 /* vim:set et sts=4 sw=4: */

@@ -72,6 +72,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::Goto, nc::core::likec::Statement::GOTO)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::Goto, nc::core::likec::Statement::GOTO)
 
 /* vim:set et sts=4 sw=4: */

@@ -84,6 +84,6 @@ public:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::StructType, nc::core::likec::Type::STRUCT_TYPE)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::StructType, nc::core::likec::Type::STRUCT_TYPE)
 
 /* vim:set et sts=4 sw=4: */

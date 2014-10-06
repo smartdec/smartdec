@@ -30,8 +30,8 @@
 
 #include <boost/noncopyable.hpp>
 
-#include <nc/common/Kinds.h>
 #include <nc/common/Printable.h>
+#include <nc/common/Subclass.h>
 #include <nc/common/Types.h>
 
 #include "MemoryLocation.h"
@@ -54,7 +54,7 @@ class Statement;
  * Base class for different kinds of expressions of intermediate representation.
  */
 class Term: public Printable, boost::noncopyable {
-    NC_CLASS_WITH_KINDS(Term, kind)
+    NC_BASE_CLASS(Term, kind)
 
 public:
     /**
@@ -205,7 +205,7 @@ protected:
  * \param KIND  Term kind.
  */
 #define NC_REGISTER_TERM_CLASS(CLASS, KIND)                                     \
-    NC_REGISTER_CLASS_KIND(nc::core::ir::Term, CLASS, KIND)
+    NC_SUBCLASS(nc::core::ir::Term, CLASS, KIND)
 
 NC_REGISTER_TERM_CLASS(nc::core::ir::Constant,             nc::core::ir::Term::INT_CONST)
 NC_REGISTER_TERM_CLASS(nc::core::ir::Intrinsic,            nc::core::ir::Term::INTRINSIC)

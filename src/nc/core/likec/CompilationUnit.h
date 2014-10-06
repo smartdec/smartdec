@@ -75,6 +75,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::TreeNode, nc::core::likec::CompilationUnit, nc::core::likec::TreeNode::COMPILATION_UNIT)
+NC_SUBCLASS(nc::core::likec::TreeNode, nc::core::likec::CompilationUnit, nc::core::likec::TreeNode::COMPILATION_UNIT)
 
 /* vim:set et sts=4 sw=4: */

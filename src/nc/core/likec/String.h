@@ -65,6 +65,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::String, nc::core::likec::Expression::STRING)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::String, nc::core::likec::Expression::STRING)
 
 /* vim:set et sts=4 sw=4: */

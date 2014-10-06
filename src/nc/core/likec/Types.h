@@ -119,7 +119,7 @@ class FloatType: public Type {
  * Pointer type.
  */
 class PointerType: public Type {
-    NC_CLASS_WITH_KINDS(Type, pointerKind)
+    NC_BASE_CLASS(Type, pointerKind)
 
     const Type *pointeeType_; ///< Type this one points to.
 
@@ -220,13 +220,13 @@ class ArrayType: public PointerType {
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::ErroneousType, nc::core::likec::Type::ERRONEOUS)
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::VoidType,      nc::core::likec::Type::VOID)
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::IntegerType,   nc::core::likec::Type::INTEGER)
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::FloatType,     nc::core::likec::Type::FLOAT)
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::PointerType,   nc::core::likec::Type::POINTER)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::ErroneousType, nc::core::likec::Type::ERRONEOUS)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::VoidType,      nc::core::likec::Type::VOID)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::IntegerType,   nc::core::likec::Type::INTEGER)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::FloatType,     nc::core::likec::Type::FLOAT)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::PointerType,   nc::core::likec::Type::POINTER)
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::PointerType, nc::core::likec::PointerType, nc::core::likec::PointerType::PLAIN_PTR)
-NC_REGISTER_CLASS_KIND(nc::core::likec::PointerType, nc::core::likec::ArrayType,   nc::core::likec::PointerType::ARRAY_PTR)
+NC_SUBCLASS(nc::core::likec::PointerType, nc::core::likec::PointerType, nc::core::likec::PointerType::PLAIN_PTR)
+NC_SUBCLASS(nc::core::likec::PointerType, nc::core::likec::ArrayType,   nc::core::likec::PointerType::ARRAY_PTR)
 
 /* vim:set et sts=4 sw=4: */

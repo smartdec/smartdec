@@ -102,6 +102,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::MemberAccessOperator, nc::core::likec::Expression::MEMBER_ACCESS_OPERATOR)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::MemberAccessOperator, nc::core::likec::Expression::MEMBER_ACCESS_OPERATOR)
 
 /* vim:set et sts=4 sw=4: */

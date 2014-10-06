@@ -51,6 +51,6 @@ protected:
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::Continue, nc::core::likec::Statement::CONTINUE)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::Continue, nc::core::likec::Statement::CONTINUE)
 
 /* vim:set et sts=4 sw=4: */
