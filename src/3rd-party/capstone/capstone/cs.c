@@ -260,7 +260,7 @@ static void fill_insn(struct cs_struct *handle, cs_insn *insn, char *buffer, MCI
 #endif
 
 	// fill the instruction bytes
-	memcpy(insn->bytes, code, MIN(sizeof(insn->bytes), insn->size));
+	memcpy(insn->bytes, code, insn->size);
 
 	// map internal instruction opcode to public insn ID
 	handle->insn_id(handle, insn, MCInst_getOpcode(mci));
@@ -292,7 +292,6 @@ static void fill_insn(struct cs_struct *handle, cs_insn *insn, char *buffer, MCI
 
 	// copy @op_str
 	if (*sp) {
-		*sp = '\0';
 		// find the next non-space char
 		sp++;
 		for (; ((*sp == ' ') || (*sp == '\t')); sp++);
@@ -415,17 +414,18 @@ size_t cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, si
 	MCInst mci;
 	uint16_t insn_size;
 	size_t c = 0, i;
-	unsigned int f = 0;
-	cs_insn *insn_cache;
+	unsigned int f = 0;	// index of the next instruction in the cache
+	cs_insn *insn_cache;	// cache contains disassembled instructions
 	void *total = NULL;
-	size_t total_size = 0;
+	size_t total_size = 0;	// total size of output buffer containing all insns
 	bool r;
 	void *tmp;
 	size_t skipdata_bytes;
-	// save all the original info of the buffer
-	uint64_t offset_org;
+	uint64_t offset_org; // save all the original info of the buffer
 	size_t size_org;
 	const uint8_t *buffer_org;
+	unsigned int cache_size = INSN_CACHE_SIZE;
+	size_t next_offset;
 
 	if (!handle) {
 		// FIXME: how to handle this case:
@@ -435,11 +435,17 @@ size_t cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, si
 
 	handle->errnum = CS_ERR_OK;
 
+#ifdef CAPSTONE_USE_SYS_DYN_MEM
+	if (count > 0 && count <= INSN_CACHE_SIZE)
+		cache_size = count;
+#endif
+
 	// save the original offset for SKIPDATA
 	buffer_org = buffer;
 	offset_org = offset;
 	size_org = size;
-	total_size = (sizeof(cs_insn) * INSN_CACHE_SIZE);
+
+	total_size = sizeof(cs_insn) * cache_size;
 	total = cs_mem_malloc(total_size);
 	insn_cache = total;
 
@@ -475,46 +481,15 @@ size_t cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, si
 			handle->printer(&mci, &ss, handle->printer_info);
 			fill_insn(handle, insn_cache, ss.buffer, &mci, handle->post_printer, buffer);
 
-			f++;
-			if (f == INSN_CACHE_SIZE) {
-				// resize total to contain newly disasm insns
-				total_size += (sizeof(cs_insn) * INSN_CACHE_SIZE);
-				tmp = cs_mem_realloc(total, total_size);
-				if (tmp == NULL) {	// insufficient memory
-					if (handle->detail) {
-						insn_cache = (cs_insn *)total;
-						for (i = 0; i < c; i++, insn_cache++)
-							cs_mem_free(insn_cache->detail);
-					}
-
-					cs_mem_free(total);
-					*insn = NULL;
-					handle->errnum = CS_ERR_MEM;
-					return 0;
-				}
-
-				total = tmp;
-				insn_cache = (cs_insn *)((char *)total + total_size - (sizeof(cs_insn) * INSN_CACHE_SIZE));
-
-				// reset f back to 0
-				f = 0;
-			} else
-				insn_cache++;
-
-			c++;
-			if (count > 0 && c == count)
-				break;
-
-			buffer += insn_size;
-			size -= insn_size;
-			offset += insn_size;
+			next_offset = insn_size;
 		} else	{
+			// encounter a broken instruction
+
+			// free memory of @detail pointer
 			if (handle->detail) {
-				// free memory of @detail pointer
 				cs_mem_free(insn_cache->detail);
 			}
 
-			// encounter a broken instruction
 			// if there is no request to skip data, or remaining data is too small,
 			// then bail out
 			if (!handle->skipdata || handle->skipdata_size > size)
@@ -543,43 +518,57 @@ size_t cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, si
 			skipdata_opstr(insn_cache->op_str, buffer, skipdata_bytes);
 			insn_cache->detail = NULL;
 
-			f++;
-			if (f == INSN_CACHE_SIZE) {
-				// resize total to contain newly disasm insns
+			next_offset = skipdata_bytes;
+		}
 
-				total_size += (sizeof(cs_insn) * INSN_CACHE_SIZE);
-				tmp = cs_mem_realloc(total, total_size);
-				if (tmp == NULL) {	// insufficient memory
-					if (handle->detail) {
-						insn_cache = (cs_insn *)total;
-						for (i = 0; i < c; i++, insn_cache++)
-							cs_mem_free(insn_cache->detail);
-					}
+		// one more instruction entering the cache
+		f++;
 
-					cs_mem_free(total);
-					*insn = NULL;
-					handle->errnum = CS_ERR_MEM;
-					return 0;
+		// one more instruction disassembled
+		c++;
+		if (count > 0 && c == count)
+			// already got requested number of instructions
+			break;
+
+		if (f == cache_size) {
+			// full cache, so expand the cache to contain incoming insns
+			cache_size = cache_size * 8 / 5; // * 1.6 ~ golden ratio
+			total_size += (sizeof(cs_insn) * cache_size);
+			tmp = cs_mem_realloc(total, total_size);
+			if (tmp == NULL) {	// insufficient memory
+				if (handle->detail) {
+					insn_cache = (cs_insn *)total;
+					for (i = 0; i < c; i++, insn_cache++)
+						cs_mem_free(insn_cache->detail);
 				}
 
-				total = tmp;
-				insn_cache = (cs_insn *)((char *)total + total_size - (sizeof(cs_insn) * INSN_CACHE_SIZE));
+				cs_mem_free(total);
+				*insn = NULL;
+				handle->errnum = CS_ERR_MEM;
+				return 0;
+			}
 
-				// reset f back to 0
-				f = 0;
-			} else
-				insn_cache++;
+			total = tmp;
+			// continue to fill in the cache after the last instruction
+			insn_cache = (cs_insn *)((char *)total + sizeof(cs_insn) * c);
 
-			buffer += skipdata_bytes;
-			size -= skipdata_bytes;
-			offset += skipdata_bytes;
-			c++;
-		}
+			// reset f back to 0, so we fill in the cache from begining
+			f = 0;
+		} else
+			insn_cache++;
+
+		buffer += next_offset;
+		size -= next_offset;
+		offset += next_offset;
 	}
 
-	if (f) {
-		// resize total to contain newly disasm insns
-		void *tmp = cs_mem_realloc(total, total_size - (INSN_CACHE_SIZE - f) * sizeof(*insn_cache));
+	if (!c) {
+		// we did not disassemble any instruction
+		cs_mem_free(total);
+		total = NULL;
+	} else if (f != cache_size) {
+		// total did not fully use the last cache, so downsize it
+		void *tmp = cs_mem_realloc(total, total_size - (cache_size - f) * sizeof(*insn_cache));
 		if (tmp == NULL) {	// insufficient memory
 			// free all detail pointers
 			if (handle->detail) {
@@ -596,9 +585,6 @@ size_t cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, si
 		}
 
 		total = tmp;
-	} else if (!c) {
-		cs_mem_free(total);
-		total = NULL;
 	}
 
 	*insn = total;

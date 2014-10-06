@@ -202,7 +202,7 @@ static name_map reg_name_maps[] = {
 const char *PPC_reg_name(csh handle, unsigned int reg)
 {
 #ifndef CAPSTONE_DIET
-	if (reg >= PPC_REG_MAX)
+	if (reg >= PPC_REG_ENDING)
 		return NULL;
 
 	return reg_name_maps[reg].name;
@@ -7875,7 +7875,7 @@ const char *PPC_insn_name(csh handle, unsigned int id)
 #ifndef CAPSTONE_DIET
 	unsigned int i;
 
-	if (id >= PPC_INS_MAX)
+	if (id >= PPC_INS_ENDING)
 		return NULL;
 
 	// handle special alias first
@@ -7911,7 +7911,7 @@ static name_map group_name_maps[] = {
 const char *PPC_group_name(csh handle, unsigned int id)
 {
 #ifndef CAPSTONE_DIET
-	if (id >= PPC_GRP_MAX)
+	if (id >= PPC_GRP_ENDING)
 		return NULL;
 
 	return group_name_maps[id].name;
@@ -8094,10 +8094,47 @@ bool PPC_alias_insn(const char *name, struct ppc_alias *alias)
 
 	// not really an alias insn
 	i = name2id(&insn_name_maps[1], ARR_SIZE(insn_name_maps) - 1, name);
-	if (i) {
+	if (i != -1) {
 		alias->id = insn_name_maps[i].id;
 		alias->cc = PPC_BC_INVALID;
 		return true;
+	}
+
+	// not found
+	return false;
+}
+
+// list all relative branch instructions
+static unsigned int insn_abs[] = {
+	PPC_BA,
+	PPC_BCCA,
+	PPC_BCCLA,
+	PPC_BDNZA,
+	PPC_BDNZAm,
+	PPC_BDNZAp,
+	PPC_BDNZLA,
+	PPC_BDNZLAm,
+	PPC_BDNZLAp,
+	PPC_BDZA,
+	PPC_BDZAm,
+	PPC_BDZAp,
+	PPC_BDZLAm,
+	PPC_BDZLAp,
+	PPC_BLA,
+	PPC_gBCA,
+	PPC_gBCLA,
+	0
+};
+
+// check if this insn is relative branch
+bool PPC_abs_branch(cs_struct *h, unsigned int id)
+{
+	int i;
+
+	for (i = 0; insn_abs[i]; i++) {
+		if (id == insn_abs[i]) {
+			return true;
+		}
 	}
 
 	// not found

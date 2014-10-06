@@ -140,7 +140,7 @@ public class Arm64_const {
 	public static final int ARM64_SYSREG_ICC_RPR_EL1 = 0xc65b;
 	public static final int ARM64_SYSREG_ICH_VTR_EL2 = 0xe659;
 	public static final int ARM64_SYSREG_ICH_EISR_EL2 = 0xe65b;
-	public static final int ARM64_SYSREG_ICH_ELSR_EL2 = 0xe65d//1110011001011101;
+	public static final int ARM64_SYSREG_ICH_ELSR_EL2 = 0xe65d;
 
 	// System registers for MSR
 	public static final int ARM64_SYSREG_DBGDTRTX_EL0 = 0x9828;
@@ -153,7 +153,7 @@ public class Arm64_const {
 	public static final int ARM64_SYSREG_ICC_DIR_EL1 = 0xc659;
 	public static final int ARM64_SYSREG_ICC_SGI1R_EL1 = 0xc65d;
 	public static final int ARM64_SYSREG_ICC_ASGI1R_EL1 = 0xc65e;
-	public static final int ARM64_SYSREG_ICC_SGI0R_EL1 = 0xc65f//1100011001011111;
+	public static final int ARM64_SYSREG_ICC_SGI0R_EL1 = 0xc65f;
 
 	// System PState Field (MSR instruction)
 
@@ -567,7 +567,7 @@ public class Arm64_const {
 	public static final int ARM64_REG_V29 = 257;
 	public static final int ARM64_REG_V30 = 258;
 	public static final int ARM64_REG_V31 = 259;
-	public static final int ARM64_REG_MAX = 260;
+	public static final int ARM64_REG_ENDING = 260;
 
 	// alias registers
 	public static final int ARM64_REG_IP1 = ARM64_REG_X16;
@@ -1029,7 +1029,7 @@ public class Arm64_const {
 	public static final int ARM64_INS_DC = 449;
 	public static final int ARM64_INS_AT = 450;
 	public static final int ARM64_INS_TLBI = 451;
-	public static final int ARM64_INS_MAX = 452;
+	public static final int ARM64_INS_ENDING = 452;
 
 	// Group of ARM64 instructions
 
@@ -1039,5 +1039,5 @@ public class Arm64_const {
 	public static final int ARM64_GRP_NEON = 3;
 	public static final int ARM64_GRP_CRC = 4;
 	public static final int ARM64_GRP_JUMP = 5;
-	public static final int ARM64_GRP_MAX = 6;
+	public static final int ARM64_GRP_ENDING = 6;
 }
