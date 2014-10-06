@@ -24,8 +24,8 @@
 
 #include "X86MasterAnalyzer.h"
 
-#include <nc/common/Conversions.h>
 #include <nc/common/Foreach.h>
+#include <nc/common/StringToInt.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/Context.h>
@@ -94,10 +94,9 @@ void X86MasterAnalyzer::detectCallingConvention(core::Context &context, const co
             if (auto symbol = context.image()->getSymbol(*addr)) {
                 int index = symbol->name().lastIndexOf(QChar('@'));
                 if (index != -1) {
-                    ByteSize argumentsSize;
-                    if (stringToInt(symbol->name().mid(index + 1), &argumentsSize)) {
+                    if (auto argumentsSize = stringToInt<ByteSize>(symbol->name().mid(index + 1))) {
                         setConvention("stdcall32");
-                        context.conventions()->setStackArgumentsSize(calleeId, argumentsSize);
+                        context.conventions()->setStackArgumentsSize(calleeId, *argumentsSize);
                         return;
                     }
                 }

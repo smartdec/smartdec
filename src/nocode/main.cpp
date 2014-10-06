@@ -25,7 +25,6 @@
 #include <nc/config.h>
 
 #include <nc/common/Branding.h>
-#include <nc/common/Conversions.h>
 #include <nc/common/Exception.h>
 #include <nc/common/Foreach.h>
 #include <nc/common/StreamLogger.h>

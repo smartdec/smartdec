@@ -10,8 +10,6 @@ set(SOURCES
     CancellationToken.cpp
     CancellationToken.h
     CheckedCast.h
-    Conversions.cpp
-    Conversions.h
     DisjointSet.h
     Escaping.cpp
     Escaping.h
@@ -30,6 +28,8 @@ set(SOURCES
     SizedValue.h
     StreamLogger.cpp
     StreamLogger.h
+    StringToInt.cpp
+    StringToInt.h
     Subclass.h
     Types.h
     Unreachable.h

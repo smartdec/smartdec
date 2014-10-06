@@ -28,9 +28,9 @@
 #include <QIODevice>
 
 #include <nc/common/ByteOrder.h>
-#include <nc/common/Conversions.h>
 #include <nc/common/Foreach.h>
 #include <nc/common/LogToken.h>
+#include <nc/common/StringToInt.h>
 #include <nc/common/Types.h>
 #include <nc/common/make_unique.h>
 
@@ -303,9 +303,8 @@ private:
 
         foreach (auto section, image_->sections()) {
             if (section->name().startsWith('/')) {
-                uint32_t offset;
-                if (stringToInt(section->name().mid(1), &offset)) {
-                    QString newName = getStringFromTable(offset);
+                if (auto offset = stringToInt<uint32_t>(section->name().mid(1))) {
+                    QString newName = getStringFromTable(*offset);
                     if (!newName.isEmpty()) {
                         section->setName(newName);
                     }

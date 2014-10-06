@@ -30,8 +30,8 @@
 #include <QLineEdit>
 #include <QMessageBox>
 
-#include <nc/common/Conversions.h>
 #include <nc/common/Foreach.h>
+#include <nc/common/StringToInt.h>
 
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
@@ -112,19 +112,11 @@ void DisassemblyDialog::selectSection(const core::image::Section *section) {
 }
 
 boost::optional<ByteAddr> DisassemblyDialog::startAddress() const {
-    if (isHexString(startLineEdit_->text())) {
-        return hexStringToInt<ByteAddr>(startLineEdit_->text());
-    } else {
-        return boost::none;
-    }
+    return stringToInt<ByteAddr>(startLineEdit_->text(), 16);
 }
 
 boost::optional<ByteAddr> DisassemblyDialog::endAddress() const {
-    if (isHexString(endLineEdit_->text())) {
-        return hexStringToInt<ByteAddr>(endLineEdit_->text());
-    } else {
-        return boost::none;
-    }
+    return stringToInt<ByteAddr>(endLineEdit_->text(), 16);
 }
 
 void DisassemblyDialog::accept() {

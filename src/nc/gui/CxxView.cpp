@@ -29,7 +29,7 @@
 #include <QMenu>
 #include <QPlainTextEdit>
 
-#include <nc/common/Conversions.h>
+#include <nc/common/StringToInt.h>
 #include <nc/core/likec/Expression.h>
 #include <nc/core/likec/FunctionDefinition.h>
 #include <nc/core/likec/LabelDeclaration.h>
@@ -161,9 +161,8 @@ boost::optional<ConstantValue> CxxView::getIntegerUnderCursor() const {
     cursor.movePosition(QTextCursor::StartOfWord);
     cursor.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
 
-    ConstantValue value;
-    if (stringToInt(cursor.selectedText(), &value)) {
-        return value;
+    if (auto value = stringToInt<ConstantValue>(cursor.selectedText())) {
+        return *value;
     }
     return boost::none;
 }
