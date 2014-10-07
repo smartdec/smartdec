@@ -462,7 +462,7 @@ private:
         return core::irgen::expressions::TermExpression(createTermForShiftedOperand(operand, sizeHint));
     }
 
-    std::unique_ptr<core::ir::Term> createTermForShiftedOperand(const cs_arm_op &operand, SmallBitSize sizeHint) const {
+    static std::unique_ptr<core::ir::Term> createTermForShiftedOperand(const cs_arm_op &operand, SmallBitSize sizeHint) {
         auto result = createTermForOperand(operand, sizeHint);
         auto size = result->size();
 
@@ -531,8 +531,7 @@ private:
         unreachable();
     }
 
-    static
-    std::unique_ptr<core::ir::Term> ror(std::unique_ptr<core::ir::Term> a, std::unique_ptr<core::ir::Term> b) {
+    static std::unique_ptr<core::ir::Term> ror(std::unique_ptr<core::ir::Term> a, std::unique_ptr<core::ir::Term> b) {
         auto size = a->size();
         auto aa = a->clone();
         auto bb = std::make_unique<core::ir::BinaryOperator>(
@@ -556,7 +555,7 @@ private:
                 size);
     }
 
-    std::unique_ptr<core::ir::Term> createShiftValue(const cs_arm_op &operand) const {
+    static std::unique_ptr<core::ir::Term> createShiftValue(const cs_arm_op &operand) {
         switch (operand.shift.type) {
             case ARM_SFT_INVALID:
                 return NULL;
@@ -579,7 +578,7 @@ private:
         unreachable();
     }
 
-    std::unique_ptr<core::ir::Term> createTermForOperand(const cs_arm_op &operand, SmallBitSize sizeHint) const {
+    static std::unique_ptr<core::ir::Term> createTermForOperand(const cs_arm_op &operand, SmallBitSize sizeHint) {
         switch (operand.type) {
             case ARM_OP_REG:
                 return std::make_unique<core::ir::MemoryLocationAccess>(getRegister(operand.reg)->memoryLocation().resized(sizeHint));
@@ -598,7 +597,7 @@ private:
         }
     }
 
-    std::unique_ptr<core::ir::Term> createDereferenceAddress(const cs_arm_op &operand) const {
+    static std::unique_ptr<core::ir::Term> createDereferenceAddress(const cs_arm_op &operand) {
         if (operand.type != ARM_OP_MEM) {
             throw core::irgen::InvalidInstructionException(tr("Expected the operand to be a memory operand"));
         }
