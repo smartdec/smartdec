@@ -186,6 +186,19 @@ private:
             }
             break;
         }
+        case ARM_INS_AND: {
+            _[operand(0) ^= operand(1) & operand(2)];
+            if (!handleWriteToPC(bodyBasicBlock)) {
+                if (detail_->update_flags) {
+                    _[
+                        n ^= signed_(operand(0)) < constant(0),
+                        z ^= operand(0) == constant(0),
+                        c ^= intrinsic()
+                    ];
+                }
+            }
+            break;
+        }
         case ARM_INS_B:
         case ARM_INS_BX: {
             _[jump(operand(0))];
@@ -442,13 +455,131 @@ private:
     }
 
     core::irgen::expressions::TermExpression operand(std::size_t index, SmallBitSize sizeHint = 32) const {
-        return core::irgen::expressions::TermExpression(createTermForOperand(index, sizeHint));
-    }
-
-    std::unique_ptr<core::ir::Term> createTermForOperand(std::size_t index, SmallBitSize sizeHint) const {
         assert(index < boost::size(detail_->operands));
 
         const auto &operand = detail_->operands[index];
+
+        return core::irgen::expressions::TermExpression(createTermForShiftedOperand(operand, sizeHint));
+    }
+
+    std::unique_ptr<core::ir::Term> createTermForShiftedOperand(const cs_arm_op &operand, SmallBitSize sizeHint) const {
+        auto result = createTermForOperand(operand, sizeHint);
+        auto size = result->size();
+
+        switch (operand.shift.type) {
+            case ARM_SFT_INVALID: {
+                return result;
+            }
+            case ARM_SFT_ASR: /* FALLTHROUGH */
+            case ARM_SFT_ASR_REG: {
+                return std::make_unique<core::ir::BinaryOperator>(
+                    core::ir::BinaryOperator::SAR,
+                    std::move(result),
+                    createShiftValue(operand),
+                    size);
+            }
+            case ARM_SFT_LSL: /* FALLTHROUGH */
+            case ARM_SFT_LSL_REG: {
+                return std::make_unique<core::ir::BinaryOperator>(
+                    core::ir::BinaryOperator::SHL,
+                    std::move(result),
+                    createShiftValue(operand),
+                    size);
+            }
+            case ARM_SFT_LSR: /* FALLTHROUGH */
+            case ARM_SFT_LSR_REG: {
+                return std::make_unique<core::ir::BinaryOperator>(
+                    core::ir::BinaryOperator::SHR,
+                    std::move(result),
+                    createShiftValue(operand),
+                    size);
+            }
+            case ARM_SFT_ROR: /* FALLTHROUGH */
+            case ARM_SFT_ROR_REG: {
+                return ror(std::move(result), createShiftValue(operand));
+            }
+            case ARM_SFT_RRX: /* FALLTHROUGH */
+            case ARM_SFT_RRX_REG: {
+                auto size = result->size();
+
+                result = std::make_unique<core::ir::BinaryOperator>(
+                    core::ir::BinaryOperator::OR,
+                    std::make_unique<core::ir::UnaryOperator>(
+                        core::ir::UnaryOperator::ZERO_EXTEND,
+                        std::move(result),
+                        size + 1
+                    ),
+                    std::make_unique<core::ir::BinaryOperator>(
+                        core::ir::BinaryOperator::SHL,
+                        std::make_unique<core::ir::UnaryOperator>(
+                            core::ir::UnaryOperator::ZERO_EXTEND,
+                            std::make_unique<core::ir::MemoryLocationAccess>(ArmRegisters::c()->memoryLocation()),
+                            size + 1),
+                        std::make_unique<core::ir::Constant>(SizedValue(sizeof(SmallBitSize), size + 1)),
+                        size + 1),
+                    size + 1);
+
+                result = ror(std::move(result), createShiftValue(operand));
+
+                return std::make_unique<core::ir::UnaryOperator>(
+                    core::ir::UnaryOperator::TRUNCATE,
+                    std::move(result),
+                    size
+                );
+            }
+        }
+        unreachable();
+    }
+
+    static
+    std::unique_ptr<core::ir::Term> ror(std::unique_ptr<core::ir::Term> a, std::unique_ptr<core::ir::Term> b) {
+        auto size = a->size();
+        auto aa = a->clone();
+        auto bb = std::make_unique<core::ir::BinaryOperator>(
+            core::ir::BinaryOperator::SUB,
+            std::make_unique<core::ir::Constant>(SizedValue(b->size(), size)),
+            b->clone(),
+            b->size());
+
+        return std::make_unique<core::ir::BinaryOperator>(
+            core::ir::BinaryOperator::OR,
+                std::make_unique<core::ir::BinaryOperator>(
+                    core::ir::BinaryOperator::SHR,
+                    std::move(a),
+                    std::move(b),
+                    size),
+                std::make_unique<core::ir::BinaryOperator>(
+                    core::ir::BinaryOperator::SHL,
+                    std::move(aa),
+                    std::move(bb),
+                    size),
+                size);
+    }
+
+    std::unique_ptr<core::ir::Term> createShiftValue(const cs_arm_op &operand) const {
+        switch (operand.shift.type) {
+            case ARM_SFT_INVALID:
+                return NULL;
+            case ARM_SFT_ASR: /* FALLTHROUGH */
+            case ARM_SFT_LSL: /* FALLTHROUGH */
+            case ARM_SFT_LSR: /* FALLTHROUGH */
+            case ARM_SFT_ROR: /* FALLTHROUGH */
+            case ARM_SFT_RRX: {
+                return std::make_unique<core::ir::Constant>(SizedValue(sizeof(operand.shift.value) * CHAR_BIT, operand.shift.value));
+            }
+            case ARM_SFT_ASR_REG: /* FALLTHROUGH */
+            case ARM_SFT_LSL_REG: /* FALLTHROUGH */
+            case ARM_SFT_LSR_REG: /* FALLTHROUGH */
+            case ARM_SFT_ROR_REG: /* FALLTHROUGH */
+            case ARM_SFT_RRX_REG: {
+                auto reg = getRegister(operand.shift.value);
+                return std::make_unique<core::ir::MemoryLocationAccess>(reg->memoryLocation());
+            }
+        }
+        unreachable();
+    }
+
+    std::unique_ptr<core::ir::Term> createTermForOperand(const cs_arm_op &operand, SmallBitSize sizeHint) const {
         switch (operand.type) {
             case ARM_OP_REG:
                 return std::make_unique<core::ir::MemoryLocationAccess>(getRegister(operand.reg)->memoryLocation().resized(sizeHint));
@@ -461,19 +592,17 @@ private:
             case ARM_OP_FP:
                 throw core::irgen::InvalidInstructionException(tr("Don't know how to deal with FP operands."));
             case ARM_OP_MEM:
-                return std::make_unique<core::ir::Dereference>(createDereferenceAddress(index), core::ir::MemoryDomain::MEMORY, sizeHint);
+                return std::make_unique<core::ir::Dereference>(createDereferenceAddress(operand), core::ir::MemoryDomain::MEMORY, sizeHint);
             default:
                 unreachable();
         }
     }
 
-    std::unique_ptr<core::ir::Term> createDereferenceAddress(std::size_t index) const {
-        assert(index < boost::size(detail_->operands));
-
-        const auto &operand = detail_->operands[index];
+    std::unique_ptr<core::ir::Term> createDereferenceAddress(const cs_arm_op &operand) const {
         if (operand.type != ARM_OP_MEM) {
             throw core::irgen::InvalidInstructionException(tr("Expected the operand to be a memory operand"));
         }
+
         const auto &mem = operand.mem;
 
         auto result = createRegisterAccess(mem.base);
