@@ -459,11 +459,62 @@ private:
 
         const auto &operand = detail_->operands[index];
 
-        return core::irgen::expressions::TermExpression(createTermForShiftedOperand(operand, sizeHint));
+        return core::irgen::expressions::TermExpression(createTermForOperand(operand, sizeHint));
     }
 
-    static std::unique_ptr<core::ir::Term> createTermForShiftedOperand(const cs_arm_op &operand, SmallBitSize sizeHint) {
-        auto result = createTermForOperand(operand, sizeHint);
+    static std::unique_ptr<core::ir::Term> createTermForOperand(const cs_arm_op &operand, SmallBitSize sizeHint) {
+        switch (operand.type) {
+            case ARM_OP_REG:
+                return applyShift(operand, std::make_unique<core::ir::MemoryLocationAccess>(
+                                               getRegister(operand.reg)->memoryLocation().resized(sizeHint)));
+            case ARM_OP_CIMM:
+                throw core::irgen::InvalidInstructionException(tr("Don't know how to deal with CIMM operands."));
+            case ARM_OP_PIMM:
+                throw core::irgen::InvalidInstructionException(tr("Don't know how to deal with PIMM operands."));
+            case ARM_OP_IMM:
+                return applyShift(operand, std::make_unique<core::ir::Constant>(SizedValue(sizeHint, operand.imm)));
+            case ARM_OP_FP:
+                throw core::irgen::InvalidInstructionException(tr("Don't know how to deal with FP operands."));
+            case ARM_OP_MEM:
+                return std::make_unique<core::ir::Dereference>(createDereferenceAddress(operand), core::ir::MemoryDomain::MEMORY, sizeHint);
+            default:
+                unreachable();
+        }
+    }
+
+    static std::unique_ptr<core::ir::Term> createDereferenceAddress(const cs_arm_op &operand) {
+        if (operand.type != ARM_OP_MEM) {
+            throw core::irgen::InvalidInstructionException(tr("Expected the operand to be a memory operand"));
+        }
+
+        const auto &mem = operand.mem;
+
+        auto result = createRegisterAccess(mem.base);
+
+        if (mem.index != ARM_REG_INVALID) {
+            assert(mem.scale == 1 || mem.scale == -1);
+
+            result = std::make_unique<core::ir::BinaryOperator>(
+                mem.scale == 1 ? core::ir::BinaryOperator::ADD : core::ir::BinaryOperator::SUB,
+                std::move(result),
+                createRegisterAccess(mem.index),
+                result->size()
+            );
+        }
+
+        if (mem.disp != 0) {
+            result = std::make_unique<core::ir::BinaryOperator>(
+                core::ir::BinaryOperator::ADD,
+                std::move(result),
+                std::make_unique<core::ir::Constant>(SizedValue(result->size(), mem.disp)),
+                result->size()
+            );
+        }
+
+        return applyShift(operand, std::move(result));
+    }
+
+    static std::unique_ptr<core::ir::Term> applyShift(const cs_arm_op &operand, std::unique_ptr<core::ir::Term> result) {
         auto size = result->size();
 
         switch (operand.shift.type) {
@@ -576,57 +627,6 @@ private:
             }
         }
         unreachable();
-    }
-
-    static std::unique_ptr<core::ir::Term> createTermForOperand(const cs_arm_op &operand, SmallBitSize sizeHint) {
-        switch (operand.type) {
-            case ARM_OP_REG:
-                return std::make_unique<core::ir::MemoryLocationAccess>(getRegister(operand.reg)->memoryLocation().resized(sizeHint));
-            case ARM_OP_CIMM:
-                throw core::irgen::InvalidInstructionException(tr("Don't know how to deal with CIMM operands."));
-            case ARM_OP_PIMM:
-                throw core::irgen::InvalidInstructionException(tr("Don't know how to deal with PIMM operands."));
-            case ARM_OP_IMM:
-                return std::make_unique<core::ir::Constant>(SizedValue(sizeHint, operand.imm));
-            case ARM_OP_FP:
-                throw core::irgen::InvalidInstructionException(tr("Don't know how to deal with FP operands."));
-            case ARM_OP_MEM:
-                return std::make_unique<core::ir::Dereference>(createDereferenceAddress(operand), core::ir::MemoryDomain::MEMORY, sizeHint);
-            default:
-                unreachable();
-        }
-    }
-
-    static std::unique_ptr<core::ir::Term> createDereferenceAddress(const cs_arm_op &operand) {
-        if (operand.type != ARM_OP_MEM) {
-            throw core::irgen::InvalidInstructionException(tr("Expected the operand to be a memory operand"));
-        }
-
-        const auto &mem = operand.mem;
-
-        auto result = createRegisterAccess(mem.base);
-
-        if (mem.index != ARM_REG_INVALID) {
-            assert(mem.scale == 1 || mem.scale == -1);
-
-            result = std::make_unique<core::ir::BinaryOperator>(
-                mem.scale == 1 ? core::ir::BinaryOperator::ADD : core::ir::BinaryOperator::SUB,
-                std::move(result),
-                createRegisterAccess(mem.index),
-                result->size()
-            );
-        }
-
-        if (mem.disp != 0) {
-            result = std::make_unique<core::ir::BinaryOperator>(
-                core::ir::BinaryOperator::ADD,
-                std::move(result),
-                std::make_unique<core::ir::Constant>(SizedValue(result->size(), mem.disp)),
-                result->size()
-            );
-        }
-
-        return result;
     }
 
     static std::unique_ptr<core::ir::Term> createRegisterAccess(int reg) {
