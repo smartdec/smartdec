@@ -53,6 +53,12 @@ are binary compatible and work too):
 ------------------------------------------------------------------------
 configure.exe -qtnamespace QT -platform win32-msvc2010 -debug-and-release -opensource -no-qt3support -no-multimedia -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools -nomake demos -nomake examples && nmake
 ------------------------------------------------------------------------
++
+or, on Linux:
++
+------------------------------------------------------------------------
+CXX=g++ CC=gcc ./configure -qtnamespace QT -platform linux-g++-32 -debug-and-release -confirm-license -opensource -no-qt3support -no-multimedia -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools -nomake demos -nomake examples -prefix /home/yegor/opt/qt-4.8.4-32 && make && make install
+------------------------------------------------------------------------
 
 4. You must must build decompiler in +Release+ mode, because this is the
 one used by IDA. Otherwise, you will end up linked against debug Qt
@@ -116,6 +122,10 @@ You can choose whether to build the IDA plug-in and which one to build:
     * `-D IDA_64_BIT_EA_T=YES` (`YES` to build `.p64` version for
       handling 64-bit code, `NO` for building `.plw` version for
       handling 32-bit code).
+
+You can choose to build 32-bit code on 64-bit Linux machine:
+
+    * `-D NC_M32=ON`.
 
 You can set the installation prefix:
 

@@ -19,6 +19,8 @@ set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH}  ${CMAKE_SOURCE_DIR}/../modules)
 #
 set(QT_NAMESPACE "" CACHE STRING "Qt Namespace")
 
+set(NC_M32 OFF CACHE STRING "Make a 32-bit build")
+
 #
 # Profiling.
 #
@@ -66,6 +68,11 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
     endif()
+
+    if(${NC_M32})
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
+    endif()
 endif()
 
 #
@@ -74,6 +81,11 @@ endif()
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
     add_definitions(-Wall -Wextra)
+
+    if(${NC_M32})
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
+    endif()
 endif()
 
 #
