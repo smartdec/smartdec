@@ -60,6 +60,9 @@ QString escapeCString(const QString &string) {
 
     foreach (QChar c, string) {
         switch (c.toAscii()) {
+            case '\\':
+                result += "\\\\";
+                break;
             case '\a':
                 result += "\\a";
                 break;
