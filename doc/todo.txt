@@ -5,6 +5,10 @@ Yegor Derevenets <yegor.derevenets@gmail.com>
 
 Here is a list of things that should be done, sorted by descending priority.
 
+Custom Shortcuts in IDA plugin
+------------------------------
+One should make F4 and Ctrl-F4 changeable to something else.
+
 Reusing Running Demangler
 -------------------------
 Currently the demangler serves only one request.
