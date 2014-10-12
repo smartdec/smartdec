@@ -86,7 +86,7 @@ QString IdaFrontend::demangle(const QString &mangled) {
         preprocessed = preprocessed.mid(2); /* Handle thunks. */
 
     char buffer[MAXSTR];
-    if(::demangle(buffer, sizeof(buffer), preprocessed.toLatin1().data(), 0) != 0)
+    if(::demangle(buffer, sizeof(buffer), preprocessed.toLatin1().data(), 0) > 0)
         return QLatin1String(buffer);
 
     return preprocessed;
