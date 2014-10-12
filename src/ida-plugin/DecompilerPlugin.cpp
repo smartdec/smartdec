@@ -47,8 +47,8 @@ namespace nc { namespace ida {
 
 namespace {
 
-const char *decompileFunctionHotkey = "F4";
-const char *decompileProgramHotkey  = "Ctrl-F4";
+const char *decompileFunctionHotkey = "F3";
+const char *decompileProgramHotkey  = "Ctrl-F3";
 
 const char *subviewsMenuPath = "View/Open subviews";
 const char *hexDumpMenuItem = "Hex dump";
