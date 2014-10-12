@@ -213,7 +213,7 @@ void IdaFrontend::print(const QString &message) {
 QWidget *IdaFrontend::createWidget(const QString &caption) {
     HWND hwnd;
     TForm *form = create_tform(caption.toLocal8Bit().constData(), &hwnd);
-    open_tform(form, FORM_MDI | FORM_TAB | FORM_MENU);
+    open_tform(form, FORM_MDI | FORM_TAB | FORM_MENU | FORM_QWIDGET);
     return reinterpret_cast<QWidget *>(form);
 }
 
