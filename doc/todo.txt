@@ -21,6 +21,10 @@ No-return Functions
 -------------------
 One should compute the set of no-return functions (or basic blocks, or addresses) and use this information when building the control-flow graph of the whole program, namely, chop basic blocks after no-return function calls.
 
+Use Names from IDA
+------------------
+Use names assigned to registers and structs created by the user in IDA in the decompiler's output.
+
 ARM
 ---
 Support for ARM architecture is wanted.
