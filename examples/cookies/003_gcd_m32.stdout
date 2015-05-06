@@ -1,0 +1,11 @@
+
+int32_t gcd(int32_t arg1, int32_t arg2) {
+    int32_t eax1;
+
+    if (arg2 != 0) {
+        eax1 = gcd(arg2, arg1 % arg2);
+    } else {
+        eax1 = arg1;
+    }
+    return eax1;
+}

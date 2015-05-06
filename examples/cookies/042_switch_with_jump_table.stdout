@@ -1,0 +1,2991 @@
+
+/*
+ * _Z6printfz
+ * printf(...)
+ */
+void Z6printfz() {
+    return;
+}
+
+/*
+ * _Z9do_switchi
+ * do_switch(int)
+ */
+int32_t Z9do_switchi(int32_t arg1) {
+    int32_t eax1;
+
+    switch ((uint32_t)arg1) {
+    default:
+        eax1 = 0x804b6e6;
+        break;
+    case 0:
+        Z6printfz();
+    case 1:
+        eax1 = 0x804a82b;
+        break;
+    case 2:
+        eax1 = 0x804a82d;
+        break;
+    case 3:
+        eax1 = 0x804a82f;
+        break;
+    case 4:
+        eax1 = 0x804a831;
+        break;
+    case 5:
+        eax1 = 0x804a833;
+        break;
+    case 6:
+        eax1 = 0x804a835;
+        break;
+    case 7:
+        eax1 = 0x804a837;
+        break;
+    case 8:
+        eax1 = 0x804a839;
+        break;
+    case 9:
+        eax1 = 0x804a83b;
+        break;
+    case 10:
+        eax1 = 0x804a83d;
+        break;
+    case 11:
+        eax1 = 0x804a840;
+        break;
+    case 12:
+        eax1 = 0x804a843;
+        break;
+    case 13:
+        eax1 = 0x804a846;
+        break;
+    case 14:
+        eax1 = 0x804a849;
+        break;
+    case 15:
+        eax1 = 0x804a84c;
+        break;
+    case 16:
+        eax1 = 0x804a84f;
+        break;
+    case 17:
+        eax1 = 0x804a852;
+        break;
+    case 18:
+        eax1 = 0x804a855;
+        break;
+    case 19:
+        eax1 = 0x804a858;
+        break;
+    case 20:
+        eax1 = 0x804a85b;
+        break;
+    case 21:
+        eax1 = 0x804a85e;
+        break;
+    case 22:
+        eax1 = 0x804a861;
+        break;
+    case 23:
+        eax1 = 0x804a864;
+        break;
+    case 24:
+        eax1 = 0x804a867;
+        break;
+    case 25:
+        eax1 = 0x804a86a;
+        break;
+    case 26:
+        eax1 = 0x804a86d;
+        break;
+    case 27:
+        eax1 = 0x804a870;
+        break;
+    case 28:
+        eax1 = 0x804a873;
+        break;
+    case 29:
+        eax1 = 0x804a876;
+        break;
+    case 30:
+        eax1 = 0x804a879;
+        break;
+    case 31:
+        eax1 = 0x804a87c;
+        break;
+    case 32:
+        eax1 = 0x804a87f;
+        break;
+    case 33:
+        Z6printfz();
+    case 34:
+        eax1 = 0x804a882;
+        break;
+    case 35:
+        eax1 = 0x804a885;
+        break;
+    case 36:
+        eax1 = 0x804a888;
+        break;
+    case 37:
+        eax1 = 0x804a88b;
+        break;
+    case 38:
+        eax1 = 0x804a88e;
+        break;
+    case 39:
+        eax1 = 0x804a891;
+        break;
+    case 40:
+        eax1 = 0x804a894;
+        break;
+    case 41:
+        eax1 = 0x804a897;
+        break;
+    case 42:
+        eax1 = 0x804a89a;
+        break;
+    case 43:
+        eax1 = 0x804a89d;
+        break;
+    case 44:
+        eax1 = 0x804a8a0;
+        break;
+    case 45:
+        eax1 = 0x804a8a3;
+        break;
+    case 46:
+        eax1 = 0x804a8a6;
+        break;
+    case 47:
+        eax1 = 0x804a8a9;
+        break;
+    case 48:
+        eax1 = 0x804a8ac;
+        break;
+    case 49:
+        eax1 = 0x804a8af;
+        break;
+    case 50:
+        eax1 = 0x804a8b2;
+        break;
+    case 51:
+        eax1 = 0x804a8b5;
+        break;
+    case 52:
+        eax1 = 0x804a8b8;
+        break;
+    case 53:
+        eax1 = 0x804a8bb;
+        break;
+    case 54:
+        eax1 = 0x804a8be;
+        break;
+    case 55:
+        eax1 = 0x804a8c1;
+        break;
+    case 56:
+        eax1 = 0x804a8c4;
+        break;
+    case 57:
+        eax1 = 0x804a8c7;
+        break;
+    case 58:
+        eax1 = 0x804a8ca;
+        break;
+    case 59:
+        eax1 = 0x804a8cd;
+        break;
+    case 60:
+        eax1 = 0x804a8d0;
+        break;
+    case 61:
+        eax1 = 0x804a8d3;
+        break;
+    case 62:
+        eax1 = 0x804a8d6;
+        break;
+    case 63:
+        eax1 = 0x804a8d9;
+        break;
+    case 64:
+        eax1 = 0x804a8dc;
+        break;
+    case 65:
+        eax1 = 0x804a8df;
+        break;
+    case 66:
+        Z6printfz();
+    case 67:
+        eax1 = 0x804a8e2;
+        break;
+    case 68:
+        eax1 = 0x804a8e5;
+        break;
+    case 69:
+        eax1 = 0x804a8e8;
+        break;
+    case 70:
+        eax1 = 0x804a8eb;
+        break;
+    case 71:
+        eax1 = 0x804a8ee;
+        break;
+    case 72:
+        eax1 = 0x804a8f1;
+        break;
+    case 73:
+        eax1 = 0x804a8f4;
+        break;
+    case 74:
+        eax1 = 0x804a8f7;
+        break;
+    case 75:
+        eax1 = 0x804a8fa;
+        break;
+    case 76:
+        eax1 = 0x804a8fd;
+        break;
+    case 77:
+        eax1 = 0x804a900;
+        break;
+    case 78:
+        eax1 = 0x804a903;
+        break;
+    case 79:
+        eax1 = 0x804a906;
+        break;
+    case 80:
+        eax1 = 0x804a909;
+        break;
+    case 81:
+        eax1 = 0x804a90c;
+        break;
+    case 82:
+        eax1 = 0x804a90f;
+        break;
+    case 83:
+        eax1 = 0x804a912;
+        break;
+    case 84:
+        eax1 = 0x804a915;
+        break;
+    case 85:
+        eax1 = 0x804a918;
+        break;
+    case 86:
+        eax1 = 0x804a91b;
+        break;
+    case 87:
+        eax1 = 0x804a91e;
+        break;
+    case 88:
+        eax1 = 0x804a921;
+        break;
+    case 89:
+        eax1 = 0x804a924;
+        break;
+    case 90:
+        eax1 = 0x804a927;
+        break;
+    case 91:
+        eax1 = 0x804a92a;
+        break;
+    case 92:
+        eax1 = 0x804a92d;
+        break;
+    case 93:
+        eax1 = 0x804a930;
+        break;
+    case 94:
+        eax1 = 0x804a933;
+        break;
+    case 95:
+        eax1 = 0x804a936;
+        break;
+    case 96:
+        eax1 = 0x804a939;
+        break;
+    case 97:
+        eax1 = 0x804a93c;
+        break;
+    case 98:
+        eax1 = 0x804a93f;
+        break;
+    case 99:
+        Z6printfz();
+    case 100:
+        eax1 = 0x804a942;
+        break;
+    case 0x65:
+        eax1 = 0x804a946;
+        break;
+    case 0x66:
+        eax1 = 0x804a94a;
+        break;
+    case 0x67:
+        eax1 = 0x804a94e;
+        break;
+    case 0x68:
+        eax1 = 0x804a952;
+        break;
+    case 0x69:
+        eax1 = 0x804a956;
+        break;
+    case 0x6a:
+        eax1 = 0x804a95a;
+        break;
+    case 0x6b:
+        eax1 = 0x804a95e;
+        break;
+    case 0x6c:
+        eax1 = 0x804a962;
+        break;
+    case 0x6d:
+        eax1 = 0x804a966;
+        break;
+    case 0x6e:
+        eax1 = 0x804a96a;
+        break;
+    case 0x6f:
+        eax1 = 0x804a96e;
+        break;
+    case 0x70:
+        eax1 = 0x804a972;
+        break;
+    case 0x71:
+        eax1 = 0x804a976;
+        break;
+    case 0x72:
+        eax1 = 0x804a97a;
+        break;
+    case 0x73:
+        eax1 = 0x804a97e;
+        break;
+    case 0x74:
+        eax1 = 0x804a982;
+        break;
+    case 0x75:
+        eax1 = 0x804a986;
+        break;
+    case 0x76:
+        eax1 = 0x804a98a;
+        break;
+    case 0x77:
+        eax1 = 0x804a98e;
+        break;
+    case 0x78:
+        eax1 = 0x804a992;
+        break;
+    case 0x79:
+        eax1 = 0x804a996;
+        break;
+    case 0x7a:
+        eax1 = 0x804a99a;
+        break;
+    case 0x7b:
+        eax1 = 0x804a99e;
+        break;
+    case 0x7c:
+        eax1 = 0x804a9a2;
+        break;
+    case 0x7d:
+        eax1 = 0x804a9a6;
+        break;
+    case 0x7e:
+        eax1 = 0x804a9aa;
+        break;
+    case 0x7f:
+        eax1 = 0x804a9ae;
+        break;
+    case 0x80:
+        eax1 = 0x804a9b2;
+        break;
+    case 0x81:
+        eax1 = 0x804a9b6;
+        break;
+    case 0x82:
+        eax1 = 0x804a9ba;
+        break;
+    case 0x83:
+        eax1 = 0x804a9be;
+        break;
+    case 0x84:
+        Z6printfz();
+    case 0x85:
+        eax1 = 0x804a9c2;
+        break;
+    case 0x86:
+        eax1 = 0x804a9c6;
+        break;
+    case 0x87:
+        eax1 = 0x804a9ca;
+        break;
+    case 0x88:
+        eax1 = 0x804a9ce;
+        break;
+    case 0x89:
+        eax1 = 0x804a9d2;
+        break;
+    case 0x8a:
+        eax1 = 0x804a9d6;
+        break;
+    case 0x8b:
+        eax1 = 0x804a9da;
+        break;
+    case 0x8c:
+        eax1 = 0x804a9de;
+        break;
+    case 0x8d:
+        eax1 = 0x804a9e2;
+        break;
+    case 0x8e:
+        eax1 = 0x804a9e6;
+        break;
+    case 0x8f:
+        eax1 = 0x804a9ea;
+        break;
+    case 0x90:
+        eax1 = 0x804a9ee;
+        break;
+    case 0x91:
+        eax1 = 0x804a9f2;
+        break;
+    case 0x92:
+        eax1 = 0x804a9f6;
+        break;
+    case 0x93:
+        eax1 = 0x804a9fa;
+        break;
+    case 0x94:
+        eax1 = 0x804a9fe;
+        break;
+    case 0x95:
+        eax1 = 0x804aa02;
+        break;
+    case 0x96:
+        eax1 = 0x804aa06;
+        break;
+    case 0x97:
+        eax1 = 0x804aa0a;
+        break;
+    case 0x98:
+        eax1 = 0x804aa0e;
+        break;
+    case 0x99:
+        eax1 = 0x804aa12;
+        break;
+    case 0x9a:
+        eax1 = 0x804aa16;
+        break;
+    case 0x9b:
+        eax1 = 0x804aa1a;
+        break;
+    case 0x9c:
+        eax1 = 0x804aa1e;
+        break;
+    case 0x9d:
+        eax1 = 0x804aa22;
+        break;
+    case 0x9e:
+        eax1 = 0x804aa26;
+        break;
+    case 0x9f:
+        eax1 = 0x804aa2a;
+        break;
+    case 0xa0:
+        eax1 = 0x804aa2e;
+        break;
+    case 0xa1:
+        eax1 = 0x804aa32;
+        break;
+    case 0xa2:
+        eax1 = 0x804aa36;
+        break;
+    case 0xa3:
+        eax1 = 0x804aa3a;
+        break;
+    case 0xa4:
+        eax1 = 0x804aa3e;
+        break;
+    case 0xa5:
+        Z6printfz();
+    case 0xa6:
+        eax1 = 0x804aa42;
+        break;
+    case 0xa7:
+        eax1 = 0x804aa46;
+        break;
+    case 0xa8:
+        eax1 = 0x804aa4a;
+        break;
+    case 0xa9:
+        eax1 = 0x804aa4e;
+        break;
+    case 0xaa:
+        eax1 = 0x804aa52;
+        break;
+    case 0xab:
+        eax1 = 0x804aa56;
+        break;
+    case 0xac:
+        eax1 = 0x804aa5a;
+        break;
+    case 0xad:
+        eax1 = 0x804aa5e;
+        break;
+    case 0xae:
+        eax1 = 0x804aa62;
+        break;
+    case 0xaf:
+        eax1 = 0x804aa66;
+        break;
+    case 0xb0:
+        eax1 = 0x804aa6a;
+        break;
+    case 0xb1:
+        eax1 = 0x804aa6e;
+        break;
+    case 0xb2:
+        eax1 = 0x804aa72;
+        break;
+    case 0xb3:
+        eax1 = 0x804aa76;
+        break;
+    case 0xb4:
+        eax1 = 0x804aa7a;
+        break;
+    case 0xb5:
+        eax1 = 0x804aa7e;
+        break;
+    case 0xb6:
+        eax1 = 0x804aa82;
+        break;
+    case 0xb7:
+        eax1 = 0x804aa86;
+        break;
+    case 0xb8:
+        eax1 = 0x804aa8a;
+        break;
+    case 0xb9:
+        eax1 = 0x804aa8e;
+        break;
+    case 0xba:
+        eax1 = 0x804aa92;
+        break;
+    case 0xbb:
+        eax1 = 0x804aa96;
+        break;
+    case 0xbc:
+        eax1 = 0x804aa9a;
+        break;
+    case 0xbd:
+        eax1 = 0x804aa9e;
+        break;
+    case 0xbe:
+        eax1 = 0x804aaa2;
+        break;
+    case 0xbf:
+        eax1 = 0x804aaa6;
+        break;
+    case 0xc0:
+        eax1 = 0x804aaaa;
+        break;
+    case 0xc1:
+        eax1 = 0x804aaae;
+        break;
+    case 0xc2:
+        eax1 = 0x804aab2;
+        break;
+    case 0xc3:
+        eax1 = 0x804aab6;
+        break;
+    case 0xc4:
+        eax1 = 0x804aaba;
+        break;
+    case 0xc5:
+        eax1 = 0x804aabe;
+        break;
+    case 0xc6:
+        Z6printfz();
+    case 0xc7:
+        eax1 = 0x804aac2;
+        break;
+    case 0xc8:
+        eax1 = 0x804aac6;
+        break;
+    case 0xc9:
+        eax1 = 0x804aaca;
+        break;
+    case 0xca:
+        eax1 = 0x804aace;
+        break;
+    case 0xcb:
+        eax1 = 0x804aad2;
+        break;
+    case 0xcc:
+        eax1 = 0x804aad6;
+        break;
+    case 0xcd:
+        eax1 = 0x804aada;
+        break;
+    case 0xce:
+        eax1 = 0x804aade;
+        break;
+    case 0xcf:
+        eax1 = 0x804aae2;
+        break;
+    case 0xd0:
+        eax1 = 0x804aae6;
+        break;
+    case 0xd1:
+        eax1 = 0x804aaea;
+        break;
+    case 0xd2:
+        eax1 = 0x804aaee;
+        break;
+    case 0xd3:
+        eax1 = 0x804aaf2;
+        break;
+    case 0xd4:
+        eax1 = 0x804aaf6;
+        break;
+    case 0xd5:
+        eax1 = 0x804aafa;
+        break;
+    case 0xd6:
+        eax1 = 0x804aafe;
+        break;
+    case 0xd7:
+        eax1 = 0x804ab02;
+        break;
+    case 0xd8:
+        eax1 = 0x804ab06;
+        break;
+    case 0xd9:
+        eax1 = 0x804ab0a;
+        break;
+    case 0xda:
+        eax1 = 0x804ab0e;
+        break;
+    case 0xdb:
+        eax1 = 0x804ab12;
+        break;
+    case 0xdc:
+        eax1 = 0x804ab16;
+        break;
+    case 0xdd:
+        eax1 = 0x804ab1a;
+        break;
+    case 0xde:
+        eax1 = 0x804ab1e;
+        break;
+    case 0xdf:
+        eax1 = 0x804ab22;
+        break;
+    case 0xe0:
+        eax1 = 0x804ab26;
+        break;
+    case 0xe1:
+        eax1 = 0x804ab2a;
+        break;
+    case 0xe2:
+        eax1 = 0x804ab2e;
+        break;
+    case 0xe3:
+        eax1 = 0x804ab32;
+        break;
+    case 0xe4:
+        eax1 = 0x804ab36;
+        break;
+    case 0xe5:
+        eax1 = 0x804ab3a;
+        break;
+    case 0xe6:
+        eax1 = 0x804ab3e;
+        break;
+    case 0xe7:
+        Z6printfz();
+    case 0xe8:
+        eax1 = 0x804ab42;
+        break;
+    case 0xe9:
+        eax1 = 0x804ab46;
+        break;
+    case 0xea:
+        eax1 = 0x804ab4a;
+        break;
+    case 0xeb:
+        eax1 = 0x804ab4e;
+        break;
+    case 0xec:
+        eax1 = 0x804ab52;
+        break;
+    case 0xed:
+        eax1 = 0x804ab56;
+        break;
+    case 0xee:
+        eax1 = 0x804ab5a;
+        break;
+    case 0xef:
+        eax1 = 0x804ab5e;
+        break;
+    case 0xf0:
+        eax1 = 0x804ab62;
+        break;
+    case 0xf1:
+        eax1 = 0x804ab66;
+        break;
+    case 0xf2:
+        eax1 = 0x804ab6a;
+        break;
+    case 0xf3:
+        eax1 = 0x804ab6e;
+        break;
+    case 0xf4:
+        eax1 = 0x804ab72;
+        break;
+    case 0xf5:
+        eax1 = 0x804ab76;
+        break;
+    case 0xf6:
+        eax1 = 0x804ab7a;
+        break;
+    case 0xf7:
+        eax1 = 0x804ab7e;
+        break;
+    case 0xf8:
+        eax1 = 0x804ab82;
+        break;
+    case 0xf9:
+        eax1 = 0x804ab86;
+        break;
+    case 0xfa:
+        eax1 = 0x804ab8a;
+        break;
+    case 0xfb:
+        eax1 = 0x804ab8e;
+        break;
+    case 0xfc:
+        eax1 = 0x804ab92;
+        break;
+    case 0xfd:
+        eax1 = 0x804ab96;
+        break;
+    case 0xfe:
+        eax1 = 0x804ab9a;
+        break;
+    case 0xff:
+        eax1 = 0x804ab9e;
+        break;
+    case 0x100:
+        eax1 = 0x804aba2;
+        break;
+    case 0x101:
+        eax1 = 0x804aba6;
+        break;
+    case 0x102:
+        eax1 = 0x804abaa;
+        break;
+    case 0x103:
+        eax1 = 0x804abae;
+        break;
+    case 0x104:
+        eax1 = 0x804abb2;
+        break;
+    case 0x105:
+        eax1 = 0x804abb6;
+        break;
+    case 0x106:
+        eax1 = 0x804abba;
+        break;
+    case 0x107:
+        eax1 = 0x804abbe;
+        break;
+    case 0x108:
+        Z6printfz();
+    case 0x109:
+        eax1 = 0x804abc2;
+        break;
+    case 0x10a:
+        eax1 = 0x804abc6;
+        break;
+    case 0x10b:
+        eax1 = 0x804abca;
+        break;
+    case 0x10c:
+        eax1 = 0x804abce;
+        break;
+    case 0x10d:
+        eax1 = 0x804abd2;
+        break;
+    case 0x10e:
+        eax1 = 0x804abd6;
+        break;
+    case 0x10f:
+        eax1 = 0x804abda;
+        break;
+    case 0x110:
+        eax1 = 0x804abde;
+        break;
+    case 0x111:
+        eax1 = 0x804abe2;
+        break;
+    case 0x112:
+        eax1 = 0x804abe6;
+        break;
+    case 0x113:
+        eax1 = 0x804abea;
+        break;
+    case 0x114:
+        eax1 = 0x804abee;
+        break;
+    case 0x115:
+        eax1 = 0x804abf2;
+        break;
+    case 0x116:
+        eax1 = 0x804abf6;
+        break;
+    case 0x117:
+        eax1 = 0x804abfa;
+        break;
+    case 0x118:
+        eax1 = 0x804abfe;
+        break;
+    case 0x119:
+        eax1 = 0x804ac02;
+        break;
+    case 0x11a:
+        eax1 = 0x804ac06;
+        break;
+    case 0x11b:
+        eax1 = 0x804ac0a;
+        break;
+    case 0x11c:
+        eax1 = 0x804ac0e;
+        break;
+    case 0x11d:
+        eax1 = 0x804ac12;
+        break;
+    case 0x11e:
+        eax1 = 0x804ac16;
+        break;
+    case 0x11f:
+        eax1 = 0x804ac1a;
+        break;
+    case 0x120:
+        eax1 = 0x804ac1e;
+        break;
+    case 0x121:
+        eax1 = 0x804ac22;
+        break;
+    case 0x122:
+        eax1 = 0x804ac26;
+        break;
+    case 0x123:
+        eax1 = 0x804ac2a;
+        break;
+    case 0x124:
+        eax1 = 0x804ac2e;
+        break;
+    case 0x125:
+        eax1 = 0x804ac32;
+        break;
+    case 0x126:
+        eax1 = 0x804ac36;
+        break;
+    case 0x127:
+        eax1 = 0x804ac3a;
+        break;
+    case 0x128:
+        eax1 = 0x804ac3e;
+        break;
+    case 0x129:
+        Z6printfz();
+    case 0x12a:
+        eax1 = 0x804ac42;
+        break;
+    case 0x12b:
+        eax1 = 0x804ac46;
+        break;
+    case 0x12c:
+        eax1 = 0x804ac4a;
+        break;
+    case 0x12d:
+        eax1 = 0x804ac4e;
+        break;
+    case 0x12e:
+        eax1 = 0x804ac52;
+        break;
+    case 0x12f:
+        eax1 = 0x804ac56;
+        break;
+    case 0x130:
+        eax1 = 0x804ac5a;
+        break;
+    case 0x131:
+        eax1 = 0x804ac5e;
+        break;
+    case 0x132:
+        eax1 = 0x804ac62;
+        break;
+    case 0x133:
+        eax1 = 0x804ac66;
+        break;
+    case 0x134:
+        eax1 = 0x804ac6a;
+        break;
+    case 0x135:
+        eax1 = 0x804ac6e;
+        break;
+    case 0x136:
+        eax1 = 0x804ac72;
+        break;
+    case 0x137:
+        eax1 = 0x804ac76;
+        break;
+    case 0x138:
+        eax1 = 0x804ac7a;
+        break;
+    case 0x139:
+        eax1 = 0x804ac7e;
+        break;
+    case 0x13a:
+        eax1 = 0x804ac82;
+        break;
+    case 0x13b:
+        eax1 = 0x804ac86;
+        break;
+    case 0x13c:
+        eax1 = 0x804ac8a;
+        break;
+    case 0x13d:
+        eax1 = 0x804ac8e;
+        break;
+    case 0x13e:
+        eax1 = 0x804ac92;
+        break;
+    case 0x13f:
+        eax1 = 0x804ac96;
+        break;
+    case 0x140:
+        eax1 = 0x804ac9a;
+        break;
+    case 0x141:
+        eax1 = 0x804ac9e;
+        break;
+    case 0x142:
+        eax1 = 0x804aca2;
+        break;
+    case 0x143:
+        eax1 = 0x804aca6;
+        break;
+    case 0x144:
+        eax1 = 0x804acaa;
+        break;
+    case 0x145:
+        eax1 = 0x804acae;
+        break;
+    case 0x146:
+        eax1 = 0x804acb2;
+        break;
+    case 0x147:
+        eax1 = 0x804acb6;
+        break;
+    case 0x148:
+        eax1 = 0x804acba;
+        break;
+    case 0x149:
+        eax1 = 0x804acbe;
+        break;
+    case 0x14a:
+        Z6printfz();
+    case 0x14b:
+        eax1 = 0x804acc2;
+        break;
+    case 0x14c:
+        eax1 = 0x804acc6;
+        break;
+    case 0x14d:
+        eax1 = 0x804acca;
+        break;
+    case 0x14e:
+        eax1 = 0x804acce;
+        break;
+    case 0x14f:
+        eax1 = 0x804acd2;
+        break;
+    case 0x150:
+        eax1 = 0x804acd6;
+        break;
+    case 0x151:
+        eax1 = 0x804acda;
+        break;
+    case 0x152:
+        eax1 = 0x804acde;
+        break;
+    case 0x153:
+        eax1 = 0x804ace2;
+        break;
+    case 0x154:
+        eax1 = 0x804ace6;
+        break;
+    case 0x155:
+        eax1 = 0x804acea;
+        break;
+    case 0x156:
+        eax1 = 0x804acee;
+        break;
+    case 0x157:
+        eax1 = 0x804acf2;
+        break;
+    case 0x158:
+        eax1 = 0x804acf6;
+        break;
+    case 0x159:
+        eax1 = 0x804acfa;
+        break;
+    case 0x15a:
+        eax1 = 0x804acfe;
+        break;
+    case 0x15b:
+        eax1 = 0x804ad02;
+        break;
+    case 0x15c:
+        eax1 = 0x804ad06;
+        break;
+    case 0x15d:
+        eax1 = 0x804ad0a;
+        break;
+    case 0x15e:
+        eax1 = 0x804ad0e;
+        break;
+    case 0x15f:
+        eax1 = 0x804ad12;
+        break;
+    case 0x160:
+        eax1 = 0x804ad16;
+        break;
+    case 0x161:
+        eax1 = 0x804ad1a;
+        break;
+    case 0x162:
+        eax1 = 0x804ad1e;
+        break;
+    case 0x163:
+        eax1 = 0x804ad22;
+        break;
+    case 0x164:
+        eax1 = 0x804ad26;
+        break;
+    case 0x165:
+        eax1 = 0x804ad2a;
+        break;
+    case 0x166:
+        eax1 = 0x804ad2e;
+        break;
+    case 0x167:
+        eax1 = 0x804ad32;
+        break;
+    case 0x168:
+        eax1 = 0x804ad36;
+        break;
+    case 0x169:
+        eax1 = 0x804ad3a;
+        break;
+    case 0x16a:
+        eax1 = 0x804ad3e;
+        break;
+    case 0x16b:
+        Z6printfz();
+    case 0x16c:
+        eax1 = 0x804ad42;
+        break;
+    case 0x16d:
+        eax1 = 0x804ad46;
+        break;
+    case 0x16e:
+        eax1 = 0x804ad4a;
+        break;
+    case 0x16f:
+        eax1 = 0x804ad4e;
+        break;
+    case 0x170:
+        eax1 = 0x804ad52;
+        break;
+    case 0x171:
+        eax1 = 0x804ad56;
+        break;
+    case 0x172:
+        eax1 = 0x804ad5a;
+        break;
+    case 0x173:
+        eax1 = 0x804ad5e;
+        break;
+    case 0x174:
+        eax1 = 0x804ad62;
+        break;
+    case 0x175:
+        eax1 = 0x804ad66;
+        break;
+    case 0x176:
+        eax1 = 0x804ad6a;
+        break;
+    case 0x177:
+        eax1 = 0x804ad6e;
+        break;
+    case 0x178:
+        eax1 = 0x804ad72;
+        break;
+    case 0x179:
+        eax1 = 0x804ad76;
+        break;
+    case 0x17a:
+        eax1 = 0x804ad7a;
+        break;
+    case 0x17b:
+        eax1 = 0x804ad7e;
+        break;
+    case 0x17c:
+        eax1 = 0x804ad82;
+        break;
+    case 0x17d:
+        eax1 = 0x804ad86;
+        break;
+    case 0x17e:
+        eax1 = 0x804ad8a;
+        break;
+    case 0x17f:
+        eax1 = 0x804ad8e;
+        break;
+    case 0x180:
+        eax1 = 0x804ad92;
+        break;
+    case 0x181:
+        eax1 = 0x804ad96;
+        break;
+    case 0x182:
+        eax1 = 0x804ad9a;
+        break;
+    case 0x183:
+        eax1 = 0x804ad9e;
+        break;
+    case 0x184:
+        eax1 = 0x804ada2;
+        break;
+    case 0x185:
+        eax1 = 0x804ada6;
+        break;
+    case 0x186:
+        eax1 = 0x804adaa;
+        break;
+    case 0x187:
+        eax1 = 0x804adae;
+        break;
+    case 0x188:
+        eax1 = 0x804adb2;
+        break;
+    case 0x189:
+        eax1 = 0x804adb6;
+        break;
+    case 0x18a:
+        eax1 = 0x804adba;
+        break;
+    case 0x18b:
+        eax1 = 0x804adbe;
+        break;
+    case 0x18c:
+        Z6printfz();
+    case 0x18d:
+        eax1 = 0x804adc2;
+        break;
+    case 0x18e:
+        eax1 = 0x804adc6;
+        break;
+    case 0x18f:
+        eax1 = 0x804adca;
+        break;
+    case 0x190:
+        eax1 = 0x804adce;
+        break;
+    case 0x191:
+        eax1 = 0x804add2;
+        break;
+    case 0x192:
+        eax1 = 0x804add6;
+        break;
+    case 0x193:
+        eax1 = 0x804adda;
+        break;
+    case 0x194:
+        eax1 = 0x804adde;
+        break;
+    case 0x195:
+        eax1 = 0x804ade2;
+        break;
+    case 0x196:
+        eax1 = 0x804ade6;
+        break;
+    case 0x197:
+        eax1 = 0x804adea;
+        break;
+    case 0x198:
+        eax1 = 0x804adee;
+        break;
+    case 0x199:
+        eax1 = 0x804adf2;
+        break;
+    case 0x19a:
+        eax1 = 0x804adf6;
+        break;
+    case 0x19b:
+        eax1 = 0x804adfa;
+        break;
+    case 0x19c:
+        eax1 = 0x804adfe;
+        break;
+    case 0x19d:
+        eax1 = 0x804ae02;
+        break;
+    case 0x19e:
+        eax1 = 0x804ae06;
+        break;
+    case 0x19f:
+        eax1 = 0x804ae0a;
+        break;
+    case 0x1a0:
+        eax1 = 0x804ae0e;
+        break;
+    case 0x1a1:
+        eax1 = 0x804ae12;
+        break;
+    case 0x1a2:
+        eax1 = 0x804ae16;
+        break;
+    case 0x1a3:
+        eax1 = 0x804ae1a;
+        break;
+    case 0x1a4:
+        eax1 = 0x804ae1e;
+        break;
+    case 0x1a5:
+        eax1 = 0x804ae22;
+        break;
+    case 0x1a6:
+        eax1 = 0x804ae26;
+        break;
+    case 0x1a7:
+        eax1 = 0x804ae2a;
+        break;
+    case 0x1a8:
+        eax1 = 0x804ae2e;
+        break;
+    case 0x1a9:
+        eax1 = 0x804ae32;
+        break;
+    case 0x1aa:
+        eax1 = 0x804ae36;
+        break;
+    case 0x1ab:
+        eax1 = 0x804ae3a;
+        break;
+    case 0x1ac:
+        eax1 = 0x804ae3e;
+        break;
+    case 0x1ad:
+        Z6printfz();
+    case 0x1ae:
+        eax1 = 0x804ae42;
+        break;
+    case 0x1af:
+        eax1 = 0x804ae46;
+        break;
+    case 0x1b0:
+        eax1 = 0x804ae4a;
+        break;
+    case 0x1b1:
+        eax1 = 0x804ae4e;
+        break;
+    case 0x1b2:
+        eax1 = 0x804ae52;
+        break;
+    case 0x1b3:
+        eax1 = 0x804ae56;
+        break;
+    case 0x1b4:
+        eax1 = 0x804ae5a;
+        break;
+    case 0x1b5:
+        eax1 = 0x804ae5e;
+        break;
+    case 0x1b6:
+        eax1 = 0x804ae62;
+        break;
+    case 0x1b7:
+        eax1 = 0x804ae66;
+        break;
+    case 0x1b8:
+        eax1 = 0x804ae6a;
+        break;
+    case 0x1b9:
+        eax1 = 0x804ae6e;
+        break;
+    case 0x1ba:
+        eax1 = 0x804ae72;
+        break;
+    case 0x1bb:
+        eax1 = 0x804ae76;
+        break;
+    case 0x1bc:
+        eax1 = 0x804ae7a;
+        break;
+    case 0x1bd:
+        eax1 = 0x804ae7e;
+        break;
+    case 0x1be:
+        eax1 = 0x804ae82;
+        break;
+    case 0x1bf:
+        eax1 = 0x804ae86;
+        break;
+    case 0x1c0:
+        eax1 = 0x804ae8a;
+        break;
+    case 0x1c1:
+        eax1 = 0x804ae8e;
+        break;
+    case 0x1c2:
+        eax1 = 0x804ae92;
+        break;
+    case 0x1c3:
+        eax1 = 0x804ae96;
+        break;
+    case 0x1c4:
+        eax1 = 0x804ae9a;
+        break;
+    case 0x1c5:
+        eax1 = 0x804ae9e;
+        break;
+    case 0x1c6:
+        eax1 = 0x804aea2;
+        break;
+    case 0x1c7:
+        eax1 = 0x804aea6;
+        break;
+    case 0x1c8:
+        eax1 = 0x804aeaa;
+        break;
+    case 0x1c9:
+        eax1 = 0x804aeae;
+        break;
+    case 0x1ca:
+        eax1 = 0x804aeb2;
+        break;
+    case 0x1cb:
+        eax1 = 0x804aeb6;
+        break;
+    case 0x1cc:
+        eax1 = 0x804aeba;
+        break;
+    case 0x1cd:
+        eax1 = 0x804aebe;
+        break;
+    case 0x1ce:
+        Z6printfz();
+    case 0x1cf:
+        eax1 = 0x804aec2;
+        break;
+    case 0x1d0:
+        eax1 = 0x804aec6;
+        break;
+    case 0x1d1:
+        eax1 = 0x804aeca;
+        break;
+    case 0x1d2:
+        eax1 = 0x804aece;
+        break;
+    case 0x1d3:
+        eax1 = 0x804aed2;
+        break;
+    case 0x1d4:
+        eax1 = 0x804aed6;
+        break;
+    case 0x1d5:
+        eax1 = 0x804aeda;
+        break;
+    case 0x1d6:
+        eax1 = 0x804aede;
+        break;
+    case 0x1d7:
+        eax1 = 0x804aee2;
+        break;
+    case 0x1d8:
+        eax1 = 0x804aee6;
+        break;
+    case 0x1d9:
+        eax1 = 0x804aeea;
+        break;
+    case 0x1da:
+        eax1 = 0x804aeee;
+        break;
+    case 0x1db:
+        eax1 = 0x804aef2;
+        break;
+    case 0x1dc:
+        eax1 = 0x804aef6;
+        break;
+    case 0x1dd:
+        eax1 = 0x804aefa;
+        break;
+    case 0x1de:
+        eax1 = 0x804aefe;
+        break;
+    case 0x1df:
+        eax1 = 0x804af02;
+        break;
+    case 0x1e0:
+        eax1 = 0x804af06;
+        break;
+    case 0x1e1:
+        eax1 = 0x804af0a;
+        break;
+    case 0x1e2:
+        eax1 = 0x804af0e;
+        break;
+    case 0x1e3:
+        eax1 = 0x804af12;
+        break;
+    case 0x1e4:
+        eax1 = 0x804af16;
+        break;
+    case 0x1e5:
+        eax1 = 0x804af1a;
+        break;
+    case 0x1e6:
+        eax1 = 0x804af1e;
+        break;
+    case 0x1e7:
+        eax1 = 0x804af22;
+        break;
+    case 0x1e8:
+        eax1 = 0x804af26;
+        break;
+    case 0x1e9:
+        eax1 = 0x804af2a;
+        break;
+    case 0x1ea:
+        eax1 = 0x804af2e;
+        break;
+    case 0x1eb:
+        eax1 = 0x804af32;
+        break;
+    case 0x1ec:
+        eax1 = 0x804af36;
+        break;
+    case 0x1ed:
+        eax1 = 0x804af3a;
+        break;
+    case 0x1ee:
+        eax1 = 0x804af3e;
+        break;
+    case 0x1ef:
+        Z6printfz();
+    case 0x1f0:
+        eax1 = 0x804af42;
+        break;
+    case 0x1f1:
+        eax1 = 0x804af46;
+        break;
+    case 0x1f2:
+        eax1 = 0x804af4a;
+        break;
+    case 0x1f3:
+        eax1 = 0x804af4e;
+        break;
+    case 0x1f4:
+        eax1 = 0x804af52;
+        break;
+    case 0x1f5:
+        eax1 = 0x804af56;
+        break;
+    case 0x1f6:
+        eax1 = 0x804af5a;
+        break;
+    case 0x1f7:
+        eax1 = 0x804af5e;
+        break;
+    case 0x1f8:
+        eax1 = 0x804af62;
+        break;
+    case 0x1f9:
+        eax1 = 0x804af66;
+        break;
+    case 0x1fa:
+        eax1 = 0x804af6a;
+        break;
+    case 0x1fb:
+        eax1 = 0x804af6e;
+        break;
+    case 0x1fc:
+        eax1 = 0x804af72;
+        break;
+    case 0x1fd:
+        eax1 = 0x804af76;
+        break;
+    case 0x1fe:
+        eax1 = 0x804af7a;
+        break;
+    case 0x1ff:
+        eax1 = 0x804af7e;
+        break;
+    case 0x200:
+        eax1 = 0x804af82;
+        break;
+    case 0x201:
+        eax1 = 0x804af86;
+        break;
+    case 0x202:
+        eax1 = 0x804af8a;
+        break;
+    case 0x203:
+        eax1 = 0x804af8e;
+        break;
+    case 0x204:
+        eax1 = 0x804af92;
+        break;
+    case 0x205:
+        eax1 = 0x804af96;
+        break;
+    case 0x206:
+        eax1 = 0x804af9a;
+        break;
+    case 0x207:
+        eax1 = 0x804af9e;
+        break;
+    case 0x208:
+        eax1 = 0x804afa2;
+        break;
+    case 0x209:
+        eax1 = 0x804afa6;
+        break;
+    case 0x20a:
+        eax1 = 0x804afaa;
+        break;
+    case 0x20b:
+        eax1 = 0x804afae;
+        break;
+    case 0x20c:
+        eax1 = 0x804afb2;
+        break;
+    case 0x20d:
+        eax1 = 0x804afb6;
+        break;
+    case 0x20e:
+        eax1 = 0x804afba;
+        break;
+    case 0x20f:
+        eax1 = 0x804afbe;
+        break;
+    case 0x210:
+        Z6printfz();
+    case 0x211:
+        eax1 = 0x804afc2;
+        break;
+    case 0x212:
+        eax1 = 0x804afc6;
+        break;
+    case 0x213:
+        eax1 = 0x804afca;
+        break;
+    case 0x214:
+        eax1 = 0x804afce;
+        break;
+    case 0x215:
+        eax1 = 0x804afd2;
+        break;
+    case 0x216:
+        eax1 = 0x804afd6;
+        break;
+    case 0x217:
+        eax1 = 0x804afda;
+        break;
+    case 0x218:
+        eax1 = 0x804afde;
+        break;
+    case 0x219:
+        eax1 = 0x804afe2;
+        break;
+    case 0x21a:
+        eax1 = 0x804afe6;
+        break;
+    case 0x21b:
+        eax1 = 0x804afea;
+        break;
+    case 0x21c:
+        eax1 = 0x804afee;
+        break;
+    case 0x21d:
+        eax1 = 0x804aff2;
+        break;
+    case 0x21e:
+        eax1 = 0x804aff6;
+        break;
+    case 0x21f:
+        eax1 = 0x804affa;
+        break;
+    case 0x220:
+        eax1 = 0x804affe;
+        break;
+    case 0x221:
+        eax1 = 0x804b002;
+        break;
+    case 0x222:
+        eax1 = 0x804b006;
+        break;
+    case 0x223:
+        eax1 = 0x804b00a;
+        break;
+    case 0x224:
+        eax1 = 0x804b00e;
+        break;
+    case 0x225:
+        eax1 = 0x804b012;
+        break;
+    case 0x226:
+        eax1 = 0x804b016;
+        break;
+    case 0x227:
+        eax1 = 0x804b01a;
+        break;
+    case 0x228:
+        eax1 = 0x804b01e;
+        break;
+    case 0x229:
+        eax1 = 0x804b022;
+        break;
+    case 0x22a:
+        eax1 = 0x804b026;
+        break;
+    case 0x22b:
+        eax1 = 0x804b02a;
+        break;
+    case 0x22c:
+        eax1 = 0x804b02e;
+        break;
+    case 0x22d:
+        eax1 = 0x804b032;
+        break;
+    case 0x22e:
+        eax1 = 0x804b036;
+        break;
+    case 0x22f:
+        eax1 = 0x804b03a;
+        break;
+    case 0x230:
+        eax1 = 0x804b03e;
+        break;
+    case 0x231:
+        Z6printfz();
+    case 0x232:
+        eax1 = 0x804b042;
+        break;
+    case 0x233:
+        eax1 = 0x804b046;
+        break;
+    case 0x234:
+        eax1 = 0x804b04a;
+        break;
+    case 0x235:
+        eax1 = 0x804b04e;
+        break;
+    case 0x236:
+        eax1 = 0x804b052;
+        break;
+    case 0x237:
+        eax1 = 0x804b056;
+        break;
+    case 0x238:
+        eax1 = 0x804b05a;
+        break;
+    case 0x239:
+        eax1 = 0x804b05e;
+        break;
+    case 0x23a:
+        eax1 = 0x804b062;
+        break;
+    case 0x23b:
+        eax1 = 0x804b066;
+        break;
+    case 0x23c:
+        eax1 = 0x804b06a;
+        break;
+    case 0x23d:
+        eax1 = 0x804b06e;
+        break;
+    case 0x23e:
+        eax1 = 0x804b072;
+        break;
+    case 0x23f:
+        eax1 = 0x804b076;
+        break;
+    case 0x240:
+        eax1 = 0x804b07a;
+        break;
+    case 0x241:
+        eax1 = 0x804b07e;
+        break;
+    case 0x242:
+        eax1 = 0x804b082;
+        break;
+    case 0x243:
+        eax1 = 0x804b086;
+        break;
+    case 0x244:
+        eax1 = 0x804b08a;
+        break;
+    case 0x245:
+        eax1 = 0x804b08e;
+        break;
+    case 0x246:
+        eax1 = 0x804b092;
+        break;
+    case 0x247:
+        eax1 = 0x804b096;
+        break;
+    case 0x248:
+        eax1 = 0x804b09a;
+        break;
+    case 0x249:
+        eax1 = 0x804b09e;
+        break;
+    case 0x24a:
+        eax1 = 0x804b0a2;
+        break;
+    case 0x24b:
+        eax1 = 0x804b0a6;
+        break;
+    case 0x24c:
+        eax1 = 0x804b0aa;
+        break;
+    case 0x24d:
+        eax1 = 0x804b0ae;
+        break;
+    case 0x24e:
+        eax1 = 0x804b0b2;
+        break;
+    case 0x24f:
+        eax1 = 0x804b0b6;
+        break;
+    case 0x250:
+        eax1 = 0x804b0ba;
+        break;
+    case 0x251:
+        eax1 = 0x804b0be;
+        break;
+    case 0x252:
+        Z6printfz();
+    case 0x253:
+        eax1 = 0x804b0c2;
+        break;
+    case 0x254:
+        eax1 = 0x804b0c6;
+        break;
+    case 0x255:
+        eax1 = 0x804b0ca;
+        break;
+    case 0x256:
+        eax1 = 0x804b0ce;
+        break;
+    case 0x257:
+        eax1 = 0x804b0d2;
+        break;
+    case 0x258:
+        eax1 = 0x804b0d6;
+        break;
+    case 0x259:
+        eax1 = 0x804b0da;
+        break;
+    case 0x25a:
+        eax1 = 0x804b0de;
+        break;
+    case 0x25b:
+        eax1 = 0x804b0e2;
+        break;
+    case 0x25c:
+        eax1 = 0x804b0e6;
+        break;
+    case 0x25d:
+        eax1 = 0x804b0ea;
+        break;
+    case 0x25e:
+        eax1 = 0x804b0ee;
+        break;
+    case 0x25f:
+        eax1 = 0x804b0f2;
+        break;
+    case 0x260:
+        eax1 = 0x804b0f6;
+        break;
+    case 0x261:
+        eax1 = 0x804b0fa;
+        break;
+    case 0x262:
+        eax1 = 0x804b0fe;
+        break;
+    case 0x263:
+        eax1 = 0x804b102;
+        break;
+    case 0x264:
+        eax1 = 0x804b106;
+        break;
+    case 0x265:
+        eax1 = 0x804b10a;
+        break;
+    case 0x266:
+        eax1 = 0x804b10e;
+        break;
+    case 0x267:
+        eax1 = 0x804b112;
+        break;
+    case 0x268:
+        eax1 = 0x804b116;
+        break;
+    case 0x269:
+        eax1 = 0x804b11a;
+        break;
+    case 0x26a:
+        eax1 = 0x804b11e;
+        break;
+    case 0x26b:
+        eax1 = 0x804b122;
+        break;
+    case 0x26c:
+        eax1 = 0x804b126;
+        break;
+    case 0x26d:
+        eax1 = 0x804b12a;
+        break;
+    case 0x26e:
+        eax1 = 0x804b12e;
+        break;
+    case 0x26f:
+        eax1 = 0x804b132;
+        break;
+    case 0x270:
+        eax1 = 0x804b136;
+        break;
+    case 0x271:
+        eax1 = 0x804b13a;
+        break;
+    case 0x272:
+        eax1 = 0x804b13e;
+        break;
+    case 0x273:
+        Z6printfz();
+    case 0x274:
+        eax1 = 0x804b142;
+        break;
+    case 0x275:
+        eax1 = 0x804b146;
+        break;
+    case 0x276:
+        eax1 = 0x804b14a;
+        break;
+    case 0x277:
+        eax1 = 0x804b14e;
+        break;
+    case 0x278:
+        eax1 = 0x804b152;
+        break;
+    case 0x279:
+        eax1 = 0x804b156;
+        break;
+    case 0x27a:
+        eax1 = 0x804b15a;
+        break;
+    case 0x27b:
+        eax1 = 0x804b15e;
+        break;
+    case 0x27c:
+        eax1 = 0x804b162;
+        break;
+    case 0x27d:
+        eax1 = 0x804b166;
+        break;
+    case 0x27e:
+        eax1 = 0x804b16a;
+        break;
+    case 0x27f:
+        eax1 = 0x804b16e;
+        break;
+    case 0x280:
+        eax1 = 0x804b172;
+        break;
+    case 0x281:
+        eax1 = 0x804b176;
+        break;
+    case 0x282:
+        eax1 = 0x804b17a;
+        break;
+    case 0x283:
+        eax1 = 0x804b17e;
+        break;
+    case 0x284:
+        eax1 = 0x804b182;
+        break;
+    case 0x285:
+        eax1 = 0x804b186;
+        break;
+    case 0x286:
+        eax1 = 0x804b18a;
+        break;
+    case 0x287:
+        eax1 = 0x804b18e;
+        break;
+    case 0x288:
+        eax1 = 0x804b192;
+        break;
+    case 0x289:
+        eax1 = 0x804b196;
+        break;
+    case 0x28a:
+        eax1 = 0x804b19a;
+        break;
+    case 0x28b:
+        eax1 = 0x804b19e;
+        break;
+    case 0x28c:
+        eax1 = 0x804b1a2;
+        break;
+    case 0x28d:
+        eax1 = 0x804b1a6;
+        break;
+    case 0x28e:
+        eax1 = 0x804b1aa;
+        break;
+    case 0x28f:
+        eax1 = 0x804b1ae;
+        break;
+    case 0x290:
+        eax1 = 0x804b1b2;
+        break;
+    case 0x291:
+        eax1 = 0x804b1b6;
+        break;
+    case 0x292:
+        eax1 = 0x804b1ba;
+        break;
+    case 0x293:
+        eax1 = 0x804b1be;
+        break;
+    case 0x294:
+        Z6printfz();
+    case 0x295:
+        eax1 = 0x804b1c2;
+        break;
+    case 0x296:
+        eax1 = 0x804b1c6;
+        break;
+    case 0x297:
+        eax1 = 0x804b1ca;
+        break;
+    case 0x298:
+        eax1 = 0x804b1ce;
+        break;
+    case 0x299:
+        eax1 = 0x804b1d2;
+        break;
+    case 0x29a:
+        eax1 = 0x804b1d6;
+        break;
+    case 0x29b:
+        eax1 = 0x804b1da;
+        break;
+    case 0x29c:
+        eax1 = 0x804b1de;
+        break;
+    case 0x29d:
+        eax1 = 0x804b1e2;
+        break;
+    case 0x29e:
+        eax1 = 0x804b1e6;
+        break;
+    case 0x29f:
+        eax1 = 0x804b1ea;
+        break;
+    case 0x2a0:
+        eax1 = 0x804b1ee;
+        break;
+    case 0x2a1:
+        eax1 = 0x804b1f2;
+        break;
+    case 0x2a2:
+        eax1 = 0x804b1f6;
+        break;
+    case 0x2a3:
+        eax1 = 0x804b1fa;
+        break;
+    case 0x2a4:
+        eax1 = 0x804b1fe;
+        break;
+    case 0x2a5:
+        eax1 = 0x804b202;
+        break;
+    case 0x2a6:
+        eax1 = 0x804b206;
+        break;
+    case 0x2a7:
+        eax1 = 0x804b20a;
+        break;
+    case 0x2a8:
+        eax1 = 0x804b20e;
+        break;
+    case 0x2a9:
+        eax1 = 0x804b212;
+        break;
+    case 0x2aa:
+        eax1 = 0x804b216;
+        break;
+    case 0x2ab:
+        eax1 = 0x804b21a;
+        break;
+    case 0x2ac:
+        eax1 = 0x804b21e;
+        break;
+    case 0x2ad:
+        eax1 = 0x804b222;
+        break;
+    case 0x2ae:
+        eax1 = 0x804b226;
+        break;
+    case 0x2af:
+        eax1 = 0x804b22a;
+        break;
+    case 0x2b0:
+        eax1 = 0x804b22e;
+        break;
+    case 0x2b1:
+        eax1 = 0x804b232;
+        break;
+    case 0x2b2:
+        eax1 = 0x804b236;
+        break;
+    case 0x2b3:
+        eax1 = 0x804b23a;
+        break;
+    case 0x2b4:
+        eax1 = 0x804b23e;
+        break;
+    case 0x2b5:
+        Z6printfz();
+    case 0x2b6:
+        eax1 = 0x804b242;
+        break;
+    case 0x2b7:
+        eax1 = 0x804b246;
+        break;
+    case 0x2b8:
+        eax1 = 0x804b24a;
+        break;
+    case 0x2b9:
+        eax1 = 0x804b24e;
+        break;
+    case 0x2ba:
+        eax1 = 0x804b252;
+        break;
+    case 0x2bb:
+        eax1 = 0x804b256;
+        break;
+    case 0x2bc:
+        eax1 = 0x804b25a;
+        break;
+    case 0x2bd:
+        eax1 = 0x804b25e;
+        break;
+    case 0x2be:
+        eax1 = 0x804b262;
+        break;
+    case 0x2bf:
+        eax1 = 0x804b266;
+        break;
+    case 0x2c0:
+        eax1 = 0x804b26a;
+        break;
+    case 0x2c1:
+        eax1 = 0x804b26e;
+        break;
+    case 0x2c2:
+        eax1 = 0x804b272;
+        break;
+    case 0x2c3:
+        eax1 = 0x804b276;
+        break;
+    case 0x2c4:
+        eax1 = 0x804b27a;
+        break;
+    case 0x2c5:
+        eax1 = 0x804b27e;
+        break;
+    case 0x2c6:
+        eax1 = 0x804b282;
+        break;
+    case 0x2c7:
+        eax1 = 0x804b286;
+        break;
+    case 0x2c8:
+        eax1 = 0x804b28a;
+        break;
+    case 0x2c9:
+        eax1 = 0x804b28e;
+        break;
+    case 0x2ca:
+        eax1 = 0x804b292;
+        break;
+    case 0x2cb:
+        eax1 = 0x804b296;
+        break;
+    case 0x2cc:
+        eax1 = 0x804b29a;
+        break;
+    case 0x2cd:
+        eax1 = 0x804b29e;
+        break;
+    case 0x2ce:
+        eax1 = 0x804b2a2;
+        break;
+    case 0x2cf:
+        eax1 = 0x804b2a6;
+        break;
+    case 0x2d0:
+        eax1 = 0x804b2aa;
+        break;
+    case 0x2d1:
+        eax1 = 0x804b2ae;
+        break;
+    case 0x2d2:
+        eax1 = 0x804b2b2;
+        break;
+    case 0x2d3:
+        eax1 = 0x804b2b6;
+        break;
+    case 0x2d4:
+        eax1 = 0x804b2ba;
+        break;
+    case 0x2d5:
+        eax1 = 0x804b2be;
+        break;
+    case 0x2d6:
+        Z6printfz();
+    case 0x2d7:
+        eax1 = 0x804b2c2;
+        break;
+    case 0x2d8:
+        eax1 = 0x804b2c6;
+        break;
+    case 0x2d9:
+        eax1 = 0x804b2ca;
+        break;
+    case 0x2da:
+        eax1 = 0x804b2ce;
+        break;
+    case 0x2db:
+        eax1 = 0x804b2d2;
+        break;
+    case 0x2dc:
+        eax1 = 0x804b2d6;
+        break;
+    case 0x2dd:
+        eax1 = 0x804b2da;
+        break;
+    case 0x2de:
+        eax1 = 0x804b2de;
+        break;
+    case 0x2df:
+        eax1 = 0x804b2e2;
+        break;
+    case 0x2e0:
+        eax1 = 0x804b2e6;
+        break;
+    case 0x2e1:
+        eax1 = 0x804b2ea;
+        break;
+    case 0x2e2:
+        eax1 = 0x804b2ee;
+        break;
+    case 0x2e3:
+        eax1 = 0x804b2f2;
+        break;
+    case 0x2e4:
+        eax1 = 0x804b2f6;
+        break;
+    case 0x2e5:
+        eax1 = 0x804b2fa;
+        break;
+    case 0x2e6:
+        eax1 = 0x804b2fe;
+        break;
+    case 0x2e7:
+        eax1 = 0x804b302;
+        break;
+    case 0x2e8:
+        eax1 = 0x804b306;
+        break;
+    case 0x2e9:
+        eax1 = 0x804b30a;
+        break;
+    case 0x2ea:
+        eax1 = 0x804b30e;
+        break;
+    case 0x2eb:
+        eax1 = 0x804b312;
+        break;
+    case 0x2ec:
+        eax1 = 0x804b316;
+        break;
+    case 0x2ed:
+        eax1 = 0x804b31a;
+        break;
+    case 0x2ee:
+        eax1 = 0x804b31e;
+        break;
+    case 0x2ef:
+        eax1 = 0x804b322;
+        break;
+    case 0x2f0:
+        eax1 = 0x804b326;
+        break;
+    case 0x2f1:
+        eax1 = 0x804b32a;
+        break;
+    case 0x2f2:
+        eax1 = 0x804b32e;
+        break;
+    case 0x2f3:
+        eax1 = 0x804b332;
+        break;
+    case 0x2f4:
+        eax1 = 0x804b336;
+        break;
+    case 0x2f5:
+        eax1 = 0x804b33a;
+        break;
+    case 0x2f6:
+        eax1 = 0x804b33e;
+        break;
+    case 0x2f7:
+        Z6printfz();
+    case 0x2f8:
+        eax1 = 0x804b342;
+        break;
+    case 0x2f9:
+        eax1 = 0x804b346;
+        break;
+    case 0x2fa:
+        eax1 = 0x804b34a;
+        break;
+    case 0x2fb:
+        eax1 = 0x804b34e;
+        break;
+    case 0x2fc:
+        eax1 = 0x804b352;
+        break;
+    case 0x2fd:
+        eax1 = 0x804b356;
+        break;
+    case 0x2fe:
+        eax1 = 0x804b35a;
+        break;
+    case 0x2ff:
+        eax1 = 0x804b35e;
+        break;
+    case 0x300:
+        eax1 = 0x804b362;
+        break;
+    case 0x301:
+        eax1 = 0x804b366;
+        break;
+    case 0x302:
+        eax1 = 0x804b36a;
+        break;
+    case 0x303:
+        eax1 = 0x804b36e;
+        break;
+    case 0x304:
+        eax1 = 0x804b372;
+        break;
+    case 0x305:
+        eax1 = 0x804b376;
+        break;
+    case 0x306:
+        eax1 = 0x804b37a;
+        break;
+    case 0x307:
+        eax1 = 0x804b37e;
+        break;
+    case 0x308:
+        eax1 = 0x804b382;
+        break;
+    case 0x309:
+        eax1 = 0x804b386;
+        break;
+    case 0x30a:
+        eax1 = 0x804b38a;
+        break;
+    case 0x30b:
+        eax1 = 0x804b38e;
+        break;
+    case 0x30c:
+        eax1 = 0x804b392;
+        break;
+    case 0x30d:
+        eax1 = 0x804b396;
+        break;
+    case 0x30e:
+        eax1 = 0x804b39a;
+        break;
+    case 0x30f:
+        eax1 = 0x804b39e;
+        break;
+    case 0x310:
+        eax1 = 0x804b3a2;
+        break;
+    case 0x311:
+        eax1 = 0x804b3a6;
+        break;
+    case 0x312:
+        eax1 = 0x804b3aa;
+        break;
+    case 0x313:
+        eax1 = 0x804b3ae;
+        break;
+    case 0x314:
+        eax1 = 0x804b3b2;
+        break;
+    case 0x315:
+        eax1 = 0x804b3b6;
+        break;
+    case 0x316:
+        eax1 = 0x804b3ba;
+        break;
+    case 0x317:
+        eax1 = 0x804b3be;
+        break;
+    case 0x318:
+        Z6printfz();
+    case 0x319:
+        eax1 = 0x804b3c2;
+        break;
+    case 0x31a:
+        eax1 = 0x804b3c6;
+        break;
+    case 0x31b:
+        eax1 = 0x804b3ca;
+        break;
+    case 0x31c:
+        eax1 = 0x804b3ce;
+        break;
+    case 0x31d:
+        eax1 = 0x804b3d2;
+        break;
+    case 0x31e:
+        eax1 = 0x804b3d6;
+        break;
+    case 0x31f:
+        eax1 = 0x804b3da;
+        break;
+    case 0x320:
+        eax1 = 0x804b3de;
+        break;
+    case 0x321:
+        eax1 = 0x804b3e2;
+        break;
+    case 0x322:
+        eax1 = 0x804b3e6;
+        break;
+    case 0x323:
+        eax1 = 0x804b3ea;
+        break;
+    case 0x324:
+        eax1 = 0x804b3ee;
+        break;
+    case 0x325:
+        eax1 = 0x804b3f2;
+        break;
+    case 0x326:
+        eax1 = 0x804b3f6;
+        break;
+    case 0x327:
+        eax1 = 0x804b3fa;
+        break;
+    case 0x328:
+        eax1 = 0x804b3fe;
+        break;
+    case 0x329:
+        eax1 = 0x804b402;
+        break;
+    case 0x32a:
+        eax1 = 0x804b406;
+        break;
+    case 0x32b:
+        eax1 = 0x804b40a;
+        break;
+    case 0x32c:
+        eax1 = 0x804b40e;
+        break;
+    case 0x32d:
+        eax1 = 0x804b412;
+        break;
+    case 0x32e:
+        eax1 = 0x804b416;
+        break;
+    case 0x32f:
+        eax1 = 0x804b41a;
+        break;
+    case 0x330:
+        eax1 = 0x804b41e;
+        break;
+    case 0x331:
+        eax1 = 0x804b422;
+        break;
+    case 0x332:
+        eax1 = 0x804b426;
+        break;
+    case 0x333:
+        eax1 = 0x804b42a;
+        break;
+    case 0x334:
+        eax1 = 0x804b42e;
+        break;
+    case 0x335:
+        eax1 = 0x804b432;
+        break;
+    case 0x336:
+        eax1 = 0x804b436;
+        break;
+    case 0x337:
+        eax1 = 0x804b43a;
+        break;
+    case 0x338:
+        eax1 = 0x804b43e;
+        break;
+    case 0x339:
+        Z6printfz();
+    case 0x33a:
+        eax1 = 0x804b442;
+        break;
+    case 0x33b:
+        eax1 = 0x804b446;
+        break;
+    case 0x33c:
+        eax1 = 0x804b44a;
+        break;
+    case 0x33d:
+        eax1 = 0x804b44e;
+        break;
+    case 0x33e:
+        eax1 = 0x804b452;
+        break;
+    case 0x33f:
+        eax1 = 0x804b456;
+        break;
+    case 0x340:
+        eax1 = 0x804b45a;
+        break;
+    case 0x341:
+        eax1 = 0x804b45e;
+        break;
+    case 0x342:
+        eax1 = 0x804b462;
+        break;
+    case 0x343:
+        eax1 = 0x804b466;
+        break;
+    case 0x344:
+        eax1 = 0x804b46a;
+        break;
+    case 0x345:
+        eax1 = 0x804b46e;
+        break;
+    case 0x346:
+        eax1 = 0x804b472;
+        break;
+    case 0x347:
+        eax1 = 0x804b476;
+        break;
+    case 0x348:
+        eax1 = 0x804b47a;
+        break;
+    case 0x349:
+        eax1 = 0x804b47e;
+        break;
+    case 0x34a:
+        eax1 = 0x804b482;
+        break;
+    case 0x34b:
+        eax1 = 0x804b486;
+        break;
+    case 0x34c:
+        eax1 = 0x804b48a;
+        break;
+    case 0x34d:
+        eax1 = 0x804b48e;
+        break;
+    case 0x34e:
+        eax1 = 0x804b492;
+        break;
+    case 0x34f:
+        eax1 = 0x804b496;
+        break;
+    case 0x350:
+        eax1 = 0x804b49a;
+        break;
+    case 0x351:
+        eax1 = 0x804b49e;
+        break;
+    case 0x352:
+        eax1 = 0x804b4a2;
+        break;
+    case 0x353:
+        eax1 = 0x804b4a6;
+        break;
+    case 0x354:
+        eax1 = 0x804b4aa;
+        break;
+    case 0x355:
+        eax1 = 0x804b4ae;
+        break;
+    case 0x356:
+        eax1 = 0x804b4b2;
+        break;
+    case 0x357:
+        eax1 = 0x804b4b6;
+        break;
+    case 0x358:
+        eax1 = 0x804b4ba;
+        break;
+    case 0x359:
+        eax1 = 0x804b4be;
+        break;
+    case 0x35a:
+        Z6printfz();
+    case 0x35b:
+        eax1 = 0x804b4c2;
+        break;
+    case 0x35c:
+        eax1 = 0x804b4c6;
+        break;
+    case 0x35d:
+        eax1 = 0x804b4ca;
+        break;
+    case 0x35e:
+        eax1 = 0x804b4ce;
+        break;
+    case 0x35f:
+        eax1 = 0x804b4d2;
+        break;
+    case 0x360:
+        eax1 = 0x804b4d6;
+        break;
+    case 0x361:
+        eax1 = 0x804b4da;
+        break;
+    case 0x362:
+        eax1 = 0x804b4de;
+        break;
+    case 0x363:
+        eax1 = 0x804b4e2;
+        break;
+    case 0x364:
+        eax1 = 0x804b4e6;
+        break;
+    case 0x365:
+        eax1 = 0x804b4ea;
+        break;
+    case 0x366:
+        eax1 = 0x804b4ee;
+        break;
+    case 0x367:
+        eax1 = 0x804b4f2;
+        break;
+    case 0x368:
+        eax1 = 0x804b4f6;
+        break;
+    case 0x369:
+        eax1 = 0x804b4fa;
+        break;
+    case 0x36a:
+        eax1 = 0x804b4fe;
+        break;
+    case 0x36b:
+        eax1 = 0x804b502;
+        break;
+    case 0x36c:
+        eax1 = 0x804b506;
+        break;
+    case 0x36d:
+        eax1 = 0x804b50a;
+        break;
+    case 0x36e:
+        eax1 = 0x804b50e;
+        break;
+    case 0x36f:
+        eax1 = 0x804b512;
+        break;
+    case 0x370:
+        eax1 = 0x804b516;
+        break;
+    case 0x371:
+        eax1 = 0x804b51a;
+        break;
+    case 0x372:
+        eax1 = 0x804b51e;
+        break;
+    case 0x373:
+        eax1 = 0x804b522;
+        break;
+    case 0x374:
+        eax1 = 0x804b526;
+        break;
+    case 0x375:
+        eax1 = 0x804b52a;
+        break;
+    case 0x376:
+        eax1 = 0x804b52e;
+        break;
+    case 0x377:
+        eax1 = 0x804b532;
+        break;
+    case 0x378:
+        eax1 = 0x804b536;
+        break;
+    case 0x379:
+        eax1 = 0x804b53a;
+        break;
+    case 0x37a:
+        eax1 = 0x804b53e;
+        break;
+    case 0x37b:
+        Z6printfz();
+    case 0x37c:
+        eax1 = 0x804b542;
+        break;
+    case 0x37d:
+        eax1 = 0x804b546;
+        break;
+    case 0x37e:
+        eax1 = 0x804b54a;
+        break;
+    case 0x37f:
+        eax1 = 0x804b54e;
+        break;
+    case 0x380:
+        eax1 = 0x804b552;
+        break;
+    case 0x381:
+        eax1 = 0x804b556;
+        break;
+    case 0x382:
+        eax1 = 0x804b55a;
+        break;
+    case 0x383:
+        eax1 = 0x804b55e;
+        break;
+    case 0x384:
+        eax1 = 0x804b562;
+        break;
+    case 0x385:
+        eax1 = 0x804b566;
+        break;
+    case 0x386:
+        eax1 = 0x804b56a;
+        break;
+    case 0x387:
+        eax1 = 0x804b56e;
+        break;
+    case 0x388:
+        eax1 = 0x804b572;
+        break;
+    case 0x389:
+        eax1 = 0x804b576;
+        break;
+    case 0x38a:
+        eax1 = 0x804b57a;
+        break;
+    case 0x38b:
+        eax1 = 0x804b57e;
+        break;
+    case 0x38c:
+        eax1 = 0x804b582;
+        break;
+    case 0x38d:
+        eax1 = 0x804b586;
+        break;
+    case 0x38e:
+        eax1 = 0x804b58a;
+        break;
+    case 0x38f:
+        eax1 = 0x804b58e;
+        break;
+    case 0x390:
+        eax1 = 0x804b592;
+        break;
+    case 0x391:
+        eax1 = 0x804b596;
+        break;
+    case 0x392:
+        eax1 = 0x804b59a;
+        break;
+    case 0x393:
+        eax1 = 0x804b59e;
+        break;
+    case 0x394:
+        eax1 = 0x804b5a2;
+        break;
+    case 0x395:
+        eax1 = 0x804b5a6;
+        break;
+    case 0x396:
+        eax1 = 0x804b5aa;
+        break;
+    case 0x397:
+        eax1 = 0x804b5ae;
+        break;
+    case 0x398:
+        eax1 = 0x804b5b2;
+        break;
+    case 0x399:
+        eax1 = 0x804b5b6;
+        break;
+    case 0x39a:
+        eax1 = 0x804b5ba;
+        break;
+    case 0x39b:
+        eax1 = 0x804b5be;
+        break;
+    case 0x39c:
+        Z6printfz();
+    case 0x39d:
+        eax1 = 0x804b5c2;
+        break;
+    case 0x39e:
+        eax1 = 0x804b5c6;
+        break;
+    case 0x39f:
+        eax1 = 0x804b5ca;
+        break;
+    case 0x3a0:
+        eax1 = 0x804b5ce;
+        break;
+    case 0x3a1:
+        eax1 = 0x804b5d2;
+        break;
+    case 0x3a2:
+        eax1 = 0x804b5d6;
+        break;
+    case 0x3a3:
+        eax1 = 0x804b5da;
+        break;
+    case 0x3a4:
+        eax1 = 0x804b5de;
+        break;
+    case 0x3a5:
+        eax1 = 0x804b5e2;
+        break;
+    case 0x3a6:
+        eax1 = 0x804b5e6;
+        break;
+    case 0x3a7:
+        eax1 = 0x804b5ea;
+        break;
+    case 0x3a8:
+        eax1 = 0x804b5ee;
+        break;
+    case 0x3a9:
+        eax1 = 0x804b5f2;
+        break;
+    case 0x3aa:
+        eax1 = 0x804b5f6;
+        break;
+    case 0x3ab:
+        eax1 = 0x804b5fa;
+        break;
+    case 0x3ac:
+        eax1 = 0x804b5fe;
+        break;
+    case 0x3ad:
+        eax1 = 0x804b602;
+        break;
+    case 0x3ae:
+        eax1 = 0x804b606;
+        break;
+    case 0x3af:
+        eax1 = 0x804b60a;
+        break;
+    case 0x3b0:
+        eax1 = 0x804b60e;
+        break;
+    case 0x3b1:
+        eax1 = 0x804b612;
+        break;
+    case 0x3b2:
+        eax1 = 0x804b616;
+        break;
+    case 0x3b3:
+        eax1 = 0x804b61a;
+        break;
+    case 0x3b4:
+        eax1 = 0x804b61e;
+        break;
+    case 0x3b5:
+        eax1 = 0x804b622;
+        break;
+    case 0x3b6:
+        eax1 = 0x804b626;
+        break;
+    case 0x3b7:
+        eax1 = 0x804b62a;
+        break;
+    case 0x3b8:
+        eax1 = 0x804b62e;
+        break;
+    case 0x3b9:
+        eax1 = 0x804b632;
+        break;
+    case 0x3ba:
+        eax1 = 0x804b636;
+        break;
+    case 0x3bb:
+        eax1 = 0x804b63a;
+        break;
+    case 0x3bc:
+        eax1 = 0x804b63e;
+        break;
+    case 0x3bd:
+        Z6printfz();
+    case 0x3be:
+        eax1 = 0x804b642;
+        break;
+    case 0x3bf:
+        eax1 = 0x804b646;
+        break;
+    case 0x3c0:
+        eax1 = 0x804b64a;
+        break;
+    case 0x3c1:
+        eax1 = 0x804b64e;
+        break;
+    case 0x3c2:
+        eax1 = 0x804b652;
+        break;
+    case 0x3c3:
+        eax1 = 0x804b656;
+        break;
+    case 0x3c4:
+        eax1 = 0x804b65a;
+        break;
+    case 0x3c5:
+        eax1 = 0x804b65e;
+        break;
+    case 0x3c6:
+        eax1 = 0x804b662;
+        break;
+    case 0x3c7:
+        eax1 = 0x804b666;
+        break;
+    case 0x3c8:
+        eax1 = 0x804b66a;
+        break;
+    case 0x3c9:
+        eax1 = 0x804b66e;
+        break;
+    case 0x3ca:
+        eax1 = 0x804b672;
+        break;
+    case 0x3cb:
+        eax1 = 0x804b676;
+        break;
+    case 0x3cc:
+        eax1 = 0x804b67a;
+        break;
+    case 0x3cd:
+        eax1 = 0x804b67e;
+        break;
+    case 0x3ce:
+        eax1 = 0x804b682;
+        break;
+    case 0x3cf:
+        eax1 = 0x804b686;
+        break;
+    case 0x3d0:
+        eax1 = 0x804b68a;
+        break;
+    case 0x3d1:
+        eax1 = 0x804b68e;
+        break;
+    case 0x3d2:
+        eax1 = 0x804b692;
+        break;
+    case 0x3d3:
+        eax1 = 0x804b696;
+        break;
+    case 0x3d4:
+        eax1 = 0x804b69a;
+        break;
+    case 0x3d5:
+        eax1 = 0x804b69e;
+        break;
+    case 0x3d6:
+        eax1 = 0x804b6a2;
+        break;
+    case 0x3d7:
+        eax1 = 0x804b6a6;
+        break;
+    case 0x3d8:
+        eax1 = 0x804b6aa;
+        break;
+    case 0x3d9:
+        eax1 = 0x804b6ae;
+        break;
+    case 0x3da:
+        eax1 = 0x804b6b2;
+        break;
+    case 0x3db:
+        eax1 = 0x804b6b6;
+        break;
+    case 0x3dc:
+        eax1 = 0x804b6ba;
+        break;
+    case 0x3dd:
+        eax1 = 0x804b6be;
+        break;
+    case 0x3de:
+        Z6printfz();
+    case 0x3df:
+        eax1 = 0x804b6c2;
+        break;
+    case 0x3e0:
+        eax1 = 0x804b6c6;
+        break;
+    case 0x3e1:
+        eax1 = 0x804b6ca;
+        break;
+    case 0x3e2:
+        eax1 = 0x804b6ce;
+        break;
+    case 0x3e3:
+        eax1 = 0x804b6d2;
+        break;
+    case 0x3e4:
+        eax1 = 0x804b6d6;
+        break;
+    case 0x3e5:
+        eax1 = 0x804b6da;
+        break;
+    case 0x3e6:
+        eax1 = 0x804b6de;
+        break;
+    case 0x3e7:
+        eax1 = 0x804b6e2;
+    }
+    return eax1;
+}

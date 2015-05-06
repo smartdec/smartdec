@@ -1,0 +1,15 @@
+
+int32_t gcd(int32_t edi, int32_t esi) {
+    int32_t v1;
+    int32_t v2;
+    int32_t eax3;
+
+    v1 = edi;
+    v2 = esi;
+    if (v2 != 0) {
+        eax3 = gcd(v2, v1 % v2);
+    } else {
+        eax3 = v1;
+    }
+    return eax3;
+}

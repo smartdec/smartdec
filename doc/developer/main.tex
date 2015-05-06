@@ -1,0 +1,809 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{indentfirst}
+\usepackage{cmap}
+
+\usepackage[utf8]{inputenc}
+\usepackage[russian,english]{babel}
+
+\usepackage[unicode,pdfborder={0 0 0}]{hyperref}
+\usepackage{url}
+
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+
+\usepackage{mdwlist}
+
+\usepackage{graphicx}
+
+\newcommand{\ident}[1]{\texttt{#1}}
+
+\begin{document}
+
+\title{SmartDec: Developer's Guide}
+\author{Yegor Derevenets \and Alexander Fokin}
+
+\maketitle
+\thispagestyle{empty}
+\clearpage
+
+\setcounter{page}{2}
+
+\abstract{This document is meant to be a guide through the source code of the decompiler.
+It gives you an intuition, but not all the details.
+For the latter, read the sources.
+Almost every class and every function is documented in doxygen.
+Complicated functions usually have explanations in the implementation.}
+
+\tableofcontents
+
+\sloppy
+
+\clearpage
+\section{Introduction}
+
+SmartDec is a project to develop an instrument for analysing programs in a low-level representation.
+The primary goal of such analysis is producing high-level code having a semantics close to the input program, i.e. decompiling it.
+
+As an input, the decompiler accepts executable images (PE, ELF) and assembly listings (output of dumpbin disassemblers).
+As an output, it produces a code in a C-like language which is designed to be textually compatible with C.
+
+\subsection{Project Structure}
+
+SmartDec contains of several components:
+\begin{description}
+\item[nc] --- a library implementing various kinds of analyses.
+\item[nc-gui] --- a library implementing a set of GUI widgets for displaying analysis results.
+\item[nocode] --- a command-line front-end to the nc library.
+\item[smartdec] --- a GUI front-end to the `nc' library that uses `nc-gui' library.
+\item[nocode-plugin] --- a plug-in for the IDA Pro disassembler that uses `nc' library for performing decompilation and `nc-gui' library for showing results.
+\end{description}
+
+\subsubsection{Directory Structure}
+
+Project root contains the following directories:
+\begin{description}
+\item[doc] --- documentation.
+\item[doc/developer] --- documentation for developers (you are reading it).
+\item[doc/user] --- user documentation.
+\item[examples] --- example input files for the decompiler.
+\item[modules] --- additional CMake scripts.
+\item[src/3rd-party] --- third-party libraries.
+\item[src/3rd-party/libudis86] --- disassembling library for Intel x86.
+\item[src/nc] --- the `nc' library.
+\item[src/nc/common] --- various convenience and metaprogramming code.
+\item[src/nc/core] --- representation of assembler programs.
+\item[src/nc/core/disasm] --- disassembly support.
+\item[src/nc/core/image] --- representation for executable image.
+\item[src/nc/core/input] --- base interface for input parsers.
+\item[src/nc/core/irgen] --- generation of intermediate representation from assembly.
+\item[src/nc/core/mangling] --- mangling support.
+\item[src/nc/crec] --- reconstruction of C++ classes and exceptions.
+\item[src/nc/gui] --- the `nc-gui' library.
+\item[src/nc/input] --- parsers for various decompiler's input formats.
+\item[src/nc/intel] --- support for Intel x86 architecture.
+\item[src/nc/ir] --- intermediate representation.
+\item[src/nc/ir/calls] --- calling conventions support.
+\item[src/nc/ir/cflow] --- structural analysis.
+\item[src/nc/ir/cgen] --- C-like code generation.
+\item[src/nc/ir/dflow] --- dataflow analysis.
+\item[src/nc/ir/inlining] --- inlining of functions.
+\item[src/nc/ir/misc] --- miscellaneous algorithms.
+\item[src/nc/ir/types] --- type reconstruction.
+\item[src/nc/ir/usage] --- computing whether certain terms will actually generate C-like code.
+\item[src/nc/ir/vars] --- reconstruction of variables.
+\item[src/nc/likec] --- C-like language used as high-level representation.
+\item[src/nc/refs] --- computing of code cross-references.
+\item[src/nc/vsa] --- value set analysis.
+\item[src/ida-plugin] --- the IDA Pro plug-in.
+\item[src/ida-plugin/patches] --- patches for IDA SDK required to build the plug-in.
+\item[src/nocode] --- the command-line decompiler.
+\item[src/smartdec] --- the GUI decompiler.
+\item[winbuild] --- manually maintained Visual Studio 2010 project files using a clone of nmake called jom for building.
+Don't use them unless you know what you are doing.
+\end{description}
+
+\subsection{Use of Programming Language and Libraries}
+
+SmartDec is written in C++11 and uses Boost and Qt libraries.
+SmartDec uses CMake as its build system.
+
+All header files in the project must have \verb|#include <nc/config.h>| as its first include.
+
+Ownership transfers should be signified by passing pointers to objects using \verb|std::unique_ptr|.
+
+When describing function's parameters or return values having (plain or smart) pointer types, phrases ``Valid pointer to XXX'' and ``Pointer to XXX. Can be NULL'' must be used.
+
+\subsubsection{C++11 Features}
+
+In order to make the source code more brief, concise, and robust, we use the following features of C++11:
+\begin{itemize}
+\item Automatic type inference (\ident{auto});
+\item Lambda functions;
+\item Rvalue references;
+\item \ident{std::unique\_ptr} (supersedes \ident{std::auto\_ptr});
+\item Static assertions;
+\item Explicit overrides (\verb|<nc/config.h>| \#defines \ident{override} to an empty string on compilers not supporting this feature);
+\item nullptr (\verb|<nc/config.h>| automatically \#defines \ident{NULL} to \ident{nullptr} on decent compilers, so always use \ident{NULL} for a null pointer).
+\end{itemize}
+
+Wikipedia contains a good survey of these and other C++11 enhancements:
+\begin{itemize}
+\item \url{http://en.wikipedia.org/wiki/C++11},
+\item \url{http://ru.wikipedia.org/wiki/C++11}.
+\end{itemize}
+
+\subsubsection{C++ Standard Library}
+
+Almost everything is used, except I/O.
+In addition, where possible, \ident{std::string} is superseded by \ident{QString}.
+
+\subsubsection{Exceptions}
+
+The decompiler project uses exceptions for error handling.
+The \ident{nc::Exception} class (see \verb|<nc/common/Exception.h>|) derives from \ident{std::exception} and \ident{boost::exception} and provides Unicode error messages.
+All classes of exceptions inside the project must be derived from \ident{nc::Exception}.
+
+\subsubsection{Boost}
+
+The following Boost header-only libraries are used:
+\begin{itemize*}
+\item array
+\item config
+\item dynamic\_bitset
+\item exception
+\item foreach
+\item function
+\item functional
+\item icl
+\item integer
+\item iterator
+\item lambda
+\item lexical\_cast
+\item mpl
+\item numeric
+\item operators
+\item optional
+\item preprocessor
+\item range
+\item type\_traits
+\item unordered
+\item utility
+\end{itemize*}
+
+Documentation on these libraries is available online at \url{http://www.boost.org/doc/libs/1_50_0/libs/libraries.htm}.
+
+\subsubsection{Qt}
+
+The following Qt libraries are used:
+\begin{itemize*}
+\item QtCore (QString, I/O, containers);
+\item QtGui (widgets).
+\end{itemize*}
+
+Documentation on Qt is available online at \url{http://doc.qt.digia.com/qt/}.
+
+\subsubsection{Language Extensions}
+
+The following language extension is used:
+
+\begin{itemize}
+\item \ident{foreach} --- a statement for iterating over a range (array, container).
+Effectively, it's an alias for \ident{BOOST\_FOREACH} defined in \verb|<nc/common/Foreach.h>|.
+Refer to Boost.Foreach documentation for usage details.
+\item \ident{std::make\_unique} --- a function for creating unique pointers which is not yet included in the standard, but is very useful for writing exception-safe code.
+It is defined in \verb|<nc/common/make_unique.h>|.
+\end{itemize}
+
+\subsubsection{Metaprogramming techniques}
+
+SmartDec uses some metaprogramming techniques to make the implementation of core interfaces cleaner and more concise.
+These techniques are used to implement:
+\begin{itemize}
+\item Compile-time registration of different kinds of statements, operands, terms (and not only them) for fast dynamic casts. See \verb|<nc/common/Kinds.h>| for details.
+\item Domain-specific language for human-readable definitions of instructions' semantics. Implemented in \verb|<nc/core/irgen/InstructionAnalyzerExpressions.h>|, example usage is available in \verb|<nc/intel/irgen/IntelInstructionAnalyzer.cpp>|.
+\end{itemize}
+
+Before digging into implementation details, please make sure you know and understand how the following C++ features and implementation techniques work:
+\begin{itemize}
+\item Partial and full template specialization. 
+\item Argument-dependent lookup. A good explanation is given at Wikipedia: \url{http://en.wikipedia.org/wiki/Argument-dependent_lookup}.
+\item Curiously recurring template pattern. Again, Wikipedia can help with it: \url{http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern}.
+\item Expression templates. An explanation at Wikipedia (\url{http://en.wikipedia.org/wiki/Expression_templates}) contains a lot of code and almost no comments, so it is not for the faint of heart. 
+	Another good explanation is given at \url{http://www.angelikalanger.com/Articles/Cuj/ExpressionTemplates/ExpressionTemplates.htm}.
+\end{itemize}
+
+There are some typical questions that programmers ask when they stumble upon code that makes use of metaprogramming techniques, and some of them are better not to be left unanswered. A short FAQ follows.
+
+\begin{description}
+\item[Q]: Why are you using expression templates? Isn't there a simpler way? 
+\item[A]: There is. Construction of expression trees can be written by hand using a couple of constructor calls. However, the resulting code is verbose, difficult to parse and hard to maintain.
+Compare 
+\begin{verbatim}
+zf() = operand(0) == operand(1)
+\end{verbatim}
+and
+\begin{verbatim}
+new ir::Assignment(
+    createTerm(operands->zf()),
+    new ir::BinaryOperator(
+        ir::BinaryOperator::EQUAL,
+        createTerm(instr->operand(0)),
+        createTerm(instr->operand(1))))
+\end{verbatim}
+The difference becomes even more apparent with more complex expressions.
+
+\item[Q]: Why reinvent the wheel? Why don't use \ident{boost::proto} for constructing your domain-specific language? 
+\item[A]: There are not that many people in this world who can use \ident{boost::proto}, and those who understand how it works can all fit into an office of a typical startup company, and there will still be space left. 
+That is, \ident{boost::proto} code is a nightmare to maintain for those who didn't spend a year or two writing metaprograms in C++. And for those who did, it is still a nightmare, they're just used to it.
+\end{description}
+
+\subsection{Building}
+\label{section:intro:building}
+
+For build instructions, refer to the document \verb|doc/build.txt| under the project root.
+
+\subsection{Testing}
+
+The project uses CTest framework for regression testing.
+CTest is a testing tool distributed as a part of CMake.
+For directions on how to run tests, refer to the build instructions (section \ref{section:intro:building}).
+For more thorough documentation on using the CMake+CTest bundle, see \url{http://www.vtk.org/Wiki/CMake_Testing_With_CTest}.
+
+Developers are encouraged to run existing tests before pushing changes to the central repository.
+They are also welcome to define new tests: see \verb|src/nocode/tests/CMakeLists.txt| for an example of how to do it.
+
+\subsection{Using}
+
+User documentation is located in the directory \verb|doc/user| under the project root.
+
+\subsection{Todo}
+
+See the tickets in Redmine: \url{http://smartdec.ru/redmine/}.
+
+\clearpage
+\section{Nc Library}
+
+The library is capable of doing the following kinds of analyses, in the order of execution:
+\begin{enumerate}
+\item Parsing of input files.
+If input file is an executable image, a convenient representation of it is built.
+If it is an assembly listing, the input is translated into a sequence of instructions.
+Program architecture is detected at this stage too.
+\item Disassembly of the executable image into a sequence of instructions (if the input file was an executable image).
+\item Translation of the sequence of instructions into intermediate representation (IR) making instructions' semantics explicit.
+The IR has a form of a control flow graph (CFG) with simple statements and expressions inside its basic blocks.
+\item Isolation of functions. Control flow graphs of functions are created.
+\item Creation of call graph and identification of calling conventions.
+\item Joint reaching definitions and constant propagation/folding analysis.
+\item Liveness analysis.
+\item Type reconstruction.
+\item Reconstruction of local variables.
+\item Structural analysis (reconstruction of high-level control flow statements).
+\item Recovery of exception handling information, virtual functions, and class hierarchies.
+\item Code generation.
+\end{enumerate}
+
+Fig.~\ref{figure:workflow} presents a scheme of decompiler's workflow in a form of a Petri net.
+Algorithms are drawn as boxes.
+Input and output of the algorithms are drawn as ellipses.
+Labels of the nodes name the classes actually implementing the algorithms or data structures the algorithms work on.
+
+\begin{figure}[!htb]
+\includegraphics[width=\textwidth]{images/workflow}
+\caption{Decompiler's Workflow Graph}
+\label{figure:workflow}
+\end{figure}
+
+All library code is located under the \ident{nc} namespace.
+
+\subsection{Core: Representation of Input Program}
+
+The module called `core' resides in \ident{nc::core} namespace and is responsible for storing input program and decompilation state in a convenient form.
+
+\subsubsection{Instructions}
+
+\ident{InstructionSet} class contains the set of instructions.
+Instructions are represented as instances of the \ident{Instruction} class.
+Each instruction has an address, size, mnemonic and a list of operands.
+Address and size are integers.
+Mnemonic of an instruction is stored as a pointer to an instance of the \ident{Mnemonic} class.
+Operands of an instruction are implemented as a vector of pointers to the \ident{Operand} class.
+
+The \ident{Mnemonic} class contains integer id of the mnemonic, uppercase and lowercase names, and description of the mnemonic.
+
+\ident{Operand} is a base class for all classes implementing various kinds of instruction's operands.
+Every operand has a size measured in bits and integer id of its kind.
+
+Operands generally constitute an expression tree.
+There are following basic kinds of the tree nodes:
+\begin{itemize}
+\item register (\ident{RegisterOperand} class),
+\item addition of two operands (\ident{AdditionOperand} class),
+\item multiplication of two operands (\ident{MultiplicationOperand} class),
+\item dereference of an operand (\ident{DereferenceOperand} class),
+\item bit range of an operand (\ident{BitRangeOperand} class),
+\item integer constant (\ident{ConstantOperand} class).
+\end{itemize}
+Defining custom operand types is possible.
+See \verb|<nc/intel/IntelOperands.h>| for an example of this.
+
+Mnemonic and Operand classes are immutable, so they can be shared among instructions.
+Instructions are also immutable and therefore can be shared among InstructionSet instances.
+Actually, InstructionSet owns instructions via shared pointers, which makes creating copies of the set cheap and easy.
+
+\subsubsection{Architecture}
+
+\ident{Architecture} class contains general information about the architecture:
+\begin{itemize}
+\item bitness --- bit size of a pointer on this architecture,
+\item pointer to a storage of mnemonics (\ident{Mnemonics} class instance),
+\item pointer to a storage of registers (\ident{Registers} class instance).
+\end{itemize}
+
+Also, \ident{Architecture} works as a cache for operands.
+Due to the fact that operands are immutable, they can be shared among instructions.
+The methods \ident{registerOperand} and \ident{constantOperand} provide instances of operands of respective types.
+Returned instances are taken from cache or created as necessary.
+
+\subsubsection{Image}
+
+Executable image is handled in \ident{nc::core::image} namespace.
+\ident{Image} class contains a list of sections.
+\ident{Section} class provides with a section name, its address and size, type, and access permissions.
+Both classes provide methods for reading data from the image by implementing the \ident{Reader} interface.
+As the data source, they use \ident{ByteSource} instances.
+Use \ident{setExternalByteSource} method of \ident{Image} and \ident{Section} to assign a content to the image or section.
+
+\subsubsection{Mangling}
+Mangling is handled in \ident{nc::core::Mangling} namespace.
+\ident{Demangler} class is a base class for all demanglers and cannot demangle anything by itself.
+The only currently existing implementation of demangler is \ident{MemorizingDemangler} class which supports remembering demangled versions of certain strings.
+
+\subsubsection{Module}
+
+\ident{Module} class incorporates the architecture, image, demangler.
+
+\subsubsection{Context}
+
+\ident{Context} class incorporates the module, list of instructions, and decompilation results.
+The class is immutable in the sense that every property can be initialized only once.
+It has a copy constructor which copies everything but the decompilation results from the previous instance.
+
+\subsubsection{Input}
+
+In order to fill in the \ident{Context} with the architecture, image, and list of instructions, some input files must be parsed.
+This is where the classes from the \ident{nc::core::input} namespace come into play.
+
+Parser is a base class for any parser.
+This class has \ident{canParse} and \ident{parse} methods.
+The former checks whether given input stream can be parsed by the parser.
+The latter performs parsing and fills passed Context object with information.
+Exception of the \ident{ParseError} class is thrown when a file cannot be parsed.
+
+For keeping record of available parsers, the \ident{ParserRepository} class exists.
+It's a singleton class maintaining a list of all available parsers.
+New parsers must have a unique name and be registered using the \ident{registerParser} method.
+
+Typical way of parsing a file is to get a list of all parsers, find (using the \ident{canParse} method) a parser that reports to be able to parse given file, and let him do the job.
+
+Note that in principle you can use separate parsers for an assembly listing and for executable image, so there is some sense in having more than one input file for a single decompilation task.
+In theory, nothing even stops you from having a parser for an architecture description.
+
+\subsubsection{Disassembly}
+
+Disassembly is handled in \ident{nc::core::disasm} namespace.
+There is a main class \ident{Disassembler} capable of disassembling a sequence of instructions.
+By default, it uses an instance of \ident{InstructionDisassembler} class for performing disassembly of a single instruction.
+\ident{Architecture} usually has a pointer to the right instance.
+
+\subsubsection{Decompilation: UniversalAnalyzer}
+
+\ident{Architecture} contains a pointer to an instance of \ident{UniversalAnalyzer} class.
+This class provides methods for performing all kinds of analyses as well as the decompilation as a whole.
+If a particular implementation of an analysis does not work for you architecture, make a subclass and make your architecture use it by calling \ident{Architecture::setUniversalAnalyzer}.
+The analyzer stores all intermediate and final results of analyses in the \ident{Context}.
+
+\subsubsection{Implementing new architecture}\label{new_architecture}
+
+Extending the decompiler to support new architecture is pretty straighforward once you know how to do it. Here is a short guideline:
+\begin{itemize}
+\item Create instruction table for the new architecture. For example of an instruction table, see \verb|<nc/intel/IntelInstructionTable.i>|. 
+	This table must contain instruction upper- and lowercase names and textual descriptions.
+\item Create register table for the new architecture. For example of a register table, see \verb|<nc/intel/IntelRegisterTable.i>|. 
+	This table must contain description of the architecture's registers --- their names, sizes, and locations.
+\item Create static mnemonic and register containers for the new architecture. 
+	Basic blocks for them are provided in \verb|<nc/core/Mnemonics.i>|, \verb|<nc/core/MnemonicsConstructor.i>|, \verb|<nc/core/Registers.i>| and \verb|<nc/core/RegistersConstructor.i>|.
+	For example usage, see \verb|<nc/intel/Mnemonics.h>| and \verb|<nc/intel/Registers.h>|.
+\item Once all the convenience classes dealing with instructions and registers are in place, implement the \ident{nc::core::InstructionAnalyzer} interface for your architecture.
+	This is the class that will convert architecture-specific instructions into IR.
+	For example implementation, see \verb|<nc/intel/IntelInstructionAnalyzer.h>|.
+\item Implement the \ident{nc::core::Architecture} interface for your architecture. In its constructor, initialize instruction analyzer and mnemonic and register tables.
+	For example implementation, see \verb|<nc/intel/IntelArchitecture.h>|.
+\item Implement a \ident{nc::core::input::Parser} for the format in which input low-level programs are provided on your platform. 
+	In its \ident{parse} method, initialize the \ident{Module}'s architecture object to a new instance of your architecture.
+\end{itemize}
+
+
+\subsection{IR: Intermediate Representation}
+
+The `ir' module is responsible for conveying the exact semantics of assembler program in a form suitable for further analyses.
+The code of this module is located under the \ident{nc::ir} namespace.
+
+Intermediate Representation (IR) of a program or a function is their control flow graph (CFG).
+CFG of a program is implemented in the \ident{CFG} class.
+CFG of a function is implemented in the \ident{Function} class.
+
+Basic blocks of both graphs are implemented in the \ident{BasicBlock} class.
+A basic blocks \emph{can} have a start address (basic blocks arising from complex instructions or, in some cases, during inlining don't have an address).
+They also have a list of predecessors and a list of successors.
+
+\subsubsection{Statements and Terms}
+
+A basic block consists of a sequence of \emph{statements}.
+Statement is a simple operation like an assignment or a jump.
+Statements can have side effects.
+Statements are flat, i.e. statements can't contain other statements.
+\ident{Statement} is a base class in the hierarchy of statements.
+
+The following kinds of statements (subclasses of \ident{Statement}) exist:
+\begin{description}
+\item[Comment] --- textual comment, useful mainly for debugging.
+\item[Assignment] --- assignment of one statement's argument to another.
+\item[Kill] --- killing of a reaching definition.
+\item[Jump] --- conditional jump to another basic block (destination basic block can be described either by its address or by a pointer to a \ident{BasicBlock} object).
+\item[Call] --- call of a function by address.
+\item[Return] --- return from a function.
+\end{description}
+
+Jump instruction can stay only at the end of a basic block.
+The basic block being visited if jump doesn't happen is called \emph{direct successor}; the \ident{BasicBlock} class stores an additional pointer to it.
+
+Arguments of statements are expressions.
+Expressions can't have side effects.
+An expression is represented as a tree.
+\ident{Term} is a base class for the tree nodes.
+Each term has some size (measured in bits), and flags (whether this term is meant for reading, writing or killing).
+
+The following kinds of terms (subclasses of \ident{Term}) exist:
+\begin{description}
+\item[Constant] --- integer constant.
+\item[Intrinsic] --- some function computable in assembler, but which is hard or impossible to express in C.
+\item[Undefined] --- undefined value.
+\item[MemoryLocationAccess] --- access to a fixed memory location, such as a register.
+\item[Dereference] --- access of a memory location determined by an address expressed as an operand.
+\item[UnaryOperator] --- all kinds of unary operations.
+\item[BinaryOperator] --- all kinds of binary operations.
+\item[Choice] --- special binary operator returning its first argument if its definitions reach the choice, and its second argument otherwise.
+Choice is useful for generating human-friendly high-level code related to arithmetic flags and jumps (see \ident{nc::intel::IntelInstructionAnalyzer} for details).
+\end{description}
+
+\subsubsection{Memory Model}
+
+Memory of an IR machine consists of several unrelated memory domains.
+For example, each set of non-overlapping registers can be assigned a separate domain.
+Global memory and stack are two another domains.
+The \ident{MemoryDomain} class has an enumeration of possible domains.
+User can define new domains when necessary.
+
+A memory location then is determined by three integers: domain, address, and size.
+\ident{MemoryLocation} is the class for representing memory locations.
+
+\subsubsection{Translation of Assembler Program to IR}
+
+IR is constructed out of the low-level representation, i.e. the \ident{core::Module} and \ident{core::InstructionSet} objects.
+Assembler program is translated directly to the CFG of the whole program, i.e. to an \ident{ir::CFG} object.
+Translation is done by the \ident{core::IRGenerator} class.
+
+First, instructions are translated to statements.
+These statements are added to new basic blocks or to the end of existing basic blocks.
+Translation of specific instruction to a sequence of statements is actually done by the \ident{core::InstructionAnalyzer} class (\ident{core::Architecture} has a pointer to the right instance of this class).
+
+Second (and last), appropriate arcs between created basic blocks are added.
+For this, a quick dataflow analysis is performed on the basic block level.
+This dataflow analysis helps to estimate destinations of jumps (especially of those done via a jump table), validity of jump conditions, etc.
+
+\subsubsection{Isolation of Functions}
+
+Generation of intermediate representations of functions is performed by the \ident{FunctionsGenerator} class.
+It isolates functions in the program's CFG and adds new \ident{Function} objects to an object of the \ident{Functions} class being the container of functions.
+
+Isolation of functions is done in two steps.
+First, if a basic block having a start address is found, and this address is used as a call target, then all transitive successors of this basic block are isolated into a new function.
+Second, if some basic blocks having a start address are still left, then all transitive successors of this basic block are isolated into a new function.
+
+Existence of the first step allows to process functions with multiple entry nodes correctly.
+Such a function is translated to multiple functions, each having its own entry and a copy of the common body.
+
+When a function is being created, its basic blocks are being cloned.
+Cloning of a set of nodes is implemented in the \ident{FunctionsGenerator::cloneIntoFunction} method.
+For cloning statements and terms, the \ident{clone} methods of \ident{Statement} and \ident{Term} classes are used.
+
+As a convenience, function's CFG always has two fake nodes: entry and exit.
+These nodes do not contain any statements.
+All actual entry basic blocks of a function have an incoming arc from the fake entry node.
+All actual exit blocks of a function have an outgoing arc to the fake exit node.
+So, \ident{function->entry()->successors()} gives all actual entry basic blocks of the function, and \ident{function->exit()->predecessors()} gives all actual exit basic blocks of the function.
+
+The \ident{FunctionsGenerator::makeFunction} creates a new function out of given set of basic blocks and, optionally, an entry basic block.
+It automatically computes the sets of entry and exit basic blocks and adds appropriate arcs from/to the fake nodes.
+
+\subsubsection{Inlining}
+
+The library directly supports the basic operation of inlining a given function in place of a given call statement.
+This functionality is implemented by the class \ident{inlining::CallInliner}, see the \ident{perform} method.
+
+\subsubsection{Calling Conventions}
+
+Knowing how and which function arguments are passed and how values are returned from the function is crucial for dataflow analysis and code generation.
+Class \ident{calls::CallGraph} stores the information about which function uses which calling convention.
+A function in such case is identified by a \ident{calls::FunctionDescriptor} object.
+The object can identify a function either by its entry address or by the address of the call to this function (in case the real call argument cannot be found out).
+Calling convention is described by an instance of a class implementing \ident{calls::CallingConvention} interface.
+Class \ident{calls::GenericCallingConvention} is such an implementation suitable for describing most calling conventions.
+
+A \ident{calls::CallingConvention} can create an \ident{calls::DescriptorAnalyzer}.
+The latter is responsible for reconstructing signature of a function as well as creating \ident{calls::CallAnalyzer}, \ident{calls::FunctionAnalyzer}, and \ident{calls::ReturnAnalyzer} objects that will be used during the dataflow analysis for collecting calling convention-specific information during the dataflow analysis.
+When the \ident{CallGraph} knows about the calling convention of a function, it creates suitable *Analyzer objects automatically when requested.
+
+Reconstructed signature of a function is represented as a \ident{calls::FunctionSignature} object.
+
+One can use method \ident{CallGraph::setCallingConventionDetector} to specify the calling convention detector to be used for descriptors, for which no calling convention was set so far.
+
+\subsubsection{Dataflow Analysis}
+
+IR can be a subject to partial interpretation.
+The aim of the partial interpretation is to compute a set of reaching definitions for each term.
+
+Partial interpretation consists of integrated reaching definitions \cite{reachingDefinition} and constant propagation/folding analysis \cite{constantFolding}.
+It works on function level and is implemented in the \ident{dflow::DataflowAnalyzer} class.
+The analysis recomputes reaching definitions and term values until a fixed point is reached.
+The method \ident{dflow::DataflowAnalyzer::analyze} runs the analysis on a specified function.
+
+The methods \ident{dflow::DataflowAnalyzer::simulate} perform simulation of statement's or term's execution.
+The simulation methods take an instance of the \ident{dflow::SimulationContext} class.
+Simulation context owns an object of the \ident{dflow::ReachingDefinitions} class.
+The latter contains information about the definitions reaching simulated statement.
+During a call to \ident{simulate}, reaching definitions are updated according to the semantics of given statement or term.
+
+The results of dataflow analysis are stored in objects of the \ident{dflow::Dataflow} class.
+For a term, they are capable of reporting its reaching definitions and value properties.
+
+\paragraph{Calling Conventions}
+
+Dataflow analysis respects calling conventions used by functions.
+When a set of reaching definition leaving the fake entry node of a function is computed, the \ident{calls::FunctionAnalyzer::simulateEnter} method is executed.
+Typically it sets registers to their initial values guaranteed by the convention.
+Similarly, when a return statement is simulated, the \ident{calls::ReturnAnalyzer::simulateExit} method is called.
+Typically it runs simulation of the registers that can contain return value, in order to have the information about their reaching definitions later, while determining the way how the function returns its value.
+When a call statement is simulated, the \ident{calls::CallAnalyzer::simulateCall} is called.
+Typically, it analyzes the definitions reaching the statement, tries to determine the list of actual arguments, and kills definitions of spoiled registers.
+The respective \ident{*Analyzer} objects are provided by the \ident{calls::CallGraph} (they are created automatically when first requested).
+
+\subsubsection{Reconstruction of Local Variables}
+
+Here, a variable is a set of terms realizing accesses to the same variable of original high-level program.
+Local variables are reconstructed as connected components of definition-use graph.
+
+The algorithm of computing the connected components is implemented in the \ident{vars::VariableAnalyzer}.
+The results of variable reconstruction are stored in \ident{vars::Variables} objects.
+These objects can report an instance of \ident{vars::Variable} associated with a given term.
+This pointer uniquely identifies the set of terms representing reconstructed local variable.
+
+\subsubsection{Hiding Redundant Computations}
+
+Some of the computations visible in intermediate representation should not be visible to the end user.
+These are, for example, dead computations, adjustments of stack pointers, etc.
+
+Computing of the set of terms, operations on which must be visible in the generated code, is performed by \ident{usage::UsageAnalyzer}.
+The algorithm works as follows:
+\begin{enumerate}
+\item Every term is marked as unused.
+\item If a term represents a write to a global memory or to unknown location, it is marked as used.
+\item Jump conditions and jump/call destinations are marked as used.
+\item Return value of a function is marked as used too.
+\end{enumerate}
+When a term is marked as used, all its definitions and child terms are marked as used recursively.
+
+The results of the analysis are stored in objects of the \ident{usage::Usage} class.
+Assignments to the terms not being marked as used won't produce any code during code generation.
+
+\subsubsection{Type Reconstruction}
+
+Reconstruction of high-level types is largely based on ideas from \cite{troshina2009}.
+With each term, a \ident{types::Type} object is associated.
+This object stores computed type traits of the term.
+These type traits are enough to generate high-level type description.
+
+Type traits are computed by an iterative algorithm.
+The algorithm stops when a fixed point is reached.
+Since type traits are boolean flags and they can only be changed from \ident{false} to \ident{true}, the algorithm always terminates.
+
+Type reconstruction algorithm is implemented in the class \ident{types::TypeAnalyzer}.
+The resulting mapping from terms to their type traits objects is stored in an object of \ident{types::Types} class.
+
+\subsubsection{Structural Analysis}
+
+For the reconstruction of high-level control flow statements, \emph{structural analysis} \cite{muchnick1997controlflow} is used.
+
+First, \ident{cflow::GraphBuilder} transforms function's CFG to a \ident{cflow::Graph} object.
+Translation is rather straightforward, since \ident{cflow::Graph} is just yet another representation of a control flow graph.
+\ident{cflow::Graph} has two kinds of nodes: \ident{cflow::BasicBlockNode} (basic block) and \ident{cflow::Region} (region, i.e. a set of nodes with single entry and zero or more exit nodes).
+After translation, the graph has a single region containing all the basic blocks.
+
+Next, \ident{cflow::StructureAnalyzer} runs structural analysis: it finds subgraphs matching certain patterns and moves them to newly created regions.
+Regions are marked by their kind: block, if-then, if-then-else, while, etc.
+
+Result of the analysis is a modified graph with new regions singled out.
+
+\subsubsection{Code Generation}
+
+After all the analyses are done, the translation of IR into a high-level representation becomes essentially a technical task.
+
+\ident{cgen::CodeGenerator} is the central class doing the code generation.
+It takes the results of necessary analyses from \ident{core::Context} and builds an AST of high-level program (see subsection \ref{section:nc:likec}).
+
+\ident{cgen::DeclarationGenerator} is the class generating function's declarations.
+\ident{cgen::DefinitionGenerator} is its subclass; it does generate function's high-level code.
+It descends recursively through the hierarchy of control flow regions, statements and terms, every time \ident{switch}ing on their kind.
+
+\subsection{LikeC: High-level Representation}
+\label{section:nc:likec}
+
+The `likec' module implements an abstract syntax tree for a C/C++-like language called `LikeC'.
+Its code resides in the \ident{nc::likec} namespace.
+
+\ident{Tree} is the central class storing the AST.
+A tree contains two types of entities: tree nodes and types.
+
+The \ident{TreeNode} class is a base class for the hierarchy of tree nodes.
+Nodes correspond to syntactical elements of the program: compilation units, function and variable declarations, statements, expressions, etc.
+Child nodes are owned by parents.
+Root node is owned by \ident{Tree}.
+
+\ident{Type} is a base class for the hierarchy of high-level classes.
+Types are immutable.
+Most of them are created, owned and cached by \ident{Tree}.
+Such approach implies efficient memory usage and allows of efficient type arithmetic.
+
+LikeC representation implements algorithms for code simplification via rewriting: removal of unnecessary typecasts and unused labels, simplification of expressions, etc.
+Node-level rewriting is done in the \ident{TreeNode::rewrite} method.
+The \ident{Tree::rewriteRoot} rewrites the whole tree.
+
+\subsection{Crec: Reconstruction of C++ classes and exceptions}
+
+`Crec' module implements reconstruction of C++ class hierarchies and expcetion handling constructs. 
+Description of the algorithm used is given in \cite{fokin2010, fokin2011}.
+Note that these algorithms are currently implemented only for MSVC compiler.
+
+Code of `crec' module resides in \ident{nc::crec} namespace, with \ident{crec::Creq} being the central class that stores all information
+on class hierarchy and exception handling reconstruction. \ident{creq::Creq::perform} is the entry point for reconstruction algorithms.
+
+\subsubsection{Class hierarchy reconstruction}
+Description of the algorithm is given in \cite{fokin2010}. It is recommended that you make yourself familiar with the approach described there before delving into implementation details.
+
+Class hierarchy reconstruction process is performed in several steps.
+\begin{enumerate}
+\item Construction of the neccessary data structures. At this step \ident{crec::Function} objects are constructed for each function in the IR. 
+	These objects store additional information that is used in the steps that follow.
+\item Scanning of executable image for virtual function tables. This is done by the \ident{crec::VtScanner} class. Note that the algorithm uses cross-reference information from the `refs' module. 
+	At this step for each vtable an instance of \ident{crec::VTable} class is constructed. All accesses to vtables are also found, and description of each access is stored as an instance of \ident{crec::VTableAccess} class.
+\item Interprocedural value set analysis of virtual functions for vtable accesses. Most of the job at this step is done by the \ident{crec::ChainAnalyzer} class, which implements a custom analyzer for the value set analysis (see `vsa' module).
+	At this step vtable access chains and chain bulks (instances of \ident{crec::VtChain} and \ident{crec::VtChainBulk} classes) are constructed, 
+	the former representing a chain of consequent overwrites of the same memory location with addresses of different vtables, and the latter being a collection of vtable access chains that access memory locations differing by a constant offset.
+\item \ident{crec::ChainReconstructor} class does the rest of the job. 
+	Vtable access chains are classified as belonging either to constructors or destructors using the heuristics described in \cite{fokin2011} and inheritance relations between vtables are reconstructed.
+	Classes are then constructed from vtable access chain bulks, and inheritance relation between these classes is inferred from the inheritance relation between vtables they contain.
+\end{enumerate}
+
+\subsubsection{Reconstruction of exception handling constructs}
+Exception handling constructs are currently reconstructed for MSVC only. It is recommended that you study how exception handling in MSVC works before working with the implementation. 
+A good coverage of the exception handling process is given in an article at OpenRCE: \url{http://www.openrce.org/articles/full_view/21}.
+
+Reconstruction of exception handling constructs is performed by the \ident{crec::ExceptionAnalyzer} class, which implements a custom analyzer for the value set analysis (see `vsa' module). 
+This analyzer scans the function, looking for a specific stack layout to find the location of exception handling structures associated with the function, and its exception counter.
+It then emulates execution of the function, computing the value of exception counter at each instruction. 
+Borders of \ident{try} and \ident{catch} blocks are defined in terms of exception counter intervals, so they are easily reconstructed once its value is known.
+
+\subsection{Refs: Code cross-references}
+This is a helper module that constructs a set of cross-references that can be queried for instructions that reference the given memory location. 
+Single cross-reference is represented by an instance of \ident{refs::XRef} class, a set of all cross-references --- by an instance of \ident{refs::XRefSet} class.
+
+Construction of a set of cross-references is performed by the \ident{refs::XRefSetBuilder} class, which runs through the intermediate representation of the whole program and creates cross-references for all memory location accesses it encounters.
+
+\subsection{VSA: Value set analysis}
+This is a helper module that implements a simple form of value set analysis. The main classes of these module are:
+\begin{itemize}
+\item \ident{vsa::DefaultAnalyzer} --- class that performs analysis and emulation of statemets. 
+\item \ident{vsa::Context} --- data class that represents analyzer state at some point of emulation. As emulation is non-linear, instances of this class are copied and merged whenever necessary by the analyzer.
+\end{itemize}
+
+The algorithm implemented has the following important properties:
+\begin{itemize}
+\item The algorithm tracks the values at known memory locations. 
+	Statement emulation changes these values, and classes derived from \ident{vsa::DefaultAnalyzer} can hook into the process by overriding provided virtual methods.
+\item When encountering the code that was already simulated at some other branch of execution, it simply stops (See implementation of \ident{DefaultAnalyzer::analyzeInner}). 
+	This means that it does not roll until reaching a fixed point, and that at each point of execution no more than one value can be stored for each memory location. 
+	So, it is not really a value \emph{set} analysis, but such detail level is sufficient for the needs of `crec' module.
+\item When encountering a function call, the analyzer emulates it if the target function's code is available (See implementation of \ident{DefaultAnalyzer::analyze(Context *, const ir::Call *)}). 
+	Context at the end of function's execution is then merged into the current context.
+	This makes it possible to track how a value at some memory location changes throughout an execution path that spans several functions.
+\end{itemize}
+
+\subsection{Intel: Support for Intel x86 Architecture}
+
+Support for the family of Intel x86 architectures is implemented in the \ident{nc::intel} namespace. 
+Implementation followed the process described in section \ref{new_architecture}.
+Parsers supporting this architecture are elf, pe, dumpbin.
+
+\clearpage
+\section{Nocode: Command Line Decompiler}
+
+Decompiler's command line front-end is called `nocode'.
+Its code lies in the root namespace.
+
+Nocode lets the user specify (on the command line) which files to parse and in which files to print the results of which analyses.
+
+The code is rather straightforward.
+
+\clearpage
+\section{SmartDec: Decompiler with a GUI}
+
+Decompiler's GUI front-end is implemented in the \ident{nc::gui} namespace. It lets the user browse both assembler and decompiled source code. 
+Cursor positions in code views are synchronized, so that the user always knows where the selected decompiled code originated from, and what selected assembler code was decompiled into.
+
+The GUI follows the MVC (model-view-controller) model.
+\ident{gui::CxxView}, \ident{gui::InstructionsView}, \ident{gui::SectionsView}, \ident{gui::TreeInspector} are the view part.
+\ident{gui::CxxDocument}, \ident{gui::InstructionsModel}, \ident{gui::SectionsModel}, \ident{gui::TreeModel} are the models shown in the respective views.
+Actually, the \ident{*Document} and \ident{*Model} classes are just adaptors of another models.
+So, \ident{CxxDocument} produces its context by printing a \ident{likec::Tree} object.
+\ident{InstructionsModel} is a wrapper over \ident{core::InstructionSet} object.
+\ident{SectionsModel} is a wrapper over the \ident{core::image::Image}'s list of sections.
+\ident{TreeModel} is a wrapper over the \ident{core::Context} class.
+Every model class owns the underlying data it presents via a shared pointer.
+
+All functionality of the module is wrapped up by the \ident{gui::MainWindow} class, which implements GUI front-end window.
+
+The controller part of MVC is currently realized by \ident{gui::Project}.
+User issues various commands represented by \ident{gui::Command} objects.
+These commands are added to a queue, \ident{gui::CommandQueue} object owned by \ident{Project}, and executed in order.
+Project tracks the state of \ident{CommandQueue} and automatically launches decompilation when all changes requested by a user are done, and the queue is empty.
+
+\clearpage
+\section{Nocode-plugin: IDA Pro plug-in}
+
+SmartDec is available as an IDA Pro plugin, which is implemented in the \ident{nc::ida} namespace. 
+The plug-in works by providing the access to the executable image loaded in IDA.
+It creates image sections using the information from IDA and implements \ident{core::image::ByteSource} interface for forwarding the data access calls to IDA Pro API.
+When done, it opens \ident{gui::MainWindow} and loads the new, IDA-based project into it.
+Disassembly of the code contained in the image is done by decompiler itself, i.e. independently from IDA.
+
+As IDA Pro 5.x is implemented is Delphi, some magic is requred to make it work with Qt-based GUI that is used in the plugin. The neccessary magic is implemented in the \ident{ida::QtSupportPlugin} class.
+This workaround is unnecessary for IDA Pro 6.x (although it does not hurt).
+
+\clearpage
+\addcontentsline{toc}{section}{References}
+\begin{thebibliography}{99}
+
+\bibitem{fokin2010}
+A. Fokin, E. Derevenetc, A. Chernov and K. Troshina. ``Reconstruction of C++-specific Constructs for Decompilation''. Never published.
+
+\bibitem{fokin2011}
+A. Fokin, E. Derevenetc, A. Chernov and K. Troshina. ``SmartDec: Approaching C++ Decompilation'', in proceedings of the 18th Working Conference on Reverse Engineering, 2011.
+
+\bibitem{reachingDefinition}
+Reaching definition \url{http://en.wikipedia.org/wiki/Reaching_definition}
+
+\bibitem{constantFolding}
+Constant folding \url{http://en.wikipedia.org/wiki/Constant_folding}
+
+\bibitem{troshina2009}
+\begin{otherlanguage*}{russian}
+Е.\,Н.\,Трошина, А.\,В.\,Чернов. \emph{Восстановление типов данных в задаче декомпилирования в язык Си}. Прикладная информатика, 2009.
+\end{otherlanguage*}
+
+\bibitem{muchnick1997controlflow}
+Steven S. Muchnick. \emph{Advanced Compiler Design and Implementation}, chapter 7. Morgan Kaufmann, 1997.
+
+\end{thebibliography}
+
+
+\end{document}

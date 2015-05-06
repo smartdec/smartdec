@@ -1,0 +1,149 @@
+Obtaining the Source Code
+=========================
+
+Source code can be obtained using Git <http://git-scm.com/>:
+
+    * Type `git clone ssh://git@decompilation.info/~/smartdec.git'.
+
+Prerequisites
+=============
+
+SmartDec is written in C++. The following compilers are known to be
+capable of building it:
+
+    * GCC >= 4.6 <http://gcc.gnu.org/>
+    * Clang >= 3.1 <http://llvm.clang.org>
+    * MinGW GCC >= 4.6 <http://mingw.org/> (do install the `C++
+      Compiler' option)
+    * MinGW-w64 GCC >= 4.6 <http://mingw-w64.sourceforge.net/>
+    * Microsoft Visual Studio 2010 <http://www.microsoft.com/>
+    * Microsoft Visual Studio 2012 <http://www.microsoft.com/>
+
+The following software packages must be installed before SmartDec can be
+built:
+
+    * CMake >= 2.8 <http://cmake.org/>
+    * Boost >= 1.49 <http://www.boost.org/> (headers only)
+    * Qt >= 4.7 <http://qt.nokia.com/>
+
+Also, test scripts are written in Python programming language. If you
+are going to run them, you will need
+
+    * Python >= 2.7 <http://www.python.org/>
+
+For package installation instructions, refer to the respective web pages
+and/or your operating system's manual.
+
+Note: you have to install Visual Studio 2012 Update 1 or later to be
+able to build applications that would run under Windows XP. For
+targeting Windows XP, choose the `v110_xp' toolset, e.g. by CMake's `-T'
+switch (available since CMake 2.8.11, known to work with `Visual Studio'
+generators).
+
+Notes on Building IDA Pro Plug-In
+=================================
+
+1. The following additional package is required for IDA Pro plug-in:
+
+    * IDA Pro SDK >= 6.1 <http://www.hex-rays.com/products/ida/>
+
+2. You must use the same compiler as the one used by IDA Pro.
+   For IDA Pro 6.1, this is MSVC 2010.
+
+3. You must build the same (up to patch level) version of Qt as the
+   one used by IDA Pro. For IDA Pro 6.1, this is Qt 4.7.X.
+
+4. Qt must be built in namespace `QT', e.g.:
+
+    * `configure.exe -qtnamespace QT -platform win32-msvc2010
+       -debug-and-release -opensource -no-qt3support -no-multimedia
+       -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools
+       -nomake demos -nomake examples && nmake'
+
+5. You must use the same build mode as the one used by IDA Pro.
+   For IDA Pro 6.1, this is Release.
+
+Building the Easy Way (UNIX only)
+=================================
+
+The simplest way to compile SmartDec on UNIX is:
+
+    1. `cd' to the directory containing the package's source code.
+
+    2. Type `make' to configure and build the package. The package will
+       be built in the subdirectory called `build'.
+
+    3. Optionally, type `make test' to run regression tests.
+
+Building the Long Way (UNIX and Windows)
+========================================
+
+The normal way to compile SmartDec on UNIX and Windows is:
+
+    1. Make sure that CMake executable is in your PATH. If you are going
+       to use MinGW GCC, add to the PATH the `bin' directory of MinGW,
+       so that `g++' executable could be found. If you are going to run
+       tests, make sure that `python' executable is in your PATH too.
+
+    2. Open a terminal (on UNIX) or a command prompt (on Windows).
+
+    3. `cd' to the directory containing the package's source code.
+
+SmartDec is built using a build tool called CMake. The build process
+consists of two phases: configuration and compilation. Also, CMake
+authors are advocates of out-of-tree builds, so a separate directory for
+compilation results must be created.
+
+    4. Type `mkdir build` to create the build directory; `cd' to it.
+
+During configuration step CMake will be using the following environment
+variables to find required libraries:
+
+    * BOOST_ROOT — the preferred installation prefix for searching for
+      Boost (it should contain `boost' subdirectory with include files).
+    * QTDIR — path to the root Qt directory containing the `include' and
+      `lib' subdirectories.
+    * IDA_SDK_DIR — path to the IDA Pro SDK directory containing
+      the `include' and `lib' subdirectories.
+
+Set aforementioned environment variables if corresponding libraries
+cannot be found by CMake automatically. On Windows you may need to
+restart command prompt in order for the changes to take effect.
+
+On UNIX, CMake will generate Makefiles for you by default. On Windows,
+you should specify the build system explicitly, e.g.:
+
+    * `-G "Visual Studio 10"' — generate a Visual Studio 2010 solution
+      for building 32-bit application using the IDE or MSBuild.
+    * `-G "Visual Studio 11 Win64"' — generate a Visual Studio 2012
+      solution for building 64-bit application using the IDE or MSBuild.
+    * `-G "MinGW Makefiles"' — generate Makefiles for building by
+      MinGW G++ and `mingw32-make'.
+
+If you use Makefiles, you can choose a build mode at the configuration
+step by using the following CMake options:
+
+    * `-D CMAKE_BUILD_TYPE:STRING=Release'
+    * `-D CMAKE_BUILD_TYPE:STRING=Debug'
+
+If you built Qt in a namespace, do not forget to specify this, e.g.:
+
+    * `-D QT_NAMESPACE:STRING=QT'
+
+On Windows, when choosing release or debug mode, make sure that Qt and
+Boost libraries have been built in this mode too. If they were not, the
+build may fail, or even succeed but produce non-working executables.
+
+    5. Type `cmake [additional options] ../src'. If some library has
+       not been found, type `ccmake .' (on UNIX) or `cmake-gui .' (on
+       Windows) to run interactive configuration utility where you can
+       set the paths to the libraries manually and repeat configuration
+       and generation steps.
+
+    6. Type `cmake --build .' to compile SmartDec. In case you use
+       MSBuild, you can choose the build mode using `--config' option.
+
+    7. Optionally, type `python ../src/test-scripts/test-decompiler.py'
+       to run regression tests.
+
+# vim:set et sts=4 sw=4 tw=72:

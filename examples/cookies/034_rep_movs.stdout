@@ -1,0 +1,19 @@
+
+void func_4000d4() {
+    int32_t ecx1;
+    int32_t* rdi2;
+    int32_t* rsi3;
+
+    while (ecx1) {
+        --ecx1;
+        *rdi2 = *rsi3;
+        ++rdi2;
+        ++rsi3;
+    }
+    while (ecx1) {
+        --ecx1;
+        *rdi2 = *rsi3;
+        --rdi2;
+        --rsi3;
+    }
+}

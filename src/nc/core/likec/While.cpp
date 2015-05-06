@@ -1,0 +1,57 @@
+//
+// SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
+// Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
+// Alexander Fokin, Sergey Levin, Leonid Tsvetkov
+//
+// This file is part of SmartDec decompiler.
+//
+// SmartDec decompiler is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// SmartDec decompiler is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
+//
+
+#include "While.h"
+
+#include "Expression.h"
+#include "PrintContext.h"
+
+namespace nc {
+namespace core {
+namespace likec {
+
+void While::visitChildNodes(Visitor<TreeNode> &visitor) {
+    visitor(body());
+    visitor(condition_.get());
+}
+
+While *While::rewrite() {
+    assert(condition_);
+    assert(body_);
+
+    rewriteChild(condition_);
+    rewriteChild(body_);
+
+    return this;
+}
+
+void While::doPrint(PrintContext &context) const {
+    context.out() << "while (";
+    condition()->print(context);
+    context.out() << ") ";
+    printNestedStatement(body(), context);
+}
+
+} // namespace likec
+} // namespace core
+} // namespace nc
+
+/* vim:set et sts=4 sw=4: */

@@ -1,0 +1,15 @@
+
+void puts() {
+    return;
+}
+
+int32_t main() {
+    int32_t ecx1;
+
+    ecx1 = 0;
+    while (ecx1 <= 9) {
+        puts();
+        ++ecx1;
+    }
+    return 0;
+}

@@ -1,0 +1,11 @@
+
+struct s0 {
+    signed char[4] pad4;
+    int32_t f4;
+};
+
+void func_8048098() {
+    struct s0* eax1;
+
+    eax1->f4 = 0x3e8;
+}

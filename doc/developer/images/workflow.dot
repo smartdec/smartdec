@@ -1,0 +1,107 @@
+digraph Workflow {
+	compound = true
+
+	input[shape="ellipse",label="Input File"]
+	parser[shape="box",label="nc::core::input::Parser"]
+	input -> parser
+	
+	subgraph cluster_context {
+		label="nc::core::Context"
+		architecture[shape="ellipse",label="nc::core::Architecture"]
+		instructions[shape="ellipse",label="nc::core::Instructions"]
+		image[shape="ellipse",label="nc::core::Image"]
+	}
+	parser -> architecture
+	parser -> instructions
+	parser -> image
+
+	ir_generator[shape="box",label="nc::core::irgen::IRGenerator"]
+	architecture -> ir_generator
+	instructions -> ir_generator
+	image -> ir_generator
+
+	cfg[shape="ellipse",label="nc::ir::CFG"]
+	ir_generator -> cfg
+
+	functions_generator[shape="box",label="nc::ir::FunctionsGenerator"]
+	cfg->functions_generator 
+
+	subgraph cluster_functions {
+		label="nc::ir::Functions"
+		function[shape="ellipse",label="nc::ir::Function"]
+	}
+	functions_generator -> function
+
+	universal_analyzer[shape="box",label="nc::core::UniversalAnalyzer"]
+	function -> universal_analyzer [ltail=cluster_functions]
+
+	calls_data[shape="ellipse",label="nc::ir::calls::CallsData"]
+	universal_analyzer -> calls_data
+
+	dataflow_analyzer[shape="box",label="nc::ir::dflow::DataflowAnalyzer"]
+	architecture -> dataflow_analyzer
+	function -> dataflow_analyzer
+	calls_data -> dataflow_analyzer
+
+	dataflow[shape="ellipse",label="nc::ir::dflow::Dataflow"]
+	dataflow_analyzer -> dataflow
+
+	graph_builder[shape="box",label="nc::ir::cflow::GraphBuilder"]
+	function -> graph_builder
+
+	region_graph[shape="ellipse",label="nc::ir::cflow::Graph"]
+	graph_builder -> region_graph
+
+	structure_analyzer[shape="box",label="nc::ir::cflow::StructureAnalyzer"]
+	region_graph -> structure_analyzer[dir="both"]
+
+	usage_analyzer[shape="box",label="nc::ir::usage::UsageAnalyzer"]
+	function -> usage_analyzer
+	dataflow -> usage_analyzer
+	calls_data -> usage_analyzer
+	region_graph -> usage_analyzer
+
+	usage[shape="ellipse",label="nc::ir::usage::Usage"]
+	usage_analyzer -> usage
+
+	type_analyzer[shape="box",label="nc::ir::dflow::TypeAnalyzer"]
+	function -> type_analyzer
+	dataflow -> type_analyzer
+	usage -> type_analyzer
+	calls_data -> type_analyzer
+
+	types[shape="ellipse",label="nc::ir::types::Types"]
+	type_analyzer -> types
+
+	variable_analyzer[shape="box",label="nc::ir::vars::VariableAnalyzer"]
+	function -> variable_analyzer
+	dataflow -> variable_analyzer
+	calls_data -> variable_analyzer
+
+	variables[shape="ellipse",label="nc::ir::vars::Variables"]
+	variable_analyzer -> variables
+
+	inliner[shape="box",label="nc::ir::inlining::CallInliner"]
+	function -> inliner[dir="both"]
+
+	code_generator[shape="box",label="nc::ir::cgen::CodeGenerator"]
+	dataflow -> code_generator
+	types -> code_generator
+	variables -> code_generator
+	usage -> code_generator
+	region_graph -> code_generator
+
+	tree[shape="ellipse",label="nc::likec::Tree"]
+	code_generator -> tree
+
+	tree_rewrite[shape="box",label="nc::likec::Tree::rewriteRoot"]
+	tree -> tree_rewrite[dir="both"]
+
+	tree_print[shape="box",label="nc::likec::Tree::print"]
+	tree -> tree_print
+
+	output[shape="ellipse",label="Output Stream"]
+	tree_print -> output
+
+	// TODO Elric: crec and stuff
+}

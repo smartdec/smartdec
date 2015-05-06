@@ -1,0 +1,32 @@
+
+void g() {
+    return;
+}
+
+void h() {
+    return;
+}
+
+void f(int32_t edi, int32_t esi, int32_t edx, int32_t ecx) {
+    int32_t v1;
+    int32_t v2;
+    int32_t v3;
+    int32_t v4;
+
+    v1 = edi;
+    v2 = esi;
+    v3 = edx;
+    v4 = ecx;
+    if (v1 != 0 && v2 != 0 || v3 != 0 && v4 != 0) {
+        g();
+    } else {
+        h();
+    }
+    if ((v1 != 0 || v2 != 0) && (v3 != 0 || v4 != 0)) {
+        g();
+    }
+    if (v1 != 0 || (v2 != 0 && v3 != 0 || v4 != 0)) {
+        h();
+    }
+    return;
+}

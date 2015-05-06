@@ -1,0 +1,14 @@
+
+struct s0 {
+    int32_t f0;
+    int32_t f4;
+};
+
+struct s0* f(struct s0* arg1) {
+    struct s0* eax1;
+
+    arg1->f0 = 10;
+    eax1 = arg1;
+    eax1->f4 = 20;
+    return eax1;
+}

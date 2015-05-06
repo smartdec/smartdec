@@ -1,0 +1,22 @@
+
+void g() {
+    return;
+}
+
+void h() {
+    return;
+}
+
+void f(int32_t edi, int32_t esi, int32_t edx) {
+    int32_t v1;
+    int32_t v2;
+
+    v1 = esi;
+    v2 = edx;
+    if (edi == 0 || (v1 == 0 || v2 == 0)) {
+        h();
+    } else {
+        g();
+    }
+    return;
+}

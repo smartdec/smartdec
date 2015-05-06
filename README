@@ -1,0 +1,13 @@
+SmartDec is a set of tools for decompilation. These tools are:
+
+    * nocode — a command-line decompiler;
+    * smartdec — a decompiler with graphical user interface;
+    * ida-plugin — a decompiler plug-in for the IDA Pro disassembler.
+
+For building instructions, see the file named `doc/build.txt'.
+For an overview of decompiler's architecture, see `doc/developer'.
+
+Use `make' (or directly `pdflatex main.tex' twice) to build PDF files
+inside the directories.
+
+# vim:set et sts=4 sw=4 tw=72:

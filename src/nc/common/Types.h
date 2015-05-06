@@ -1,0 +1,50 @@
+/* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
+ * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
+ * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
+ *
+ * This file is part of SmartDec decompiler.
+ *
+ * SmartDec decompiler is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SmartDec decompiler is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+#include <nc/config.h>
+
+#include <boost/cstdint.hpp>
+
+namespace nc {
+
+typedef boost::int64_t ByteAddr; ///< Signed integer for representing addresses in bytes.
+typedef boost::int64_t ByteSize; ///< Signed integer for representing sizes in bytes.
+typedef boost::int64_t ByteOffset; ///< Signed integer for representing offsets in bytes.
+
+typedef boost::int64_t BitAddr; ///< Signed integer for representing addresses in bits.
+typedef boost::int64_t BitSize; ///< Signed integer for representing sizes in bits.
+typedef boost::int64_t BitOffset; ///< Signed integer for representing offsets in bits.
+
+typedef int SmallByteSize; ///< Signed integer for representing small sizes in bytes (e.g. sizes of instructions).
+typedef int SmallByteOffset; ///< Signed integer for representing small offsets in bytes (e.g. ???).
+
+typedef int SmallBitSize; ///< Signed integer for representing small sizes in bits (e.g. sizes of registers).
+typedef int SmallBitOffset; ///< Signed integer for representing small offsets in bits (e.g. offsets in registers).
+
+/* Note, that overflows of signed integers are undefined behaviour in C, C++. */
+typedef boost::uint64_t ConstantValue; ///< Integer for representing constant values.
+
+typedef boost::int64_t SignedConstantValue; ///< Signed integer for representing constant values.
+
+} // namespace nc
+
+/* vim:set et sts=4 sw=4: */

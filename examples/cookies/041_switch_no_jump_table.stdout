@@ -1,0 +1,77 @@
+
+/*
+ * _Z9do_switchi
+ * do_switch(int)
+ */
+int32_t Z9do_switchi(int32_t arg1) {
+    int32_t eax1;
+    int32_t eax2;
+
+    eax1 = arg1;
+    if (eax1 == 5) {
+        eax2 = 0x80481a8;
+    } else {
+        if (eax1 > 5) {
+            if (eax1 == 8) {
+                eax2 = 0x80481b7;
+            } else {
+                if (eax1 > 8) {
+                    if (eax1 == 10) {
+                        eax2 = 0x80481c2;
+                    } else {
+                        if (eax1 < 10) {
+                            eax2 = 0x80481bd;
+                        } else {
+                            if (eax1 == 0x18894) {
+                                eax2 = 0x80481c6;
+                            } else {
+                                goto addr_0x8048189_14;
+                            }
+                        }
+                    }
+                } else {
+                    if (eax1 == 6) {
+                        eax2 = 0x80481ad;
+                    } else {
+                        if (eax1 == 7) {
+                            eax2 = 0x80481b1;
+                        } else {
+                            goto addr_0x8048189_14;
+                        }
+                    }
+                }
+            }
+        } else {
+            if (eax1 == 2) {
+                eax2 = 0x8048199;
+            } else {
+                if (eax1 > 2) {
+                    if (eax1 == 3) {
+                        eax2 = 0x804819d;
+                    } else {
+                        if (eax1 == 4) {
+                            eax2 = 0x80481a3;
+                        } else {
+                            goto addr_0x8048189_14;
+                        }
+                    }
+                } else {
+                    if (eax1 == 0) {
+                        eax2 = 0x8048190;
+                    } else {
+                        if (eax1 == 1) {
+                            eax2 = 0x8048195;
+                        } else {
+                            goto addr_0x8048189_14;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    addr_0x804818e_33:
+    return eax2;
+    addr_0x8048189_14:
+    eax2 = 0x80481d1;
+    goto addr_0x804818e_33;
+}

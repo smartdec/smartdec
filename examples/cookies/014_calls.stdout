@@ -1,0 +1,26 @@
+
+int32_t h() {
+    return 1;
+}
+
+int32_t g(int32_t edi, int32_t esi, int32_t edx, int32_t ecx) {
+    return ecx + (edi + esi + edx);
+}
+
+void f() {
+    int32_t v1;
+    int32_t eax2;
+    int32_t eax3;
+    int32_t v4;
+    int32_t eax5;
+
+    v1 = 20;
+    eax2 = h();
+    if (eax2 != 0) {
+        eax3 = g(1, 2, 3, 4);
+        v1 = 20 + eax3;
+    }
+    v4 = v1 + 10;
+    eax5 = g(v4, v4, v4, v4);
+    return;
+}

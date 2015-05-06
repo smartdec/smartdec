@@ -1,0 +1,11 @@
+
+int32_t main() {
+    signed char* ecx1;
+
+    ecx1 = (signed char*)0;
+    while ((int32_t)ecx1 <= 9) {
+        *ecx1 = 7;
+        ++ecx1;
+    }
+    return 0;
+}
