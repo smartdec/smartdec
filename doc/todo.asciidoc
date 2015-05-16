@@ -31,10 +31,8 @@ Use Names from IDA
 ------------------
 Use names assigned to registers and structs created by the user in IDA in the decompiler's output.
 
-ARM
----
-Support for ARM architecture is wanted.
-A prototype is available in the `arm` branch.
+Better support for ARM
+----------------------
 Needed: more descriptions of instructions, description of the calling convention, testing.
 
 x86 Floating-Point Arithmetic
