@@ -30,8 +30,7 @@
 
 #include <nc/core/arch/ArchitectureRepository.h>
 #include <nc/core/image/Image.h>
-#include <nc/core/mangling/Demangler.h>
-#include <nc/core/mangling/BundledDemangler.h>
+#include <nc/core/mangling/DefaultDemangler.h>
 
 #include "Relocation.h"
 #include "Section.h"
@@ -40,7 +39,7 @@ namespace nc { namespace core { namespace image {
 
 Image::Image():
     architecture_(NULL),
-    demangler_(new mangling::BundledDemangler())
+    demangler_(new mangling::DefaultDemangler())
 {}
 
 Image::~Image() {}

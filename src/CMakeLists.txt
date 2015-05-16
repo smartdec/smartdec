@@ -140,7 +140,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include(DeployQt4)
 
 add_subdirectory(3rd-party)
-add_subdirectory(demangler)
 add_subdirectory(nc)
 add_subdirectory(nocode)
 add_subdirectory(snowman)

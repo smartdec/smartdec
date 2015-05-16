@@ -5,8 +5,6 @@
 
 #include <nc/config.h>
 
-#include <memory>
-
 #include "Demangler.h"
 
 namespace nc {
@@ -14,15 +12,12 @@ namespace core {
 namespace mangling {
 
 /**
- * Demangler using bundled demangler.
+ * A simple demangler delegating all the work to
+ * __cxa_demangle and __unDName.
  */
-class BundledDemangler: public Demangler {
-    std::unique_ptr<const Demangler> demangler_;
-
+class DefaultDemangler: public Demangler {
 public:
-    BundledDemangler();
-
-    virtual QString demangle(const QString &symbol) const override;
+    QString demangle(const QString &symbol) const override;
 };
 
 }}} // namespace nc::core::mangling

@@ -37,11 +37,7 @@ namespace mangling {
  * Base class for a demangler.
  */
 class Demangler {
-    public:
-
-    /**
-     * Virtual destructor.
-     */
+public:
     virtual ~Demangler() {}
 
     /**
