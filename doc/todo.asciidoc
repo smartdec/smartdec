@@ -5,6 +5,12 @@ Yegor Derevenets <yegor.derevenets@gmail.com>
 
 Here is a list of things that should be done, sorted by descending priority.
 
+Robustness against Fuzzying
+---------------------------
+Snowman might crash or eat all the memory on some malformed input files, obtained, e.g., via fuzzying.
+See `tests/malformed-elf` for examples.
+One must debug these examples and add additional checks to fix the crashes.
+
 Custom Shortcuts in IDA plugin
 ------------------------------
 One should make F3 and Ctrl-F3 changeable to something else.
