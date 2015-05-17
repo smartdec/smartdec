@@ -42,6 +42,10 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     add_definitions(-Wno-extra)
 endif()
 
+if(${MSVC})
+    add_definitions(/wd4244)
+endif()
+
 add_subdirectory(capstone)
 
 # vim:set et sts=4 sw=4 nospell:
