@@ -1,4 +1,4 @@
-HTML_FILES	= build.html hacking.html licenses.html todo.html
+HTML_FILES	= build.html hacking.html licenses.html todo.html tests.html
 
 .PHONY: all
 all: $(HTML_FILES)
