@@ -661,7 +661,7 @@ void MainWindow::about() {
         "<li>PE (32 and 64-bit).</li>"
         "</ul></p>"
         "<p>Report bugs to <a href=\"mailto:%3\">%3</a>.</p>"
-        "<p>The software is distributed under the <a href=\"%5\">%4</a> license.</p>")
+        "<p>The software is distributed under the terms of <a href=\"%5\">%4</a>.</p>")
         .arg(branding_.applicationName())
         .arg(branding_.applicationVersion())
         .arg(branding_.reportBugsTo())
