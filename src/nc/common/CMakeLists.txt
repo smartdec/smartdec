@@ -39,7 +39,7 @@ set(SOURCES
     make_unique.h
 )
 
-qt4_wrap_cpp(SOURCES ${MOC_HEADERS})
+qt4_wrap_cpp(SOURCES ${MOC_HEADERS} OPTIONS -DQ_MOC_RUN)
 
 # Find out current revision.
 include(GetGitRevisionDescription)

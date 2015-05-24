@@ -236,7 +236,7 @@ set(SOURCES
     ${MOC_HEADERS}
 )
 
-qt4_wrap_cpp(SOURCES ${MOC_HEADERS})
+qt4_wrap_cpp(SOURCES ${MOC_HEADERS} OPTIONS -DQ_MOC_RUN)
 
 add_library(nc-core ${SOURCES})
 target_link_libraries(nc-core nc-common nc-arch-arm nc-arch-x86 nc-input-elf nc-input-pe
