@@ -49,6 +49,7 @@ SearchWidget::SearchWidget(std::unique_ptr<Searcher> searcher, QWidget *parent):
     auto supportedFlags = searcher_->supportedFlags();
 
     QHBoxLayout *layout = new QHBoxLayout(this);
+    layout->setContentsMargins(4, 0, 4, 4);
 
     QLabel *findLabel = new QLabel(tr("Find:"), this);
     layout->addWidget(findLabel);
