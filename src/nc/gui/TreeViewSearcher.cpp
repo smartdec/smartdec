@@ -40,16 +40,27 @@ TreeViewSearcher::TreeViewSearcher(QTreeView *treeView):
 }
 
 void TreeViewSearcher::startTrackingViewport() {
-    connect(treeView_->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-        this, SLOT(rememberViewport()));
+    if (treeView_->selectionModel()) {
+        connect(treeView_->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+                this, SLOT(rememberViewport()));
+    }
 }
 
 void TreeViewSearcher::stopTrackingViewport() {
-    disconnect(treeView_->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-        this, SLOT(rememberViewport()));
+    if (treeView_->selectionModel()) {
+        disconnect(treeView_->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+            this, SLOT(rememberViewport()));
+    }
 }
 
 void TreeViewSearcher::rememberViewport() {
+    if (!treeView_->selectionModel()) {
+        hvalue_ = vvalue_ = -1;
+        selectedIndexes_.clear();
+        currentIndex_ = QModelIndex();
+        return;
+    }
+
     selectedIndexes_ = treeView_->selectionModel()->selectedIndexes();
     currentIndex_ = treeView_->selectionModel()->currentIndex();
     hvalue_ = treeView_->horizontalScrollBar()->value();
@@ -57,7 +68,9 @@ void TreeViewSearcher::rememberViewport() {
 }
 
 void TreeViewSearcher::restoreViewport() {
-    assert(hvalue_ != -1);
+    if (hvalue_ == -1 || !treeView_->selectionModel()) {
+        return;
+    }
 
     treeView_->setCurrentIndex(currentIndex_);
 
