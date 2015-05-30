@@ -14,8 +14,8 @@
 #include <nc/common/Types.h>
 
 namespace nc {
+namespace core {
 namespace arch {
-namespace arm {
 
 /**
  * Deleter for Capstone instructions.
@@ -41,7 +41,7 @@ typedef std::unique_ptr<cs_insn, CapstoneDeleter> CapstoneInstructionPtr;
 /**
  * This is a thin RAII wrapper over Capstone disassembler.
  */
-class CapstoneDisassembler {
+class Capstone {
     csh handle_;
 
 public:
@@ -51,7 +51,7 @@ public:
      * \param arch Architecture.
      * \param mode Mode.
      */
-    CapstoneDisassembler(cs_arch arch, int mode) {
+    Capstone(cs_arch arch, int mode) {
         auto result = cs_open(arch, static_cast<cs_mode>(mode), &handle_);
         if (result != CS_ERR_OK) {
             throw nc::Exception(cs_strerror(result));
@@ -66,13 +66,13 @@ public:
         }
     }
 
-    CapstoneDisassembler(CapstoneDisassembler &&other):
+    Capstone(Capstone &&other):
         handle_(other.handle_)
     {
         other.handle_ = 0;
     }
 
-    CapstoneDisassembler &operator=(CapstoneDisassembler &&other) {
+    Capstone &operator=(Capstone &&other) {
         close();
         handle_ = other.handle_;
         other.handle_ = 0;
@@ -82,7 +82,7 @@ public:
     /**
      * Destructor.
      */
-    ~CapstoneDisassembler() {
+    ~Capstone() {
         close();
     }
 
@@ -127,6 +127,6 @@ private:
     }
 };
 
-}}} // namespace nc::arch::arm
+}}} // namespace nc::core::arch
 
 /* vim:set et sts=4 sw=4: */

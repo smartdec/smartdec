@@ -21,7 +21,7 @@ ArmDisassembler::ArmDisassembler(const ArmArchitecture *architecture):
     } else if (architecture->byteOrder() == ByteOrder::BigEndian) {
         mode_ |= CS_MODE_BIG_ENDIAN;
     }
-    capstone_ = std::make_unique<CapstoneDisassembler>(CS_ARCH_ARM, mode_);
+    capstone_ = std::make_unique<core::arch::Capstone>(CS_ARCH_ARM, mode_);
 }
 
 ArmDisassembler::~ArmDisassembler() {}

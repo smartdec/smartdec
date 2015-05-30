@@ -12,6 +12,7 @@
 #include <nc/common/Unreachable.h>
 #include <nc/common/make_unique.h>
 
+#include <nc/core/arch/Capstone.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/irgen/Expressions.h>
 #include <nc/core/irgen/InvalidInstructionException.h>
@@ -19,7 +20,6 @@
 #include "ArmArchitecture.h"
 #include "ArmInstruction.h"
 #include "ArmRegisters.h"
-#include "CapstoneDisassembler.h"
 
 namespace nc {
 namespace arch {
@@ -54,16 +54,16 @@ NC_DEFINE_REGISTER_EXPRESSION(ArmRegisters, pc)
 class ArmInstructionAnalyzerImpl {
     Q_DECLARE_TR_FUNCTIONS(ArmInstructionAnalyzerImpl)
 
-    CapstoneDisassembler disassembler_;
+    core::arch::Capstone capstone_;
     ArmExpressionFactory factory_;
     core::ir::Program *program_;
     const ArmInstruction *instruction_;
-    CapstoneInstructionPtr instr_;
+    core::arch::CapstoneInstructionPtr instr_;
     const cs_arm *detail_;
 
 public:
     ArmInstructionAnalyzerImpl(const ArmArchitecture *architecture):
-        disassembler_(CS_ARCH_ARM, CS_MODE_ARM), factory_(architecture)
+        capstone_(CS_ARCH_ARM, CS_MODE_ARM), factory_(architecture)
     {}
 
     void createStatements(const ArmInstruction *instruction, core::ir::Program *program) {
@@ -97,9 +97,9 @@ public:
     }
 
 private:
-    CapstoneInstructionPtr disassemble(const ArmInstruction *instruction) {
-        disassembler_.setMode(instruction->mode());
-        return disassembler_.disassemble(instruction->addr(), instruction->bytes(), instruction->size());
+    core::arch::CapstoneInstructionPtr disassemble(const ArmInstruction *instruction) {
+        capstone_.setMode(instruction->csMode());
+        return capstone_.disassemble(instruction->addr(), instruction->bytes(), instruction->size());
     }
 
     void createCondition(core::ir::BasicBlock *conditionBasicBlock, core::ir::BasicBlock *bodyBasicBlock, core::ir::BasicBlock *directSuccessor) {

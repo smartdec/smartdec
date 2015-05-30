@@ -12,6 +12,8 @@ set(SOURCES
     arch/Architecture.h
     arch/ArchitectureRepository.cpp
     arch/ArchitectureRepository.h
+    arch/CapstoneInstruction.h
+    arch/Capstone.h
     arch/Disassembler.cpp
     arch/Disassembler.h
     arch/Instruction.cpp
