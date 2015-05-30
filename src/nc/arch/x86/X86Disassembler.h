@@ -25,9 +25,8 @@
 
 #include <nc/config.h>
 
+#include <nc/core/arch/Capstone.h>
 #include <nc/core/arch/Disassembler.h>
-
-#include "udis86.h"
 
 namespace nc {
 namespace arch {
@@ -39,7 +38,8 @@ class X86Architecture;
  * Disassembler for x86 instructions.
  */
 class X86Disassembler: public core::arch::Disassembler {
-    ud_t ud_obj_;
+    std::unique_ptr<core::arch::Capstone> capstone_;
+    int mode_;
 
 public:
     /**

@@ -11,11 +11,6 @@ Snowman might crash or eat all the memory on some malformed input files, obtaine
 See `tests/malformed-elf` for examples.
 One must debug these examples and add additional checks to fix the crashes.
 
-Switching from libudis86 to Capstone
-------------------------------------
-Currently we are using libudis86 for doing disassembly of x86 machine code.
-We should switch to Capstone, which is maintained and supports more instructions.
-
 Custom Shortcuts in IDA plugin
 ------------------------------
 One should make F3 and Ctrl-F3 changeable to something else.

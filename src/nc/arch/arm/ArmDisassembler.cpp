@@ -24,8 +24,6 @@ ArmDisassembler::ArmDisassembler(const ArmArchitecture *architecture):
     capstone_ = std::make_unique<core::arch::Capstone>(CS_ARCH_ARM, mode_);
 }
 
-ArmDisassembler::~ArmDisassembler() {}
-
 std::shared_ptr<core::arch::Instruction> ArmDisassembler::disassembleSingleInstruction(ByteAddr pc, const void *buffer, ByteSize size) {
     if (auto instr = capstone_->disassemble(pc, buffer, size, 1)) {
         /* Instructions must be aligned to their size. */
@@ -33,7 +31,7 @@ std::shared_ptr<core::arch::Instruction> ArmDisassembler::disassembleSingleInstr
             return std::make_shared<ArmInstruction>(mode_, instr->address, instr->size, buffer);
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 }}} // namespace nc::arch::arm

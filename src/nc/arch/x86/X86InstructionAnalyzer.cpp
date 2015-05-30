@@ -24,11 +24,10 @@
 
 #include "X86InstructionAnalyzer.h"
 
-#include <boost/range/size.hpp>
-
 #include <nc/common/CheckedCast.h>
 #include <nc/common/Unreachable.h>
 
+#include <nc/core/arch/Capstone.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
@@ -38,8 +37,6 @@
 #include "X86Architecture.h"
 #include "X86Instruction.h"
 #include "X86Registers.h"
-
-#include "udis86.h"
 
 namespace nc {
 namespace arch {
@@ -92,48 +89,45 @@ class X86InstructionAnalyzerImpl {
     Q_DECLARE_TR_FUNCTIONS(X86InstructionAnalyzerImpl)
 
     const X86Architecture *architecture_;
-    ud_t ud_obj_;
-    const X86Instruction *currentInstruction_;
+    const X86Instruction *instruction_;
+    core::arch::Capstone capstone_;
+    core::arch::CapstoneInstructionPtr instr_;
+    const cs_x86 *detail_;
 
 public:
     explicit
     X86InstructionAnalyzerImpl(const X86Architecture *architecture):
-        architecture_(architecture)
+        architecture_(architecture), capstone_(CS_ARCH_X86, 0)
     {
         assert(architecture != NULL);
-
-        ud_init(&ud_obj_);
-        ud_set_mode(&ud_obj_, architecture_->bitness());
     }
 
-    void createStatements(const X86Instruction *instr, core::ir::Program *program) {
-        assert(instr != NULL);
+    void createStatements(const X86Instruction *instruction, core::ir::Program *program) {
+        assert(instruction != NULL);
         assert(program != NULL);
 
-        currentInstruction_ = instr;
+        instruction_ = instruction;
 
-        ud_set_pc(&ud_obj_, instr->addr());
-        ud_set_input_buffer(&ud_obj_, const_cast<uint8_t *>(instr->bytes()), checked_cast<std::size_t>(instr->size()));
-        ud_disassemble(&ud_obj_);
-
-        assert(ud_obj_.mnemonic != UD_Iinvalid);
+        instr_ = disassemble(instruction);
+        assert(instr_ != NULL);
+        detail_ = &instr_->detail->x86;
 
         core::ir::BasicBlock *cachedDirectSuccessor = NULL;
         auto directSuccessor = [&]() -> core::ir::BasicBlock * {
             if (!cachedDirectSuccessor) {
-                cachedDirectSuccessor = program->createBasicBlock(instr->endAddr());
+                cachedDirectSuccessor = program->createBasicBlock(instruction->endAddr());
             }
             return cachedDirectSuccessor;
         };
 
         X86ExpressionFactory factory(architecture_);
-        X86ExpressionFactoryCallback _(factory, program->getBasicBlockForInstruction(instr), instr);
+        X86ExpressionFactoryCallback _(factory, program->getBasicBlockForInstruction(instruction), instruction);
 
         using namespace core::irgen::expressions;
 
         /* Describing semantics */
-        switch (ud_obj_.mnemonic) {
-            case UD_Iadc: {
+        switch (instr_->id) {
+            case X86_INS_ADC: {
                 _[
                     operand(0) ^= operand(0) + operand(1) + zero_extend(cf),
                     cf ^= intrinsic(),
@@ -146,7 +140,7 @@ public:
                 ];
                 break;
             }
-            case UD_Iadd: {
+            case X86_INS_ADD: {
                 _[
                     operand(0) ^= operand(0) + operand(1),
                     cf ^= intrinsic(),
@@ -159,7 +153,7 @@ public:
                 ];
                 break;
             }
-            case UD_Iand: {
+            case X86_INS_AND: {
                 if (operandsAreTheSame(0, 1)) {
                     _[operand(0) ^= operand(0)];
                 } else {
@@ -177,11 +171,11 @@ public:
                 ];
                 break;
             }
-            case UD_Ibound: {
+            case X86_INS_BOUND: {
                 /* Deprecated, used mostly for debugging, it's better to generate no IR code at all. */
                 break;
             }
-            case UD_Ibt: {
+            case X86_INS_BT: {
                 _[
                     cf ^= truncate(unsigned_(operand(0)) >> operand(1)),
                     of ^= undefined(),
@@ -193,43 +187,43 @@ public:
                 ];
                 break;
             }
-            case UD_Icall: {
+            case X86_INS_CALL: {
                 auto sp = architecture_->stackPointer();
                 auto ip = architecture_->instructionPointer();
 
                 _[
                     regizter(sp) ^= regizter(sp) - constant(ip->size() / CHAR_BIT),
-                    *regizter(sp) ^= constant(instr->endAddr(), ip->size()),
+                    *regizter(sp) ^= constant(instruction->endAddr(), ip->size()),
                     call(operand(0)),
                     regizter(sp) ^= regizter(sp) + constant(ip->size() / CHAR_BIT)
                 ];
                 break;
             }
-            case UD_Icbw: {
+            case X86_INS_CBW: {
                 _[
                     regizter(X86Registers::ax()) ^= sign_extend(regizter(X86Registers::al()))
                 ];
                 break;
             }
-            case UD_Icwde: {
+            case X86_INS_CWDE: {
                 _[
                     regizter(X86Registers::eax()) ^= sign_extend(regizter(X86Registers::ax()))
                 ];
                 break;
             }
-            case UD_Icdqe: {
+            case X86_INS_CDQE: {
                 _[
                     regizter(X86Registers::rax()) ^= sign_extend(regizter(X86Registers::eax()))
                 ];
                 break;
             }
-            case UD_Icld: {
+            case X86_INS_CLD: {
                 _[
                     df ^= constant(0)
                 ];
                 break;
             }
-            case UD_Icmp: {
+            case X86_INS_CMP: {
                 _[
                     cf ^= unsigned_(operand(0)) < operand(1),
                     pf ^= intrinsic(),
@@ -244,44 +238,45 @@ public:
                 ];
                 break;
             }
-            case UD_Icmpsb: case UD_Icmpsw: case UD_Icmpsd: case UD_Icmpsq:
-            case UD_Imovsb: case UD_Imovsw: case UD_Imovsd: case UD_Imovsq:
-            case UD_Iscasb: case UD_Iscasw: case UD_Iscasd: case UD_Iscasq:
-            case UD_Istosb: case UD_Istosw: case UD_Istosd: case UD_Istosq: {
+            case X86_INS_CMPSB: case X86_INS_CMPSW: case X86_INS_CMPSD: case X86_INS_CMPSQ:
+            case X86_INS_MOVSB: case X86_INS_MOVSW: case X86_INS_MOVSD: case X86_INS_MOVSQ:
+            case X86_INS_SCASB: case X86_INS_SCASW: case X86_INS_SCASD: case X86_INS_SCASQ:
+            case X86_INS_STOSB: case X86_INS_STOSW: case X86_INS_STOSD: case X86_INS_STOSQ: {
                 SmallBitSize accessSize;
 
-                switch (ud_obj_.mnemonic) {
-                    case UD_Icmpsb: case UD_Imovsb: case UD_Iscasb: case UD_Istosb:
+                switch (instr_->id) {
+                    case X86_INS_CMPSB: case X86_INS_MOVSB: case X86_INS_SCASB: case X86_INS_STOSB:
                         accessSize = 8;
                         break;
-                    case UD_Icmpsw: case UD_Imovsw: case UD_Iscasw: case UD_Istosw:
+                    case X86_INS_CMPSW: case X86_INS_MOVSW: case X86_INS_SCASW: case X86_INS_STOSW:
                         accessSize = 16;
                         break;
-                    case UD_Icmpsd: case UD_Imovsd: case UD_Iscasd: case UD_Istosd:
+                    case X86_INS_CMPSD: case X86_INS_MOVSD: case X86_INS_SCASD: case X86_INS_STOSD:
                         accessSize = 32;
                         break;
-                    case UD_Icmpsq: case UD_Imovsq: case UD_Iscasq: case UD_Istosq:
+                    case X86_INS_CMPSQ: case X86_INS_MOVSQ: case X86_INS_SCASQ: case X86_INS_STOSQ:
                         accessSize = 64;
                         break;
                     default:
                         unreachable();
                 }
 
-                auto di = resizedRegister(X86Registers::di(), ud_obj_.adr_mode);
-                auto si = resizedRegister(X86Registers::si(), ud_obj_.adr_mode);
-                auto cx = resizedRegister(X86Registers::cx(), ud_obj_.opr_mode);
+                auto di = resizedRegister(X86Registers::di(), addressSize());
+                auto si = resizedRegister(X86Registers::si(), addressSize());
+                auto cx = resizedRegister(X86Registers::cx(), operandSize());
 
-                auto increment = temporary(ud_obj_.adr_mode);
+                auto increment = temporary(addressSize());
                 _[
                     increment ^= constant(accessSize / CHAR_BIT) - constant(2 * accessSize / CHAR_BIT, si.memoryLocation().size()) * zero_extend(df)
                 ];
 
-                X86ExpressionFactoryCallback condition(factory, program->createBasicBlock(), instr);
-                X86ExpressionFactoryCallback body(factory, program->createBasicBlock(), instr);
+                X86ExpressionFactoryCallback condition(factory, program->createBasicBlock(), instruction);
+                X86ExpressionFactoryCallback body(factory, program->createBasicBlock(), instruction);
 
                 _[jump(condition.basicBlock())];
 
-                if (ud_obj_.pfx_rep != UD_NONE || ud_obj_.pfx_repe != UD_NONE || ud_obj_.pfx_repne != UD_NONE) {
+                /* If we have a REP* prefix. */
+                if (detail_->prefix[0]) {
                     condition[jump(cx, body.basicBlock(), directSuccessor())];
 
                     body[cx ^= cx - constant(1)];
@@ -289,9 +284,9 @@ public:
                     condition[jump(body.basicBlock())];
                 }
 
-                bool repPrefixIsValid = false;
-                switch (ud_obj_.mnemonic) {
-                    case UD_Icmpsb: case UD_Icmpsw: case UD_Icmpsd: case UD_Icmpsq: {
+                bool conditional = false;
+                switch (instr_->id) {
+                    case X86_INS_CMPSB: case X86_INS_CMPSW: case X86_INS_CMPSD: case X86_INS_CMPSQ: {
                         auto left = dereference(si, accessSize);
                         auto right = dereference(di, accessSize);
 
@@ -307,13 +302,15 @@ public:
                             less_or_equal    ^= signed_(left) <= right,
                             below_or_equal   ^= unsigned_(left) <= right
                         ];
+
+                        conditional = true;
+                        break;
                     }
-                    case UD_Imovsb: case UD_Imovsw: case UD_Imovsd: case UD_Imovsq: {
-                        repPrefixIsValid = true;
+                    case X86_INS_MOVSB: case X86_INS_MOVSW: case X86_INS_MOVSD: case X86_INS_MOVSQ: {
                         body[dereference(di, accessSize) ^= *si];
                         break;
                     }
-                    case UD_Iscasb: case UD_Iscasw: case UD_Iscasd: case UD_Iscasq: {
+                    case X86_INS_SCASB: case X86_INS_SCASW: case X86_INS_SCASD: case X86_INS_SCASQ: {
                         auto left = dereference(di, accessSize);
                         auto right = resizedRegister(X86Registers::ax(), accessSize);
 
@@ -329,10 +326,10 @@ public:
                             less_or_equal    ^= signed_(left) <= right,
                             below_or_equal   ^= unsigned_(left) <= right
                         ];
+                        conditional = true;
                         break;
                     }
-                    case UD_Istosb: case UD_Istosw: case UD_Istosd: case UD_Istosq: {
-                        repPrefixIsValid = true;
+                    case X86_INS_STOSB: case X86_INS_STOSW: case X86_INS_STOSD: case X86_INS_STOSQ: {
                         body[dereference(di, accessSize) ^= resizedRegister(X86Registers::ax(), accessSize)];
                         break;
                     }
@@ -345,20 +342,24 @@ public:
                     si ^= si + increment
                 ];
 
-                /* libudis86 sets REP prefix together with REPZ/REPNZ. */
-                if (ud_obj_.pfx_rep != UD_NONE && repPrefixIsValid) {
-                    body[jump(condition.basicBlock())];
-                } else if (ud_obj_.pfx_repe != UD_NONE) {
-                    body[jump(zf, condition.basicBlock(), directSuccessor())];
-                } else if (ud_obj_.pfx_repne != UD_NONE) {
+                if (detail_->prefix[0] == X86_PREFIX_REP) {
+                    if (conditional) {
+                        /* REPE */
+                        body[jump(zf, condition.basicBlock(), directSuccessor())];
+                    } else {
+                        /* REP */
+                        body[jump(condition.basicBlock())];
+                    }
+                } else if (detail_->prefix[0] == X86_PREFIX_REPNE) {
+                    /* REPNE */
                     body[jump(~zf, condition.basicBlock(), directSuccessor())];
                 } else {
                     body[jump(directSuccessor())];
                 }
                 break;
             }
-            case UD_Icmpxchg: {
-                X86ExpressionFactoryCallback then(factory, program->createBasicBlock(), instr);
+            case X86_INS_CMPXCHG: {
+                X86ExpressionFactoryCallback then(factory, program->createBasicBlock(), instruction);
 
                 _[
                     cf ^= intrinsic(),
@@ -383,7 +384,7 @@ public:
 
                 break;
             }
-            case UD_Icpuid: {
+            case X86_INS_CPUID: {
                 _[
                     regizter(X86Registers::eax()) ^= intrinsic(),
                     regizter(X86Registers::ebx()) ^= intrinsic(),
@@ -392,7 +393,7 @@ public:
                 ];
                 break;
             }
-            case UD_Idec: {
+            case X86_INS_DEC: {
                 _[
                     operand(0) ^= operand(0) - constant(1),
                     pf ^= intrinsic(),
@@ -404,7 +405,7 @@ public:
                 ];
                 break;
             }
-            case UD_Idiv: {
+            case X86_INS_DIV: {
                 auto operand0 = operand(0);
                 auto size = std::max(operand0.size(), 16);
                 auto ax = resizedRegister(X86Registers::ax(), size);
@@ -423,12 +424,12 @@ public:
                 }
                 break;
             }
-            case UD_Ihlt: {
+            case X86_INS_HLT: {
                 _(std::make_unique<core::ir::InlineAssembly>());
                 _[halt()];
                 break;
             }
-            case UD_Iidiv: {
+            case X86_INS_IDIV: {
     #if 0
                 /* A correct implementation, however, generating complicated code. */
 
@@ -471,7 +472,7 @@ public:
                 ];
                 break;
             }
-            case UD_Iint: {
+            case X86_INS_INT: {
                 auto term = createTermForOperand(0);
                 if (auto constant = term->asConstant()) {
                     if (constant->value().value() == 3) {
@@ -482,18 +483,17 @@ public:
                 _(std::make_unique<core::ir::InlineAssembly>());
                 break;
             }
-            case UD_Iint3: {
+            case X86_INS_INT3: {
                 /* int 3 is a debug break, remove it. */
                 break;
             }
-            case UD_Iimul: case UD_Imul: {
+            case X86_INS_IMUL: case X86_INS_MUL: {
                 /* All compilers always use IMUL, not MUL. Even for unsigned operands.
                  * See http://stackoverflow.com/questions/4039378/x86-mul-instruction-from-vs-2008-2010
                  *
                  * So, there is no such thing as signed or unsigned multiplication.
                  */
-                if (!hasOperand(1)) {
-                    /* One operand. */
+                if (detail_->op_count == 1) {
                     /* result2:result1 = arg0 * op0 */
                     const core::arch::Register *arg0;
                     const core::arch::Register *result1;
@@ -533,8 +533,7 @@ public:
                     if (result2) {
                         _[regizter(result2) ^= intrinsic()];
                     }
-                } else if (!hasOperand(2)) {
-                    /* Two operands. */
+                } else if (detail_->op_count == 2) {
                     _[operand(0) ^= operand(0) * operand(1)];
                 } else {
                     /* Three operands. */
@@ -551,7 +550,7 @@ public:
                 ];
                 break;
             }
-            case UD_Iinc: {
+            case X86_INS_INC: {
                 _[
                     operand(0) ^= operand(0) + constant(1),
                     pf ^= intrinsic(),
@@ -563,124 +562,124 @@ public:
                 ];
                 break;
             }
-            case UD_Ija: {
+            case X86_INS_JA: {
                 _[jump(~choice(below_or_equal, cf | zf), operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijae: {
+            case X86_INS_JAE: {
                 _[jump(~cf, operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijb: {
+            case X86_INS_JB: {
                 _[jump(cf, operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijbe: {
+            case X86_INS_JBE: {
                 _[jump(choice(below_or_equal, cf | zf), operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijcxz: {
+            case X86_INS_JCXZ: {
                 _[jump(~(cx == constant(0)), operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijecxz: {
+            case X86_INS_JECXZ: {
                 _[jump(~(ecx == constant(0)), operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijrcxz: {
+            case X86_INS_JRCXZ: {
                 _[jump(~(rcx == constant(0)), operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijz: {
+            case X86_INS_JE: {
                 _[jump(zf, operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijg: {
+            case X86_INS_JG: {
                 _[jump(~choice(less_or_equal, zf | ~(sf == of)), operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijge: {
+            case X86_INS_JGE: {
                 _[jump(~choice(less, ~(sf == of)), operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijl: {
+            case X86_INS_JL: {
                 _[jump(choice(less, ~(sf == of)), operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijle: {
+            case X86_INS_JLE: {
                 _[jump(choice(less_or_equal, zf | ~(sf == of)), operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijnz: {
+            case X86_INS_JNE: {
                 _[jump(~zf, operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijno: {
+            case X86_INS_JNO: {
                 _[jump(~of, operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijnp: {
+            case X86_INS_JNP: {
                 _[jump(~pf, operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijns: {
+            case X86_INS_JNS: {
                 _[jump(~sf, operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijo: {
+            case X86_INS_JO: {
                 _[jump(of, operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijp: {
+            case X86_INS_JP: {
                 _[jump(pf, operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijs: {
+            case X86_INS_JS: {
                 _[jump(sf, operand(0), directSuccessor())];
                 break;
             }
-            case UD_Ijmp: {
+            case X86_INS_JMP: {
                 _[jump(operand(0))];
                 break;
             }
-            case UD_Icmova: case UD_Icmovae: case UD_Icmovb: case UD_Icmovbe:
-            case UD_Icmovz: case UD_Icmovg: case UD_Icmovge: case UD_Icmovl:
-            case UD_Icmovle: case UD_Icmovnz: case UD_Icmovno: case UD_Icmovnp:
-            case UD_Icmovns: case UD_Icmovo: case UD_Icmovp: case UD_Icmovs: {
-                X86ExpressionFactoryCallback then(factory, program->createBasicBlock(), instr);
+            case X86_INS_CMOVA: case X86_INS_CMOVAE: case X86_INS_CMOVB: case X86_INS_CMOVBE:
+            case X86_INS_CMOVE: case X86_INS_CMOVG: case X86_INS_CMOVGE: case X86_INS_CMOVL:
+            case X86_INS_CMOVLE: case X86_INS_CMOVNE: case X86_INS_CMOVNO: case X86_INS_CMOVNP:
+            case X86_INS_CMOVNS: case X86_INS_CMOVO: case X86_INS_CMOVP: case X86_INS_CMOVS: {
+                X86ExpressionFactoryCallback then(factory, program->createBasicBlock(), instruction);
 
-                switch (ud_obj_.mnemonic) {
-                    case UD_Icmova:
+                switch (instr_->id) {
+                    case X86_INS_CMOVA:
                         _[jump(~choice(below_or_equal, cf | zf), then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovae:
+                    case X86_INS_CMOVAE:
                         _[jump(~cf, then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovb:
+                    case X86_INS_CMOVB:
                         _[jump(cf, then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovbe:
+                    case X86_INS_CMOVBE:
                         _[jump(choice(below_or_equal, cf | zf), then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovz:
+                    case X86_INS_CMOVE:
                         _[jump(zf, then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovg:
+                    case X86_INS_CMOVG:
                         _[jump(~choice(less_or_equal, zf | ~(sf == of)), then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovge:
+                    case X86_INS_CMOVGE:
                         _[jump(~choice(less, ~(sf == of)), then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovl:
+                    case X86_INS_CMOVL:
                         _[jump(choice(less, ~(sf == of)), then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovle:
+                    case X86_INS_CMOVLE:
                         _[jump(choice(less_or_equal, zf | ~(sf == of)), then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovnz:
+                    case X86_INS_CMOVNE:
                         _[jump(~zf, then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovno:
+                    case X86_INS_CMOVNO:
                         _[jump(~of, then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovnp:
+                    case X86_INS_CMOVNP:
                         _[jump(~pf, then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovns:
+                    case X86_INS_CMOVNS:
                         _[jump(~sf, then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovo:
+                    case X86_INS_CMOVO:
                         _[jump(of, then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovp:
+                    case X86_INS_CMOVP:
                         _[jump(pf, then.basicBlock(), directSuccessor())]; break;
-                    case UD_Icmovs:
+                    case X86_INS_CMOVS:
                         _[jump(sf, then.basicBlock(), directSuccessor())]; break;
                     default: unreachable();
                 }
@@ -692,9 +691,9 @@ public:
 
                 break;
             }
-            case UD_Ilea: {
+            case X86_INS_LEA: {
                 auto operand0 = operand(0);
-                auto operand1 = core::irgen::expressions::TermExpression(createDereferenceAddress(ud_obj_.operand[1]));
+                auto operand1 = core::irgen::expressions::TermExpression(createDereferenceAddress(detail_->operands[1]));
 
                 if (operand0.size() == operand1.size()) {
                     _[std::move(operand0) ^= std::move(operand1)];
@@ -705,7 +704,7 @@ public:
                 }
                 break;
             }
-            case UD_Ileave: {
+            case X86_INS_LEAVE: {
                 auto sp = architecture_->stackPointer();
                 auto bp = architecture_->basePointer();
 
@@ -716,21 +715,21 @@ public:
                 ];
                 break;
             }
-            case UD_Iloop:
-            case UD_Iloope:
-            case UD_Iloopnz: {
-                auto cx = resizedRegister(X86Registers::cx(), ud_obj_.adr_mode);
+            case X86_INS_LOOP:
+            case X86_INS_LOOPE:
+            case X86_INS_LOOPNE: {
+                auto cx = resizedRegister(X86Registers::cx(), addressSize());
 
                 _[cx ^= cx - constant(1)];
 
-                switch (ud_obj_.mnemonic) {
-                    case UD_Iloop:
+                switch (instr_->id) {
+                    case X86_INS_LOOP:
                         _[jump(~(cx == constant(0)), operand(0), directSuccessor())];
                         break;
-                    case UD_Iloope:
+                    case X86_INS_LOOPE:
                         _[jump(~(cx == constant(0)) & zf, operand(0), directSuccessor())];
                         break;
-                    case UD_Iloopnz:
+                    case X86_INS_LOOPNE:
                         _[jump(~(cx == constant(0)) & ~zf, operand(0), directSuccessor())];
                         break;
                     default:
@@ -738,7 +737,7 @@ public:
                 }
                 break;
             }
-            case UD_Imov: {
+            case X86_INS_MOV: {
                 auto operand0 = operand(0);
                 auto operand1 = operand(1);
 
@@ -753,7 +752,7 @@ public:
                 }
                 break;
             }
-            case UD_Imovsx: case UD_Imovsxd: {
+            case X86_INS_MOVSX: case X86_INS_MOVSXD: {
                 auto operand0 = operand(0);
                 auto operand1 = operand(1);
 
@@ -764,11 +763,11 @@ public:
                 }
                 break;
             }
-            case UD_Imovzx: {
+            case X86_INS_MOVZX: {
                 _[operand(0) ^= zero_extend(operand(1))];
                 break;
             }
-            case UD_Ineg: {
+            case X86_INS_NEG: {
                 _[
                     cf ^= ~(operand(0) == constant(0)),
                     operand(0) ^= -operand(0),
@@ -781,14 +780,14 @@ public:
                 ];
                 break;
             }
-            case UD_Inop: {
+            case X86_INS_NOP: {
                 break;
             }
-            case UD_Inot: {
+            case X86_INS_NOT: {
                 _[operand(0) ^= ~operand(0)];
                 break;
             }
-            case UD_Ior: {
+            case X86_INS_OR: {
                 if (operandsAreTheSame(0, 1)) {
                     _[operand(0) ^= operand(0)];
                 } else {
@@ -806,7 +805,7 @@ public:
                 ];
                 break;
             }
-            case UD_Ipop: {
+            case X86_INS_POP: {
                 auto sp = architecture_->stackPointer();
                 auto operand0 = operand(0);
                 auto size = operand0.size();
@@ -816,13 +815,13 @@ public:
                 ];
                 break;
             }
-            case UD_Ipush: {
+            case X86_INS_PUSH: {
                 auto sp = architecture_->stackPointer();
-                const auto &op = ud_obj_.operand[0];
-                if (op.type == UD_OP_IMM) {
+                const auto &op = detail_->operands[0];
+                if (op.type == X86_OP_IMM) {
                     _[
                         regizter(sp) ^= regizter(sp) - constant(sp->size() / CHAR_BIT),
-                        *regizter(sp) ^= constant(getSignedValue(op, sp->size()), sp->size())
+                        *regizter(sp) ^= constant(op.imm, sp->size())
                     ];
                 } else {
                     auto operand0 = operand(0);
@@ -835,7 +834,7 @@ public:
                 }
                 break;
             }
-            case UD_Ipopfw: {
+            case X86_INS_POPF: {
                 auto sp = architecture_->stackPointer();
                 _[
                     *regizter(sp) ^= flags,
@@ -843,7 +842,7 @@ public:
                 ];
                 break;
             }
-            case UD_Ipopfd: {
+            case X86_INS_POPFD: {
                 auto sp = architecture_->stackPointer();
                 _[
                     eflags ^= *regizter(sp),
@@ -851,7 +850,7 @@ public:
                 ];
                 break;
             }
-            case UD_Ipopfq: {
+            case X86_INS_POPFQ: {
                 auto sp = architecture_->stackPointer();
                 _[
                     rflags ^= *regizter(sp),
@@ -859,7 +858,7 @@ public:
                 ];
                 break;
             }
-            case UD_Ipushfw: {
+            case X86_INS_PUSHF: {
                 auto sp = architecture_->stackPointer();
                 _[
                     regizter(sp) ^= regizter(sp) - constant(2),
@@ -867,7 +866,7 @@ public:
                 ];
                 break;
             }
-            case UD_Ipushfd: {
+            case X86_INS_PUSHFD: {
                 auto sp = architecture_->stackPointer();
                 _[
                     regizter(sp) ^= regizter(sp) - constant(4),
@@ -875,7 +874,7 @@ public:
                 ];
                 break;
             }
-            case UD_Ipushfq: {
+            case X86_INS_PUSHFQ: {
                 auto sp = architecture_->stackPointer();
                 _[
                     regizter(sp) ^= regizter(sp) - constant(8),
@@ -883,23 +882,23 @@ public:
                 ];
                 break;
             }
-            case UD_Iret: {
+            case X86_INS_RET: {
                 auto sp = architecture_->stackPointer();
                 auto ip = architecture_->instructionPointer();
 
                 _[regizter(ip) ^= *regizter(sp)];
                 /* sp is incremented in call instruction. */
 
-                if (hasOperand(0)) {
-                    _[regizter(sp) ^= regizter(sp) + zero_extend(operand(0))];
+                if (detail_->op_count == 1) {
+                    _[regizter(sp) ^= regizter(sp) + operand(0)];
                 }
 
                 _[jump(regizter(ip))];
 
                 break;
             }
-            case UD_Ishl: {
-                if (hasOperand(1)) {
+            case X86_INS_SHL: {
+                if (detail_->op_count == 2) {
                     _[operand(0) ^= operand(0) << operand(1)];
                 } else {
                     _[operand(0) ^= operand(0) << constant(1)];
@@ -913,8 +912,8 @@ public:
                 ];
                 break;
             }
-            case UD_Isar: {
-                if (hasOperand(1)) {
+            case X86_INS_SAR: {
+                if (detail_->op_count == 2) {
                     _[operand(0) ^= signed_(operand(0)) >> operand(1)];
                 } else {
                     _[operand(0) ^= signed_(operand(0)) >> constant(1)];
@@ -928,12 +927,12 @@ public:
                 ];
                 break;
             }
-            case UD_Isbb: {
+            case X86_INS_SBB: {
                 _[
-                    less             ^= signed_(operand(0))   <  operand(1) + zero_extend(cf),
-                    less_or_equal    ^= signed_(operand(0))   <= operand(1) + zero_extend(cf),
-                    cf               ^= unsigned_(operand(0)) <  operand(1) + zero_extend(cf),
-                    below_or_equal   ^= unsigned_(operand(0)) <= operand(1) + zero_extend(cf),
+                    less           ^= signed_(operand(0))   <  operand(1) + zero_extend(cf),
+                    less_or_equal  ^= signed_(operand(0))   <= operand(1) + zero_extend(cf),
+                    cf             ^= unsigned_(operand(0)) <  operand(1) + zero_extend(cf),
+                    below_or_equal ^= unsigned_(operand(0)) <= operand(1) + zero_extend(cf),
 
                     operand(0) ^= operand(0) - (operand(1) + zero_extend(cf)),
 
@@ -945,72 +944,72 @@ public:
                 ];
                 break;
             }
-            case UD_Iseta: {
+            case X86_INS_SETA: {
                 _[operand(0) ^= zero_extend(~choice(below_or_equal, cf | zf))];
                 break;
             }
-            case UD_Isetnb: {
+            case X86_INS_SETAE: {
                 _[operand(0) ^= zero_extend(~cf)];
                 break;
             }
-            case UD_Isetb: {
+            case X86_INS_SETB: {
                 _[operand(0) ^= zero_extend(cf)];
                 break;
             }
-            case UD_Isetbe: {
+            case X86_INS_SETBE: {
                 _[operand(0) ^= zero_extend(choice(below_or_equal, cf | zf))];
                 break;
             }
-            case UD_Isetz: {
+            case X86_INS_SETE: {
                 _[operand(0) ^= zero_extend(zf)];
                 break;
             }
-            case UD_Isetg: {
+            case X86_INS_SETG: {
                 _[operand(0) ^= zero_extend(~choice(less_or_equal, zf & ~(sf == of)))];
                 break;
             }
-            case UD_Isetge: {
+            case X86_INS_SETGE: {
                 _[operand(0) ^= zero_extend(~choice(less, ~(sf == of)))];
                 break;
             }
-            case UD_Isetl: {
+            case X86_INS_SETL: {
                 _[operand(0) ^= zero_extend(choice(less, ~(sf == of)))];
                 break;
             }
-            case UD_Isetle: {
+            case X86_INS_SETLE: {
                 _[operand(0) ^= zero_extend(choice(less_or_equal, zf | ~(sf == of)))];
                 break;
             }
-            case UD_Isetnz: {
+            case X86_INS_SETNE: {
                 _[operand(0) ^= zero_extend(~zf)];
                 break;
             }
-            case UD_Isetno: {
+            case X86_INS_SETNO: {
                 _[operand(0) ^= zero_extend(~of)];
                 break;
             }
-            case UD_Isetnp: {
+            case X86_INS_SETNP: {
                 _[operand(0) ^= zero_extend(~pf)];
                 break;
             }
-            case UD_Isetns: {
+            case X86_INS_SETNS: {
                 _[operand(0) ^= zero_extend(~sf)];
                 break;
             }
-            case UD_Iseto: {
+            case X86_INS_SETO: {
                 _[operand(0) ^= zero_extend(of)];
                 break;
             }
-            case UD_Isetp: {
+            case X86_INS_SETP: {
                 _[operand(0) ^= zero_extend(pf)];
                 break;
             }
-            case UD_Isets: {
+            case X86_INS_SETS: {
                 _[operand(0) ^= zero_extend(sf)];
                 break;
             }
-            case UD_Ishr: {
-                if (hasOperand(1)) {
+            case X86_INS_SHR: {
+                if (detail_->op_count == 2) {
                     _[operand(0) ^= unsigned_(operand(0)) >> operand(1)];
                 } else {
                     _[operand(0) ^= unsigned_(operand(0)) >> constant(1)];
@@ -1024,13 +1023,13 @@ public:
                 ];
                 break;
             }
-            case UD_Istd: {
+            case X86_INS_STD: {
                 _[
                     df ^= constant(1)
                 ];
                 break;
             }
-            case UD_Isub: {
+            case X86_INS_SUB: {
                 _[
                     less             ^= signed_(operand(0)) < operand(1),
                     less_or_equal    ^= signed_(operand(0)) <= operand(1),
@@ -1047,7 +1046,7 @@ public:
                 ];
                 break;
             }
-            case UD_Itest: {
+            case X86_INS_TEST: {
                 _[
                     cf ^= constant(0),
                     pf ^= intrinsic()
@@ -1068,7 +1067,7 @@ public:
                 ];
                 break;
             }
-            case UD_Ixchg: {
+            case X86_INS_XCHG: {
                 auto operand0 = operand(0);
                 auto tmp = temporary(operand0.size());
 
@@ -1079,7 +1078,7 @@ public:
                 ];
                 break;
             }
-            case UD_Ixor: {
+            case X86_INS_XOR: {
                 if (operandsAreTheSame(0, 1)) {
                     _[operand(0) ^= constant(0)];
                 } else {
@@ -1106,9 +1105,9 @@ public:
     }
 
 private:
-    bool hasOperand(std::size_t index) const {
-        assert(index < boost::size(ud_obj_.operand));
-        return ud_obj_.operand[index].type != UD_NONE;
+    core::arch::CapstoneInstructionPtr disassemble(const X86Instruction *instruction) {
+        capstone_.setMode(instruction->csMode());
+        return capstone_.disassemble(instruction->addr(), instruction->bytes(), instruction->size());
     }
 
     core::irgen::expressions::TermExpression operand(std::size_t index) const {
@@ -1116,80 +1115,42 @@ private:
     }
 
     bool operandsAreTheSame(std::size_t index1, std::size_t index2) const {
-        assert(index1 < boost::size(ud_obj_.operand));
-        assert(index2 < boost::size(ud_obj_.operand));
+        const auto &op1 = detail_->operands[index1];
+        const auto &op2 = detail_->operands[index2];
 
-        const ud_operand &op1 = ud_obj_.operand[index1];
-        const ud_operand &op2 = ud_obj_.operand[index2];
-
-        return op1.type == UD_OP_REG && op2.type == UD_OP_REG && op1.base == op2.base;
+        return op1.type == X86_OP_REG && op2.type == X86_OP_REG && op1.reg == op2.reg;
     }
 
     std::unique_ptr<core::ir::Term> createTermForOperand(std::size_t index) const {
-        assert(index < boost::size(ud_obj_.operand));
-
-        const ud_operand &operand = ud_obj_.operand[index];
+        const auto &operand = detail_->operands[index];
 
         switch (operand.type) {
-            case UD_NONE:
+            case X86_OP_INVALID:
                 throw core::irgen::InvalidInstructionException(tr("The instruction does not have an argument with index %1").arg(index));
-            case UD_OP_MEM:
-                return createDereference(operand);
-            case UD_OP_PTR:
-                return std::make_unique<core::ir::Constant>(
-                    SizedValue(operand.size, operand.lval.ptr.seg * 16 + operand.lval.ptr.off));
-            case UD_OP_IMM: {
-                /* Signed number, sign-extended to match the size of the other operand. */
-                auto operandSize = operand.size;
-                if (index > 0) {
-                    operandSize = std::max(operandSize, ud_obj_.operand[index - 1].size);
-                }
-                return std::make_unique<core::ir::Constant>(SizedValue(operandSize, getSignedValue(operand, operand.size)));
-            }
-            case UD_OP_JIMM:
-                return std::make_unique<core::ir::Constant>(
-                    SizedValue(architecture_->bitness(), ud_obj_.pc + getSignedValue(operand, operand.size)));
-            case UD_OP_CONST:
-                /* This is some small constant value, like in "sar eax, 1". Its size is always zero. */
-                assert(operand.size == 0);
-                return std::make_unique<core::ir::Constant>(SizedValue(8, operand.lval.ubyte));
-            case UD_OP_REG: {
-                auto result = createRegisterAccess(operand.base);
+            case X86_OP_REG: {
+                auto result = createRegisterAccess(operand.reg);
                 assert(result != NULL);
                 return result;
             }
+            case X86_OP_IMM: {
+                /* Signed number, sign-extended to match the size of the other operand. */
+                return std::make_unique<core::ir::Constant>(SizedValue(operand.size * CHAR_BIT, operand.imm));
+            }
+            case X86_OP_MEM:
+                return createDereference(operand);
+            case X86_OP_FP:
+                // TODO
+                throw core::irgen::InvalidInstructionException(tr("We do not support floating-point constants yet."));
             default:
                 unreachable();
         }
     }
 
-    SignedConstantValue getUnsignedValue(const ud_operand &operand, SmallBitSize size) const {
-        switch (size) {
-            case 0:  return 0;
-            case 8:  return operand.lval.ubyte;
-            case 16: return operand.lval.uword;
-            case 32: return operand.lval.udword;
-            case 64: return operand.lval.uqword;
-            default: unreachable();
-        }
-    }
+    std::unique_ptr<core::ir::Term> createRegisterAccess(unsigned reg) const {
+        switch (reg) {
+        case X86_REG_INVALID: return NULL;
 
-    SignedConstantValue getSignedValue(const ud_operand &operand, SmallBitSize size) const {
-        switch (size) {
-            case 0:  return 0;
-            case 8:  return operand.lval.sbyte;
-            case 16: return operand.lval.sword;
-            case 32: return operand.lval.sdword;
-            case 64: return operand.lval.sqword;
-            default: unreachable();
-        }
-    }
-
-    std::unique_ptr<core::ir::Term> createRegisterAccess(enum ud_type type) const {
-        switch (type) {
-        case UD_NONE: return NULL;
-
-        #define REG(ud_name, nc_name) case UD_R_##ud_name: return X86InstructionAnalyzer::createTerm(X86Registers::nc_name());
+        #define REG(cs_name, nc_name) case X86_REG_##cs_name: return X86InstructionAnalyzer::createTerm(X86Registers::nc_name());
 
         REG(AL, al)
         REG(CL, cl)
@@ -1289,14 +1250,6 @@ private:
         REG(DR5, dr5)
         REG(DR6, dr6)
         REG(DR7, dr7)
-        REG(DR8, dr8)
-        REG(DR9, dr9)
-        REG(DR10, dr10)
-        REG(DR11, dr11)
-        REG(DR12, dr12)
-        REG(DR13, dr13)
-        REG(DR14, dr14)
-        REG(DR15, dr15)
         REG(MM0, mm0)
         REG(MM1, mm1)
         REG(MM2, mm2)
@@ -1329,8 +1282,8 @@ private:
         REG(XMM13, xmm13)
         REG(XMM14, xmm14)
         REG(XMM15, xmm15)
-        case UD_R_RIP: return std::make_unique<core::ir::Constant>(
-            SizedValue(X86Registers::rip()->size(), currentInstruction_->endAddr()));
+        case X86_REG_RIP: return std::make_unique<core::ir::Constant>(
+            SizedValue(X86Registers::rip()->size(), instruction_->endAddr()));
 
         #undef REG
         #undef REG_ST
@@ -1340,50 +1293,76 @@ private:
         }
     }
 
-    std::unique_ptr<core::ir::Dereference> createDereference(const ud_operand &operand) const {
+    std::unique_ptr<core::ir::Dereference> createDereference(const cs_x86_op &operand) const {
         return std::make_unique<core::ir::Dereference>(
-            createDereferenceAddress(operand), core::ir::MemoryDomain::MEMORY, operand.size);
+            createDereferenceAddress(operand), core::ir::MemoryDomain::MEMORY, operand.size * CHAR_BIT);
     }
 
-    std::unique_ptr<core::ir::Term> createDereferenceAddress(const ud_operand &operand) const {
-        if (operand.type != UD_OP_MEM) {
+    std::unique_ptr<core::ir::Term> createDereferenceAddress(const cs_x86_op &operand) const {
+        if (operand.type != X86_OP_MEM) {
             throw core::irgen::InvalidInstructionException(tr("Expected the operand to be a memory operand"));
         }
 
-        std::unique_ptr<core::ir::Term> result = createRegisterAccess(operand.base);
+        std::unique_ptr<core::ir::Term> result = createRegisterAccess(operand.mem.base);
 
-        if (operand.scale != 0) {
-            if (auto index = createRegisterAccess(operand.index)) {
-                if (operand.scale != 1) {
+        if (operand.mem.scale != 0) {
+            if (auto index = createRegisterAccess(operand.mem.index)) {
+                if (operand.mem.scale != 1) {
                     index = std::make_unique<core::ir::BinaryOperator>(
                         core::ir::BinaryOperator::MUL,
                         std::move(index),
-                        std::make_unique<core::ir::Constant>(SizedValue(ud_obj_.adr_mode, operand.scale)),
-                        ud_obj_.adr_mode);
+                        std::make_unique<core::ir::Constant>(SizedValue(addressSize(), operand.mem.scale)),
+                        addressSize());
                 }
                 if (result) {
                     result = std::make_unique<core::ir::BinaryOperator>(
-                        core::ir::BinaryOperator::ADD, std::move(result), std::move(index), ud_obj_.adr_mode);
+                        core::ir::BinaryOperator::ADD, std::move(result), std::move(index), addressSize());
                 } else {
                     result = std::move(index);
                 }
             }
         }
 
-        auto offsetValue = SizedValue(ud_obj_.adr_mode, getSignedValue(operand, operand.offset));
+        auto offsetValue = SizedValue(addressSize(), operand.mem.disp);
 
         if (offsetValue.value() || !result) {
             auto offset = std::make_unique<core::ir::Constant>(offsetValue);
 
             if (result) {
                 result = std::make_unique<core::ir::BinaryOperator>(
-                    core::ir::BinaryOperator::ADD, std::move(result), std::move(offset), ud_obj_.adr_mode);
+                    core::ir::BinaryOperator::ADD, std::move(result), std::move(offset), addressSize());
             } else {
                 result = std::move(offset);
             }
         }
 
         return result;
+    }
+
+    /**
+     * \return Default operand size, inferred from the execution mode and instruction prefixes.
+     */
+    SmallBitSize operandSize() const {
+        if (architecture_->bitness() == 16) {
+            return detail_->prefix[2] == X86_PREFIX_OPSIZE ? 32 : 16;
+        } else if (architecture_->bitness() == 32) {
+            return detail_->prefix[2] == X86_PREFIX_OPSIZE ? 16 : 32;
+        } else if (architecture_->bitness() == 64) {
+            if (detail_->rex) {
+                return 64;
+            } else {
+                return detail_->prefix[2] == X86_PREFIX_OPSIZE ? 16 : 32;
+            }
+        } else {
+            unreachable();
+        }
+    }
+
+    /**
+     * \return Default operand size, inferred from the execution mode and instruction prefixes.
+     */
+    SmallBitSize addressSize() const {
+        return detail_->addr_size * CHAR_BIT;
     }
 };
 
