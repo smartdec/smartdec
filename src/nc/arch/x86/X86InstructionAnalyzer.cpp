@@ -522,7 +522,7 @@ public:
                             result2 = X86Registers::rdx();
                             break;
                         default:
-                            throw core::irgen::InvalidInstructionException("Strange argument size");
+                            throw core::irgen::InvalidInstructionException(tr("Strange argument size"));
                     }
 
                     if (result1->size() == arg0->size()) {
