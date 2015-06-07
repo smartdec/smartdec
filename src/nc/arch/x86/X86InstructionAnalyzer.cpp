@@ -894,7 +894,7 @@ public:
                     if (operand0.size() < sp->size()) {
                         _[regizter(sp) ^= regizter(sp) + zero_extend(std::move(operand0))];
                     } else {
-                        _[regizter(sp) ^= regizter(sp) + operand0];
+                        _[regizter(sp) ^= regizter(sp) + std::move(operand0)];
                     }
                 }
 
