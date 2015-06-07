@@ -890,7 +890,12 @@ public:
                 /* sp is incremented in call instruction. */
 
                 if (detail_->op_count == 1) {
-                    _[regizter(sp) ^= regizter(sp) + operand(0)];
+                    auto operand0 = operand(0);
+                    if (operand0.size() < sp->size()) {
+                        _[regizter(sp) ^= regizter(sp) + zero_extend(std::move(operand0))];
+                    } else {
+                        _[regizter(sp) ^= regizter(sp) + operand0];
+                    }
                 }
 
                 _[jump(regizter(ip))];
