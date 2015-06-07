@@ -1287,6 +1287,8 @@ private:
         REG(XMM13, xmm13)
         REG(XMM14, xmm14)
         REG(XMM15, xmm15)
+        case X86_REG_EIP: return std::make_unique<core::ir::Constant>(
+            SizedValue(X86Registers::eip()->size(), instruction_->endAddr()));
         case X86_REG_RIP: return std::make_unique<core::ir::Constant>(
             SizedValue(X86Registers::rip()->size(), instruction_->endAddr()));
 
