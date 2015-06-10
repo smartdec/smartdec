@@ -29,8 +29,10 @@
 #include <nc/common/make_unique.h>
 
 #include <nc/core/Context.h>
+#include <nc/core/arch/Capstone.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/ir/Function.h>
+#include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
@@ -39,6 +41,7 @@
 #include <nc/core/ir/dflow/Dataflows.h>
 
 #include "X86Architecture.h"
+#include "X86Instruction.h"
 #include "X86Registers.h"
 
 namespace nc {
@@ -88,6 +91,9 @@ void X86MasterAnalyzer::detectCallingConventions(core::Context &context) const {
     auto architecture = context.image()->architecture();
 
     if (architecture->bitness() == 32) {
+        using core::ir::calling::CalleeId;
+        using core::ir::calling::EntryAddress;
+
         auto stdcall32 = architecture->getCallingConvention(QLatin1String("stdcall32"));
 
         foreach (auto symbol, context.image()->symbols()) {
@@ -102,9 +108,45 @@ void X86MasterAnalyzer::detectCallingConventions(core::Context &context) const {
             if (!argumentsSize) {
                 continue;
             }
-            core::ir::calling::CalleeId calleeId(core::ir::calling::EntryAddress(*symbol->value()));
+            CalleeId calleeId(EntryAddress(*symbol->value()));
             context.conventions()->setConvention(calleeId, stdcall32);
             context.conventions()->setStackArgumentsSize(calleeId, *argumentsSize);
+        }
+
+        core::arch::Capstone capstone(CS_ARCH_X86, 0);
+
+        foreach (auto function, context.functions()->list()) {
+            if (!function->entry()->address()) {
+                continue;
+            }
+            foreach (auto basicBlock, function->basicBlocks()) {
+                auto terminator = basicBlock->getTerminator();
+                if (!terminator) {
+                    continue;
+                }
+                auto instruction = checked_cast<const X86Instruction *>(terminator->instruction());
+                if (!instruction) {
+                    continue;
+                }
+
+                capstone.setMode(instruction->csMode());
+                auto capstoneInstruction =
+                    capstone.disassemble(instruction->addr(), instruction->bytes(), instruction->size());
+                assert(capstoneInstruction);
+
+                if (capstoneInstruction->id != X86_INS_RET) {
+                    continue;
+                }
+                auto detail = &capstoneInstruction->detail->x86;
+                if (detail->op_count != 1) {
+                    continue;
+                }
+                assert(detail->operands[0].type == X86_OP_IMM);
+
+                CalleeId calleeId(EntryAddress(*function->entry()->address()));
+                context.conventions()->setConvention(calleeId, stdcall32);
+                context.conventions()->setStackArgumentsSize(calleeId, detail->operands[0].imm);
+            }
         }
     }
 }
