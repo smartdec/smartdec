@@ -34,6 +34,7 @@ namespace x86 {
 class X86MasterAnalyzer: public core::MasterAnalyzer {
 public:
     void createProgram(core::Context &context) const override;
+    void detectCallingConventions(core::Context &context) const override;
     void detectCallingConvention(core::Context &context, const core::ir::calling::CalleeId &calleeId) const override;
 };
 

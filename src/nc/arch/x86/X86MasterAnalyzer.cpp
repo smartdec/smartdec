@@ -82,27 +82,39 @@ void X86MasterAnalyzer::createProgram(core::Context &context) const {
     }
 }
 
+void X86MasterAnalyzer::detectCallingConventions(core::Context &context) const {
+    context.logToken().info(tr("Detecting calling conventions."));
+
+    auto architecture = context.image()->architecture();
+
+    if (architecture->bitness() == 32) {
+        auto stdcall32 = architecture->getCallingConvention(QLatin1String("stdcall32"));
+
+        foreach (auto symbol, context.image()->symbols()) {
+            if (!symbol->value()) {
+                continue;
+            }
+            auto index = symbol->name().lastIndexOf(QChar('@'));
+            if (index == -1) {
+                continue;
+            }
+            auto argumentsSize = stringToInt<ByteSize>(symbol->name().mid(index + 1));
+            if (!argumentsSize) {
+                continue;
+            }
+            core::ir::calling::CalleeId calleeId(core::ir::calling::EntryAddress(*symbol->value()));
+            context.conventions()->setConvention(calleeId, stdcall32);
+            context.conventions()->setStackArgumentsSize(calleeId, *argumentsSize);
+        }
+    }
+}
+
 void X86MasterAnalyzer::detectCallingConvention(core::Context &context, const core::ir::calling::CalleeId &calleeId) const {
     auto architecture = context.image()->architecture();
 
     auto setConvention = [&](const char *name) {
         context.conventions()->setConvention(calleeId, architecture->getCallingConvention(QLatin1String(name)));
     };
-
-    if (architecture->bitness() == 32) {
-        if (auto addr = calleeId.entryAddress()) {
-            if (auto symbol = context.image()->getSymbol(*addr)) {
-                int index = symbol->name().lastIndexOf(QChar('@'));
-                if (index != -1) {
-                    if (auto argumentsSize = stringToInt<ByteSize>(symbol->name().mid(index + 1))) {
-                        setConvention("stdcall32");
-                        context.conventions()->setStackArgumentsSize(calleeId, *argumentsSize);
-                        return;
-                    }
-                }
-            }
-        }
-    }
 
     switch (architecture->bitness()) {
         case 16:

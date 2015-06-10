@@ -81,6 +81,8 @@ public:
      */
     virtual void createHooks(Context &context) const;
 
+    virtual void detectCallingConventions(Context &context) const;
+
     /**
      * Detects and sets the calling convention of a function.
      *

@@ -96,6 +96,10 @@ void MasterAnalyzer::createHooks(Context &context) const {
     });
 }
 
+void MasterAnalyzer::detectCallingConventions(Context &) const {
+    return;
+}
+
 void MasterAnalyzer::detectCallingConvention(Context &context, const ir::calling::CalleeId &calleeId) const {
     if (!context.image()->architecture()->conventions().empty()) {
         context.conventions()->setConvention(calleeId, context.image()->architecture()->conventions().front());
@@ -228,6 +232,9 @@ void MasterAnalyzer::decompile(Context &context) const {
     context.cancellationToken().poll();
 
     createHooks(context);
+    context.cancellationToken().poll();
+
+    detectCallingConventions(context);
     context.cancellationToken().poll();
 
     dataflowAnalysis(context);
