@@ -9,13 +9,13 @@ find_path(IDA_PATH
     NAME "idag.exe" "idaq.exe"
     HINTS $ENV{IDA_DIR} $ENV{IDADIR}
     PATHS "C:/Program Files/IDA" "C:/Program Files (x86)/IDA"
-    DOC "IDA Pro installation directory.")
+    DOC "IDA installation directory.")
 
 if(IDA_PATH)
     set(IDA_FOUND TRUE)
-    message(STATUS "Looking for IDA Pro - found at ${IDA_PATH}")
+    message(STATUS "Looking for IDA - found at ${IDA_PATH}")
 else()
-    message(STATUS "Looking for IDA Pro - not found")
+    message(STATUS "Looking for IDA - not found")
 endif()
 
 #
@@ -63,13 +63,13 @@ else()
 endif()
 
 #
-# Find IDA Pro SDK.
+# Find IDA SDK.
 #
 find_path(IDA_SDK_PATH
     NAME ${library_dir}
     HINTS $ENV{IDA_SDK_DIR}
     PATHS "${IDA_PATH}/sdk"
-    DOC "IDA Pro SDK directory.")
+    DOC "IDA SDK directory.")
 
 if(IDA_SDK_PATH)
     set(IDA_SDK_FOUND TRUE)
@@ -127,9 +127,9 @@ if(IDA_SDK_PATH)
         endif()
     endif()
 
-    message(STATUS "Looking for IDA Pro SDK - found at ${IDA_SDK_PATH}")
+    message(STATUS "Looking for IDA SDK - found at ${IDA_SDK_PATH}")
 else()
-    message(STATUS "Looking for IDA Pro SDK - not found")
+    message(STATUS "Looking for IDA SDK - not found")
 endif()
 
 unset(platform)
