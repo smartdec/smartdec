@@ -33,7 +33,7 @@ std::shared_ptr<core::arch::Instruction> ArmDisassembler::disassembleSingleInstr
             return std::make_shared<ArmInstruction>(mode_, instr->address, instr->size, buffer);
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 }}} // namespace nc::arch::arm
