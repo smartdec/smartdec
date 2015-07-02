@@ -312,6 +312,19 @@ private:
             handleWriteToPC(bodyBasicBlock);
             break;
         }
+        case ARM_INS_MVN: {
+            _[operand(0) ^= ~operand(1)];
+            if (!handleWriteToPC(bodyBasicBlock)) {
+                if (detail_->update_flags) {
+                    _[
+                        n ^= intrinsic(),
+                        z ^= operand(0) == constant(0),
+                        c ^= intrinsic()
+                    ];
+                }
+            }
+            break;
+        }
         case ARM_INS_ORR: {
             _[operand(0) ^= operand(1) | operand(2)];
             if (!handleWriteToPC(bodyBasicBlock)) {
