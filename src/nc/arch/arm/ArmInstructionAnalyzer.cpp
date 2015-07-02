@@ -209,6 +209,19 @@ private:
             _[call(operand(0))];
             break;
         }
+        case ARM_INS_CMN: {
+            _[
+                n ^= intrinsic(),
+                c ^= unsigned_(operand(0)) < -operand(1),
+                z ^= operand(0) == -operand(1),
+                v ^= intrinsic(),
+
+                less             ^= signed_(operand(0)) < -operand(1),
+                less_or_equal    ^= signed_(operand(0)) <= -operand(1),
+                below_or_equal   ^= unsigned_(operand(0)) <= -operand(1)
+            ];
+            break;
+        }
         case ARM_INS_CMP: {
             _[
                 n ^= intrinsic(),
