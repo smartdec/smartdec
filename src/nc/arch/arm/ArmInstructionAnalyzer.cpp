@@ -235,6 +235,19 @@ private:
             ];
             break;
         }
+        case ARM_INS_EOR: {
+            _[operand(0) ^= operand(1) ^ operand(2)];
+            if (!handleWriteToPC(bodyBasicBlock)) {
+                if (detail_->update_flags) {
+                    _[
+                        n ^= signed_(operand(0)) < constant(0),
+                        z ^= operand(0) == constant(0),
+                        c ^= intrinsic()
+                    ];
+                }
+            }
+            break;
+        }
         case ARM_INS_LDM: {
             auto addr = MemoryLocationExpression(core::ir::MemoryLocation(core::ir::MemoryDomain::LAST_REGISTER, 0, 32));
 
@@ -317,7 +330,7 @@ private:
             if (!handleWriteToPC(bodyBasicBlock)) {
                 if (detail_->update_flags) {
                     _[
-                        n ^= intrinsic(),
+                        n ^= signed_(operand(0)) < constant(0),
                         z ^= operand(0) == constant(0),
                         c ^= intrinsic()
                     ];
