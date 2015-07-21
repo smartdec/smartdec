@@ -783,7 +783,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const Ter
             assert(term != nullptr);
         }
 
-        virtual void operator()(likec::TreeNode *node) {
+        void operator()(likec::TreeNode *node) {
             if (auto expression = node->as<likec::Expression>()) {
                 if (expression->term() == nullptr) {
                     expression->setTerm(term_);
