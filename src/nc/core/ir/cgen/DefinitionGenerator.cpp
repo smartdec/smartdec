@@ -700,13 +700,15 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                     if (callSignature->returnValue()) {
                         const Term *returnValueTerm = callHook->getReturnValueTerm(callSignature->returnValue().get());
 
-                        return std::make_unique<likec::ExpressionStatement>(tree(),
-                            std::make_unique<likec::BinaryOperator>(tree(),
-                                likec::BinaryOperator::ASSIGN,
-                                makeExpression(returnValueTerm),
-                                std::make_unique<likec::Typecast>(tree(),
-                                    parent().makeType(parent().types().getType(returnValueTerm)),
-                                    std::move(callOperator))));
+                        if (liveness_.isLive(returnValueTerm)) {
+                            return std::make_unique<likec::ExpressionStatement>(tree(),
+                                std::make_unique<likec::BinaryOperator>(tree(),
+                                    likec::BinaryOperator::ASSIGN,
+                                    makeExpression(returnValueTerm),
+                                    std::make_unique<likec::Typecast>(tree(),
+                                        parent().makeType(parent().types().getType(returnValueTerm)),
+                                        std::move(callOperator))));
+                        }
                     }
                 }
             }
