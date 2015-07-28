@@ -392,18 +392,21 @@ void PeParser::doParse(QIODevice *source, core::image::Image *image, const LogTo
     peByteOrder.convertFrom(fileHeader.Machine);
     switch (fileHeader.Machine) {
         case IMAGE_FILE_MACHINE_I386:
-            image->setArchitecture(QLatin1String("i386"));
+            image->platform().setArchitecture(QLatin1String("i386"));
             break;
         case IMAGE_FILE_MACHINE_AMD64:
-            image->setArchitecture(QLatin1String("x86-64"));
+            image->platform().setArchitecture(QLatin1String("x86-64"));
             break;
         case IMAGE_FILE_MACHINE_ARM: /* FALLTHROUGH */
         case IMAGE_FILE_MACHINE_THUMB:
-            image->setArchitecture(QLatin1String("arm-le"));
+            image->platform().setArchitecture(QLatin1String("arm-le"));
             break;
         default:
             throw ParseError(tr("Unknown machine id: 0x%1.").arg(fileHeader.Machine, 0, 16));
     }
+
+    /* Just a guess. */
+    image->platform().setOperatingSystem(core::image::Platform::Windows);
 
     WORD optionalHeaderMagic;
     if (!read(source, optionalHeaderMagic)) {
@@ -423,8 +426,6 @@ void PeParser::doParse(QIODevice *source, core::image::Image *image, const LogTo
         default:
             throw ParseError(tr("Unknown optional header magic: 0x%1").arg(optionalHeaderMagic, 0, 16));
     }
-
-    image->setDemangler("msvc");
 }
 
 } // namespace pe
