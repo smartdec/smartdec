@@ -192,7 +192,7 @@ private:
          * Read section headers.
          */
         shdrs_.resize(ehdr_.e_shnum);
-        if (!read(source_, shdrs_[0], shdrs_.size())) {
+        if (!read(source_, *shdrs_.data(), shdrs_.size())) {
             throw ParseError(tr("Cannot read section headers."));
         }
 
