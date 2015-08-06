@@ -25,6 +25,7 @@
 #include "DefinitionGenerator.h"
 
 #include <nc/common/Foreach.h>
+#include <nc/common/Memoization.h>
 #include <nc/common/Range.h>
 #include <nc/common/Unreachable.h>
 #include <nc/common/make_unique.h>
@@ -149,7 +150,6 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     }
 
     computeInvisibleStatements();
-    computeSubstitutions();
 
     SwitchContext switchContext;
     makeStatements(graph_.root(), definition()->block(), nullptr, nullptr, nullptr, switchContext);
@@ -637,7 +637,7 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                 return nullptr;
             }
 
-            if (nc::contains(intermediateTerms_, assignment->left())) {
+            if (isSubstitutableWrite(assignment->left())) {
                 return nullptr;
             }
 
@@ -811,8 +811,8 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
 #endif
 
     if (parent().variables().getVariable(term)) {
-        if (auto substitution = nc::find(term2substitution_, term)) {
-            return makeExpression(substitution);
+        if (term->isRead() && isSubstitutableRead(term)) {
+            return makeExpression(getTheOnlyDefinition(term)->source());
         } else {
             return makeVariableAccess(term);
         }
@@ -1117,73 +1117,6 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const
     }
 }
 
-bool DefinitionGenerator::isDominating(const Term *write, const Term *read) const {
-    assert(write != nullptr);
-    assert(write->isWrite());
-    assert(read != nullptr);
-    assert(read->isRead());
-
-    if (write->statement()->basicBlock() == read->statement()->basicBlock()) {
-        if (write->statement()->instruction() && read->statement()->instruction() &&
-            write->statement()->instruction() != read->statement()->instruction())
-        {
-            return write->statement()->instruction()->addr() < read->statement()->instruction()->addr();
-        } else {
-            const auto &statements = read->statement()->basicBlock()->statements();
-            assert(nc::contains(statements, write->statement()));
-            assert(nc::contains(statements, read->statement()));
-            return std::find(
-                std::find(statements.begin(), statements.end(), write->statement()),
-                statements.end(),
-                read->statement()) != statements.end();
-        }
-    } else {
-        return dominators_->isDominating(write->statement()->basicBlock(), read->statement()->basicBlock());
-    }
-}
-
-void DefinitionGenerator::computeSubstitutions() {
-    foreach (const auto &termAndLocation, dataflow_.term2location()) {
-        if (termAndLocation.second &&
-            termAndLocation.first->isWrite() &&
-            liveness_.isLive(termAndLocation.first) &&
-            termAndLocation.first->source() != nullptr &&
-            !nc::contains(invisibleStatements_, termAndLocation.first->statement()) &&
-            parent().variables().getVariable(termAndLocation.first)->isLocal())
-        {
-            const Term *onlyUse = nullptr;
-            const auto &uses = uses_->getUses(termAndLocation.first);
-            foreach (const auto &use, uses) {
-                if (liveness_.isLive(use.term())) {
-                    if (onlyUse == nullptr) {
-                        onlyUse = use.term();
-                    } else {
-                        onlyUse = nullptr;
-                        break;
-                    }
-                }
-            }
-
-            if (onlyUse && dataflow_.getMemoryLocation(onlyUse) == termAndLocation.second) {
-                const auto &definitions = dataflow_.getDefinitions(onlyUse);
-                if (definitions.chunks().size() == 1 &&
-                    definitions.chunks().front().location() == termAndLocation.second &&
-                    definitions.chunks().front().definitions().size() == 1)
-                {
-                    assert(definitions.chunks().front().definitions().front() == termAndLocation.first);
-
-                    // TODO: check that the substituted expression does not
-                    // change its value on the way.
-                    if (isDominating(termAndLocation.first, onlyUse)) {
-                        term2substitution_[onlyUse] = termAndLocation.first->source();
-                        intermediateTerms_.insert(termAndLocation.first);
-                    }
-                }
-            }
-        }
-    }
-}
-
 void DefinitionGenerator::computeInvisibleStatements() {
     if (auto hook = parent().hooks().getEntryHook(function_)) {
         foreach (const auto &termAndClone, hook->argumentTerms()) {
@@ -1212,6 +1145,174 @@ void DefinitionGenerator::computeInvisibleStatements() {
                 }
             }
         }
+    }
+}
+
+bool DefinitionGenerator::isSubstitutableWrite(const Term *write) const {
+    assert(write != nullptr);
+    assert(write->isWrite());
+    assert(liveness_.isLive(write) && "We should not care about dead writes.");
+
+    return nc::memoize(write2isSubstitutable_, write, [&]() -> bool {
+        auto source = write->source();
+        if (!source) {
+            return false;
+        }
+
+        if (nc::contains(invisibleStatements_, write->statement())) {
+            return false;
+        }
+
+        const auto &memoryLocation = dataflow_.getMemoryLocation(write);
+        if (!memoryLocation) {
+            return false;
+        }
+
+        if (!parent().variables().getVariable(write)->isLocal()) {
+            return false;
+        }
+
+        std::size_t nuses = 0;
+
+        foreach (const auto &use, uses_->getUses(write)) {
+            auto read = use.term();
+
+            if (liveness_.isLive(read)) {
+                if (dataflow_.getMemoryLocation(read) != memoryLocation) {
+                    return false;
+                }
+
+                auto theOnlyDefinition = getTheOnlyDefinition(read);
+                if (!theOnlyDefinition) {
+                    return false;
+                }
+                assert(theOnlyDefinition == write);
+
+                if (!isDominating(write, read)) {
+                    return false;
+                }
+
+                ++nuses;
+            }
+        }
+
+        assert(nuses >= 1 && "Live write must have at least one live read.");
+
+        if (nuses > 1 && (source->kind() == Term::UNARY_OPERATOR || source->kind() == Term::BINARY_OPERATOR)) {
+            /* We do not want to substitute complex expressions multiple times. */
+            return false;
+        }
+
+        return isMovableRead(write->source());
+    });
+}
+
+bool DefinitionGenerator::isMovableRead(const Term *read) const {
+    assert(read != nullptr);
+    assert(read->isRead());
+    assert(liveness_.isLive(read) && "We should not care about dead reads.");
+
+#ifdef NC_PREFER_CONSTANTS_TO_EXPRESSIONS
+    if (dataflow_.getValue(read)->abstractValue().isConcrete()) {
+        return true;
+    }
+#endif
+
+    switch (read->kind()) {
+        case Term::INT_CONST:
+        case Term::INTRINSIC: {
+            return true;
+        }
+        case Term::MEMORY_LOCATION_ACCESS:
+        case Term::DEREFERENCE: {
+            /* This must be a local variable. */
+            auto variable = parent().variables().getVariable(read);
+            if (!variable || !variable->isLocal()) {
+                return false;
+            }
+
+            /* All definitions must dominate all uses. */
+            foreach (const auto &def, variable->termsAndLocations()) {
+                if (def.term->isWrite()) {
+                    foreach (const auto &use, variable->termsAndLocations()) {
+                        if (use.term->isRead()) {
+                            if (!isDominating(def.term, use.term)) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+        case Term::UNARY_OPERATOR: {
+            auto unary = read->asUnaryOperator();
+            return isMovableRead(unary->operand());
+        }
+        case Term::BINARY_OPERATOR: {
+            auto binary = read->asBinaryOperator();
+            return isMovableRead(binary->left()) && isMovableRead(binary->right());
+        }
+        case Term::CHOICE: {
+            auto choice = read->asChoice();
+            if (!dataflow_.getDefinitions(choice->preferredTerm()).empty()) {
+                return isMovableRead(choice->preferredTerm());
+            } else {
+                return isMovableRead(choice->defaultTerm());
+            }
+        }
+        default: {
+            unreachable();
+        }
+    }
+}
+
+bool DefinitionGenerator::isSubstitutableRead(const Term *read) const {
+    assert(read != nullptr);
+    assert(read->isRead());
+    assert(liveness_.isLive(read) && "We should not care about dead reads.");
+
+    auto write = getTheOnlyDefinition(read);
+    return write && isSubstitutableWrite(write);
+}
+
+const Term *DefinitionGenerator::getTheOnlyDefinition(const Term *read) const {
+    assert(read != nullptr);
+    assert(read->isRead());
+
+    const auto &definitions = dataflow_.getDefinitions(read);
+
+    if (definitions.chunks().size() == 1 &&
+        definitions.chunks().front().definitions().size() == 1)
+    {
+        return definitions.chunks().front().definitions().front();
+    }
+    return nullptr;
+}
+
+bool DefinitionGenerator::isDominating(const Term *write, const Term *read) const {
+    assert(write != nullptr);
+    assert(write->isWrite());
+    assert(read != nullptr);
+    assert(read->isRead());
+
+    if (write->statement()->basicBlock() == read->statement()->basicBlock()) {
+        if (write->statement()->instruction() && read->statement()->instruction() &&
+            write->statement()->instruction() != read->statement()->instruction())
+        {
+            return write->statement()->instruction()->addr() < read->statement()->instruction()->addr();
+        } else {
+            const auto &statements = read->statement()->basicBlock()->statements();
+            assert(nc::contains(statements, write->statement()));
+            assert(nc::contains(statements, read->statement()));
+            return std::find(
+                std::find(statements.begin(), statements.end(), write->statement()),
+                statements.end(),
+                read->statement()) != statements.end();
+        }
+    } else {
+        return dominators_->isDominating(write->statement()->basicBlock(), read->statement()->basicBlock());
     }
 }
 

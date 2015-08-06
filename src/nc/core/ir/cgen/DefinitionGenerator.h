@@ -92,8 +92,7 @@ class DefinitionGenerator: public DeclarationGenerator {
     boost::unordered_map<const ir::vars::Variable *, likec::VariableDeclaration *> variableDeclarations_; ///< Local variables of current function definition.
     boost::unordered_map<const BasicBlock *, likec::LabelDeclaration *> labels_; ///< Labels inside the function.
     boost::unordered_set<const Statement *> invisibleStatements_; ///< Statements that must be generate no code.
-    boost::unordered_set<const Term *> intermediateTerms_;
-    boost::unordered_map<const Term *, const Term *> term2substitution_;
+    mutable boost::unordered_map<const Term *, bool> write2isSubstitutable_;
 
 public:
     /**
@@ -306,11 +305,50 @@ private:
 
     /**
      * \param[in] write Valid pointer to a write term.
+     *
+     * \return True iff the write->source() can be safely put
+     *         in all the places where the value written by
+     *         the write term is used.
+     */
+    bool isSubstitutableWrite(const Term *write) const;
+
+    /**
+     * \param[in] read Valid pointer to a read term.
+     *
+     * \return True iff the term represents an expression
+     *         that can be moved to some statement dominated
+     *         by the statement to which the term belongs
+     *         without the risk of changing the semantics
+     *         of the program.
+     */
+    bool isMovableRead(const Term *read) const;
+
+    /**
+     * \param[in] read Valid pointer to a read term.
+     *
+     * \return True iff instead of the expression for the read term
+     *         one can safely generate the expression for the definition
+     *         of the value read by this term.
+     */
+    bool isSubstitutableRead(const Term *read) const;
+
+    /**
+     * \param[in] write Valid pointer to a write term.
      * \param[in] read Valid pointer to a read term.
      *
      * \return True if the write dominates the read, false otherwise.
      */
     bool isDominating(const Term *write, const Term *read) const;
+
+    /**
+     * \param[in] read Valid pointer to a read term.
+     *
+     * \return A valid pointer to the term being the only term
+     *         defining what the read term reads. If there is
+     *         more than one such term or no such term, returns
+     *         nullptr.
+     */
+    const Term *getTheOnlyDefinition(const Term *read) const;
 
     /**
      * Computes the statements for which no code must be generated.
