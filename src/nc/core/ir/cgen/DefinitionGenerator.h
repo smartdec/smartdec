@@ -313,15 +313,14 @@ private:
     bool isSubstitutableWrite(const Term *write) const;
 
     /**
-     * \param[in] read Valid pointer to a read term.
+     * \param[in] source Valid pointer to a read term.
+     * \param[in] destination Valid pointer to a read term.
      *
-     * \return True iff the term represents an expression
-     *         that can be moved to some statement dominated
-     *         by the statement to which the term belongs
-     *         without the risk of changing the semantics
-     *         of the program.
+     * \return True iff the code generated for the source term
+     *         can be put in place of the code for the destination
+     *         term without changing the semantics of the program.
      */
-    bool isMovableRead(const Term *read) const;
+    bool canBeMoved(const Term *source, const Term *destination) const;
 
     /**
      * \param[in] read Valid pointer to a read term.

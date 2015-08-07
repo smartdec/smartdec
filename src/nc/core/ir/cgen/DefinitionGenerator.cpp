@@ -1175,20 +1175,24 @@ bool DefinitionGenerator::isSubstitutableWrite(const Term *write) const {
         std::size_t nuses = 0;
 
         foreach (const auto &use, uses_->getUses(write)) {
-            auto read = use.term();
+            auto destination = use.term();
 
-            if (liveness_.isLive(read)) {
-                if (dataflow_.getMemoryLocation(read) != memoryLocation) {
+            if (liveness_.isLive(destination)) {
+                if (dataflow_.getMemoryLocation(destination) != memoryLocation) {
                     return false;
                 }
 
-                auto theOnlyDefinition = getTheOnlyDefinition(read);
+                auto theOnlyDefinition = getTheOnlyDefinition(destination);
                 if (!theOnlyDefinition) {
                     return false;
                 }
                 assert(theOnlyDefinition == write);
 
-                if (!isDominating(write, read)) {
+                if (!isDominating(write, destination)) {
+                    return false;
+                }
+
+                if (!canBeMoved(source, destination)) {
                     return false;
                 }
 
@@ -1203,22 +1207,25 @@ bool DefinitionGenerator::isSubstitutableWrite(const Term *write) const {
             return false;
         }
 
-        return isMovableRead(write->source());
+        return true;
     });
 }
 
-bool DefinitionGenerator::isMovableRead(const Term *read) const {
-    assert(read != nullptr);
-    assert(read->isRead());
-    assert(liveness_.isLive(read) && "We should not care about dead reads.");
+bool DefinitionGenerator::canBeMoved(const Term *source, const Term *destination) const {
+    assert(source != nullptr);
+    assert(source->isRead());
+    assert(liveness_.isLive(source) && "We should not care about dead reads.");
+    assert(destination != nullptr);
+    assert(destination->isRead());
+    assert(liveness_.isLive(destination) && "We should not care about dead reads.");
 
 #ifdef NC_PREFER_CONSTANTS_TO_EXPRESSIONS
-    if (dataflow_.getValue(read)->abstractValue().isConcrete()) {
+    if (dataflow_.getValue(source)->abstractValue().isConcrete()) {
         return true;
     }
 #endif
 
-    switch (read->kind()) {
+    switch (source->kind()) {
         case Term::INT_CONST:
         case Term::INTRINSIC: {
             return true;
@@ -1226,18 +1233,34 @@ bool DefinitionGenerator::isMovableRead(const Term *read) const {
         case Term::MEMORY_LOCATION_ACCESS:
         case Term::DEREFERENCE: {
             /* This must be a local variable. */
-            auto variable = parent().variables().getVariable(read);
+            auto variable = parent().variables().getVariable(source);
             if (!variable || !variable->isLocal()) {
                 return false;
             }
 
-            /* All definitions must dominate all uses. */
-            foreach (const auto &def, variable->termsAndLocations()) {
-                if (def.term->isWrite()) {
-                    foreach (const auto &use, variable->termsAndLocations()) {
-                        if (use.term->isRead()) {
-                            if (!isDominating(def.term, use.term)) {
-                                return false;
+            if (source->statement()->basicBlock() == destination->statement()->basicBlock()) {
+                /* There must be no writes to source's variable in between. */
+
+                auto begin = source->statement()->basicBlock()->statements().get_iterator(source->statement());
+                auto end = destination->statement()->basicBlock()->statements().get_iterator(destination->statement());
+
+                return std::find_if(begin, end, [&](const Statement *statement) -> bool {
+                    if (auto assignment = statement->asAssignment()) {
+                        return parent().variables().getVariable(assignment->left()) == variable;
+                    } else if (auto touch = statement->asTouch()) {
+                        return touch->term()->isWrite() && parent().variables().getVariable(touch->term()) == variable;
+                    }
+                    return false;
+                }) == end;
+            } else {
+                /* All definitions must dominate all uses. */
+                foreach (const auto &def, variable->termsAndLocations()) {
+                    if (def.term->isWrite()) {
+                        foreach (const auto &use, variable->termsAndLocations()) {
+                            if (use.term->isRead()) {
+                                if (!isDominating(def.term, use.term)) {
+                                    return false;
+                                }
                             }
                         }
                     }
@@ -1247,19 +1270,19 @@ bool DefinitionGenerator::isMovableRead(const Term *read) const {
             return true;
         }
         case Term::UNARY_OPERATOR: {
-            auto unary = read->asUnaryOperator();
-            return isMovableRead(unary->operand());
+            auto unary = source->asUnaryOperator();
+            return canBeMoved(unary->operand(), destination);
         }
         case Term::BINARY_OPERATOR: {
-            auto binary = read->asBinaryOperator();
-            return isMovableRead(binary->left()) && isMovableRead(binary->right());
+            auto binary = source->asBinaryOperator();
+            return canBeMoved(binary->left(), destination) && canBeMoved(binary->right(), destination);
         }
         case Term::CHOICE: {
-            auto choice = read->asChoice();
+            auto choice = source->asChoice();
             if (!dataflow_.getDefinitions(choice->preferredTerm()).empty()) {
-                return isMovableRead(choice->preferredTerm());
+                return canBeMoved(choice->preferredTerm(), destination);
             } else {
-                return isMovableRead(choice->defaultTerm());
+                return canBeMoved(choice->defaultTerm(), destination);
             }
         }
         default: {
