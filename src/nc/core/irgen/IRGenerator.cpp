@@ -101,12 +101,12 @@ void IRGenerator::generate() {
 
 #ifndef NDEBUG
     /*
-     * Check that jump is always the last instruction in a basic block.
+     * Check that a terminator statement is always the last statement in the basic block.
      */
     foreach (auto basicBlock, program_->basicBlocks()) {
         foreach (auto statement, basicBlock->statements()) {
-            if (auto jump = statement->asJump()) {
-                assert(jump == basicBlock->statements().back());
+            if (statement->isTerminator()) {
+                assert(statement == basicBlock->statements().back());
             }
         }
     }
