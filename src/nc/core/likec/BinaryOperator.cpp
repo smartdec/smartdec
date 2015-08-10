@@ -43,6 +43,76 @@ namespace nc {
 namespace core {
 namespace likec {
 
+namespace {
+
+std::unique_ptr<Expression> divide(Expression *dividend, SignedConstantValue divisor) {
+    assert(divisor != 0);
+
+    if (auto constant = dividend->as<IntegerConstant>()) {
+        if (constant->value().signedValue() % divisor == 0) {
+            return std::make_unique<IntegerConstant>(
+                dividend->tree(), SizedValue(constant->value().size(), constant->value().signedValue() / divisor),
+                constant->type());
+        }
+    } else if (auto binary = dividend->as<BinaryOperator>()) {
+        if (binary->operatorKind() == BinaryOperator::MUL) {
+            if (auto result = divide(binary->left(), divisor)) {
+                return std::make_unique<BinaryOperator>(dividend->tree(), BinaryOperator::MUL, std::move(result),
+                                                        binary->releaseRight());
+            } else if (auto result = divide(binary->right(), divisor)) {
+                return std::make_unique<BinaryOperator>(dividend->tree(), BinaryOperator::MUL, binary->releaseLeft(),
+                                                        std::move(result));
+            }
+        }
+    }
+    return nullptr;
+}
+
+/*
+ * rdi2 = (int32_t*)((int64_t)rdi2 + 4); -> rdi2 = (int32_t*)(int64_t)(rdi2 + 1);
+ *
+ * left: (int64_t)rdi2
+ * right: 4
+ * result: rdi2 + 1
+ */
+std::unique_ptr<Expression> rewritePointerArithmetic(int operatorKind, Expression *left, Expression *right) {
+    assert(operatorKind == BinaryOperator::ADD || operatorKind == BinaryOperator::SUB);
+
+    if (auto typecast = left->as<Typecast>()) {
+        if (typecast->type()->isInteger() && typecast->type()->size() == typecast->operand()->getType()->size()) {
+            if (auto pointerType = typecast->operand()->getType()->as<PointerType>()) {
+                if (pointerType->pointeeType()->size() != 0 && pointerType->pointeeType()->size() % CHAR_BIT == 0) {
+                    if (auto quotient = divide(right, pointerType->pointeeType()->size() / CHAR_BIT)) {
+                        return std::make_unique<BinaryOperator>(left->tree(), operatorKind, typecast->releaseOperand(),
+                                                                std::move(quotient));
+                    }
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+bool isConstant(const Expression *expression, ConstantValue value) {
+    if (auto constant = expression->as<IntegerConstant>()) {
+        return constant->value().value() == value;
+    } else if (auto typecast = expression->as<Typecast>()) {
+        return isConstant(typecast->operand(), value);
+    }
+    return false;
+}
+
+bool isZero(const Expression *expression) {
+    return isConstant(expression, 0);
+}
+
+bool isOne(const Expression *expression) {
+    return isConstant(expression, 1);
+}
+
+} // anonymous namespace
+
 void BinaryOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     fun(left());
     fun(right());
@@ -58,7 +128,7 @@ const Type *BinaryOperator::getType(const Type *leftType, const Type *rightType)
             if (leftType == rightType ||
                 (leftType->isArithmetic() && rightType->isArithmetic()) ||
                 (leftType->isPointer() && rightType->isPointer() && (leftType->isVoidPointer() || rightType->isVoidPointer())) ||
-                (leftType->isPointer() && right()->isZero()))
+                (leftType->isPointer() && isZero(right())))
             {
                 return left()->getType();
             } else {
@@ -133,8 +203,8 @@ const Type *BinaryOperator::getType(const Type *leftType, const Type *rightType)
         case NEQ: {
             if (leftType == rightType ||
                 (leftType->isArithmetic() && rightType->isArithmetic()) ||
-                (leftType->isPointer() && (rightType->isVoidPointer() || right()->isZero())) ||
-                (rightType->isPointer() && (leftType->isVoidPointer() || left()->isZero())))
+                (leftType->isPointer() && (rightType->isVoidPointer() || isZero(right()))) ||
+                (rightType->isPointer() && (leftType->isVoidPointer() || isZero(left()))))
             {
                 return tree().makeIntegerType(tree().intSize(), false);
             } else {
@@ -264,42 +334,67 @@ Expression *BinaryOperator::rewrite() {
     }
 
     /*
-     * Handling pointer arithmetics:
+     * Handling pointer arithmetic:
      *
      * rdi2 = (int32_t*)((int64_t)rdi2 + 4); -> rdi2 = (int32_t*)(int64_t)(rdi2 + 1);
      */
     switch (operatorKind()) {
         case ADD:
-#define REWRITE(left, right)                                                                                                \
-            if (Typecast *typecast = left()->as<Typecast>()) {                                                              \
-                if (typecast->type()->isInteger() && typecast->type()->size() == typecast->operand()->getType()->size()) {  \
-                    if (const PointerType *pointerType = typecast->operand()->getType()->as<PointerType>()) {               \
-                        if (IntegerConstant *constant = right()->as<IntegerConstant>()) {                                   \
-                            if (pointerType->pointeeType()->size() != 0) {                                                  \
-                                if ((constant->value().signedValue() * CHAR_BIT) % pointerType->pointeeType()->size() == 0) {\
-                                    return new Typecast(tree(),                                                             \
-                                        typecast->type(),                                                                   \
-                                        std::make_unique<BinaryOperator>(tree(), operatorKind(),                            \
-                                            typecast->releaseOperand(),                                                     \
-                                            std::make_unique<IntegerConstant>(tree(),                                       \
-                                                SizedValue(constant->value().size(), constant->value().signedValue() *      \
-                                                     CHAR_BIT / pointerType->pointeeType()->size()),                        \
-                                                constant->type())));                                                        \
-                                }                                                                                           \
-                            }                                                                                               \
-                        }                                                                                                   \
-                    }                                                                                                       \
-                }                                                                                                           \
+            if (auto result = rewritePointerArithmetic(operatorKind(), left(), right())) {
+                return result.release();
             }
-            REWRITE(left, right)
-            REWRITE(right, left)
+            if (auto result = rewritePointerArithmetic(operatorKind(), right(), left())) {
+                return result.release();
+            }
             break;
         case SUB:
-            REWRITE(left, right)
-#undef REWRITE
+            if (auto result = rewritePointerArithmetic(operatorKind(), left(), right())) {
+                return result.release();
+            }
             break;
         default:
             break;
+    }
+
+    /*
+     * Handle mathematical identities.
+     */
+    switch (operatorKind()) {
+        case ADD: {
+            if (isZero(left())) {
+                auto type = getType();
+                return std::make_unique<Typecast>(tree(), type, releaseRight()).release();
+            }
+            if (isZero(right())) {
+                auto type = getType();
+                return std::make_unique<Typecast>(tree(), type, releaseLeft()).release();
+            }
+            break;
+        }
+        case SUB: {
+            if (isZero(right())) {
+                auto type = getType();
+                return std::make_unique<Typecast>(tree(), type, releaseLeft()).release();
+            }
+            if (isZero(left())) {
+                auto type = getType();
+                return std::make_unique<UnaryOperator>(
+                           tree(), UnaryOperator::NEGATION,
+                           std::make_unique<Typecast>(tree(), type, releaseRight())).release();
+            }
+            break;
+        }
+        case MUL: {
+            if (isOne(left())) {
+                auto type = getType();
+                return std::make_unique<Typecast>(tree(), type, releaseRight()).release();
+            }
+            if (isOne(right())) {
+                auto type = getType();
+                return std::make_unique<Typecast>(tree(), type, releaseLeft()).release();
+            }
+            break;
+        }
     }
 
     /*
