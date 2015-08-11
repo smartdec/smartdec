@@ -41,51 +41,46 @@ void UnaryOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun)
 
 const Type *UnaryOperator::getType() const {
     const Type *operandType = operand()->getType();
+
     switch (operatorKind()) {
         case REFERENCE: {
             return tree().makePointerType(operandType);
         }
-        case DEREFERENCE:
+        case DEREFERENCE: {
             if (const PointerType *pointerType = operandType->as<PointerType>()) {
                 return pointerType->pointeeType();
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
-        case BITWISE_NOT:
+            return tree().makeErroneousType();
+        }
+        case BITWISE_NOT: {
             if (operandType->isInteger()) {
                 return tree().integerPromotion(operandType);
-            } else {
-                return tree().makeErroneousType();
             }
-        case LOGICAL_NOT:
+            return tree().makeErroneousType();
+        }
+        case LOGICAL_NOT: {
             if (operandType->isScalar()) {
                 return tree().makeIntegerType(tree().intSize(), false);
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
+            return tree().makeErroneousType();
+        }
         case NEGATION: {
             if (operandType->isInteger() || operandType->isFloat()) {
                 return operandType;
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
+            return tree().makeErroneousType();
         }
         case PREFIX_INCREMENT:
-        case PREFIX_DECREMENT:
+        case PREFIX_DECREMENT: {
             if (operandType->isScalar()) {
                 return operandType;
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
-        default:
+            return tree().makeErroneousType();
+        }
+        default: {
             unreachable();
-            break;
+        }
     }
-    return nullptr;
 }
 
 Expression *UnaryOperator::rewrite() {

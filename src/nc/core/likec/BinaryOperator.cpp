@@ -119,34 +119,41 @@ void BinaryOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun
 }
 
 const Type *BinaryOperator::getType() const {
-    return getType(left()->getType(), right()->getType());
+    return getType(operatorKind(), left(), right());
 }
 
-const Type *BinaryOperator::getType(const Type *leftType, const Type *rightType) const {
-    switch (operatorKind()) {
-        case ASSIGN:
+const Type *BinaryOperator::getType(int operatorKind, const Expression *left, const Expression *right) const {
+    switch (operatorKind) {
+        case ASSIGN: {
+            auto leftType = left->getType();
+            auto rightType = right->getType();
+
             if (leftType == rightType ||
                 (leftType->isArithmetic() && rightType->isArithmetic()) ||
                 (leftType->isPointer() && rightType->isPointer() && (leftType->isVoidPointer() || rightType->isVoidPointer())) ||
-                (leftType->isPointer() && isZero(right())))
+                (leftType->isPointer() && isZero(right)))
             {
-                return left()->getType();
-            } else {
-                return tree().makeErroneousType();
+                return leftType;
             }
-            break;
-        case ADD:
+            return tree().makeErroneousType();
+        }
+        case ADD: {
+            auto leftType = left->getType();
+            auto rightType = right->getType();
+
             if (leftType->isArithmetic() && rightType->isArithmetic()) {
                 return tree().usualArithmeticConversion(leftType, rightType);
             } else if (leftType->isPointer() && !leftType->isVoidPointer() && rightType->isInteger()) {
                 return leftType;
             } else if (leftType->isInteger() && rightType->isPointer() && !rightType->isVoidPointer()) {
                 return rightType;
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
-        case SUB:
+            return tree().makeErroneousType();
+        }
+        case SUB: {
+            auto leftType = left->getType();
+            auto rightType = right->getType();
+
             if (leftType->isArithmetic() && rightType->isArithmetic()) {
                 return tree().usualArithmeticConversion(leftType, rightType);
             } else if (leftType->isPointer() && !leftType->isVoidPointer() && leftType == rightType) {
@@ -154,91 +161,108 @@ const Type *BinaryOperator::getType(const Type *leftType, const Type *rightType)
                 return tree().makeIntegerType(tree().ptrdiffSize(), false);
             } else if (leftType->isPointer() && !leftType->isVoidPointer() && rightType->isInteger()) {
                 return leftType;
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
+            return tree().makeErroneousType();
+        }
         case MUL: /* FALLTHROUGH */
-        case DIV:
+        case DIV: {
+            auto leftType = left->getType();
+            auto rightType = right->getType();
+
             if (leftType->isArithmetic() && rightType->isArithmetic()) {
                 return tree().usualArithmeticConversion(leftType, rightType);
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
-        case REM:
+            return tree().makeErroneousType();
+        }
+        case REM: {
+            auto leftType = left->getType();
+            auto rightType = right->getType();
+
             if (leftType->isInteger() && rightType->isInteger()) {
                 return tree().usualArithmeticConversion(leftType, rightType);
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
+            return tree().makeErroneousType();
+        }
         case BITWISE_AND: /* FALLTHROUGH */
         case BITWISE_OR: /* FALLTHROUGH */
-        case BITWISE_XOR:
+        case BITWISE_XOR: {
+            auto leftType = left->getType();
+            auto rightType = right->getType();
+
             if (leftType->isInteger() && rightType->isInteger()) {
                 return tree().usualArithmeticConversion(leftType, rightType);
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
+            return tree().makeErroneousType();
+        }
         case LOGICAL_AND:
-        case LOGICAL_OR:
+        case LOGICAL_OR: {
+            auto leftType = left->getType();
+            auto rightType = right->getType();
+
             if (leftType->isScalar() && rightType->isScalar()) {
                 return tree().makeIntegerType(tree().intSize(), false);
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
+            return tree().makeErroneousType();
+        }
         case SHL: /* FALLTHROUGH */
         case SHR: {
+            auto leftType = left->getType();
+            auto rightType = right->getType();
+
             if (leftType->isInteger() && rightType->isInteger()) {
                 return tree().integerPromotion(leftType);
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
+            return tree().makeErroneousType();
         }
         case EQ:
         case NEQ: {
+            auto leftType = left->getType();
+            auto rightType = right->getType();
+
             if (leftType == rightType ||
                 (leftType->isArithmetic() && rightType->isArithmetic()) ||
-                (leftType->isPointer() && (rightType->isVoidPointer() || isZero(right()))) ||
-                (rightType->isPointer() && (leftType->isVoidPointer() || isZero(left()))))
+                (leftType->isPointer() && (rightType->isVoidPointer() || isZero(right))) ||
+                (rightType->isPointer() && (leftType->isVoidPointer() || isZero(left))))
             {
                 return tree().makeIntegerType(tree().intSize(), false);
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
+            return tree().makeErroneousType();
         }
         case LT:
         case LEQ:
         case GT:
         case GEQ: {
+            auto leftType = left->getType();
+            auto rightType = right->getType();
+
             if (leftType == rightType ||
                 (leftType->isArithmetic() && rightType->isArithmetic()) ||
                 (leftType->isPointer() && rightType->isVoidPointer()) ||
                 (rightType->isPointer() && leftType->isVoidPointer()))
             {
                 return tree().makeIntegerType(tree().intSize(), false);
-            } else {
-                return tree().makeErroneousType();
             }
-            break;
+            return tree().makeErroneousType();
         }
         case COMMA: {
-            return rightType;
+            return right->getType();
+        }
+        case ARRAY_SUBSCRIPT: {
+            if (auto pointerType = getType(ADD, left, right)->as<PointerType>()) {
+                return pointerType->pointeeType();
+            }
+            return tree().makeErroneousType();
         }
         default: {
             unreachable();
-            return nullptr;
         }
     }
 }
 
 int BinaryOperator::precedence() const {
     switch (operatorKind()) {
+        case ARRAY_SUBSCRIPT:
+            return 2;
         case MUL:
         case DIV:
         case REM:
@@ -288,13 +312,13 @@ Expression *BinaryOperator::rewrite() {
         case MUL:
         case DIV:
         case REM: {
-#define REWRITE(left, right, setLeft)                                                               \
-            if (Typecast *typecast = left()->as<Typecast>()) {                                      \
-                if (typecast->type()->size() >= typecast->operand()->getType()->size()) {           \
-                    if (getType() == getType(typecast->operand()->getType(), right()->getType())) { \
-                        setLeft(typecast->releaseOperand());                                        \
-                    }                                                                               \
-                }                                                                                   \
+#define REWRITE(left, right, setLeft)                                                           \
+            if (Typecast *typecast = left()->as<Typecast>()) {                                  \
+                if (typecast->type()->size() >= typecast->operand()->getType()->size()) {       \
+                    if (getType() == getType(operatorKind(), typecast->operand(), right())) {   \
+                        setLeft(typecast->releaseOperand());                                    \
+                    }                                                                           \
+                }                                                                               \
             }
             REWRITE(left, right, setLeft)
             REWRITE(right, left, setRight)
@@ -446,27 +470,26 @@ Expression *BinaryOperator::rewrite() {
 
 void BinaryOperator::doPrint(PrintContext &context) const {
     int precedence = this->precedence();
-    int leftPrecedence = left()->precedence();
-    int rightPrecedence = right()->precedence();
-
     int absPrecedence = std::abs(precedence);
-    int absLeftPrecedence = std::abs(leftPrecedence);
-    int absRightPrecedence = std::abs(rightPrecedence);
 
+    int absLeftPrecedence = std::abs(left()->precedence());
     bool leftInBraces =
         (absLeftPrecedence > absPrecedence) ||
         ((absLeftPrecedence == absPrecedence) && (precedence < 0));
 
-    bool rightInBraces =
-        (absRightPrecedence > absPrecedence) ||
-        ((absRightPrecedence == absPrecedence) && (precedence > 0));
-    
     if (leftInBraces) {
         context.out() << '(';
     }
     left()->print(context);
     if (leftInBraces) {
         context.out() << ')';
+    }
+
+    if (operatorKind() == ARRAY_SUBSCRIPT) {
+        context.out() << '[';
+        right()->print(context);
+        context.out() << ']';
+        return;
     }
 
     switch (operatorKind()) {
@@ -533,6 +556,11 @@ void BinaryOperator::doPrint(PrintContext &context) const {
         default:
             unreachable();
     }
+
+    int absRightPrecedence = std::abs(right()->precedence());
+    bool rightInBraces =
+        (absRightPrecedence > absPrecedence) ||
+        ((absRightPrecedence == absPrecedence) && (precedence > 0));
 
     if (rightInBraces) {
         context.out() << '(';
