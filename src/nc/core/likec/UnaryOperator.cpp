@@ -25,6 +25,7 @@
 #include "UnaryOperator.h"
 
 #include <nc/common/Unreachable.h>
+#include <nc/common/make_unique.h>
 
 #include "PrintContext.h"
 #include "BinaryOperator.h"
@@ -95,6 +96,17 @@ Expression *UnaryOperator::rewrite() {
             if (UnaryOperator *unary = operand()->as<UnaryOperator>()) {
                 if (unary->operatorKind() == REFERENCE) {
                     return unary->releaseOperand().release();
+                }
+            }
+            if (auto binary = operand()->as<BinaryOperator>()) {
+                if (binary->operatorKind() == BinaryOperator::ADD) {
+                    if (binary->left()->getType()->isPointer()) {
+                        return std::make_unique<BinaryOperator>(tree(), BinaryOperator::ARRAY_SUBSCRIPT,
+                                                                binary->releaseLeft(), binary->releaseRight()).release();
+                    } else if (binary->right()->getType()->isPointer()) {
+                        return std::make_unique<BinaryOperator>(tree(), BinaryOperator::ARRAY_SUBSCRIPT,
+                                                                binary->releaseRight(), binary->releaseLeft()).release();
+                    }
                 }
             }
             return this;
