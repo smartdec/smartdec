@@ -129,7 +129,8 @@ Expression *Typecast::rewrite() {
 
 void Typecast::doPrint(PrintContext &context) const {
     context.out() << '(' << *type() << ')';
-    bool braces = operand()->is<BinaryOperator>();
+    bool braces = operand()->is<BinaryOperator>() &&
+                  operand()->as<BinaryOperator>()->operatorKind() != BinaryOperator::ARRAY_SUBSCRIPT;
     if (braces) {
         context.out() << '(';
     }
