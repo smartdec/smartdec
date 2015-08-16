@@ -378,7 +378,11 @@ private:
         IMAGE_EXPORT_DIRECTORY directory;
         auto directoryAddress =
             optionalHeader_.ImageBase + optionalHeader_.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
-        image_->readBytes(directoryAddress, reinterpret_cast<char *>(&directory), sizeof(directory));
+
+        if (image_->readBytes(directoryAddress, reinterpret_cast<char *>(&directory), sizeof(directory)) != sizeof(directory)) {
+            log_.warning(tr("Cannot read the image export directory."));
+            return;
+        }
 
         peByteOrder.convertFrom(directory.Characteristics);
         peByteOrder.convertFrom(directory.Name);
@@ -391,16 +395,26 @@ private:
         for (DWORD i = 0; i < directory.NumberOfNames; i++) {
             WORD ordinal;
             DWORD nameRVA;
-            image_->readBytes(optionalHeader_.ImageBase + directory.AddressOfNames + i * sizeof(nameRVA),
-                              reinterpret_cast<char *>(&nameRVA), sizeof(nameRVA));
-            image_->readBytes(optionalHeader_.ImageBase + directory.AddressOfNameOrdinal + i * sizeof(ordinal),
-                              reinterpret_cast<char *>(&ordinal), sizeof(ordinal));
+            if (image_->readBytes(optionalHeader_.ImageBase + directory.AddressOfNames + i * sizeof(nameRVA),
+                                  reinterpret_cast<char *>(&nameRVA), sizeof(nameRVA)) != sizeof(nameRVA)) {
+                log_.warning(tr("Cannot read the address value of the export directory item number %1.").arg(i));
+                return;
+            }
+            if (image_->readBytes(optionalHeader_.ImageBase + directory.AddressOfNameOrdinal + i * sizeof(ordinal),
+                                  reinterpret_cast<char *>(&ordinal), sizeof(ordinal)) != sizeof(ordinal)) {
+                log_.warning(tr("Cannot read the ordinal value of the export directory item number %1.").arg(i));
+                return;
+            }
             peByteOrder.convertFrom(nameRVA);
             peByteOrder.convertFrom(ordinal);
 
             DWORD entry;
-            image_->readBytes(optionalHeader_.ImageBase + directory.AddressOfFunctions + ordinal * sizeof(entry),
-                              reinterpret_cast<char *>(&entry), sizeof(entry));
+            if (image_->readBytes(optionalHeader_.ImageBase + directory.AddressOfFunctions + ordinal * sizeof(entry),
+                                  reinterpret_cast<char *>(&entry), sizeof(entry)) != sizeof(entry)) {
+                log_.warning(
+                    tr("Cannot read the function address value of the export directory item number %1.").arg(i));
+                return;
+            }
 
             peByteOrder.convertFrom(entry);
 
