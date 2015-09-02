@@ -202,6 +202,7 @@ private:
         sections_.reserve(shdrs_.size());
 
         foreach (typename Elf::Shdr &shdr, shdrs_) {
+            byteOrder_.convertFrom(shdr.sh_name);
             byteOrder_.convertFrom(shdr.sh_addr);
             byteOrder_.convertFrom(shdr.sh_size);
             byteOrder_.convertFrom(shdr.sh_flags);
