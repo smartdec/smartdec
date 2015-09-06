@@ -5,14 +5,15 @@
 
 #include <nc/common/make_unique.h>
 
-#include "BinaryOperator.h"
-#include "IntegerConstant.h"
-#include "Typecast.h"
-#include "UnaryOperator.h"
+#include <nc/core/likec/BinaryOperator.h>
+#include <nc/core/likec/IntegerConstant.h>
+#include <nc/core/likec/Typecast.h>
+#include <nc/core/likec/UnaryOperator.h>
 
 namespace nc {
 namespace core {
 namespace likec {
+namespace simplification {
 
 namespace {
 
@@ -64,6 +65,7 @@ std::unique_ptr<Expression> simplifyBooleanExpression(std::unique_ptr<Expression
     return std::move(expression);
 }
 
+} // namespace simplification
 } // namespace likec
 } // namespace core
 } // namespace nc

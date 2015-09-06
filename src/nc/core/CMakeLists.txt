@@ -207,8 +207,6 @@ set(SOURCES
     likec/PrintContext.h
     likec/Return.cpp
     likec/Return.h
-    likec/Simplify.cpp
-    likec/Simplify.h
     likec/Statement.cpp
     likec/Statement.h
     likec/String.cpp
@@ -236,6 +234,8 @@ set(SOURCES
     likec/VariableIdentifier.h
     likec/While.cpp
     likec/While.h
+    likec/simplification/Simplify.cpp
+    likec/simplification/Simplify.h
     mangling/DefaultDemangler.cpp
     mangling/DefaultDemangler.h
     mangling/Demangler.h

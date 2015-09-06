@@ -26,7 +26,7 @@
 
 #include "Expression.h"
 #include "PrintContext.h"
-#include "Simplify.h"
+#include "simplification/Simplify.h"
 
 namespace nc {
 namespace core {
@@ -41,7 +41,7 @@ While *While::rewrite() {
     assert(condition_);
     assert(body_);
 
-    condition_ = simplifyBooleanExpression(std::move(condition_));
+    condition_ = simplification::simplifyBooleanExpression(std::move(condition_));
     rewriteChild(body_);
 
     return this;

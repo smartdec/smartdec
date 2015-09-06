@@ -13,6 +13,8 @@ namespace likec {
 
 class Expression;
 
+namespace simplification {
+
 /**
  * \param expression Valid pointer to an expression node.
  *
@@ -29,6 +31,7 @@ std::unique_ptr<Expression> simplify(std::unique_ptr<Expression> expression);
  */
 std::unique_ptr<Expression> simplifyBooleanExpression(std::unique_ptr<Expression> expression);
 
+} // namespace simplification
 } // namespace likec
 } // namespace core
 } // namespace nc
