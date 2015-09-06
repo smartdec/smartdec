@@ -54,14 +54,12 @@ class Goto: public Statement {
     /**
      * \return Goto destination address.
      */
-    Expression *destination() { return destination_.get(); }
+    std::unique_ptr<Expression> &destination() { return destination_; }
 
     /**
      * \return Goto destination address.
      */
     const Expression *destination() const { return destination_.get(); }
-
-    Goto *rewrite() override;
 
 protected:
     void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;

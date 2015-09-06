@@ -25,7 +25,7 @@
 
 #include <nc/config.h>
 
-#include <string>
+#include <QString>
 
 #include "TreeNode.h"
 
@@ -53,7 +53,6 @@ public:
         MEMBER_DECLARATION,             ///< Declaration of a struct or union member.
         STRUCT_TYPE_DECLARATION,        ///< Declaration of structural type.
         VARIABLE_DECLARATION,           ///< Variable declaration.
-        USER_DECLARATION = 1000         ///< Base for user-defined declarations.
     };
 
     /**
@@ -71,8 +70,6 @@ public:
      * \return Name of declared entity.
      */
     const QString &identifier() const { return identifier_; }
-
-    Declaration *rewrite() override { return this; }
 };
 
 } // namespace likec

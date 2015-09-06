@@ -37,7 +37,7 @@ namespace core {
 namespace likec {
 
 void MemberAccessOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
-    fun(compound());
+    fun(compound_.get());
 }
 
 const Type *MemberAccessOperator::getType() const {

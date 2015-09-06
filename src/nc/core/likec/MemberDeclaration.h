@@ -58,8 +58,6 @@ public:
      */
     const Type *type() const { return type_; }
 
-    virtual MemberDeclaration *rewrite() override { return this; }
-
 protected:
     void doPrint(PrintContext &context) const override;
 };

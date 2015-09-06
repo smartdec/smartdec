@@ -76,9 +76,12 @@ public:
     /**
      * \return Pointer to the expression representing the initial value. Can be nullptr.
      */
-    const Expression *initialValue() const { return initialValue_.get(); }
+    std::unique_ptr<Expression> &initialValue() { return initialValue_; }
 
-    VariableDeclaration *rewrite() override;
+    /**
+     * \return Pointer to the expression representing the initial value. Can be nullptr.
+     */
+    const Expression *initialValue() const { return initialValue_.get(); }
 
 protected:
     void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;

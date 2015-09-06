@@ -63,8 +63,6 @@ public:
      */
     LabelIdentifier *identifier() const { return identifier_.get(); }
 
-    LabelStatement *rewrite() override;
-
 protected:
     void doPrint(PrintContext &callback) const override;
 };

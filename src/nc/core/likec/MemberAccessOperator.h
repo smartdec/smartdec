@@ -78,7 +78,7 @@ public:
     /**
      * \return Accessed struct or union.
      */
-    Expression *compound() { return compound_.get(); }
+    std::unique_ptr<Expression> &compound() { return compound_; }
 
     /**
      * \return Accessed struct or union.

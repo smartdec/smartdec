@@ -52,7 +52,14 @@ public:
     /**
      * \return Declarations.
      */
-    const std::vector<std::unique_ptr<Declaration> > &declarations() const { return declarations_; }
+    std::vector<std::unique_ptr<Declaration>> &declarations() { return declarations_; }
+
+    /**
+     * \return Declarations.
+     */
+    const std::vector<Declaration *> &declarations() const {
+        return reinterpret_cast<const std::vector<Declaration *> &>(declarations_);
+    }
 
     /**
      * Adds a declaration to the unit.
@@ -63,8 +70,6 @@ public:
         assert(declaration);
         declarations_.push_back(std::move(declaration));
     }
-
-    virtual CompilationUnit *rewrite() override;
 
 protected:
     void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;

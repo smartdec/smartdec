@@ -64,7 +64,7 @@ public:
     /**
      * \return Condition.
      */
-    Expression *condition() { return condition_.get(); }
+    std::unique_ptr<Expression> &condition() { return condition_; }
 
     /**
      * \return Condition.
@@ -74,7 +74,7 @@ public:
     /**
      * \return Then-statement.
      */
-    Statement *thenStatement() { return thenStatement_.get(); }
+    std::unique_ptr<Statement> &thenStatement() { return thenStatement_; }
 
     /**
      * \return Then-statement.
@@ -84,14 +84,12 @@ public:
     /**
      * \return Else-statement.
      */
-    Statement *elseStatement() { return elseStatement_.get(); }
+    std::unique_ptr<Statement> &elseStatement() { return elseStatement_; }
 
     /**
      * \return Else-statement.
      */
     const Statement *elseStatement() const { return elseStatement_.get(); }
-
-    If *rewrite() override;
 
 protected:
     void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;

@@ -25,6 +25,7 @@
 #include "CodeGenerator.h"
 
 #include <nc/common/CancellationToken.h>
+#include <nc/common/Foreach.h>
 #include <nc/common/Range.h>
 #include <nc/common/make_unique.h>
 

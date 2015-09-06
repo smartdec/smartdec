@@ -54,10 +54,6 @@ void FunctionDeclaration::addArgument(std::unique_ptr<ArgumentDeclaration> argum
     arguments_.push_back(std::move(argument));
 }
 
-FunctionDeclaration *FunctionDeclaration::rewrite() {
-    return this;
-}
-
 void FunctionDeclaration::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     foreach (const auto &argument, arguments_) {
         fun(argument.get());

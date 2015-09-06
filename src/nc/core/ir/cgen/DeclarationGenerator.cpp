@@ -24,6 +24,7 @@
 
 #include "DeclarationGenerator.h"
 
+#include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/core/image/Image.h>

@@ -64,7 +64,6 @@ public:
         SWITCH,                         ///< Switch.
         CASE_LABEL,                     ///< Case label.
         DEFAULT_LABEL,                  ///< Default case label.
-        USER_STATEMENT = 1000           ///< Base for user-defined statements.
     };
 
     /**
@@ -91,8 +90,6 @@ public:
 
         statement_ = statement;
     }
-
-    Statement *rewrite() override;
 
 protected:
     /**

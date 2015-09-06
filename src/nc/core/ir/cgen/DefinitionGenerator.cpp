@@ -152,7 +152,7 @@ std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition
     computeInvisibleStatements();
 
     SwitchContext switchContext;
-    makeStatements(graph_.root(), definition()->block(), nullptr, nullptr, nullptr, switchContext);
+    makeStatements(graph_.root(), definition()->block().get(), nullptr, nullptr, nullptr, switchContext);
 
     return functionDefinition;
 }

@@ -64,7 +64,6 @@ public:
         TYPECAST,               ///< (t)a.
         UNARY_OPERATOR,         ///< Unary operator.
         VARIABLE_IDENTIFIER,    ///< Identifier of a variable.
-        USER_EXPRESSION = 1000  ///< Base for user-defined expressions.
     };
 
     /**
@@ -98,8 +97,6 @@ public:
      * \return Valid pointer to the type of this expression.
      */
     virtual const Type *getType() const = 0;
-
-    Expression *rewrite() override { return this; }
 
     /**
      * \return Precedence of operator:

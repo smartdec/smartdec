@@ -25,6 +25,8 @@
 
 #include <nc/config.h>
 
+#include <QString>
+
 #include "Statement.h"
 
 namespace nc {

@@ -27,7 +27,7 @@
 
 #include "Statement.h"
 
-#include <memory> /* unique_ptr */
+#include <memory>
 
 namespace nc {
 namespace core {
@@ -57,7 +57,7 @@ public:
     /**
      * \return Switch expression.
      */
-    Expression *expression() { return expression_.get(); }
+    std::unique_ptr<Expression> &expression() { return expression_; }
 
     /**
      * \return Switch expression.
@@ -67,14 +67,12 @@ public:
     /**
      * \return Switch body.
      */
-    Statement *body() { return body_.get(); }
+    std::unique_ptr<Statement> &body() { return body_; }
 
     /**
      * \return Switch body.
      */
     const Statement *body() const { return body_.get(); }
-
-    Switch *rewrite() override;
 
 protected:
     void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;

@@ -48,8 +48,6 @@ public:
         Declaration(tree, LABEL_DECLARATION, std::move(identifier)), referenceCount_(0)
     {}
 
-    LabelDeclaration *rewrite() override { return this; }
-
     /**
      * Increments reference count by the given delta.
      */

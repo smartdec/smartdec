@@ -43,16 +43,10 @@ const Type *CallOperator::getType() const {
 }
 
 void CallOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
-    fun(callee());
+    fun(callee_.get());
     foreach(const auto &expression, arguments_) {
         fun(expression.get());
     }
-}
-
-CallOperator *CallOperator::rewrite() {
-    rewriteChild(callee_);
-    rewriteChildren(arguments_);
-    return this;
 }
 
 void CallOperator::doPrint(PrintContext &context) const {

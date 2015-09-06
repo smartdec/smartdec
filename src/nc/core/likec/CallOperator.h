@@ -42,8 +42,7 @@ class CallOperator: public Expression {
     std::unique_ptr<Expression> callee_; ///< Callee.
     std::vector<std::unique_ptr<Expression> > arguments_; ///< Function arguments.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -56,7 +55,7 @@ class CallOperator: public Expression {
     /**
      * \return Callee.
      */
-    Expression *callee() { return callee_.get(); }
+    std::unique_ptr<Expression> &callee() { return callee_; }
 
     /**
      * \return Callee.
@@ -66,7 +65,14 @@ class CallOperator: public Expression {
     /**
      * Function arguments.
      */
-    const std::vector<std::unique_ptr<Expression> > &arguments() const { return arguments_; }
+    std::vector<std::unique_ptr<Expression>> &arguments() { return arguments_; }
+
+    /**
+     * Function arguments.
+     */
+    const std::vector<Expression *> &arguments() const {
+        return reinterpret_cast<const std::vector<Expression *> &>(arguments_);
+    }
 
     /**
      * Adds argument to the function call and takes ownership of argument's expression.
@@ -79,7 +85,6 @@ class CallOperator: public Expression {
     }
 
     const Type *getType() const override;
-    CallOperator *rewrite() override;
     int precedence() const override { return 2; }
 
 protected:

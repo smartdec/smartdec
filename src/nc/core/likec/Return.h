@@ -54,14 +54,12 @@ public:
     /**
      * \return Returned value. Can be nullptr.
      */
-    Expression *returnValue() { return returnValue_.get(); }
+    std::unique_ptr<Expression> &returnValue() { return returnValue_; }
 
     /**
      * \return Returned value. Can be nullptr.
      */
     const Expression *returnValue() const { return returnValue_.get(); }
-
-    Statement *rewrite() override;
 
 protected:
     void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
