@@ -45,11 +45,10 @@ class Goto: public Statement {
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] destination Goto destination address.
      */
-    Goto(Tree &tree, std::unique_ptr<Expression> destination):
-        Statement(tree, GOTO), destination_(std::move(destination)) {}
+    explicit Goto(std::unique_ptr<Expression> destination):
+        Statement(GOTO), destination_(std::move(destination)) {}
 
     /**
      * \return Goto destination address.

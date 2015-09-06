@@ -43,11 +43,10 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] characters Characters of the string.
      */
-    String(Tree &tree, QString characters):
-        Expression(tree, STRING), characters_(std::move(characters))
+    explicit String(QString characters):
+        Expression(STRING), characters_(std::move(characters))
     {}
 
     /**

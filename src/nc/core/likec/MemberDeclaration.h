@@ -43,12 +43,11 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] identifier Name of this field.
      * \param[in] type Valid pointer to the type of this variable.
      */
-    MemberDeclaration(Tree &tree, const QString &identifier, const Type *type):
-        Declaration(tree, MEMBER_DECLARATION, identifier), type_(type)
+    MemberDeclaration(const QString &identifier, const Type *type):
+        Declaration(MEMBER_DECLARATION, identifier), type_(type)
     {
         assert(type);
     }

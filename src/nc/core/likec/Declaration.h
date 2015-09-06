@@ -58,12 +58,11 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] declarationKind Declaration kind.
      * \param[in] identifier Name of declared entity.
      */
-    Declaration(Tree &tree, int declarationKind, QString identifier):
-        TreeNode(tree, DECLARATION), declarationKind_(declarationKind), identifier_(std::move(identifier))
+    Declaration(int declarationKind, QString identifier):
+        TreeNode(DECLARATION), declarationKind_(declarationKind), identifier_(std::move(identifier))
     {}
 
     /**

@@ -46,12 +46,11 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] type Type to cast to.
      * \param[in] operand Expression to be casted.
      */
-    Typecast(Tree &tree, const Type *type, std::unique_ptr<Expression> operand):
-        Expression(tree, TYPECAST), type_(type), operand_(std::move(operand))
+    Typecast(const Type *type, std::unique_ptr<Expression> operand):
+        Expression(TYPECAST), type_(type), operand_(std::move(operand))
     {}
 
     /**

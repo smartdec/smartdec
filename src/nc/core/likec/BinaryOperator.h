@@ -74,13 +74,12 @@ class BinaryOperator: public Expression {
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] operatorKind Operator's kind.
      * \param[in] left Left operand.
      * \param[in] right Right operand.
      */
-    BinaryOperator(Tree &tree, int operatorKind, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right):
-        Expression(tree, BINARY_OPERATOR), operatorKind_(operatorKind), left_(std::move(left)), right_(std::move(right))
+    BinaryOperator(int operatorKind, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right):
+        Expression(BINARY_OPERATOR), operatorKind_(operatorKind), left_(std::move(left)), right_(std::move(right))
     {}
 
     /**

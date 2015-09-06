@@ -32,8 +32,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
-LabelIdentifier::LabelIdentifier(Tree &tree, LabelDeclaration *declaration):
-    Expression(tree, LABEL_IDENTIFIER), declaration_(declaration)
+LabelIdentifier::LabelIdentifier(LabelDeclaration *declaration):
+    Expression(LABEL_IDENTIFIER), declaration_(declaration)
 {
     declaration_->incReferenceCount();
 }

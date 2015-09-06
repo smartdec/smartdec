@@ -19,16 +19,16 @@ std::unique_ptr<Expression> divide(Expression *dividend, SignedConstantValue div
     if (auto constant = dividend->as<IntegerConstant>()) {
         if (constant->value().signedValue() % divisor == 0) {
             return std::make_unique<IntegerConstant>(
-                dividend->tree(), SizedValue(constant->value().size(), constant->value().signedValue() / divisor),
+                SizedValue(constant->value().size(), constant->value().signedValue() / divisor),
                 constant->type());
         }
     } else if (auto binary = dividend->as<BinaryOperator>()) {
         if (binary->operatorKind() == BinaryOperator::MUL) {
             if (auto result = divide(binary->left().get(), divisor)) {
-                return std::make_unique<BinaryOperator>(dividend->tree(), BinaryOperator::MUL, std::move(result),
+                return std::make_unique<BinaryOperator>(BinaryOperator::MUL, std::move(result),
                                                         std::move(binary->right()));
             } else if (auto result = divide(binary->right().get(), divisor)) {
-                return std::make_unique<BinaryOperator>(dividend->tree(), BinaryOperator::MUL, std::move(binary->left()),
+                return std::make_unique<BinaryOperator>(BinaryOperator::MUL, std::move(binary->left()),
                                                         std::move(result));
             }
         }

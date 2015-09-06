@@ -46,16 +46,14 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] condition Condition.
      * \param[in] thenStatement Statement of "then" branch.
      * \param[in] elseStatement Statement of "else" branch.
      */
-    If(Tree &tree,
-       std::unique_ptr<Expression> condition,
+    If(std::unique_ptr<Expression> condition,
        std::unique_ptr<Statement> thenStatement,
        std::unique_ptr<Statement> elseStatement = nullptr)
-    :  Statement(tree, IF),
+    :  Statement(IF),
        condition_(std::move(condition)),
        thenStatement_(std::move(thenStatement)),
        elseStatement_(std::move(elseStatement))

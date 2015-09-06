@@ -46,12 +46,11 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] expression Valid pointer to the switch expression.
      * \param[in] body Valid pointer to the switch body.
      */
-    Switch(Tree &tree, std::unique_ptr<Expression> expression, std::unique_ptr<Statement> body):
-        Statement(tree, SWITCH), expression_(std::move(expression)), body_(std::move(body))
+    Switch(std::unique_ptr<Expression> expression, std::unique_ptr<Statement> body):
+        Statement(SWITCH), expression_(std::move(expression)), body_(std::move(body))
     {}
 
     /**

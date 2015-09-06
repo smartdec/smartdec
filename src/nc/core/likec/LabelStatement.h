@@ -46,11 +46,10 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] identifier Valid pointer to the label identifier.
      */
-    LabelStatement(Tree &tree, std::unique_ptr<LabelIdentifier> identifier):
-        Statement(tree, LABEL_STATEMENT), identifier_(std::move(identifier))
+    LabelStatement(std::unique_ptr<LabelIdentifier> identifier):
+        Statement(LABEL_STATEMENT), identifier_(std::move(identifier))
     {
         assert(identifier_);
 

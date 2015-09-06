@@ -42,36 +42,28 @@ class Tree;
 class TreeNode {
     NC_BASE_CLASS(TreeNode, nodeKind)
 
-    Tree &tree_; ///< Owning tree.
-
 public:
     /**
      * Node kind.
      */
     enum {
-        COMPILATION_UNIT,               ///< Compilation unit.
-        DECLARATION,                    ///< Declaration.
-        EXPRESSION,                     ///< Expression.
-        STATEMENT,                      ///< Statement.
+        COMPILATION_UNIT, ///< Compilation unit.
+        DECLARATION,      ///< Declaration.
+        EXPRESSION,       ///< Expression.
+        STATEMENT,        ///< Statement.
     };
 
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] nodeKind Node kind.
      */
-    TreeNode(Tree &tree, int nodeKind): nodeKind_(nodeKind), tree_(tree) {}
+    explicit TreeNode(int nodeKind): nodeKind_(nodeKind) {}
 
     /**
      * Virtual destructor.
      */
     virtual ~TreeNode() {}
-
-    /**
-     * \return Owning tree.
-     */
-    Tree &tree() const { return tree_; }
 
     /**
      * Calls a given function on all the children of this node.

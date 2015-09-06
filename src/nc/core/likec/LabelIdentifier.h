@@ -41,12 +41,11 @@ class LabelIdentifier: public Expression {
 
 public:
     /**
-     * Class constructor.
+     * Constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] declaration Label declaration.
      */
-    LabelIdentifier(Tree &tree, LabelDeclaration *declaration);
+    explicit LabelIdentifier(LabelDeclaration *declaration);
 
     /**
      * \return Label declaration.

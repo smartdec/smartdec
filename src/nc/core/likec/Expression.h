@@ -65,11 +65,10 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] expressionKind Kind of expression.
      */
-    Expression(Tree &tree, int expressionKind):
-        TreeNode(tree, EXPRESSION), expressionKind_(expressionKind), term_(nullptr)
+    explicit Expression(int expressionKind):
+        TreeNode(EXPRESSION), expressionKind_(expressionKind), term_(nullptr)
     {}
 
     /**

@@ -45,11 +45,9 @@ class Block: public Statement {
 
 public:
     /**
-     * Class constructor.
-     *
-     * \param[in] tree Owning tree.
+     * Constructor.
      */
-    Block(Tree &tree): Statement(tree, BLOCK) {}
+    Block(): Statement(BLOCK) {}
 
     /**
      * \return Declarations.

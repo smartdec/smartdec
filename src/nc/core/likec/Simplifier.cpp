@@ -177,8 +177,8 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
                                 if (const MemberDeclaration *member =
                                         structType->getMember(constant->value().value() * CHAR_BIT)) {
                                     return std::make_unique<UnaryOperator>(
-                                        tree_, UnaryOperator::REFERENCE,
-                                        std::make_unique<MemberAccessOperator>(tree_, MemberAccessOperator::ARROW,
+                                        UnaryOperator::REFERENCE,
+                                        std::make_unique<MemberAccessOperator>(MemberAccessOperator::ARROW,
                                                                                std::move(typecast->operand()), member));
                                 }
                             }
@@ -210,7 +210,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
                     if (pointerType->pointeeType()->size() != 0 && pointerType->pointeeType()->size() % CHAR_BIT == 0) {
                         if (auto quotient = divide(right, pointerType->pointeeType()->size() / CHAR_BIT)) {
                             return std::make_unique<BinaryOperator>(
-                                tree_, node->operatorKind(), std::move(typecast->operand()), std::move(quotient));
+                                node->operatorKind(), std::move(typecast->operand()), std::move(quotient));
                         }
                     }
                 }
@@ -244,35 +244,35 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
         case BinaryOperator::ADD: {
             if (isZero(node->left().get())) {
                 auto type = typeCalculator_.getType(node.get());
-                return std::make_unique<Typecast>(tree_, type, std::move(node->right()));
+                return std::make_unique<Typecast>(type, std::move(node->right()));
             }
             if (isZero(node->right().get())) {
                 auto type = typeCalculator_.getType(node.get());
-                return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
+                return std::make_unique<Typecast>(type, std::move(node->left()));
             }
             break;
         }
         case BinaryOperator::SUB: {
             if (isZero(node->right().get())) {
                 auto type = typeCalculator_.getType(node.get());
-                return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
+                return std::make_unique<Typecast>(type, std::move(node->left()));
             }
             if (isZero(node->left().get())) {
                 auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<UnaryOperator>(
-                           tree_, UnaryOperator::NEGATION,
-                           std::make_unique<Typecast>(tree_, type, std::move(node->right())));
+                           UnaryOperator::NEGATION,
+                           std::make_unique<Typecast>(type, std::move(node->right())));
             }
             break;
         }
         case BinaryOperator::MUL: {
             if (isOne(node->left().get())) {
                 auto type = typeCalculator_.getType(node.get());
-                return std::make_unique<Typecast>(tree_, type, std::move(node->right()));
+                return std::make_unique<Typecast>(type, std::move(node->right()));
             }
             if (isOne(node->right().get())) {
                 auto type = typeCalculator_.getType(node.get());
-                return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
+                return std::make_unique<Typecast>(type, std::move(node->left()));
             }
             break;
         }
@@ -280,7 +280,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
         case BinaryOperator::SHR: {
             if (isZero(node->right().get())) {
                 auto type = typeCalculator_.getType(node.get());
-                return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
+                return std::make_unique<Typecast>(type, std::move(node->left()));
             }
             break;
         }
@@ -289,22 +289,22 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
         case BinaryOperator::LOGICAL_OR: {
             if (isZero(node->left().get())) {
                 auto type = typeCalculator_.getType(node.get());
-                return std::make_unique<Typecast>(tree_, type, std::move(node->right()));
+                return std::make_unique<Typecast>(type, std::move(node->right()));
             }
             if (isZero(node->right().get())) {
                 auto type = typeCalculator_.getType(node.get());
-                return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
+                return std::make_unique<Typecast>(type, std::move(node->left()));
             }
             break;
         }
         case BinaryOperator::LOGICAL_AND: {
             if (isOne(node->right().get())) {
                 auto type = typeCalculator_.getType(node.get());
-                return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
+                return std::make_unique<Typecast>(type, std::move(node->left()));
             }
             if (isOne(node->left().get())) {
                 auto type = typeCalculator_.getType(node.get());
-                return std::make_unique<Typecast>(tree_, type, std::move(node->right()));
+                return std::make_unique<Typecast>(type, std::move(node->right()));
             }
             break;
         }
@@ -356,14 +356,12 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
                         if (leftIdent->declaration() == rightIdent->declaration()) {
                             if (auto constant = right->as<IntegerConstant>()) {
                                 if (constant->value().value() == 1) {
-                                    return std::make_unique<UnaryOperator>(tree_,
-                                                                           node->operatorKind() == BinaryOperator::ADD
+                                    return std::make_unique<UnaryOperator>(node->operatorKind() == BinaryOperator::ADD
                                                                                ? UnaryOperator::PREFIX_INCREMENT
                                                                                : UnaryOperator::PREFIX_DECREMENT,
                                                                            std::move(node->left()));
                                 } else if (constant->value().signedValue() == -1) {
-                                    return std::make_unique<UnaryOperator>(tree_,
-                                                                           node->operatorKind() == BinaryOperator::ADD
+                                    return std::make_unique<UnaryOperator>(node->operatorKind() == BinaryOperator::ADD
                                                                                ? UnaryOperator::PREFIX_DECREMENT
                                                                                : UnaryOperator::PREFIX_INCREMENT,
                                                                            std::move(node->left()));
@@ -412,8 +410,8 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<Typecast> node)
             if (const StructType *structType = pointerType->pointeeType()->as<StructType>()) {
                 if (const MemberDeclaration *member = structType->getMember(0)) {
                     node->operand() = std::make_unique<UnaryOperator>(
-                        tree_, UnaryOperator::REFERENCE,
-                        std::make_unique<MemberAccessOperator>(tree_, MemberAccessOperator::ARROW,
+                        UnaryOperator::REFERENCE,
+                        std::make_unique<MemberAccessOperator>(MemberAccessOperator::ARROW,
                                                                std::move(node->operand()), member));
                 }
             }
@@ -456,12 +454,12 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<Typecast> node)
                                     if (constant->type()->size() <= tree_.pointerSize() &&
                                         constant->value().value() % pointeeSizeInBytes == 0)
                                     {
-                                        return std::make_unique<BinaryOperator>(tree_,
+                                        return std::make_unique<BinaryOperator>(
                                             BinaryOperator::ADD,
-                                            std::make_unique<Typecast>(tree_,
+                                            std::make_unique<Typecast>(
                                                 pointerType,
                                                 std::move(typecast->operand())),
-                                            std::make_unique<IntegerConstant>(tree_,
+                                            std::make_unique<IntegerConstant>(
                                                 constant->value().value() / pointeeSizeInBytes,
                                                 constant->type()));
                                     }
@@ -507,10 +505,10 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<UnaryOperator> 
             if (auto binary = node->operand()->as<BinaryOperator>()) {
                 if (binary->operatorKind() == BinaryOperator::ADD) {
                     if (typeCalculator_.getType(binary->left().get())->isPointer()) {
-                        return std::make_unique<BinaryOperator>(tree_, BinaryOperator::ARRAY_SUBSCRIPT,
+                        return std::make_unique<BinaryOperator>(BinaryOperator::ARRAY_SUBSCRIPT,
                                                                 std::move(binary->left()), std::move(binary->right()));
                     } else if (typeCalculator_.getType(binary->right().get())->isPointer()) {
-                        return std::make_unique<BinaryOperator>(tree_, BinaryOperator::ARRAY_SUBSCRIPT,
+                        return std::make_unique<BinaryOperator>(BinaryOperator::ARRAY_SUBSCRIPT,
                                                                 std::move(binary->right()), std::move(binary->left()));
                     }
                 }
@@ -579,11 +577,11 @@ std::unique_ptr<Expression> Simplifier::simplifyBooleanExpression(std::unique_pt
         } else if (binary->operatorKind() == BinaryOperator::EQ) {
             if (isZero(binary->right().get())) {
                 return simplifyBooleanExpression(std::make_unique<UnaryOperator>(
-                    tree_, UnaryOperator::LOGICAL_NOT, std::move(binary->left())));
+                    UnaryOperator::LOGICAL_NOT, std::move(binary->left())));
             }
             if (isZero(binary->left().get())) {
                 return simplifyBooleanExpression(std::make_unique<UnaryOperator>(
-                    tree_, UnaryOperator::LOGICAL_NOT, std::move(binary->right())));
+                    UnaryOperator::LOGICAL_NOT, std::move(binary->right())));
             }
         }
     }
@@ -663,7 +661,7 @@ std::unique_ptr<If> Simplifier::simplify(std::unique_ptr<If> node) {
             if (auto block = node->thenStatement()->as<Block>()) {
                 if (block->statements().empty()) {
                     node->thenStatement() = std::move(node->elseStatement());
-                    node->condition() = std::make_unique<UnaryOperator>(tree_, UnaryOperator::LOGICAL_NOT,
+                    node->condition() = std::make_unique<UnaryOperator>(UnaryOperator::LOGICAL_NOT,
                                                                         std::move(node->condition()));
                 }
             }

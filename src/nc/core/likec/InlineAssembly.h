@@ -43,11 +43,10 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] code Assembler code.
      */
-    InlineAssembly(Tree &tree, QString code):
-        Statement(tree, INLINE_ASSEMBLY), code_(std::move(code))
+    InlineAssembly(QString code):
+        Statement(INLINE_ASSEMBLY), code_(std::move(code))
     {}
 
     /**

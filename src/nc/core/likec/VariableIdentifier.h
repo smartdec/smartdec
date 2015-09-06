@@ -43,11 +43,10 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] declaration Variable declaration.
      */
-    VariableIdentifier(Tree &tree, VariableDeclaration *declaration):
-        Expression(tree, VARIABLE_IDENTIFIER), declaration_(declaration)
+    explicit VariableIdentifier(VariableDeclaration *declaration):
+        Expression(VARIABLE_IDENTIFIER), declaration_(declaration)
     {}
 
     /**

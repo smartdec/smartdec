@@ -45,11 +45,10 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] expression Expression used as statement.
      */
-    ExpressionStatement(Tree &tree, std::unique_ptr<Expression> expression):
-        Statement(tree, EXPRESSION_STATEMENT), expression_(std::move(expression))
+    explicit ExpressionStatement(std::unique_ptr<Expression> expression):
+        Statement(EXPRESSION_STATEMENT), expression_(std::move(expression))
     {}
 
     /**

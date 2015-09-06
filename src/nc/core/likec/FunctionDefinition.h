@@ -54,7 +54,7 @@ public:
      */
     FunctionDefinition(Tree &tree, QString identifier, const Type *returnType, bool variadic = false):
         FunctionDeclaration(tree, FUNCTION_DEFINITION, std::move(identifier), returnType, variadic),
-        block_(new Block(tree))
+        block_(new Block())
     {}
 
     /**

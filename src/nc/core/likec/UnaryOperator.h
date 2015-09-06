@@ -58,12 +58,11 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] operatorKind Operator's kind.
      * \param[in] operand Operand.
      */
-    UnaryOperator(Tree &tree, int operatorKind, std::unique_ptr<Expression> operand):
-        Expression(tree, UNARY_OPERATOR), operatorKind_(operatorKind), operand_(std::move(operand)) {}
+    UnaryOperator(int operatorKind, std::unique_ptr<Expression> operand):
+        Expression(UNARY_OPERATOR), operatorKind_(operatorKind), operand_(std::move(operand)) {}
 
     /**
      * Sets operator's kind.

@@ -26,7 +26,7 @@
 #include <nc/config.h>
 
 #include <vector>
-#include <memory> /* unique_ptr */
+#include <memory>
 
 #include "Commentable.h"
 #include "Declaration.h"
@@ -43,11 +43,9 @@ class CompilationUnit: public TreeNode, public Commentable {
 
 public:
     /**
-     * Class constructor.
-     *
-     * \param[in] tree Owning tree.
+     * Constructor.
      */
-    CompilationUnit(Tree &tree): TreeNode(tree, COMPILATION_UNIT) {}
+    CompilationUnit(): TreeNode(COMPILATION_UNIT) {}
 
     /**
      * \return Declarations.

@@ -26,10 +26,9 @@
 #include <nc/config.h>
 
 #include <vector>
-#include <memory> /* unique_ptr */
+#include <memory>
 
 #include "Expression.h"
-#include "VariableDeclaration.h"
 
 namespace nc {
 namespace core {
@@ -46,11 +45,10 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] callee Callee.
      */
-    CallOperator(Tree &tree, std::unique_ptr<Expression> callee):
-        Expression(tree, CALL_OPERATOR), callee_(std::move(callee)) {}
+    explicit CallOperator(std::unique_ptr<Expression> callee):
+        Expression(CALL_OPERATOR), callee_(std::move(callee)) {}
 
     /**
      * \return Callee.

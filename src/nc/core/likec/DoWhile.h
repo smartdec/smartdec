@@ -46,12 +46,11 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] condition Valid pointer to the loop condition.
      * \param[in] body Valid pointer to the loop body.
      */
-    DoWhile(Tree &tree, std::unique_ptr<Statement> body, std::unique_ptr<Expression> condition):
-        Statement(tree, DO_WHILE), body_(std::move(body)), condition_(std::move(condition))
+    DoWhile(std::unique_ptr<Statement> body, std::unique_ptr<Expression> condition):
+        Statement(DO_WHILE), body_(std::move(body)), condition_(std::move(condition))
     {}
 
     /**

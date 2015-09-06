@@ -34,17 +34,17 @@ namespace core {
 namespace likec {
 
 FunctionDeclaration::FunctionDeclaration(Tree &tree, QString identifier, const Type *returnType, bool variadic):
-    Declaration(tree, FUNCTION_DECLARATION, std::move(identifier)),
+    Declaration(FUNCTION_DECLARATION, std::move(identifier)),
     type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic)),
-    functionIdentifier_(new FunctionIdentifier(tree, this))
+    functionIdentifier_(new FunctionIdentifier(this))
 {
     assert(returnType != nullptr);
 }
 
 FunctionDeclaration::FunctionDeclaration(Tree &tree, int declarationKind, QString identifier, const Type *returnType, bool variadic):
-    Declaration(tree, declarationKind, std::move(identifier)),
+    Declaration(declarationKind, std::move(identifier)),
     type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic)),
-    functionIdentifier_(new FunctionIdentifier(tree, this))
+    functionIdentifier_(new FunctionIdentifier(this))
 {
     assert(returnType != nullptr);
 }

@@ -69,11 +69,10 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] statementKind Statement kind.
      */
-    Statement(Tree &tree, int statementKind):
-        TreeNode(tree, STATEMENT), statementKind_(statementKind), statement_(nullptr)
+    explicit Statement(int statementKind):
+        TreeNode(STATEMENT), statementKind_(statementKind), statement_(nullptr)
     {}
 
     /**
