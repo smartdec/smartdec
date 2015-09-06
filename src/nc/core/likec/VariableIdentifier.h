@@ -60,8 +60,6 @@ public:
      */
     const VariableDeclaration *declaration() const { return declaration_; }
 
-    const Type *getType() const override;
-
 protected:
     void doPrint(PrintContext &context) const override;
 };

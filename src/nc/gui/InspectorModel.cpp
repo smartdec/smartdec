@@ -383,7 +383,6 @@ void expand(InspectorItem *item, const core::likec::Expression *expression) {
             break;
         }
     }
-    item->addChild(tr("type"), expression->getType());
 }
 
 void expand(InspectorItem *item, const core::likec::Statement *statement) {

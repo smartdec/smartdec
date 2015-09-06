@@ -90,7 +90,6 @@ public:
      */
     const MemberDeclaration *member() const { return member_; }
 
-    const Type *getType() const override;
     int precedence() const override;
 
 protected:

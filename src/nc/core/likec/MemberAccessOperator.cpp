@@ -40,21 +40,13 @@ void MemberAccessOperator::doCallOnChildren(const std::function<void(TreeNode *)
     fun(compound_.get());
 }
 
-const Type *MemberAccessOperator::getType() const {
-    // TODO: add type checks.
-    return member_->type();
-}
-
 int MemberAccessOperator::precedence() const {
     switch (accessKind()) {
         case ARROW:
         case DOT:
             return 2;
-            break;
-        default:
-            unreachable();
-            return 0;
     }
+    unreachable();
 }
 
 void MemberAccessOperator::doPrint(PrintContext &context) const {

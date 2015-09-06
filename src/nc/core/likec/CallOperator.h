@@ -84,7 +84,6 @@ public:
         arguments_.push_back(std::move(argument));
     }
 
-    const Type *getType() const override;
     int precedence() const override { return 2; }
 
 protected:

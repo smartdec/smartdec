@@ -33,6 +33,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
+class Type;
+
 /**
  * Typecast.
  */
@@ -67,7 +69,6 @@ public:
      */
     const Expression *operand() const { return operand_.get(); }
 
-    const Type *getType() const override { return type(); }
     int precedence() const override { return -3; }
 
 protected:

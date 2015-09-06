@@ -26,21 +26,11 @@
 
 #include <nc/common/Foreach.h>
 
-#include "FunctionPointerType.h"
 #include "PrintContext.h"
-#include "Tree.h"
 
 namespace nc {
 namespace core {
 namespace likec {
-
-const Type *CallOperator::getType() const {
-    if (const FunctionPointerType *functionPointerType = callee_->getType()->as<FunctionPointerType>()) {
-        return functionPointerType->returnType();
-    } else {
-        return tree().makeErroneousType();
-    }
-}
 
 void CallOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     fun(callee_.get());

@@ -24,15 +24,9 @@
 
 #include "BinaryOperator.h"
 
-#include <cstdlib>
-
 #include <nc/common/Unreachable.h>
-#include <nc/common/make_unique.h>
 
 #include "PrintContext.h"
-#include "Tree.h"
-#include "Types.h"
-#include "Utils.h"
 
 namespace nc {
 namespace core {
@@ -41,147 +35,6 @@ namespace likec {
 void BinaryOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     fun(left_.get());
     fun(right_.get());
-}
-
-const Type *BinaryOperator::getType() const {
-    return getType(operatorKind(), left(), right());
-}
-
-const Type *BinaryOperator::getType(int operatorKind, const Expression *left, const Expression *right) const {
-    switch (operatorKind) {
-        case ASSIGN: {
-            auto leftType = left->getType();
-            auto rightType = right->getType();
-
-            if (leftType == rightType ||
-                (leftType->isArithmetic() && rightType->isArithmetic()) ||
-                (leftType->isPointer() && rightType->isPointer() && (leftType->isVoidPointer() || rightType->isVoidPointer())) ||
-                (leftType->isPointer() && isZero(right)))
-            {
-                return leftType;
-            }
-            return tree().makeErroneousType();
-        }
-        case ADD: {
-            auto leftType = left->getType();
-            auto rightType = right->getType();
-
-            if (leftType->isArithmetic() && rightType->isArithmetic()) {
-                return tree().usualArithmeticConversion(leftType, rightType);
-            } else if (leftType->isPointer() && !leftType->isVoidPointer() && rightType->isInteger()) {
-                return leftType;
-            } else if (leftType->isInteger() && rightType->isPointer() && !rightType->isVoidPointer()) {
-                return rightType;
-            }
-            return tree().makeErroneousType();
-        }
-        case SUB: {
-            auto leftType = left->getType();
-            auto rightType = right->getType();
-
-            if (leftType->isArithmetic() && rightType->isArithmetic()) {
-                return tree().usualArithmeticConversion(leftType, rightType);
-            } else if (leftType->isPointer() && !leftType->isVoidPointer() && leftType == rightType) {
-                /* ptrdiff_t is a signed integer of implementation-dependent size. */
-                return tree().makeIntegerType(tree().ptrdiffSize(), false);
-            } else if (leftType->isPointer() && !leftType->isVoidPointer() && rightType->isInteger()) {
-                return leftType;
-            }
-            return tree().makeErroneousType();
-        }
-        case MUL: /* FALLTHROUGH */
-        case DIV: {
-            auto leftType = left->getType();
-            auto rightType = right->getType();
-
-            if (leftType->isArithmetic() && rightType->isArithmetic()) {
-                return tree().usualArithmeticConversion(leftType, rightType);
-            }
-            return tree().makeErroneousType();
-        }
-        case REM: {
-            auto leftType = left->getType();
-            auto rightType = right->getType();
-
-            if (leftType->isInteger() && rightType->isInteger()) {
-                return tree().usualArithmeticConversion(leftType, rightType);
-            }
-            return tree().makeErroneousType();
-        }
-        case BITWISE_AND: /* FALLTHROUGH */
-        case BITWISE_OR: /* FALLTHROUGH */
-        case BITWISE_XOR: {
-            auto leftType = left->getType();
-            auto rightType = right->getType();
-
-            if (leftType->isInteger() && rightType->isInteger()) {
-                return tree().usualArithmeticConversion(leftType, rightType);
-            }
-            return tree().makeErroneousType();
-        }
-        case LOGICAL_AND:
-        case LOGICAL_OR: {
-            auto leftType = left->getType();
-            auto rightType = right->getType();
-
-            if (leftType->isScalar() && rightType->isScalar()) {
-                return tree().makeIntegerType(tree().intSize(), false);
-            }
-            return tree().makeErroneousType();
-        }
-        case SHL: /* FALLTHROUGH */
-        case SHR: {
-            auto leftType = left->getType();
-            auto rightType = right->getType();
-
-            if (leftType->isInteger() && rightType->isInteger()) {
-                return tree().integerPromotion(leftType);
-            }
-            return tree().makeErroneousType();
-        }
-        case EQ:
-        case NEQ: {
-            auto leftType = left->getType();
-            auto rightType = right->getType();
-
-            if (leftType == rightType ||
-                (leftType->isArithmetic() && rightType->isArithmetic()) ||
-                (leftType->isPointer() && (rightType->isVoidPointer() || isZero(right))) ||
-                (rightType->isPointer() && (leftType->isVoidPointer() || isZero(left))))
-            {
-                return tree().makeIntegerType(tree().intSize(), false);
-            }
-            return tree().makeErroneousType();
-        }
-        case LT:
-        case LEQ:
-        case GT:
-        case GEQ: {
-            auto leftType = left->getType();
-            auto rightType = right->getType();
-
-            if (leftType == rightType ||
-                (leftType->isArithmetic() && rightType->isArithmetic()) ||
-                (leftType->isPointer() && rightType->isVoidPointer()) ||
-                (rightType->isPointer() && leftType->isVoidPointer()))
-            {
-                return tree().makeIntegerType(tree().intSize(), false);
-            }
-            return tree().makeErroneousType();
-        }
-        case COMMA: {
-            return right->getType();
-        }
-        case ARRAY_SUBSCRIPT: {
-            if (auto pointerType = getType(ADD, left, right)->as<PointerType>()) {
-                return pointerType->pointeeType();
-            }
-            return tree().makeErroneousType();
-        }
-        default: {
-            unreachable();
-        }
-    }
 }
 
 int BinaryOperator::precedence() const {

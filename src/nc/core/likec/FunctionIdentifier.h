@@ -68,8 +68,6 @@ public:
         declaration_ = declaration;
     }
 
-    const Type *getType() const override;
-
 protected:
     void doPrint(PrintContext &context) const override;
 };

@@ -110,10 +110,7 @@ class BinaryOperator: public Expression {
      */
     const Expression *right() const { return right_.get(); }
 
-    const Type *getType() const override;
     int precedence() const override;
-
-    const Type *getType(int operatorKind, const Expression *left, const Expression *right) const;
 
 protected:
     void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;

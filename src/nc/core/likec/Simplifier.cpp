@@ -3,31 +3,31 @@
 #include <nc/common/Foreach.h>
 #include <nc/common/Unreachable.h>
 #include <nc/common/make_unique.h>
-#include <nc/core/likec/BinaryOperator.h>
-#include <nc/core/likec/CallOperator.h>
-#include <nc/core/likec/CompilationUnit.h>
-#include <nc/core/likec/Declaration.h>
-#include <nc/core/likec/DoWhile.h>
-#include <nc/core/likec/Expression.h>
-#include <nc/core/likec/ExpressionStatement.h>
-#include <nc/core/likec/FunctionDefinition.h>
-#include <nc/core/likec/Goto.h>
-#include <nc/core/likec/If.h>
-#include <nc/core/likec/IntegerConstant.h>
-#include <nc/core/likec/LabelStatement.h>
-#include <nc/core/likec/MemberAccessOperator.h>
-#include <nc/core/likec/Return.h>
-#include <nc/core/likec/Statement.h>
-#include <nc/core/likec/StructType.h>
-#include <nc/core/likec/Switch.h>
-#include <nc/core/likec/Tree.h>
-#include <nc/core/likec/TreeNode.h>
-#include <nc/core/likec/Typecast.h>
-#include <nc/core/likec/Types.h>
-#include <nc/core/likec/UnaryOperator.h>
-#include <nc/core/likec/While.h>
 
+#include "BinaryOperator.h"
+#include "CallOperator.h"
+#include "CompilationUnit.h"
+#include "Declaration.h"
+#include "DoWhile.h"
+#include "Expression.h"
+#include "ExpressionStatement.h"
+#include "FunctionDefinition.h"
+#include "Goto.h"
+#include "If.h"
+#include "IntegerConstant.h"
+#include "LabelStatement.h"
+#include "MemberAccessOperator.h"
+#include "Return.h"
+#include "Statement.h"
+#include "StructType.h"
+#include "Switch.h"
+#include "Tree.h"
+#include "TreeNode.h"
+#include "Typecast.h"
+#include "Types.h"
+#include "UnaryOperator.h"
 #include "Utils.h"
+#include "While.h"
 
 namespace nc {
 namespace core {
@@ -51,6 +51,9 @@ std::unique_ptr<T> as(std::unique_ptr<U> ptr) {
 }
 
 } // anonymous namespace
+
+Simplifier::Simplifier(Tree &tree) : tree_(tree), typeCalculator_(tree) {
+}
 
 std::unique_ptr<TreeNode> Simplifier::simplify(std::unique_ptr<TreeNode> node) {
     switch (node->nodeKind()) {
@@ -145,9 +148,10 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
         case BinaryOperator::REM: {
             auto rewrite = [&](std::unique_ptr<Expression> &left, std::unique_ptr<Expression> &right) {
                 if (auto typecast = left->as<Typecast>()) {
-                    if (typecast->type()->size() >= typecast->operand()->getType()->size()) {
-                        if (node->getType() ==
-                            node->getType(node->operatorKind(), typecast->operand().get(), right.get())) {
+                    if (typecast->type()->size() >= typeCalculator_.getType(typecast->operand().get())->size()) {
+                        if (typeCalculator_.getType(node.get()) ==
+                            typeCalculator_.getBinaryOperatorType(node->operatorKind(), typecast->operand().get(),
+                                                                  right.get())) {
                             left = std::move(typecast->operand());
                         }
                     }
@@ -166,17 +170,16 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
         auto rewrite = [&](Expression *left, Expression *right) -> std::unique_ptr<Expression> {
             if (auto typecast = left->as<Typecast>()) {
                 if (typecast->type()->isInteger() &&
-                    typecast->type()->size() == typecast->operand()->getType()->size()) {
-                    if (const PointerType *pointerType = typecast->operand()->getType()->as<PointerType>()) {
-                        if (const StructType *structType = pointerType->pointeeType()->as<StructType>()) {
-                            if (IntegerConstant *constant = right->as<IntegerConstant>()) {
+                    typecast->type()->size() == typeCalculator_.getType(typecast->operand().get())->size()) {
+                    if (auto pointerType = typeCalculator_.getType(typecast->operand().get())->as<PointerType>()) {
+                        if (auto structType = pointerType->pointeeType()->as<StructType>()) {
+                            if (auto constant = right->as<IntegerConstant>()) {
                                 if (const MemberDeclaration *member =
                                         structType->getMember(constant->value().value() * CHAR_BIT)) {
                                     return std::make_unique<UnaryOperator>(
                                         tree_, UnaryOperator::REFERENCE,
                                         std::make_unique<MemberAccessOperator>(tree_, MemberAccessOperator::ARROW,
-                                                                               std::move(typecast->operand()),
-                                                                               member));
+                                                                               std::move(typecast->operand()), member));
                                 }
                             }
                         }
@@ -201,8 +204,9 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
 
     auto rewritePointerArithmetic = [&](Expression *left, Expression *right) -> std::unique_ptr<Expression> {
         if (auto typecast = left->as<Typecast>()) {
-            if (typecast->type()->isInteger() && typecast->type()->size() == typecast->operand()->getType()->size()) {
-                if (auto pointerType = typecast->operand()->getType()->as<PointerType>()) {
+            if (typecast->type()->isInteger() &&
+                typecast->type()->size() == typeCalculator_.getType(typecast->operand().get())->size()) {
+                if (auto pointerType = typeCalculator_.getType(typecast->operand().get())->as<PointerType>()) {
                     if (pointerType->pointeeType()->size() != 0 && pointerType->pointeeType()->size() % CHAR_BIT == 0) {
                         if (auto quotient = divide(right, pointerType->pointeeType()->size() / CHAR_BIT)) {
                             return std::make_unique<BinaryOperator>(
@@ -239,22 +243,22 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
     switch (node->operatorKind()) {
         case BinaryOperator::ADD: {
             if (isZero(node->left().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<Typecast>(tree_, type, std::move(node->right()));
             }
             if (isZero(node->right().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
             }
             break;
         }
         case BinaryOperator::SUB: {
             if (isZero(node->right().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
             }
             if (isZero(node->left().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<UnaryOperator>(
                            tree_, UnaryOperator::NEGATION,
                            std::make_unique<Typecast>(tree_, type, std::move(node->right())));
@@ -263,11 +267,11 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
         }
         case BinaryOperator::MUL: {
             if (isOne(node->left().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<Typecast>(tree_, type, std::move(node->right()));
             }
             if (isOne(node->right().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
             }
             break;
@@ -275,7 +279,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
         case BinaryOperator::SHL:
         case BinaryOperator::SHR: {
             if (isZero(node->right().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
             }
             break;
@@ -284,22 +288,22 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
         case BinaryOperator::BITWISE_XOR:
         case BinaryOperator::LOGICAL_OR: {
             if (isZero(node->left().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<Typecast>(tree_, type, std::move(node->right()));
             }
             if (isZero(node->right().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
             }
             break;
         }
         case BinaryOperator::LOGICAL_AND: {
             if (isOne(node->right().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<Typecast>(tree_, type, std::move(node->left()));
             }
             if (isOne(node->left().get())) {
-                auto type = node->getType();
+                auto type = typeCalculator_.getType(node.get());
                 return std::make_unique<Typecast>(tree_, type, std::move(node->right()));
             }
             break;
@@ -404,7 +408,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<Typecast> node)
 
     /* Convert cast of pointer to a structure to a cast of pointer to its first field. */
     if (node->type()->isPointer() && !node->type()->isStructurePointer()) {
-        if (auto pointerType = node->operand()->getType()->as<PointerType>()) {
+        if (auto pointerType = typeCalculator_.getType(node->operand().get())->as<PointerType>()) {
             if (const StructType *structType = pointerType->pointeeType()->as<StructType>()) {
                 if (const MemberDeclaration *member = structType->getMember(0)) {
                     node->operand() = std::make_unique<UnaryOperator>(
@@ -421,7 +425,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<Typecast> node)
      */
     if (node->type()->isScalar()) {
         if (auto typecast = node->operand()->as<Typecast>()) {
-            auto operandType = typecast->operand()->getType();
+            auto operandType = typeCalculator_.getType(typecast->operand().get());
 
             if (typecast->type()->isScalar() &&
                 operandType->isScalar() &&
@@ -446,7 +450,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<Typecast> node)
                         if (auto typecast = binaryLeft->as<Typecast>()) {
                             if (typecast->type()->isInteger() &&
                                 typecast->type()->size() == tree_.pointerSize() &&
-                                typecast->operand()->getType()->isPointer())
+                                typeCalculator_.getType(typecast->operand().get())->isPointer())
                             {
                                 if (auto constant = binaryRight->as<IntegerConstant>()) {
                                     if (constant->type()->size() <= tree_.pointerSize() &&
@@ -478,7 +482,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<Typecast> node)
     }
 
     /* This really must be the last rule. */
-    if (node->type() == node->operand()->getType()) {
+    if (node->type() == typeCalculator_.getType(node->operand().get())) {
         return std::move(node->operand());
     }
 
@@ -488,7 +492,8 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<Typecast> node)
 std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<UnaryOperator> node) {
     node->operand() = simplify(std::move(node->operand()));
 
-    if (node->operatorKind() == UnaryOperator::BITWISE_NOT && node->operand()->getType()->size() == 1) {
+    if (node->operatorKind() == UnaryOperator::BITWISE_NOT &&
+        typeCalculator_.getType(node->operand().get())->size() == 1) {
         node->setOperatorKind(UnaryOperator::LOGICAL_NOT);
     }
 
@@ -501,10 +506,10 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<UnaryOperator> 
             }
             if (auto binary = node->operand()->as<BinaryOperator>()) {
                 if (binary->operatorKind() == BinaryOperator::ADD) {
-                    if (binary->left()->getType()->isPointer()) {
+                    if (typeCalculator_.getType(binary->left().get())->isPointer()) {
                         return std::make_unique<BinaryOperator>(tree_, BinaryOperator::ARRAY_SUBSCRIPT,
                                                                 std::move(binary->left()), std::move(binary->right()));
-                    } else if (binary->right()->getType()->isPointer()) {
+                    } else if (typeCalculator_.getType(binary->right().get())->isPointer()) {
                         return std::make_unique<BinaryOperator>(tree_, BinaryOperator::ARRAY_SUBSCRIPT,
                                                                 std::move(binary->right()), std::move(binary->left()));
                     }
@@ -514,7 +519,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<UnaryOperator> 
         }
         case UnaryOperator::LOGICAL_NOT: {
             while (auto typecast = node->operand()->as<Typecast>()) {
-                if (typecast->type()->isScalar() && typecast->operand()->getType()->isScalar()) {
+                if (typecast->type()->isScalar() && typeCalculator_.getType(typecast->operand().get())->isScalar()) {
                     node->operand() = std::move(typecast->operand());
                 } else {
                     break;
@@ -546,7 +551,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<UnaryOperator> 
             }
             if (auto unary = node->operand()->as<UnaryOperator>()) {
                 if (unary->operatorKind() == UnaryOperator::LOGICAL_NOT) {
-                    if (unary->operand()->getType()->size() == 1) {
+                    if (typeCalculator_.getType(unary->operand().get())->size() == 1) {
                         return std::move(unary->operand());
                     }
                 }

@@ -25,11 +25,8 @@
 #include "UnaryOperator.h"
 
 #include <nc/common/Unreachable.h>
-#include <nc/common/make_unique.h>
 
 #include "PrintContext.h"
-#include "Tree.h"
-#include "Typecast.h"
 
 namespace nc {
 namespace core {
@@ -37,50 +34,6 @@ namespace likec {
 
 void UnaryOperator::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     fun(operand_.get());
-}
-
-const Type *UnaryOperator::getType() const {
-    const Type *operandType = operand()->getType();
-
-    switch (operatorKind()) {
-        case REFERENCE: {
-            return tree().makePointerType(operandType);
-        }
-        case DEREFERENCE: {
-            if (const PointerType *pointerType = operandType->as<PointerType>()) {
-                return pointerType->pointeeType();
-            }
-            return tree().makeErroneousType();
-        }
-        case BITWISE_NOT: {
-            if (operandType->isInteger()) {
-                return tree().integerPromotion(operandType);
-            }
-            return tree().makeErroneousType();
-        }
-        case LOGICAL_NOT: {
-            if (operandType->isScalar()) {
-                return tree().makeIntegerType(tree().intSize(), false);
-            }
-            return tree().makeErroneousType();
-        }
-        case NEGATION: {
-            if (operandType->isInteger() || operandType->isFloat()) {
-                return operandType;
-            }
-            return tree().makeErroneousType();
-        }
-        case PREFIX_INCREMENT:
-        case PREFIX_DECREMENT: {
-            if (operandType->isScalar()) {
-                return operandType;
-            }
-            return tree().makeErroneousType();
-        }
-        default: {
-            unreachable();
-        }
-    }
 }
 
 int UnaryOperator::precedence() const {

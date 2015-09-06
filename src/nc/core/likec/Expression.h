@@ -27,8 +27,6 @@
 
 #include <cassert>
 
-#include <nc/common/Unused.h>
-
 #include "TreeNode.h"
 
 namespace nc {
@@ -39,8 +37,6 @@ namespace ir {
 }
 
 namespace likec {
-
-class Type;
 
 /**
  * Base class for different kinds of expressions.
@@ -79,9 +75,7 @@ public:
     /**
      * \return Term this expression was created from.
      */
-    const ir::Term *term() const {
-        return term_;
-    }
+    const ir::Term *term() const { return term_; }
 
     /**
      * \param[in] term Term this expression was created from.
@@ -92,11 +86,6 @@ public:
         
         term_ = term;
     }
-
-    /**
-     * \return Valid pointer to the type of this expression.
-     */
-    virtual const Type *getType() const = 0;
 
     /**
      * \return Precedence of operator:

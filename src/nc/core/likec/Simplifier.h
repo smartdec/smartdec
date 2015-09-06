@@ -8,6 +8,8 @@
 #include <memory>
 #include <vector>
 
+#include "TypeCalculator.h"
+
 namespace nc {
 namespace core {
 namespace likec {
@@ -38,9 +40,10 @@ class While;
 
 class Simplifier {
     Tree &tree_;
+    TypeCalculator typeCalculator_;
 
 public:
-    Simplifier(Tree &tree): tree_(tree) {}
+    explicit Simplifier(Tree &tree);
 
     std::unique_ptr<TreeNode> simplify(std::unique_ptr<TreeNode> node);
     std::unique_ptr<CompilationUnit> simplify(std::unique_ptr<CompilationUnit> node);

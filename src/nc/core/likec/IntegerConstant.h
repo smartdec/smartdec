@@ -78,8 +78,6 @@ public:
      */
     const IntegerType *type() const { return type_; }
 
-    const Type *getType() const override { return type(); }
-
 protected:
     void doPrint(PrintContext &context) const override;
 };

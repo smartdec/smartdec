@@ -55,8 +55,6 @@ public:
      */
     const QString &characters() const { return characters_; }
 
-    const Type *getType() const override;
-
 protected:
     void doPrint(PrintContext &context) const override;
 };

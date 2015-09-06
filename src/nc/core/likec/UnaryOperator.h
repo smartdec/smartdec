@@ -82,7 +82,6 @@ public:
      */
     const Expression *operand() const { return operand_.get(); }
 
-    const Type *getType() const override;
     int precedence() const override;
 
 protected:

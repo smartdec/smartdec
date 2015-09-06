@@ -42,10 +42,6 @@ void LabelIdentifier::doPrint(PrintContext &context) const {
     context.out() << declaration_->identifier();
 }
 
-const Type *LabelIdentifier::getType() const {
-    return tree().makePointerType(tree().pointerSize(), tree().makeVoidType());
-}
-
 } // namespace likec
 } // namespace core
 } // namespace nc

@@ -224,6 +224,8 @@ set(SOURCES
     likec/TreeNode.cpp
     likec/TreeNode.h
     likec/Type.h
+    likec/TypeCalculator.cpp
+    likec/TypeCalculator.h
     likec/Typecast.cpp
     likec/Typecast.h
     likec/Types.cpp
