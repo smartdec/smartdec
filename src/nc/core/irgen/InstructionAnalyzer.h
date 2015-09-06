@@ -28,6 +28,10 @@
 #include <memory>
 
 namespace nc {
+
+class CancellationToken;
+class LogToken;
+
 namespace core {
 
 namespace ir {
@@ -37,6 +41,7 @@ namespace ir {
 
 namespace arch {
     class Instruction;
+    class Instructions;
     class Register;
 }
 
@@ -47,6 +52,17 @@ namespace irgen {
  */
 class InstructionAnalyzer {
 public:
+    /**
+     * Creates intermediate representation of the given set of instructions.
+     *
+     * \param[in] instructions  Valid pointer to the set of instructions.
+     * \param[out] program      Valid pointer to the intermediate representation of a program.
+     * \param canceled          Cancellation token.
+     * \param log               Log token.
+     */
+    void createStatements(const arch::Instructions *instructions, ir::Program *program,
+                          const CancellationToken &canceled, const LogToken &log);
+
     /**
      * Creates intermediate representation of an instruction and adds newly created statements to
      * the intermediate representation of the program.
@@ -64,6 +80,17 @@ public:
     static std::unique_ptr<ir::Term> createTerm(const arch::Register *reg);
 
 protected:
+    /**
+     * Actually creates intermediate representation of the given set of instructions.
+     *
+     * \param[in] instructions  Valid pointer to the set of instructions.
+     * \param[out] program      Valid pointer to the intermediate representation of a program.
+     * \param canceled          Cancellation token.
+     * \param log               Log token.
+     */
+    virtual void doCreateStatements(const arch::Instructions *instructions, ir::Program *program,
+                          const CancellationToken &canceled, const LogToken &log);
+
     /**
      * Actually creates intermediate representation of an instruction.
      *
