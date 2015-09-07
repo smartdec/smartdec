@@ -516,13 +516,8 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<UnaryOperator> 
             break;
         }
         case UnaryOperator::LOGICAL_NOT: {
-            while (auto typecast = node->operand()->as<Typecast>()) {
-                if (typecast->type()->isScalar() && typeCalculator_.getType(typecast->operand().get())->isScalar()) {
-                    node->operand() = std::move(typecast->operand());
-                } else {
-                    break;
-                }
-            }
+            node->operand() = simplifyBooleanExpression(std::move(node->operand()));
+
             if (auto binary = node->operand()->as<BinaryOperator>()) {
                 switch (binary->operatorKind()) {
                     case BinaryOperator::EQ:
@@ -564,7 +559,15 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<UnaryOperator> 
 }
 
 std::unique_ptr<Expression> Simplifier::simplifyBooleanExpression(std::unique_ptr<Expression> node) {
-    node = simplify(std::move(node));
+    while (auto typecast = node->as<Typecast>()) {
+        auto operandType = typeCalculator_.getType(typecast->operand().get());
+        if (typecast->type()->isScalar() && operandType->isScalar() &&
+            typecast->type()->size() >= operandType->size()) {
+            node = std::move(typecast->operand());
+        } else {
+            break;
+        }
+    }
 
     if (auto binary = node->as<BinaryOperator>()) {
         if (binary->operatorKind() == BinaryOperator::NEQ) {
@@ -630,7 +633,7 @@ std::unique_ptr<Block> Simplifier::simplify(std::unique_ptr<Block> node) {
 }
 
 std::unique_ptr<DoWhile> Simplifier::simplify(std::unique_ptr<DoWhile> node) {
-    node->condition() = simplifyBooleanExpression(std::move(node->condition()));
+    node->condition() = simplifyBooleanExpression(simplify(std::move(node->condition())));
     node->body() = simplify(std::move(node->body()));
     return std::move(node);
 }
@@ -668,7 +671,7 @@ std::unique_ptr<If> Simplifier::simplify(std::unique_ptr<If> node) {
         }
     }
 
-    node->condition() = simplifyBooleanExpression(std::move(node->condition()));
+    node->condition() = simplifyBooleanExpression(simplify(std::move(node->condition())));
 
     return std::move(node);
 }
@@ -688,13 +691,13 @@ std::unique_ptr<Return> Simplifier::simplify(std::unique_ptr<Return> node) {
 }
 
 std::unique_ptr<While> Simplifier::simplify(std::unique_ptr<While> node) {
-    node->condition() = simplifyBooleanExpression(std::move(node->condition()));
+    node->condition() = simplifyBooleanExpression(simplify(std::move(node->condition())));
     node->body() = simplify(std::move(node->body()));
     return std::move(node);
 }
 
 std::unique_ptr<Switch> Simplifier::simplify(std::unique_ptr<Switch> node) {
-    node->expression() = simplifyBooleanExpression(std::move(node->expression()));
+    node->expression() = simplifyBooleanExpression(simplify(std::move(node->expression())));
     node->body() = simplify(std::move(node->body()));
     return std::move(node);
 }
