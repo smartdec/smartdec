@@ -1,6 +1,5 @@
 #include "TypeCalculator.h"
 
-#include <nc/common/Memoization.h>
 #include <nc/common/Unreachable.h>
 
 #include "BinaryOperator.h"
@@ -24,31 +23,29 @@ namespace core {
 namespace likec {
 
 const Type *TypeCalculator::getType(const Expression *node) {
-    return memoize(cache_, node, [&]() -> const Type * {
-        switch (node->expressionKind()) {
-            case Expression::BINARY_OPERATOR:
-                return getType(node->as<BinaryOperator>());
-            case Expression::CALL_OPERATOR:
-                return getType(node->as<CallOperator>());
-            case Expression::FUNCTION_IDENTIFIER:
-                return getType(node->as<FunctionIdentifier>());
-            case Expression::INTEGER_CONSTANT:
-                return getType(node->as<IntegerConstant>());
-            case Expression::LABEL_IDENTIFIER:
-                return getType(node->as<LabelIdentifier>());
-            case Expression::MEMBER_ACCESS_OPERATOR:
-                return getType(node->as<MemberAccessOperator>());
-            case Expression::STRING:
-                return getType(node->as<String>());
-            case Expression::TYPECAST:
-                return getType(node->as<Typecast>());
-            case Expression::UNARY_OPERATOR:
-                return getType(node->as<UnaryOperator>());
-            case Expression::VARIABLE_IDENTIFIER:
-                return getType(node->as<VariableIdentifier>());
-        }
-        unreachable();
-    });
+    switch (node->expressionKind()) {
+        case Expression::BINARY_OPERATOR:
+            return getType(node->as<BinaryOperator>());
+        case Expression::CALL_OPERATOR:
+            return getType(node->as<CallOperator>());
+        case Expression::FUNCTION_IDENTIFIER:
+            return getType(node->as<FunctionIdentifier>());
+        case Expression::INTEGER_CONSTANT:
+            return getType(node->as<IntegerConstant>());
+        case Expression::LABEL_IDENTIFIER:
+            return getType(node->as<LabelIdentifier>());
+        case Expression::MEMBER_ACCESS_OPERATOR:
+            return getType(node->as<MemberAccessOperator>());
+        case Expression::STRING:
+            return getType(node->as<String>());
+        case Expression::TYPECAST:
+            return getType(node->as<Typecast>());
+        case Expression::UNARY_OPERATOR:
+            return getType(node->as<UnaryOperator>());
+        case Expression::VARIABLE_IDENTIFIER:
+            return getType(node->as<VariableIdentifier>());
+    }
+    unreachable();
 }
 
 const Type *TypeCalculator::getType(const BinaryOperator *node) {
@@ -211,7 +208,7 @@ const Type *TypeCalculator::getBinaryOperatorType(int operatorKind, const Expres
             auto rightType = getType(right);
 
             if (leftType->isScalar() && rightType->isScalar()) {
-                return tree_.makeIntegerType(tree_.intSize(), false);
+                return tree_.makeIntegerType(1, false);
             }
             return tree_.makeErroneousType();
         }
@@ -235,7 +232,7 @@ const Type *TypeCalculator::getBinaryOperatorType(int operatorKind, const Expres
                 (leftType->isPointer() && (rightType->isVoidPointer() || isZero(right))) ||
                 (rightType->isPointer() && (leftType->isVoidPointer() || isZero(left))))
             {
-                return tree_.makeIntegerType(tree_.intSize(), false);
+                return tree_.makeIntegerType(1, false);
             }
             return tree_.makeErroneousType();
         }
@@ -251,7 +248,7 @@ const Type *TypeCalculator::getBinaryOperatorType(int operatorKind, const Expres
                 (leftType->isPointer() && rightType->isVoidPointer()) ||
                 (rightType->isPointer() && leftType->isVoidPointer()))
             {
-                return tree_.makeIntegerType(tree_.intSize(), false);
+                return tree_.makeIntegerType(1, false);
             }
             return tree_.makeErroneousType();
         }

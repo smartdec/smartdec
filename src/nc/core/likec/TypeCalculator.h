@@ -27,7 +27,6 @@ class VariableIdentifier;
 
 class TypeCalculator {
     Tree &tree_;
-    boost::unordered_map<const Expression *, const Type *> cache_;
 
 public:
     explicit TypeCalculator(Tree &tree): tree_(tree) {}
