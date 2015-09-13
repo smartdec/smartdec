@@ -240,6 +240,21 @@ bool StructureAnalyzer::reduceCompoundCondition(Node *entry) {
     return false;
 }
 
+namespace {
+
+struct LoopDescription {
+    Region::RegionKind kind;
+    Node *condition;
+    Node *bodyEntry;
+    Node *exitNode;
+
+    LoopDescription(Region::RegionKind kind, Node *condition, Node *bodyEntry, Node *exitNode):
+        kind(kind), condition(condition), bodyEntry(bodyEntry), exitNode(exitNode)
+    {}
+};
+
+} // anonymous namespace
+
 bool StructureAnalyzer::reduceCyclic(Node *entry, const Dfs &dfs) {
     /*
      * Try to find the nodes constituting the loop.
@@ -263,17 +278,6 @@ bool StructureAnalyzer::reduceCyclic(Node *entry, const Dfs &dfs) {
      * analysis on the loop subregion, because we need the edges before
      * their redirection by insertSubregion().
      */
-    struct LoopDescription {
-        Region::RegionKind kind;
-        Node *condition;
-        Node *bodyEntry;
-        Node *exitNode;
-
-        LoopDescription(Region::RegionKind kind, Node *condition, Node *bodyEntry, Node *exitNode):
-            kind(kind), condition(condition), bodyEntry(bodyEntry), exitNode(exitNode)
-        {}
-    };
-
     std::vector<LoopDescription> loopDescriptions;
 
     auto detectLoop = [&](Region::RegionKind kind, Node *condition, Node *bodyEntry, Node *loopExit) {
