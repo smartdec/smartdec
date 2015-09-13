@@ -314,10 +314,8 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
 
             addLabels(region->entry()->getEntryBasicBlock(), block, switchContext);
 
-            cflow::Node *bodyEntry = region->entry()->uniqueSuccessor();
-
             auto condition = makeExpression(region->entry(), nullptr,
-                bodyEntry ? bodyEntry->getEntryBasicBlock() : region->entry()->getEntryBasicBlock(),
+                region->entry()->uniqueSuccessor()->getEntryBasicBlock(),
                 region->exitBasicBlock(), switchContext);
 
             cflow::Dfs dfs(region);
