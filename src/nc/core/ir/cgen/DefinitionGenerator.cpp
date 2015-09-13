@@ -88,6 +88,7 @@
 #include <nc/core/likec/While.h>
 
 #include "SwitchContext.h"
+#include "Utils.h"
 
 namespace nc {
 namespace core {
@@ -1181,7 +1182,7 @@ bool DefinitionGenerator::isSubstitutableWrite(const Term *write) const {
                 }
                 assert(theOnlyDefinition == write);
 
-                if (!isDominating(write, destination)) {
+                if (!isDominating(write->statement(), destination->statement(), *dominators_)) {
                     return false;
                 }
 
@@ -1251,7 +1252,7 @@ bool DefinitionGenerator::canBeMoved(const Term *source, const Term *destination
                     if (def.term->isWrite()) {
                         foreach (const auto &use, variable->termsAndLocations()) {
                             if (use.term->isRead()) {
-                                if (!isDominating(def.term, use.term)) {
+                                if (!isDominating(def.term->statement(), use.term->statement(), *dominators_)) {
                                     return false;
                                 }
                             }
@@ -1305,31 +1306,6 @@ const Term *DefinitionGenerator::getTheOnlyDefinition(const Term *read) const {
         return definitions.chunks().front().definitions().front();
     }
     return nullptr;
-}
-
-bool DefinitionGenerator::isDominating(const Term *write, const Term *read) const {
-    assert(write != nullptr);
-    assert(write->isWrite());
-    assert(read != nullptr);
-    assert(read->isRead());
-
-    if (write->statement()->basicBlock() == read->statement()->basicBlock()) {
-        if (write->statement()->instruction() && read->statement()->instruction() &&
-            write->statement()->instruction() != read->statement()->instruction())
-        {
-            return write->statement()->instruction()->addr() < read->statement()->instruction()->addr();
-        } else {
-            const auto &statements = read->statement()->basicBlock()->statements();
-            assert(nc::contains(statements, write->statement()));
-            assert(nc::contains(statements, read->statement()));
-            return std::find(
-                std::find(statements.begin(), statements.end(), write->statement()),
-                statements.end(),
-                read->statement()) != statements.end();
-        }
-    } else {
-        return dominators_->isDominating(write->statement()->basicBlock(), read->statement()->basicBlock());
-    }
 }
 
 } // namespace cgen

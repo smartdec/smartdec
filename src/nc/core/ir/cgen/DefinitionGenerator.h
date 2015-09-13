@@ -332,14 +332,6 @@ private:
     bool isSubstitutableRead(const Term *read) const;
 
     /**
-     * \param[in] write Valid pointer to a write term.
-     * \param[in] read Valid pointer to a read term.
-     *
-     * \return True if the write dominates the read, false otherwise.
-     */
-    bool isDominating(const Term *write, const Term *read) const;
-
-    /**
      * \param[in] read Valid pointer to a read term.
      *
      * \return A valid pointer to the term being the only term
