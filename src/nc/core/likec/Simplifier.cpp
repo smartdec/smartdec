@@ -131,6 +131,8 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<Expression> nod
             return simplify(as<UnaryOperator>(std::move(node)));
         case Expression::VARIABLE_IDENTIFIER:
             return std::move(node);
+        case Expression::UNDECLARED_IDENTIFIER:
+            return std::move(node);
     }
     unreachable();
 }
