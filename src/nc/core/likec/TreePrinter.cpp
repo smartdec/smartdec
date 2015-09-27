@@ -59,6 +59,7 @@ namespace {
 int getPrecedence(const Expression *node);
 int getPrecedence(const BinaryOperator *node);
 int getPrecedence(const MemberAccessOperator *node);
+int getPrecedence(const Typecast *node);
 int getPrecedence(const UnaryOperator *node);
 
 int getPrecedence(const Expression *node) {
@@ -78,7 +79,7 @@ int getPrecedence(const Expression *node) {
         case Expression::STRING:
             return 0;
         case Expression::TYPECAST:
-            return -3;
+            return getPrecedence(node->as<Typecast>());
         case Expression::UNARY_OPERATOR:
             return getPrecedence(node->as<UnaryOperator>());
         case Expression::VARIABLE_IDENTIFIER:
@@ -133,6 +134,17 @@ int getPrecedence(const MemberAccessOperator *node) {
     switch (node->accessKind()) {
         case MemberAccessOperator::ARROW:
         case MemberAccessOperator::DOT:
+            return 2;
+    }
+    unreachable();
+}
+
+int getPrecedence(const Typecast *node) {
+    switch (node->castKind()) {
+        case Typecast::C_STYLE_CAST:
+            return -3;
+        case Typecast::STATIC_CAST: /* FALLTHROUGH */
+        case Typecast::REINTERPRET_CAST:
             return 2;
     }
     unreachable();
@@ -500,22 +512,42 @@ void TreePrinter::doPrint(const String *node) {
 }
 
 void TreePrinter::doPrint(const Typecast *node) {
-    int precedence = getPrecedence(node);
-    int operandPrecedence = getPrecedence(node->operand());
+    switch (node->castKind()) {
+        case Typecast::C_STYLE_CAST: {
+            int precedence = getPrecedence(node);
+            int operandPrecedence = getPrecedence(node->operand());
 
-    int absPrecedence = abs(precedence);
-    int absOperandPrecedence = abs(operandPrecedence);
+            int absPrecedence = abs(precedence);
+            int absOperandPrecedence = abs(operandPrecedence);
 
-    bool operandInBraces = absOperandPrecedence > absPrecedence;
+            bool operandInBraces = absOperandPrecedence > absPrecedence;
 
-    out_ << '(' << *node->type() << ')';
+            out_ << '(' << *node->type() << ')';
 
-    if (operandInBraces) {
-        out_ << '(';
-    }
-    print(node->operand());
-    if (operandInBraces) {
-        out_ << ')';
+            if (operandInBraces) {
+                out_ << '(';
+            }
+            print(node->operand());
+            if (operandInBraces) {
+                out_ << ')';
+            }
+            break;
+        }
+        case Typecast::STATIC_CAST: {
+            out_ << "static_cast<" << *node->type() << ">(";
+            print(node->operand());
+            out_ << ')';
+            break;
+        }
+        case Typecast::REINTERPRET_CAST: {
+            out_ << "reinterpret_cast<" << *node->type() << ">(";
+            print(node->operand());
+            out_ << ')';
+            break;
+        }
+        default: {
+            unreachable();
+        }
     }
 }
 
