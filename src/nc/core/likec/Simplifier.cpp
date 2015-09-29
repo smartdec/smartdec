@@ -51,7 +51,7 @@ std::unique_ptr<T> as(std::unique_ptr<U> ptr) {
 
 } // anonymous namespace
 
-Simplifier::Simplifier(Tree &tree) : tree_(tree), typeCalculator_(tree) {
+Simplifier::Simplifier(Tree &tree) : typeCalculator_(tree) {
 }
 
 std::unique_ptr<CompilationUnit> Simplifier::simplify(std::unique_ptr<CompilationUnit> node) {
