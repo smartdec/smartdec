@@ -139,7 +139,7 @@ void IdaFrontend::createSections(core::image::Image *image) {
 
 QString IdaFrontend::architecture() {
     if (inf.procName == QLatin1String("ARM")) {
-        return QLatin1String("arm-le");
+        return QLatin1String(inf.mf ? "arm-be" : "arm-le");
     } else if (inf.procName == QLatin1String("ARMB")) {
         return QLatin1String("arm-be");
     } else {
