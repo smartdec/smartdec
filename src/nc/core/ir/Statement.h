@@ -87,7 +87,7 @@ public:
      *
      * \param[in] kind Kind of the statement.
      */
-    Statement(int kind): kind_(kind), basicBlock_(nullptr), instruction_(nullptr) {}
+    explicit Statement(int kind): kind_(kind), basicBlock_(nullptr), instruction_(nullptr) {}
 
     /**
      * \return Pointer to the basic block to which this statement belongs.
