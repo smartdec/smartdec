@@ -71,7 +71,7 @@ public:
         JUMP,           ///< Jump.
         CALL,           ///< Function call.
         HALT,           ///< Return from a program.
-        TOUCH,          ///< Reads, writes, or kills a term.
+        TOUCH,          ///< Reads or writes a term.
         CALLBACK,       ///< Custom operation.
         REMEMBER_REACHING_DEFINITIONS, ///< Remembers reaching definition.
         USER = 1000     ///< Base for user-defined statements.
