@@ -31,3 +31,4 @@
 #undef qstrcmp
 #undef ulong
 #undef pid_t
+#undef vsscanf

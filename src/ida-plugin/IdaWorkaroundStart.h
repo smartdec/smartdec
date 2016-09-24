@@ -57,3 +57,4 @@
 #define qstrcmp ida_qstrcmp
 #define ulong ida_ulong
 #define pid_t ida_pid_t
+#define vsscanf ida_vsscanf

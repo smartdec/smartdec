@@ -47,6 +47,7 @@ are binary compatible and work too):
     * IDA 6.3 — MSVC 2010 — Qt 4.8.1.
     * IDA 6.4 — MSVC 2010 — Qt 4.8.1.
     * IDA 6.5 — MSVC 2010 — Qt 4.8.4.
+    * IDA 6.95 — MSVC 2015 — Qt 5.6.0.
 
 3. Qt must be built in namespace `QT`, e.g.:
 +
