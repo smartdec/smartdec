@@ -84,7 +84,7 @@ public:
      * \param parent  Pointer to the parent object. Can be nullptr.
      * \param context Pointer to the context. Can be nullptr.
      */
-    CxxDocument(QObject *parent = nullptr, std::shared_ptr<const core::Context> context = nullptr);
+    explicit CxxDocument(QObject *parent = nullptr, std::shared_ptr<const core::Context> context = nullptr);
 
     /**
      * \return Pointer to the deepest tree node at the given position. Can be nullptr.
