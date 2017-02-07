@@ -97,6 +97,10 @@ ArrayAccess recognizeArrayAccess(const Term *term, const dflow::Dataflow &datafl
 }
 
 BoundsCheck recognizeBoundsCheck(const Jump *jump, const BasicBlock *ifPassed, const dflow::Dataflow &dataflow) {
+    if (jump->isUnconditional()) {
+        return BoundsCheck();
+    }
+
     bool inverse;
     if (jump->thenTarget().basicBlock() == ifPassed) {
         inverse = false;
