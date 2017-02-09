@@ -144,9 +144,9 @@ using `--config` option of CMake directly at <<build_step,build>> and
 <<installation,installation>> steps.
 
 [NOTE]
-On Windows, when choosing release or debug mode, make sure that Qt and
-Boost libraries have been built in this mode too. If they were not, the
-build may fail, or even succeed but produce non-working executables.
+On Windows, when choosing release or debug mode, make sure that Qt has
+been built in this mode too. If it was not, the build may fail, or even
+succeed but produce non-working executables.
 
 [[build_step]]
 Build Step
