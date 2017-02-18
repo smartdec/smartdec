@@ -76,7 +76,7 @@ void Driver::disassemble(Context &context, const image::Section *section) {
 void Driver::disassemble(Context &context, const image::ByteSource *source, ByteAddr begin, ByteAddr end) {
     assert(source != nullptr);
 
-    context.logToken().info(tr("Disassemble addresses from 0x%2 to 0x%3...").arg(begin, 0, 16).arg(end, 0, 16));
+    context.logToken().info(tr("Disassemble addresses from %2 to %3...").arg(begin, 0, 16).arg(end, 0, 16));
 
     try {
         auto newInstructions = std::make_shared<arch::Instructions>(*context.instructions());

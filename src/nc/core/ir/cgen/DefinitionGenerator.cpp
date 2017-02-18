@@ -192,7 +192,7 @@ likec::LabelDeclaration *DefinitionGenerator::makeLabel(const BasicBlock *basicB
     if (!result) {
         auto label = std::make_unique<likec::LabelDeclaration>(
             basicBlock->address() ?
-                QString("addr_0x%1_%2").arg(basicBlock->address().get(), 0, 16).arg(labels_.size()) :
+                QString("addr_%1_%2").arg(basicBlock->address().get(), 0, 16).arg(labels_.size()) :
                 QString("label_%1").arg(labels_.size())
             );
         result = label.get();
