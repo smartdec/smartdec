@@ -16,12 +16,14 @@ namespace image {
 class Symbol;
 
 /**
- * Information about a single relocation.
+ * A relocation is an information about a piece of code, which the dynamic
+ * linker patches with the address of the given symbol (plus maybe some
+ * offset).
  */
 class Relocation {
     ByteAddr address_; ///< Virtual address to be patched.
     const Symbol *symbol_; ///< Symbol with whose address to patch.
-    ByteSize size_; ///< Size of the patched value
+    ByteSize size_; ///< Size of the patched value.
     ByteSize addend_; ///< Displacement to add to the symbol's address.
 
 public:
@@ -31,6 +33,7 @@ public:
      *
      * \param address Virtual address to be patched.
      * \param symbol Valid pointer to the symbol whose address to use.
+     * \param size Size of the patched value.
      * \param addend Displacement to add to the symbol's address.
      */
     Relocation(ByteAddr address, const Symbol *symbol, ByteSize size, ByteSize addend = 0):
