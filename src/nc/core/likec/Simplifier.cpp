@@ -345,6 +345,22 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
      * x = x - 1; -> --x;
      */
     if (node->operatorKind() == BinaryOperator::ASSIGN) {
+        /*
+         * if the right hand side is a cast to the type of
+         * the left hand side, check to see if the right hand side expression
+         * will automatically be upgraded to the type of the left hand side
+         * only works for integer types.
+         */
+        if (auto src = node->right()->as<Typecast>()) {
+            auto destType = typeCalculator_.getType(node->left().get());
+            auto cstType = typeCalculator_.getType(src->operand().get());
+            if (destType->isInteger() && cstType->isInteger() && destType->size() >= cstType->size()) {
+                if (destType->as<IntegerType>()->isSigned() == cstType->as<IntegerType>()->isSigned()) {
+                    node->right() = std::move(src->operand());
+                    return simplify(std::move(node));
+                }
+            }
+        }
         if (VariableIdentifier *leftIdent = node->left()->as<VariableIdentifier>()) {
             if (BinaryOperator *binary = node->right()->as<BinaryOperator>()) {
 
@@ -401,6 +417,28 @@ std::unique_ptr<MemberAccessOperator> Simplifier::simplify(std::unique_ptr<Membe
 std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<Typecast> node) {
     node->operand() = simplify(std::move(node->operand()));
 
+    /*
+     * reinterpret_cast<int16_t>(*reinterpret_cast<uint16_t*>(&edi2))
+     * will become *reinterpret_cast<int16_t*>(&edi2)
+     */
+    if (node->operand()->is<UnaryOperator>() &&
+        node->operand()->as<UnaryOperator>()->operatorKind() == UnaryOperator::DEREFERENCE &&
+        node->type()->isInteger()) {
+        auto deref = node->operand()->as<UnaryOperator>();
+        if (auto innerCast = deref->operand()->as<Typecast>()) {
+            if (innerCast->type()->isPointer() && !node->type()->isPointer()) {
+                auto ptrType = innerCast->type()->as<PointerType>();
+                assert(ptrType);
+                if (ptrType->pointeeType()->size() == node->type()->size() && ptrType->pointeeType()->isInteger()) {
+                    deref->operand() = std::make_unique<Typecast>(
+                        Typecast::REINTERPRET_CAST,
+                        typeCalculator_.tree().makePointerType(innerCast->type()->size(), node->type()),
+                        std::move(innerCast->operand()));
+                    return simplify(std::move(node->operand()));
+                }
+            }
+        }
+    }
     /* Convert cast of pointer to a structure to a cast of pointer to its first field. */
     if (node->type()->isPointer() && !node->type()->isStructurePointer()) {
         if (auto pointerType = typeCalculator_.getType(node->operand().get())->as<PointerType>()) {
