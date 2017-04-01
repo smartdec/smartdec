@@ -1287,9 +1287,15 @@ bool DefinitionGenerator::computeIsSubstituted(const Term *write) {
 
     assert(nuses >= 1 && "Live write must have at least one live read.");
 
-    if (nuses > 1 && (source->kind() == Term::UNARY_OPERATOR || source->kind() == Term::BINARY_OPERATOR)) {
-        /* We do not want to substitute complex expressions multiple times. */
-        return false;
+    if (nuses > 1) {
+        auto sourceSubstitute = getSubstitute(source);
+        if (!sourceSubstitute) {
+            sourceSubstitute = source;
+        }
+        if (sourceSubstitute->kind() == Term::UNARY_OPERATOR || sourceSubstitute->kind() == Term::BINARY_OPERATOR) {
+            /* We do not want to substitute complex expressions multiple times. */
+            return false;
+        }
     }
 
     return true;
