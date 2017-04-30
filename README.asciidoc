@@ -2,7 +2,7 @@ Snowman
 =======
 
 http://derevenets.com/[Snowman] is a native code to C/C++ decompiler, supporting x86, AMD64, and ARM architectures.
-You can use it as a standalone GUI application, command-line tool, IDA plug-in, or a library.
+You can use it as a link:src/snowman[standalone GUI application], a link:src/nocode[command-line tool], an link:src/ida-plugin[IDA plug-in], or a link:src/nc[library].
 Snowman is link:doc/licenses.asciidoc[free software].
 
 Use
