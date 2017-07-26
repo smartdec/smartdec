@@ -1,7 +1,335 @@
-add_subdirectory(arch)
-add_subdirectory(common)
-add_subdirectory(core)
+set(MOC_HEADERS
+    common/SignalLogger.h
+    core/Context.h
+)
+
+set(SOURCES
+    arch/arm/ArmArchitecture.cpp
+    arch/arm/ArmArchitecture.h
+    arch/arm/ArmDisassembler.cpp
+    arch/arm/ArmDisassembler.h
+    arch/arm/ArmInstruction.h
+    arch/arm/ArmInstructionAnalyzer.cpp
+    arch/arm/ArmInstructionAnalyzer.h
+    arch/arm/ArmRegisters.cpp
+    arch/arm/ArmRegisters.h
+    arch/arm/CallingConventions.cpp
+    arch/arm/CallingConventions.h
+    arch/x86/CallingConventions.cpp
+    arch/x86/CallingConventions.h
+    arch/x86/X86Architecture.cpp
+    arch/x86/X86Architecture.h
+    arch/x86/X86Disassembler.cpp
+    arch/x86/X86Disassembler.h
+    arch/x86/X86Instruction.cpp
+    arch/x86/X86Instruction.h
+    arch/x86/X86InstructionAnalyzer.cpp
+    arch/x86/X86InstructionAnalyzer.h
+    arch/x86/X86MasterAnalyzer.cpp
+    arch/x86/X86MasterAnalyzer.h
+    arch/x86/X86Registers.cpp
+    arch/x86/X86Registers.h
+    arch/x86/udis86.h
+    common/BitTwiddling.h
+    common/Branding.cpp
+    common/Branding.h
+    common/ByteOrder.h
+    common/CancellationToken.cpp
+    common/CancellationToken.h
+    common/CheckedCast.h
+    common/DisjointSet.h
+    common/Escaping.cpp
+    common/Escaping.h
+    common/Exception.cpp
+    common/Exception.h
+    common/Foreach.h
+    common/LogToken.h
+    common/Logger.cpp
+    common/Logger.h
+    common/PrintCallback.h
+    common/Printable.h
+    common/Range.h
+    common/RangeClass.h
+    common/SignalLogger.cpp
+    common/SignalLogger.h
+    common/SizedValue.h
+    common/StreamLogger.cpp
+    common/StreamLogger.h
+    common/StringToInt.cpp
+    common/StringToInt.h
+    common/Subclass.h
+    common/Types.h
+    common/Unreachable.h
+    common/Unused.h
+    common/Version.h
+    common/ilist.h
+    common/make_unique.h
+    core/Context.cpp
+    core/Driver.cpp
+    core/Driver.h
+    core/MasterAnalyzer.cpp
+    core/MasterAnalyzer.h
+    core/arch/Architecture.cpp
+    core/arch/Architecture.h
+    core/arch/ArchitectureRepository.cpp
+    core/arch/ArchitectureRepository.h
+    core/arch/CapstoneInstruction.h
+    core/arch/Capstone.h
+    core/arch/Disassembler.cpp
+    core/arch/Disassembler.h
+    core/arch/Instruction.cpp
+    core/arch/Instruction.h
+    core/arch/Instructions.cpp
+    core/arch/Instructions.h
+    core/arch/Register.h
+    core/arch/Registers.h
+    core/image/ByteSource.h
+    core/image/Image.cpp
+    core/image/Image.h
+    core/image/Platform.h
+    core/image/Platform.cpp
+    core/image/Reader.cpp
+    core/image/Reader.h
+    core/image/Relocation.h
+    core/image/Section.cpp
+    core/image/Section.h
+    core/image/Symbol.cpp
+    core/image/Symbol.h
+    core/input/ParseError.cpp
+    core/input/ParseError.h
+    core/input/Parser.cpp
+    core/input/Parser.h
+    core/input/ParserRepository.cpp
+    core/input/ParserRepository.h
+    core/input/Utils.h
+    core/ir/BasicBlock.cpp
+    core/ir/BasicBlock.h
+    core/ir/CFG.cpp
+    core/ir/CFG.h
+    core/ir/Dominators.cpp
+    core/ir/Dominators.h
+    core/ir/Function.cpp
+    core/ir/Function.h
+    core/ir/Functions.cpp
+    core/ir/Functions.h
+    core/ir/FunctionsGenerator.cpp
+    core/ir/FunctionsGenerator.h
+    core/ir/Jump.cpp
+    core/ir/Jump.h
+    core/ir/JumpTarget.cpp
+    core/ir/JumpTarget.h
+    core/ir/MemoryDomain.h
+    core/ir/MemoryLocation.cpp
+    core/ir/MemoryLocation.h
+    core/ir/Program.cpp
+    core/ir/Program.h
+    core/ir/Statement.cpp
+    core/ir/Statement.h
+    core/ir/Statements.cpp
+    core/ir/Statements.h
+    core/ir/Term.cpp
+    core/ir/Term.h
+    core/ir/Terms.cpp
+    core/ir/Terms.h
+    core/ir/calling/CallHook.cpp
+    core/ir/calling/CallHook.h
+    core/ir/calling/CalleeId.h
+    core/ir/calling/Convention.cpp
+    core/ir/calling/Convention.h
+    core/ir/calling/EntryHook.cpp
+    core/ir/calling/EntryHook.h
+    core/ir/calling/FunctionSignature.h
+    core/ir/calling/Hooks.cpp
+    core/ir/calling/Hooks.h
+    core/ir/calling/Patch.cpp
+    core/ir/calling/Patch.h
+    core/ir/calling/ReturnHook.cpp
+    core/ir/calling/ReturnHook.h
+    core/ir/calling/SignatureAnalyzer.cpp
+    core/ir/calling/SignatureAnalyzer.h
+    core/ir/cflow/BasicNode.cpp
+    core/ir/cflow/BasicNode.h
+    core/ir/cflow/Dfs.cpp
+    core/ir/cflow/Dfs.h
+    core/ir/cflow/Edge.cpp
+    core/ir/cflow/Edge.h
+    core/ir/cflow/Graph.cpp
+    core/ir/cflow/Graph.h
+    core/ir/cflow/GraphBuilder.cpp
+    core/ir/cflow/GraphBuilder.h
+    core/ir/cflow/LoopExplorer.cpp
+    core/ir/cflow/LoopExplorer.h
+    core/ir/cflow/Node.cpp
+    core/ir/cflow/Node.h
+    core/ir/cflow/Region.cpp
+    core/ir/cflow/Region.h
+    core/ir/cflow/StructureAnalyzer.cpp
+    core/ir/cflow/StructureAnalyzer.h
+    core/ir/cflow/Switch.h
+    core/ir/cgen/CodeGenerator.cpp
+    core/ir/cgen/CodeGenerator.h
+    core/ir/cgen/DeclarationGenerator.cpp
+    core/ir/cgen/DeclarationGenerator.h
+    core/ir/cgen/DefinitionGenerator.cpp
+    core/ir/cgen/DefinitionGenerator.h
+    core/ir/cgen/NameGenerator.cpp
+    core/ir/cgen/NameGenerator.h
+    core/ir/cgen/SwitchContext.h
+    core/ir/cgen/Utils.cpp
+    core/ir/cgen/Utils.h
+    core/ir/dflow/Dataflow.cpp
+    core/ir/dflow/Dataflow.h
+    core/ir/dflow/DataflowAnalyzer.cpp
+    core/ir/dflow/DataflowAnalyzer.h
+    core/ir/dflow/ReachingDefinitions.cpp
+    core/ir/dflow/ReachingDefinitions.h
+    core/ir/dflow/Uses.cpp
+    core/ir/dflow/Uses.h
+    core/ir/dflow/Utils.cpp
+    core/ir/dflow/Utils.h
+    core/ir/dflow/Value.cpp
+    core/ir/dflow/Value.h
+    core/ir/misc/ArrayAccess.h
+    core/ir/misc/BoundsCheck.h
+    core/ir/misc/PatternRecognition.cpp
+    core/ir/misc/PatternRecognition.h
+    core/ir/types/Type.cpp
+    core/ir/types/Type.h
+    core/ir/types/TypeAnalyzer.cpp
+    core/ir/types/TypeAnalyzer.h
+    core/ir/types/Types.cpp
+    core/ir/types/Types.h
+    core/ir/liveness/Liveness.h
+    core/ir/liveness/LivenessAnalyzer.cpp
+    core/ir/liveness/LivenessAnalyzer.h
+    core/ir/vars/Variable.cpp
+    core/ir/vars/Variable.h
+    core/ir/vars/VariableAnalyzer.cpp
+    core/ir/vars/VariableAnalyzer.h
+    core/ir/vars/Variables.cpp
+    core/ir/vars/Variables.h
+    core/irgen/Expressions.h
+    core/irgen/IRGenerator.cpp
+    core/irgen/IRGenerator.h
+    core/irgen/InstructionAnalyzer.cpp
+    core/irgen/InstructionAnalyzer.h
+    core/irgen/InvalidInstructionException.cpp
+    core/irgen/InvalidInstructionException.h
+    core/likec/ArgumentDeclaration.h
+    core/likec/BinaryOperator.cpp
+    core/likec/BinaryOperator.h
+    core/likec/Block.cpp
+    core/likec/Block.h
+    core/likec/Break.h
+    core/likec/CallOperator.cpp
+    core/likec/CallOperator.h
+    core/likec/CaseLabel.h
+    core/likec/Commentable.h
+    core/likec/CompilationUnit.cpp
+    core/likec/CompilationUnit.h
+    core/likec/Continue.h
+    core/likec/Declaration.h
+    core/likec/DefaultLabel.h
+    core/likec/DoWhile.cpp
+    core/likec/DoWhile.h
+    core/likec/Expression.h
+    core/likec/ExpressionStatement.cpp
+    core/likec/ExpressionStatement.h
+    core/likec/FunctionDeclaration.cpp
+    core/likec/FunctionDeclaration.h
+    core/likec/FunctionDefinition.cpp
+    core/likec/FunctionDefinition.h
+    core/likec/FunctionIdentifier.h
+    core/likec/FunctionPointerType.cpp
+    core/likec/FunctionPointerType.h
+    core/likec/Goto.cpp
+    core/likec/Goto.h
+    core/likec/If.cpp
+    core/likec/If.h
+    core/likec/InlineAssembly.h
+    core/likec/IntegerConstant.cpp
+    core/likec/IntegerConstant.h
+    core/likec/LabelDeclaration.h
+    core/likec/LabelIdentifier.cpp
+    core/likec/LabelIdentifier.h
+    core/likec/LabelStatement.h
+    core/likec/MemberAccessOperator.cpp
+    core/likec/MemberAccessOperator.h
+    core/likec/MemberDeclaration.h
+    core/likec/Return.cpp
+    core/likec/Return.h
+    core/likec/Simplifier.cpp
+    core/likec/Simplifier.h
+    core/likec/Statement.h
+    core/likec/String.h
+    core/likec/StructType.cpp
+    core/likec/StructType.h
+    core/likec/StructTypeDeclaration.h
+    core/likec/Switch.cpp
+    core/likec/Switch.h
+    core/likec/Tree.cpp
+    core/likec/Tree.h
+    core/likec/TreeNode.cpp
+    core/likec/TreeNode.h
+    core/likec/TreePrinter.cpp
+    core/likec/TreePrinter.h
+    core/likec/Type.h
+    core/likec/TypeCalculator.cpp
+    core/likec/TypeCalculator.h
+    core/likec/Typecast.cpp
+    core/likec/Typecast.h
+    core/likec/Types.cpp
+    core/likec/Types.h
+    core/likec/UnaryOperator.cpp
+    core/likec/UnaryOperator.h
+    core/likec/UndeclaredIdentifier.h
+    core/likec/Utils.cpp
+    core/likec/Utils.h
+    core/likec/VariableDeclaration.cpp
+    core/likec/VariableDeclaration.h
+    core/likec/VariableIdentifier.h
+    core/likec/While.cpp
+    core/likec/While.h
+    core/mangling/DefaultDemangler.cpp
+    core/mangling/DefaultDemangler.h
+    core/mangling/Demangler.h
+    input/elf/ElfParser.cpp
+    input/elf/ElfParser.h
+    input/elf/elf32.h
+    input/elf/elf64.h
+    input/elf/elf_common.h
+    input/mach-o/MachOParser.cpp
+    input/mach-o/MachOParser.h
+    input/mach-o/mach-o.h
+    input/pe/PeParser.cpp
+    input/pe/PeParser.h
+    input/pe/pe.h
+    ${MOC_HEADERS}
+)
+
+# Find out current revision.
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+git_describe(GIT_DESCRIPTION)
+
+if(GIT_DESCRIPTION)
+    set(NC_VERSION "${GIT_DESCRIPTION}")
+else()
+    string(SUBSTRING ${GIT_SHA1} 1 7 NC_VERSION)
+endif()
+
+set(NC_REPORT_BUGS_TO "https://github.com/yegord/snowman/issues" CACHE STRING "Address for reporting bugs.")
+set(NC_LICENSE_NAME "GNU General Public License, version 3 or any later version" CACHE STRING "License name.")
+set(NC_LICENSE_URL "https://github.com/yegord/snowman/blob/master/doc/licenses.asciidoc" CACHE STRING "License URL.")
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/common/Version.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/common/Version.cpp" @ONLY)
+list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/common/Version.cpp")
+
+qt4_wrap_cpp(SOURCES ${MOC_HEADERS} OPTIONS -DQ_MOC_RUN)
+
+add_library(nc ${SOURCES})
+target_link_libraries(nc capstone-static udis86 iberty undname ${Boost_LIBRARIES} ${QT_LIBRARIES})
+
 add_subdirectory(gui)
-add_subdirectory(input)
 
 # vim:set et sts=4 sw=4 nospell:

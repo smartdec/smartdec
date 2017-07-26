@@ -3,7 +3,7 @@ set(SOURCES
 )
 
 add_executable(snowman WIN32 ${SOURCES})
-target_link_libraries(snowman nc-gui nc-core ${Boost_LIBRARIES} ${QT_LIBRARIES})
+target_link_libraries(snowman nc nc-gui ${Boost_LIBRARIES} ${QT_LIBRARIES})
 if(MSVC)
     set_target_properties(snowman PROPERTIES LINK_FLAGS /ENTRY:mainCRTStartup)
 endif()
