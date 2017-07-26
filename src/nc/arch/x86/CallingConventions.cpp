@@ -152,7 +152,7 @@ Stdcall32CallingConvention::Stdcall32CallingConvention(const X86Architecture *ar
     addArgumentGroup(std::vector<core::ir::MemoryLocation>(1, X86Registers::ecx()->memoryLocation()));
     addArgumentGroup(std::vector<core::ir::MemoryLocation>());
 
-    addReturnValueLocation(X86Registers::ax()->memoryLocation());
+    addReturnValueLocation(X86Registers::eax()->memoryLocation());
     addReturnValueLocation(X86Registers::st0()->memoryLocation());
 
     addEnterStatement(std::make_unique<core::ir::Assignment>(
