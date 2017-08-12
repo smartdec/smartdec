@@ -2,6 +2,7 @@ set(MOC_HEADERS
     Activity.h
     Command.h
     CommandQueue.h
+    CppSyntaxHighlighter.h
     CxxDocument.h
     CxxView.h
     Decompilation.h

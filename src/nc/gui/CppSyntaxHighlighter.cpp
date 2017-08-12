@@ -30,6 +30,19 @@
 
 namespace nc { namespace gui {
 
+CxxFormatting::CxxFormatting() {
+    formats_[TEXT].               setForeground(Qt::black);
+    formats_[SINGLE_LINE_COMMENT].setForeground(Qt::darkGreen);
+    formats_[MULTI_LINE_COMMENT]. setForeground(Qt::darkGreen);
+    formats_[KEYWORD].            setForeground(Qt::darkBlue);
+    formats_[KEYWORD].            setFontWeight(QFont::Bold);
+    formats_[OPERATOR].           setForeground(Qt::darkGray);
+    formats_[NUMBER].             setForeground(Qt::red);
+    formats_[MACRO].              setForeground(Qt::darkCyan);
+    formats_[STRING].             setForeground(Qt::blue);
+    formats_[ESCAPE_CHAR].        setForeground(Qt::darkBlue);
+}
+
 namespace {
 
 /**
@@ -122,18 +135,6 @@ enum State {
 
 
 CppSyntaxHighlighter::CppSyntaxHighlighter(QObject *parent): QSyntaxHighlighter(parent) {
-    /* Init formats. */
-    mFormats[TEXT].               setForeground(Qt::black);
-    mFormats[SINGLE_LINE_COMMENT].setForeground(Qt::darkGreen);
-    mFormats[MULTI_LINE_COMMENT]. setForeground(Qt::darkGreen);
-    mFormats[KEYWORD].            setForeground(Qt::darkBlue);
-    mFormats[KEYWORD].            setFontWeight(QFont::Bold);
-    mFormats[OPERATOR].           setForeground(Qt::darkGray);
-    mFormats[NUMBER].             setForeground(Qt::red);
-    mFormats[MACRO].              setForeground(Qt::darkCyan);
-    mFormats[STRING].             setForeground(Qt::blue);
-    mFormats[ESCAPE_CHAR].        setForeground(Qt::darkBlue);
-        
     /* Init keywords. */
     foreach(const char *cppKeyword, cppKeywords)
         mKeywords.insert(cppKeyword);
@@ -177,7 +178,7 @@ void CppSyntaxHighlighter::highlightBlock(const QString &text) {
 
         QString cap = mSpecialRegexp.cap();
         if (cap == "//") {
-            setFormat(startPos, text.length() - startPos, itemFormat(SINGLE_LINE_COMMENT));
+            setFormat(startPos, text.length() - startPos, formatting_.getFormat(CxxFormatting::SINGLE_LINE_COMMENT));
             if (text.endsWith("\\"))
                 setCurrentBlockState(IN_SINGLELINE_COMMENT);
             return;
@@ -189,25 +190,25 @@ void CppSyntaxHighlighter::highlightBlock(const QString &text) {
                 --startPos;
 
             if (endPos == -1) {
-                setFormat(startPos, text.length() - startPos, itemFormat(STRING));
+                setFormat(startPos, text.length() - startPos, formatting_.getFormat(CxxFormatting::STRING));
                 processEscapeChar(text, startPos, text.length() - startPos);
                 setCurrentBlockState(cap.at(0) == QChar('"')? IN_STRING: IN_SINGLE_STRING);
                 return;
             } else {
                 endPos += 1;
-                setFormat(startPos, endPos - startPos, itemFormat(STRING));
+                setFormat(startPos, endPos - startPos, formatting_.getFormat(CxxFormatting::STRING));
                 processEscapeChar(text, startPos, endPos - startPos);
                 startPos = endPos;
             }
         } else if (cap == "/*") {
             endPos = findMultilineCommentEnd(text, startPos + 2);
             if (endPos == -1) {
-                setFormat(startPos, text.length() - startPos, itemFormat(MULTI_LINE_COMMENT));
+                setFormat(startPos, text.length() - startPos, formatting_.getFormat(CxxFormatting::MULTI_LINE_COMMENT));
                 setCurrentBlockState(IN_MULTILINE_COMMENT);
                 return;
             } else {
                 endPos += 2;
-                setFormat(startPos, endPos - startPos, itemFormat(MULTI_LINE_COMMENT));
+                setFormat(startPos, endPos - startPos, formatting_.getFormat(CxxFormatting::MULTI_LINE_COMMENT));
                 startPos = endPos;
             }
         }
@@ -225,32 +226,32 @@ bool CppSyntaxHighlighter::processState(const QString &text, int *const startPos
     if ((prevState & IN_STRING) || (prevState & IN_SINGLE_STRING)) {
         *endPos = findStringEnd(text, *startPos, (prevState & IN_SINGLE_STRING)? '\'':'"');
         if (*endPos == -1) {
-            setFormat(0, text.size(), itemFormat(STRING));
+            setFormat(0, text.size(), formatting_.getFormat(CxxFormatting::STRING));
             setCurrentBlockState(previousBlockState());
             return true;
         } else {
             *endPos += 1; // "
-            setFormat(0, *endPos - *startPos, itemFormat(STRING));
+            setFormat(0, *endPos - *startPos, formatting_.getFormat(CxxFormatting::STRING));
             *startPos = *endPos;
         }
     } else if (prevState & IN_MULTILINE_COMMENT) {
         *endPos = findMultilineCommentEnd(text, *startPos);
         if (*endPos == -1) {
-            setFormat(0, text.length(), itemFormat(MULTI_LINE_COMMENT));
+            setFormat(0, text.length(), formatting_.getFormat(CxxFormatting::MULTI_LINE_COMMENT));
             setCurrentBlockState(previousBlockState());
             return true;
         } else {
             *endPos += 2; // */
-            setFormat(0, *endPos - *startPos, itemFormat(MULTI_LINE_COMMENT));
+            setFormat(0, *endPos - *startPos, formatting_.getFormat(CxxFormatting::MULTI_LINE_COMMENT));
             *startPos = *endPos;
         }
     } else if (prevState & IN_SINGLELINE_COMMENT) {
-        setFormat(0, text.length(), itemFormat(SINGLE_LINE_COMMENT));
+        setFormat(0, text.length(), formatting_.getFormat(CxxFormatting::SINGLE_LINE_COMMENT));
         if (text.endsWith("\\"))
             setCurrentBlockState(IN_SINGLELINE_COMMENT);
         return true;
     } else if (prevState & IN_MACRO) {
-        setFormat(0, text.length(), itemFormat(MACRO));
+        setFormat(0, text.length(), formatting_.getFormat(CxxFormatting::MACRO));
         if (text.endsWith("\\"))
             setCurrentBlockState(IN_MACRO);
         /* Think:
@@ -263,7 +264,7 @@ bool CppSyntaxHighlighter::processState(const QString &text, int *const startPos
     return false;
 }
 
-void CppSyntaxHighlighter::processRegexp(QRegExp &regexp, Item item, const QString &text, int startPos) {
+void CppSyntaxHighlighter::processRegexp(QRegExp &regexp, CxxFormatting::Element element, const QString &text, int startPos) {
     int index = 0;
     int start = startPos;
 
@@ -277,16 +278,16 @@ void CppSyntaxHighlighter::processRegexp(QRegExp &regexp, Item item, const QStri
         start = index + length;
         QString cap = regexp.cap();
 
-        setFormat(index, length, itemFormat(item));
-        if (item == TEXT && mKeywords.contains(cap))
-            setFormat(index, length, itemFormat(KEYWORD));
+        setFormat(index, length, formatting_.getFormat(element));
+        if (element == CxxFormatting::TEXT && mKeywords.contains(cap))
+            setFormat(index, length, formatting_.getFormat(CxxFormatting::KEYWORD));
     }
 }
 
 void CppSyntaxHighlighter::processRegexps(const QString &text, int startPos) {
-    processRegexp(mTextRegexp, TEXT, text, startPos);
-    processRegexp(mOperatorRegexp, OPERATOR, text, startPos);
-    processRegexp(mNumberRegexp, NUMBER, text, startPos);
+    processRegexp(mTextRegexp, CxxFormatting::TEXT, text, startPos);
+    processRegexp(mOperatorRegexp, CxxFormatting::OPERATOR, text, startPos);
+    processRegexp(mNumberRegexp, CxxFormatting::NUMBER, text, startPos);
 }
 
 void CppSyntaxHighlighter::processEscapeChar(const QString &text, int start, int len) {
@@ -314,7 +315,7 @@ void CppSyntaxHighlighter::processEscapeChar(const QString &text, int start, int
                     --endPos;
                 }
             }
-            setFormat(pos, endPos - pos + 1, itemFormat(ESCAPE_CHAR));
+            setFormat(pos, endPos - pos + 1, formatting_.getFormat(CxxFormatting::ESCAPE_CHAR));
             pos = endPos;
         }
     }
@@ -322,7 +323,7 @@ void CppSyntaxHighlighter::processEscapeChar(const QString &text, int start, int
         
 bool CppSyntaxHighlighter::processPreprocessor(const QString &text) {
     if (text.indexOf(mMultilineMacroRegexp) != -1) {
-        setFormat(0, text.length(), itemFormat(MACRO));
+        setFormat(0, text.length(), formatting_.getFormat(CxxFormatting::MACRO));
         /* TODO: This can't handle the following code:
          *  #define some this is / *
          *    blabla... * / a macro definition... */
@@ -330,12 +331,12 @@ bool CppSyntaxHighlighter::processPreprocessor(const QString &text) {
             setCurrentBlockState(IN_MACRO);
     } else if (text.indexOf(mIncludeRegexp) != -1) {
         /* TODO: we can highlight it in a different format */
-        setFormat(0, text.length(), itemFormat(MACRO));
+        setFormat(0, text.length(), formatting_.getFormat(CxxFormatting::MACRO));
         int pos = mIncludeRegexp.pos(1);
         if (pos > 0)
-            setFormat(pos, mIncludeRegexp.cap(1).size(), itemFormat(STRING));
+            setFormat(pos, mIncludeRegexp.cap(1).size(), formatting_.getFormat(CxxFormatting::STRING));
     } else if (text.indexOf(mMacroRegexp) != -1) {
-        setFormat(0, text.length(), itemFormat(MACRO));
+        setFormat(0, text.length(), formatting_.getFormat(CxxFormatting::MACRO));
         return false;
     }
     return true;
