@@ -79,6 +79,7 @@ class MainWindow: public QMainWindow {
 
     QAction *openAction_; ///< Action for opening a file.
     QAction *exportCfgAction_; ///< Action for exporting CFG in DOT format.
+    QAction *loadStyleSheetAction_; ///< Action for loading a Qt style sheet.
     QAction *quitAction_; ///< Action for closing the main window.
     QAction *disassembleAction_; ///< Action for opening disassembly dialog.
     QAction *decompileAction_; ///< Action for starting decompilation.
@@ -95,6 +96,8 @@ class MainWindow: public QMainWindow {
     QAction *decompileSelectedInstructionsAction_; ///< Action for decompiling selected instructions.
 
     QSettings *settings_; ///< Application settings.
+
+    QString styleSheetFile_; ///< The Qt style sheet file.
 
     std::unique_ptr<Project> project_; ///< Current project.
 
@@ -236,6 +239,17 @@ private:
      */
     void saveSettings();
 
+    /**
+     * Sets the style sheet file to the given filename, loads and applies the
+     * style sheet from the file.
+     *
+     * \param filename The filename.
+     *
+     * \return True if the style sheet was successfully loaded, false
+     * otherwise.
+     */
+    bool setStyleSheetFile(QString filename);
+
 private Q_SLOTS:
     /**
      * Disable or enable actions depending on current state.
@@ -290,6 +304,11 @@ private Q_SLOTS:
      * Export CFG in DOT format.
      */
     void exportCfg();
+
+    /**
+     * Opens a load style sheet dialog.
+     */
+    void loadStyleSheet();
 
     /**
      * Opens disassembly dialog.

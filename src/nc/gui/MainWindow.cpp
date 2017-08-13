@@ -179,6 +179,9 @@ void MainWindow::createActions() {
     exportCfgAction_ = new QAction(tr("&Export CFG..."), this);
     connect(exportCfgAction_, SIGNAL(triggered()), this, SLOT(exportCfg()));
 
+    loadStyleSheetAction_ = new QAction(tr("Load st&yle sheet..."), this);
+    connect(loadStyleSheetAction_, SIGNAL(triggered()), this, SLOT(loadStyleSheet()));
+
     quitAction_ = new QAction(tr("&Quit"), this);
     quitAction_->setShortcuts(QKeySequence::Quit);
     connect(quitAction_, SIGNAL(triggered()), this, SLOT(close()));
@@ -243,6 +246,8 @@ void MainWindow::createMenus() {
     fileMenu->addSeparator();
     fileMenu->addAction(exportCfgAction_);
     fileMenu->addSeparator();
+    fileMenu->addAction(loadStyleSheetAction_);
+    fileMenu->addSeparator();
     fileMenu->addAction(quitAction_);
 
     QMenu *analyseMenu = menuBar()->addMenu(tr("&Analyse"));
@@ -271,6 +276,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 }
 
 void MainWindow::loadSettings() {
+    setStyleSheetFile(settings_->value("styleSheetFile", QString()).toString());
     if (parent() == nullptr) {
         restoreGeometry(settings_->value("geometry", saveGeometry()).toByteArray());
     }
@@ -291,6 +297,7 @@ void MainWindow::loadSettings() {
 }
 
 void MainWindow::saveSettings() {
+    settings_->setValue("styleSheetFile", styleSheetFile_);
     if (parent() == nullptr) {
         settings_->setValue("geometry", saveGeometry());
     }
@@ -500,6 +507,35 @@ void MainWindow::exportCfg() {
         QTextStream out(&file);
         out << *context->program();
     }
+}
+
+void MainWindow::loadStyleSheet() {
+    QString filename = QFileDialog::getOpenFileName(this, tr("What Qt style sheet file should I load?"), QString(), tr("Style sheets (*.qss *.css);;All Files(*)"));
+
+    if (filename.isEmpty()) {
+        if (QMessageBox::question(this, tr("Question"), tr("Do you want me to load an empty style sheet?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+            setStyleSheetFile(filename);
+        }
+    } else {
+        if (!setStyleSheetFile(filename)) {
+            QMessageBox::critical(this, tr("Error"), tr("File %1 could not be opened for reading.").arg(filename));
+        }
+    }
+}
+
+bool MainWindow::setStyleSheetFile(QString filename) {
+    if (filename.isEmpty()) {
+        setStyleSheet(QString());
+    } else {
+        QFile file(filename);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            return false;
+        }
+        setStyleSheet(QLatin1String(file.readAll()));
+    }
+    cxxView_->rehighlight();
+    styleSheetFile_ = filename;
+    return true;
 }
 
 void MainWindow::disassemble() {

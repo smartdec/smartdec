@@ -65,7 +65,7 @@ public:
         ITEM_COUNT
     };
 
-    CxxFormatting();
+    CxxFormatting(QWidget *parent);
 
     /**
      * \param[in] element Text element.
@@ -76,19 +76,19 @@ public:
         return formats_[element];
     }
 
-    Q_PROPERTY(QColor textColor READ textColor WRITE setTextColor)
-    Q_PROPERTY(QColor singleLineCommentColor READ singleLineCommentColor WRITE setSingleLineCommentColor)
-    Q_PROPERTY(QColor multiLineLineCommentColor READ multiLineCommentColor WRITE setMultiLineCommentColor)
-    Q_PROPERTY(QColor keywordColor READ keywordColor WRITE setKeywordColor)
-    Q_PROPERTY(QColor operatorColor READ operatorColor WRITE setOperatorColor)
-    Q_PROPERTY(QColor numberColor READ numberColor WRITE setNumberColor)
-    Q_PROPERTY(QColor macroColor READ macroColor WRITE setMacroColor)
-    Q_PROPERTY(QColor stringColor READ stringColor WRITE setStringColor)
-    Q_PROPERTY(QColor escapeCharColor READ escapeCharColor WRITE setEscapeCharColor)
-
 private:
     /** Formats of the text elements. */
     boost::array<QTextCharFormat, ITEM_COUNT> formats_;
+
+    Q_PROPERTY(QColor textColor READ textColor WRITE setTextColor STORED false)
+    Q_PROPERTY(QColor singleLineCommentColor READ singleLineCommentColor WRITE setSingleLineCommentColor STORED false)
+    Q_PROPERTY(QColor multiLineLineCommentColor READ multiLineCommentColor WRITE setMultiLineCommentColor STORED false)
+    Q_PROPERTY(QColor keywordColor READ keywordColor WRITE setKeywordColor STORED false)
+    Q_PROPERTY(QColor operatorColor READ operatorColor WRITE setOperatorColor STORED false)
+    Q_PROPERTY(QColor numberColor READ numberColor WRITE setNumberColor STORED false)
+    Q_PROPERTY(QColor macroColor READ macroColor WRITE setMacroColor STORED false)
+    Q_PROPERTY(QColor stringColor READ stringColor WRITE setStringColor STORED false)
+    Q_PROPERTY(QColor escapeCharColor READ escapeCharColor WRITE setEscapeCharColor STORED false)
 
     void setTextColor(QColor color) { formats_[TEXT].setForeground(color); }
     QColor textColor() const { return formats_[TEXT].foreground().color(); }
@@ -128,8 +128,9 @@ public:
      * Constructor.
      * 
      * \param[in] parent Pointer to the parent object. Can be nullptr.
+     * \param[in] formatting Valid pointer to the formatting information.
      */
-    explicit CppSyntaxHighlighter(QObject *parent = nullptr);
+    explicit CppSyntaxHighlighter(QObject *parent, const CxxFormatting *formatting);
 
     /**
      * Virtual destructor.
@@ -166,7 +167,7 @@ private:
     QRegExp mOperatorRegexp;
     QRegExp mTextRegexp;
 
-    CxxFormatting formatting_;
+    const CxxFormatting *formatting_;
 };
 
 }} // namespace nc::gui

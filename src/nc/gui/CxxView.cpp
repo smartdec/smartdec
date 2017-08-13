@@ -45,7 +45,7 @@ CxxView::CxxView(QWidget *parent):
     TextView(tr("C++"), parent),
     document_(nullptr)
 {
-    highlighter_ = new CppSyntaxHighlighter(this);
+    highlighter_ = new CppSyntaxHighlighter(this, new CxxFormatting(this));
 
     gotoLabelAction_ = new QAction(tr("Go to Label"), this);
     gotoLabelAction_->setShortcut(Qt::CTRL + Qt::Key_Backslash);
@@ -100,6 +100,10 @@ void CxxView::setDocument(CxxDocument *document) {
     textEdit()->blockSignals(false);
 
     updateSelection();
+}
+
+void CxxView::rehighlight() {
+    highlighter_->rehighlight();
 }
 
 void CxxView::updateSelection() {

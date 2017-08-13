@@ -98,6 +98,11 @@ public:
     CxxDocument *document() const { return document_; }
 
     /**
+     * \return Rehighlights the whole document.
+     */
+    void rehighlight();
+
+    /**
      * \return LikeC tree nodes currently selected in text.
      */
     const std::vector<const core::likec::TreeNode *> &selectedNodes() const { return selectedNodes_; }
