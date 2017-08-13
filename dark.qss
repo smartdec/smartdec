@@ -1,0 +1,16 @@
+QPlainTextEdit {
+    color: #FFFFFF;
+    background-color: #272822;
+}
+
+nc--gui--CxxFormatting {
+    qproperty-textColor: #FFFFFF;
+    qproperty-singleLineCommentColor: #57A64A;
+    qproperty-multiLineLineCommentColor: #57A64A;
+    qproperty-keywordColor: #569CD6;
+    qproperty-operatorColor: #B4B4B4;
+    qproperty-numberColor: #B5CEA8;
+    qproperty-macroColor: #BD63C5;
+    qproperty-stringColor: #D69D85;
+    qproperty-escapeCharColor: #4EC9B3;
+}
