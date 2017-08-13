@@ -138,6 +138,9 @@ QString NameGenerator::cleanName(const QString &name) {
     bool skipped = true;
     foreach (QChar c, name) {
         if (c.isLetterOrNumber() || c == '_') {
+            if (result.isEmpty() && c.isNumber()) {
+                result += '_';
+            }
             result += c;
             skipped = false;
         } else if (!skipped) {
