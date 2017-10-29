@@ -230,9 +230,7 @@ public:
                 break;
             }
             case UD_Iand: {
-                if (operandsAreTheSame(0, 1)) {
-                    _[operand(0) ^= operand(0)];
-                } else {
+                if (!operandsAreTheSame(0, 1)) {
                     _[operand(0) ^= operand(0) & operand(1)];
                 }
 
@@ -883,9 +881,7 @@ public:
                 break;
             }
             case UD_Ior: {
-                if (operandsAreTheSame(0, 1)) {
-                    _[operand(0) ^= operand(0)];
-                } else {
+                if (!operandsAreTheSame(0, 1)) {
                     _[operand(0) ^= operand(0) | operand(1)];
                 }
 
