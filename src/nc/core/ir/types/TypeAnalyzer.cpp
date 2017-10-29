@@ -213,7 +213,7 @@ void TypeAnalyzer::analyze(const UnaryOperator *unary) {
     Type *operandType = types_.getType(unary->operand());
 
     switch (unary->operatorKind()) {
-        case UnaryOperator::NOT: /* FALLTHROUGH */
+        case UnaryOperator::NOT:
             operandType->makeInteger();
             type->makeInteger();
             break;
