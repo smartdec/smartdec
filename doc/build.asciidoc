@@ -52,14 +52,28 @@ are binary compatible and work too):
 
 3. Qt must be built in namespace `QT`, e.g.:
 +
+Qt4, Windows, 32-bit:
++
 ------------------------------------------------------------------------
 configure.exe -qtnamespace QT -platform win32-msvc2010 -debug-and-release -opensource -no-qt3support -no-multimedia -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools -nomake demos -nomake examples && nmake
 ------------------------------------------------------------------------
 +
-or, on Linux:
+Qt4, Linux, 32-bit:
 +
 ------------------------------------------------------------------------
-CXX=g++ CC=gcc ./configure -qtnamespace QT -platform linux-g++-32 -debug-and-release -confirm-license -opensource -no-qt3support -no-multimedia -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools -nomake demos -nomake examples -prefix /home/yegor/opt/qt-4.8.4-32 && make && make install
+./configure -qtnamespace QT -platform linux-g++-32 -debug-and-release -confirm-license -opensource -no-qt3support -no-multimedia -no-audio-backend -no-phonon -no-webkit -no-script -no-scripttools -nomake demos -nomake examples -prefix $HOME/opt/qt-4.8.4-32 && make && make install
+------------------------------------------------------------------------
++
+Qt5, Windows, 64-bit:
++
+------------------------------------------------------------------------
+configure.exe -qtnamespace QT -platform win32-msvc2015 -debug-and-release -opensource -no-audio-backend -nomake examples -nomake tools && nmake
+------------------------------------------------------------------------
++
+Qt5, Linux, 64-bit:
++
+------------------------------------------------------------------------
+./configure -qtnamespace QT -platform linux-g++-64 -release -confirm-license -opensource -no-audio-backend -nomake examples -prefix $HOME/opt/qt-5.6.1-64 && make && make install
 ------------------------------------------------------------------------
 
 4. You must must build decompiler in +Release+ mode, because this is the
