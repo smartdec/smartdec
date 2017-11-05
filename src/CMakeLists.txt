@@ -156,7 +156,7 @@ endif()
 find_package(IDA)
 
 # Option for building IDA plug-in.
-set(IDA_PLUGIN_ENABLED ${IDA_SDK_FOUND} CACHE BOOL "Build IDA plug-in.")
+set(IDA_PLUGIN_ENABLED ${IDA_SDK_DIR} CACHE BOOL "Build IDA plug-in.")
 
 # Position-independent code is necessary for the IDA plug-in.
 if(${IDA_PLUGIN_ENABLED})

@@ -1,26 +1,9 @@
-set(IDA_FOUND FALSE)
-set(IDA_SDK_FOUND FALSE)
-
-#
-# Find IDA.
-#
-
-find_path(IDA_PATH
-    NAME "idag.exe" "idaq.exe"
-    HINTS $ENV{IDA_DIR} $ENV{IDADIR}
-    PATHS "C:/Program Files/IDA" "C:/Program Files (x86)/IDA"
-    DOC "IDA installation directory.")
-
-if(IDA_PATH)
-    set(IDA_FOUND TRUE)
-    message(STATUS "Looking for IDA - found at ${IDA_PATH}")
+# Detect the bitness.
+if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT NC_M32)
+    set(prefix "x64")
 else()
-    message(STATUS "Looking for IDA - not found")
+    set(prefix "x86")
 endif()
-
-#
-# Make up the name of the SDK library subdirectory.
-#
 
 # Detect the platform.
 set(platform "unknown")
@@ -57,27 +40,32 @@ else()
 endif()
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT NC_M32)
-    set(library_dir "lib/x64_${platform}_${compiler}_${suffix}")
+    set(library_dir "lib/${prefix}_${platform}_${compiler}_${suffix}")
 else()
-    set(library_dir "lib/x86_${platform}_${compiler}_${suffix}")
+    set(library_dir "lib/${prefix}_${platform}_${compiler}_${suffix}")
 endif()
 
 #
 # Find IDA SDK.
 #
-find_path(IDA_SDK_PATH
+find_path(IDA_SDK_DIR
     NAME ${library_dir}
     HINTS $ENV{IDA_SDK_DIR}
-    PATHS "${IDA_PATH}/sdk"
     DOC "IDA SDK directory.")
 
-if(IDA_SDK_PATH)
-    set(IDA_SDK_FOUND TRUE)
-    set(IDA_INCLUDE_DIR ${IDA_SDK_PATH}/include)
-    set(IDA_LIBRARY_DIR ${IDA_SDK_PATH}/${library_dir})
+if(IDA_SDK_DIR)
+    set(IDA_INCLUDE_DIR "${IDA_SDK_DIR}/include")
+    set(IDA_LIBRARY_DIR "${IDA_SDK_DIR}/${library_dir}")
+
+    file(READ "${IDA_INCLUDE_DIR}/pro.h" pro_h)
+    string(REGEX MATCH "#define +IDA_SDK_VERSION +([0-9]+)" CMAKE_MATCH_0 ${pro_h})
+    set(IDA_SDK_VERSION ${CMAKE_MATCH_1})
+    unset(pro_h)
 
     if(MSVC)
         file(GLOB IDA_LIBRARIES "${IDA_LIBRARY_DIR}/*.lib")
+    elseif(APPLE)
+        file(GLOB IDA_LIBRARIES "${IDA_LIBRARY_DIR}/*.dylib")
     else()
         file(GLOB IDA_LIBRARIES "${IDA_LIBRARY_DIR}/*.a")
     endif()
@@ -85,12 +73,10 @@ if(IDA_SDK_PATH)
     set(IDA_DEFINITIONS -D__IDP__)
     if(WIN32)
         set(IDA_DEFINITIONS ${IDA_DEFINITIONS} -D__NT__)
-    endif()
-    if(UNIX)
-        set(IDA_DEFINITIONS ${IDA_DEFINITIONS} -D__LINUX__)
-    endif()
-    if(APPLE)
+    elseif(APPLE)
         set(IDA_DEFINITIONS ${IDA_DEFINITIONS} -D__MAC__)
+    else()
+        set(IDA_DEFINITIONS ${IDA_DEFINITIONS} -D__LINUX__)
     endif()
     if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT NC_M32)
         set(IDA_DEFINITIONS ${IDA_DEFINITIONS} -D__X64__)
@@ -100,38 +86,55 @@ if(IDA_SDK_PATH)
     endif()
 
     if(WIN32)
-        if(IDA_64_BIT_EA_T)
-            set(IDA_PLUGIN_EXT ".p64")
+        if(${IDA_64_BIT_EA_T})
+            if(${IDA_SDK_VERSION} GREATER_EQUAL 700)
+                set(IDA_PLUGIN_EXT "64.dll")
+            else()
+                set(IDA_PLUGIN_EXT ".p64")
+            endif()
         else()
-            set(IDA_PLUGIN_EXT ".plw")
+            if(${IDA_SDK_VERSION} GREATER_EQUAL 700)
+                set(IDA_PLUGIN_EXT ".dll")
+            else()
+                set(IDA_PLUGIN_EXT ".plw")
+            endif()
         endif()
     elseif(APPLE)
-        if(IDA_64_BIT_EA_T)
-            set(IDA_PLUGIN_EXT ".pmc64")
-            set(IDA_SHARED_LIB_NAME ida64)
+        if(${IDA_64_BIT_EA_T})
+            if(${IDA_SDK_VERSION} GREATER_EQUAL 700)
+                set(IDA_PLUGIN_EXT "64.dylib")
+            else()
+                set(IDA_PLUGIN_EXT ".pmc64")
+            endif()
         else()
-            set(IDA_PLUGIN_EXT ".pmc")
-            set(IDA_SHARED_LIB_NAME ida)
+            if(${IDA_SDK_VERSION} GREATER_EQUAL 700)
+                set(IDA_PLUGIN_EXT ".dylib")
+            else()
+                set(IDA_PLUGIN_EXT ".pmc")
+            endif()
         endif()
-        if (IDA_PATH)
-            file(GLOB_RECURSE IDA_SHARED_LIBRARY  "${IDA_PATH}/*/lib${IDA_SHARED_LIB_NAME}.dylib")
-        else()
-            file(GLOB_RECURSE IDA_SHARED_LIBRARY  "/Applications/IDA*/lib${IDA_SHARED_LIB_NAME}.dylib")
-        endif()
-        set(IDA_LIBRARIES ${IDA_LIBRARIES} ${IDA_SHARED_LIBRARY})
     else()
-        if(IDA_64_BIT_EA_T)
-            set(IDA_PLUGIN_EXT ".plx64")
+        if(${IDA_64_BIT_EA_T})
+            if(${IDA_SDK_VERSION} GREATER_EQUAL 700)
+                set(IDA_PLUGIN_EXT "64.so")
+            else()
+                set(IDA_PLUGIN_EXT ".plx64")
+            endif()
         else()
-            set(IDA_PLUGIN_EXT ".plx")
+            if(${IDA_SDK_VERSION} GREATER_EQUAL 700)
+                set(IDA_PLUGIN_EXT ".so")
+            else()
+                set(IDA_PLUGIN_EXT ".plx")
+            endif()
         endif()
     endif()
 
-    message(STATUS "Looking for IDA SDK - found at ${IDA_SDK_PATH}")
+    message(STATUS "Looking for IDA SDK - found version ${IDA_SDK_VERSION} at ${IDA_SDK_DIR}")
 else()
     message(STATUS "Looking for IDA SDK - not found")
 endif()
 
+unset(prefix)
 unset(platform)
 unset(compiler)
 unset(suffix)
