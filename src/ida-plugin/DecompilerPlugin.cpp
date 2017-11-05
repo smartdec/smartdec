@@ -41,36 +41,19 @@
 #include <nc/gui/Project.h>
 
 #include "IdaDemangler.h"
-#include "IdaFrontend.h"
 #include "NavigationHelper.h"
 
 namespace nc { namespace ida {
 
 namespace {
 
-const char *decompileFunctionHotkey = "F3";
-const char *decompileProgramHotkey  = "Ctrl-F3";
+const char *const decompileFunctionHotkey = "F3";
+const char *const decompileProgramHotkey  = "Ctrl-F3";
 
-const char *subviewsMenuPath = "View/Open subviews";
-const char *hexDumpMenuItem = "Hex dump";
-const char *decompileFunctionMenuItem = "Decompile a function";
-const char *decompileProgramMenuItem  = "Decompile a program";
-
-DecompilerPlugin *globalPluginInstance = NULL;
+const char *const subviewsMenuPath = "View/Open subviews";
+const char *const hexDumpMenuItem = "Hex dump";
 
 } // anonymous namespace
-
-extern "C" {
-    static bool decompileFunctionCallback() {
-        globalPluginInstance->decompileFunction();
-        return true;
-    }
-
-    static bool decompileAllCallback() {
-        globalPluginInstance->decompileProgram();
-        return true;
-    }
-}
 
 DecompilerPlugin::DecompilerPlugin():
     programWindow_(NULL)
@@ -78,25 +61,21 @@ DecompilerPlugin::DecompilerPlugin():
     branding_ = nc::branding();
     branding_.setApplicationName("Snowman");
 
-    if (QApplication::instance() == NULL) {
-        static int argc = 1;
-        static char *argv[] = {const_cast<char *>("dummy.exe")};
+    assert(QApplication::instance());
 
-        mApplication.reset(new QApplication(argc, argv));
-    }
-
-    globalPluginInstance = this;
-
-    IdaFrontend::addMenuItem(
-        tr("%1/%2").arg(subviewsMenuPath).arg(hexDumpMenuItem),
-        tr(decompileProgramMenuItem),
+    menuItems_.push_back(IdaFrontend::addMenuItem(
+        subviewsMenuPath,
+        tr("Decompile a program"),
+        hexDumpMenuItem,
         decompileProgramHotkey,
-        &decompileAllCallback);
-    IdaFrontend::addMenuItem(
-        tr("%1/%2").arg(subviewsMenuPath).arg(hexDumpMenuItem),
-        tr(decompileFunctionMenuItem),
+        [this]{ decompileProgram(); }));
+
+    menuItems_.push_back(IdaFrontend::addMenuItem(
+        subviewsMenuPath,
+        tr("Decompile a function"),
+        hexDumpMenuItem,
         decompileFunctionHotkey,
-        &decompileFunctionCallback);
+        [this]{ decompileFunction(); }));
 
     IdaFrontend::print(tr(
         "%1 plugin %2 loaded.\n"
@@ -109,8 +88,9 @@ DecompilerPlugin::DecompilerPlugin():
 }
 
 DecompilerPlugin::~DecompilerPlugin() {
-    IdaFrontend::deleteMenuItem(tr("%1/%2").arg(subviewsMenuPath).arg(decompileFunctionMenuItem));
-    IdaFrontend::deleteMenuItem(tr("%1/%2").arg(subviewsMenuPath).arg(decompileProgramMenuItem));
+    foreach (auto menuItem, menuItems_) {
+        IdaFrontend::deleteMenuItem(menuItem);
+    }
 }
 
 void DecompilerPlugin::decompileFunction() {

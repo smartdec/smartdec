@@ -34,6 +34,7 @@
 #include <nc/common/Branding.h>
 #include <nc/common/Types.h>
 
+#include "IdaFrontend.h"
 #include "IdaPlugin.h"
 
 QT_BEGIN_NAMESPACE
@@ -86,6 +87,9 @@ private:
     /** Main window decompiliing the whole program. */
     gui::MainWindow *programWindow_;
 
+    /** Menu items to be destroyed on destruction. */
+    std::vector<IdaFrontend::MenuItem *> menuItems_;
+
     /**
      * Creates a main window inside an IDA tab widget.
      *
@@ -100,8 +104,7 @@ private:
      */
     void activateWindow(gui::MainWindow *window);
 
-    private Q_SLOTS:
-
+private Q_SLOTS:
     /**
      * Slot handling destruction of a main window (owned by IDA).
      *
@@ -109,8 +112,7 @@ private:
      */
     void windowDestroyed(QObject *object);
 
-    private:
-
+private:
     /**
      * Creates a project for decompiling (a part of) the program opened in IDA.
      * \return Valid pointer to the project.
