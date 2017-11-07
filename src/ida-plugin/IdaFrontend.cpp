@@ -43,6 +43,10 @@
 
 #include "IdaByteSource.h"
 
+#if IDA_SDK_VERSION >= 700
+extern "C" plugin_t PLUGIN;
+#endif
+
 namespace nc { namespace ida {
 
 bool IdaFrontend::jumpToAddress(ByteAddr address) {
@@ -300,11 +304,10 @@ struct IdaFrontend::MenuItem: public ::action_handler_t {
         handler_(handler),
         actionName_(QString("snowman:%1").arg(name))
     {
-        action_desc_t desc ACTION_DESC_LITERAL_OWNER(
+        action_desc_t desc ACTION_DESC_LITERAL(
             actionName_.toLocal8Bit().constData(),
             name.toLocal8Bit().constData(),
             this,
-            nullptr,
             hotkey.toLocal8Bit().constData(),
             nullptr,
             -1
