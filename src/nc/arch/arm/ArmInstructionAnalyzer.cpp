@@ -272,39 +272,31 @@ private:
             }
             break;
         }
-        case ARM_INS_LDR:
-        case ARM_INS_LDRT:
-        case ARM_INS_LDREX: { // TODO: atomic
+        case ARM_INS_LDR: {
             _[operand(0) ^= operand(1)];
             handleWriteback(bodyBasicBlock, 1);
             handleWriteToPC(bodyBasicBlock);
             break;
         }
-        case ARM_INS_LDRH:
-        case ARM_INS_LDRHT:
-        case ARM_INS_LDREXH: { // TODO: atomic
+        case ARM_INS_LDRH: {
             _[operand(0) ^= zero_extend(operand(1, 16))];
             handleWriteback(bodyBasicBlock, 1);
             handleWriteToPC(bodyBasicBlock);
             break;
         }
-        case ARM_INS_LDRSH:
-        case ARM_INS_LDRSHT: {
+        case ARM_INS_LDRSH: {
             _[operand(0) ^= sign_extend(operand(1, 16))];
             handleWriteback(bodyBasicBlock, 1);
             handleWriteToPC(bodyBasicBlock);
             break;
         }
-        case ARM_INS_LDRB:
-        case ARM_INS_LDRBT:
-        case ARM_INS_LDREXB: { // TODO: atomic
+        case ARM_INS_LDRB: {
             _[operand(0) ^= zero_extend(operand(1, 8))];
             handleWriteback(bodyBasicBlock, 1);
             handleWriteToPC(bodyBasicBlock);
             break;
         }
-        case ARM_INS_LDRSB:
-        case ARM_INS_LDRSBT: {
+        case ARM_INS_LDRSB: {
             _[operand(0) ^= sign_extend(operand(1, 8))];
             handleWriteback(bodyBasicBlock, 1);
             handleWriteToPC(bodyBasicBlock);
@@ -452,23 +444,17 @@ private:
             }
             break;
         }
-        case ARM_INS_STR:
-        case ARM_INS_STRT:
-        case ARM_INS_STREX: { // TODO: atomic
+        case ARM_INS_STR: {
             _[operand(1) ^= operand(0)];
             handleWriteback(bodyBasicBlock, 1);
             break;
         }
-        case ARM_INS_STRH:
-        case ARM_INS_STRHT:
-        case ARM_INS_STREXH: {
+        case ARM_INS_STRH: {
             _[operand(1, 16) ^= truncate(operand(0))];
             handleWriteback(bodyBasicBlock, 1);
             break;
         }
-        case ARM_INS_STRB:
-        case ARM_INS_STRBT:
-        case ARM_INS_STREXB: {
+        case ARM_INS_STRB: {
             _[operand(1, 8) ^= truncate(operand(0))];
             handleWriteback(bodyBasicBlock, 1);
             break;
@@ -544,7 +530,7 @@ private:
             }
         }
         if (detail_->operands[memOperandIndex].type != ARM_OP_MEM) {
-            throw core::irgen::InvalidInstructionException(tr("Expected the %1s operand to be a memory operand.").arg(memOperandIndex));
+            throw core::irgen::InvalidInstructionException(tr("Expected the operand #%1 to be a memory operand.").arg(memOperandIndex));
         }
 
         using namespace core::irgen::expressions;
