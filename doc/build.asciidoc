@@ -18,7 +18,7 @@ build it. The following compilers are known to work:
 The following software packages must be installed before Snowman can be
 built:
 
-    * http://cmake.org/[CMake] >= 3.9
+    * http://cmake.org/[CMake] >= 3.7
     * http://www.boost.org/[Boost] >= 1.49 (headers only)
     * http://qt-project.org/[Qt] >= 4.7
 
