@@ -224,6 +224,8 @@ public:
                         operand(0) ^= (temporary(64) & constant(0x00FF00FF00FF00FFUL)) << constant(8)
                             | unsigned_(temporary(64) & constant(0xFF00FF00FF00FF00UL)) >> constant(8)
                     ];
+                } else if (operand(0).size() == 16) {
+                    operand(0) ^= undefined();
                 } else {
                     unreachable();
                 }
