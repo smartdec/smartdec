@@ -857,7 +857,15 @@ public:
                 break;
             }
             case UD_Imovzx: {
-                _[operand(0) ^= zero_extend(operand(1))];
+                auto operand0 = operand(0);
+                auto operand1 = operand(1);
+
+                if (operand0.size() > operand1.size()) {
+                    _[std::move(operand0) ^= zero_extend(std::move(operand1))];
+                } else {
+                    /* Yes, movzww exists: https://github.com/yegord/snowman/issues/153 */
+                    _[std::move(operand0) ^= std::move(operand1)];
+                }
                 break;
             }
             case UD_Ineg: {
