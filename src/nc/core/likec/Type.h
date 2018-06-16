@@ -115,9 +115,9 @@ class Type: public Printable {
     virtual bool isPointer() const { return false; }
 
     /**
-     * \return True, if the type is integer or pointer.
+     * \return True, if the type is an arithmetic type or a pointer.
      */
-    virtual bool isScalar() const { return isInteger() || isPointer(); }
+    virtual bool isScalar() const { return isArithmetic() || isPointer(); }
 
     /**
      * \return True if the type is structure.

@@ -90,8 +90,6 @@ class IntegerType: public Type {
     bool isUnsigned() const { return isUnsigned_; }
 
     virtual bool isInteger() const override { return true; }
-    virtual bool isArithmetic() const override { return true; }
-    virtual bool isScalar() const override { return true; }
 
     virtual void print(QTextStream &out) const override;
 };
@@ -109,8 +107,7 @@ class FloatType: public Type {
      */
     FloatType(BitSize size): Type(size, FLOAT) {}
 
-    virtual bool isInteger() const override { return true; }
-    virtual bool isArithmetic() const override { return true; }
+    virtual bool isFloat() const override { return true; }
 
     virtual void print(QTextStream &out) const override;
 };
@@ -171,7 +168,6 @@ class PointerType: public Type {
     virtual bool isPointer() const override { return true; }
     virtual bool isVoidPointer() const override { return pointeeType()->isVoid(); }
     virtual bool isStructurePointer() const override { return pointeeType()->isStructure(); }
-    virtual bool isScalar() const override { return true; }
 
     virtual void print(QTextStream &out) const override;
 };
@@ -212,6 +208,8 @@ class ArrayType: public PointerType {
     void setLength(std::size_t length) { length_ = length; }
 
     virtual BitSize sizeOf() const override { return elementType()->size() * length(); }
+
+    virtual bool isScalar() const override { return false; }
 
     virtual void print(QTextStream &out) const override;
 };
