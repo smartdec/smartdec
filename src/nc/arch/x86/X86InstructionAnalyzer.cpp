@@ -387,6 +387,7 @@ public:
                             less_or_equal    ^= signed_(left) <= right,
                             below_or_equal   ^= unsigned_(left) <= right
                         ];
+                        break;
                     }
                     case UD_Imovsb: case UD_Imovsw: case UD_Imovsd: case UD_Imovsq: {
                         repPrefixIsValid = true;

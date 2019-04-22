@@ -15,7 +15,12 @@ set(SOURCES
 )
 
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-    add_definitions(-Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable)
+    add_definitions(
+        -Wno-unused-function
+        -Wno-unused-variable
+        -Wno-unused-but-set-variable
+        -Wno-implicit-fallthrough
+    )
 endif()
 
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
