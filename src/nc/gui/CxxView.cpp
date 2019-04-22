@@ -165,7 +165,7 @@ boost::optional<ConstantValue> CxxView::getIntegerUnderCursor() const {
     cursor.movePosition(QTextCursor::StartOfWord);
     cursor.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
 
-    if (auto value = stringToInt<ConstantValue>(cursor.selectedText())) {
+    if (auto value = stringToInt<ConstantValue>(cursor.selectedText(), 0)) {
         return *value;
     }
     return boost::none;
