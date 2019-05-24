@@ -330,7 +330,7 @@ list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/common/Version.cpp")
 qt4_wrap_cpp(SOURCES ${MOC_HEADERS} OPTIONS -DQ_MOC_RUN)
 
 add_library(nc ${SOURCES})
-target_link_libraries(nc capstone-static udis86 iberty undname ${Boost_LIBRARIES} ${QT_LIBRARIES})
+target_link_libraries(nc capstone-static udis86 iberty undname ${Boost_LIBRARIES} ${NC_QT_CORE})
 
 add_subdirectory(gui)
 

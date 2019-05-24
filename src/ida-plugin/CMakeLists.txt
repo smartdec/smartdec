@@ -38,7 +38,7 @@ endif()
 qt4_wrap_cpp(SOURCES ${MOC_HEADERS} OPTIONS -DQ_MOC_RUN)
 
 add_library(ida-plugin SHARED ${SOURCES})
-target_link_libraries(ida-plugin nc nc-gui ${Boost_LIBRARIES} ${QT_LIBRARIES} ${IDA_LIBRARIES})
+target_link_libraries(ida-plugin nc nc-gui ${Boost_LIBRARIES} ${NC_QT_CORE} ${NC_QT_WIDGETS} ${IDA_LIBRARIES})
 set_target_properties(ida-plugin PROPERTIES OUTPUT_NAME "snowman" PREFIX "" SUFFIX "${IDA_PLUGIN_EXT}")
 install(TARGETS ida-plugin RUNTIME DESTINATION bin LIBRARY DESTINATION lib)
 
