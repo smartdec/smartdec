@@ -43,7 +43,7 @@ std::shared_ptr<core::arch::Instruction> X86Disassembler::disassembleSingleInstr
     ud_set_input_buffer(&ud_obj_, const_cast<uint8_t *>(static_cast<const uint8_t *>(buffer)), checked_cast<std::size_t>(size));
 
     SmallByteSize instructionSize = ud_disassemble(&ud_obj_);
-    if (!instructionSize || ud_obj_.mnemonic == UD_Iinvalid) {
+    if (instructionSize == 0 || ud_obj_.mnemonic == UD_Iinvalid) {
         return nullptr;
     }
 

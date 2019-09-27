@@ -43,9 +43,8 @@ ByteOrder ArmArchitecture::getByteOrder(core::ir::Domain domain) const {
         domain == core::ir::MemoryDomain::STACK)
     {
         return byteOrder_;
-    } else {
-        return ByteOrder::LittleEndian;
     }
+    return ByteOrder::LittleEndian;
 }
 
 std::unique_ptr<core::arch::Disassembler> ArmArchitecture::createDisassembler() const {

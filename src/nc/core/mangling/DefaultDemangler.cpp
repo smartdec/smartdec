@@ -32,7 +32,7 @@ QString doDemangle(const char *symbol) {
     }
     if (auto output = std::unique_ptr<char[], FreeDeleter>(__unDName(nullptr, symbol, 0, 0))) {
         /* __unDName returns the input string, if fails do demangle. */
-        if (strcmp(output.get(), symbol)) {
+        if (strcmp(output.get(), symbol) != 0) {
             return QLatin1String(output.get());
         }
     }

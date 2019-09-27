@@ -54,7 +54,7 @@ boost::optional<HeaderPos> findHeaderPos(QIODevice *in) {
         char le_sig[2];
         if (!read(in, le_sig))
             goto rewind;
-        if (memcmp(le_sig, "LE", 2))
+        if (memcmp(le_sig, "LE", 2) == 0)
             goto rewind;
         HeaderPos hpos = {mz, mz + le_off};
         return hpos;

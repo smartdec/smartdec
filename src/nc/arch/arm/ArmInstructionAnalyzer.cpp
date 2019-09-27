@@ -807,11 +807,11 @@ private:
         unreachable();
     }
 
-    static std::unique_ptr<core::ir::Term> createRegisterAccess(int reg) {
+    static std::unique_ptr<core::ir::Term> createRegisterAccess(unsigned int reg) {
         return ArmInstructionAnalyzer::createTerm(getRegister(reg));
     }
 
-    static const core::arch::Register *getRegister(int reg) {
+    static const core::arch::Register *getRegister(unsigned int reg) {
         switch (reg) {
         #define REG(lowercase, uppercase) \
             case ARM_REG_##uppercase: return ArmRegisters::lowercase();
