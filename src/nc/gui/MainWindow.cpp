@@ -523,7 +523,7 @@ void MainWindow::loadStyleSheet() {
     }
 }
 
-bool MainWindow::setStyleSheetFile(QString filename) {
+bool MainWindow::setStyleSheetFile(const QString &filename) {
     if (filename.isEmpty()) {
         setStyleSheet(QString());
     } else {

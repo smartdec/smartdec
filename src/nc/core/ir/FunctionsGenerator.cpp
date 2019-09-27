@@ -69,7 +69,7 @@ void FunctionsGenerator::makeFunctions(const Program &program, Functions &functi
 
     CFG cfg(program.basicBlocks());
 
-    auto addFunction = [&](const std::vector<const BasicBlock *> basicBlocks, const BasicBlock *entry) {
+    auto addFunction = [&](const std::vector<const BasicBlock *> &basicBlocks, const BasicBlock *entry) {
         auto function = makeFunction(basicBlocks, entry);
         if (function->isEmpty()) {
             return;

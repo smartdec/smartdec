@@ -50,7 +50,7 @@ bool Instructions::add(std::shared_ptr<const Instruction> instruction) {
 
     auto &existing = address2instruction_[instruction->addr()];
     if (!existing) {
-        existing = instruction;
+        existing = std::move(instruction);
         return true;
     } else {
         return false;

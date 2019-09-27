@@ -248,7 +248,7 @@ private:
      * \return True if the style sheet was successfully loaded, false
      * otherwise.
      */
-    bool setStyleSheetFile(QString filename);
+    bool setStyleSheetFile(const QString &filename);
 
 private Q_SLOTS:
     /**

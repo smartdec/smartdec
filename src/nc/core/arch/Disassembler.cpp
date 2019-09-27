@@ -18,7 +18,7 @@ namespace nc {
 namespace core {
 namespace arch {
 
-void Disassembler::disassemble(const image::Image *image, const image::ByteSource *source, ByteAddr begin, ByteAddr end, InstructionCallback callback, const CancellationToken &canceled) {
+void Disassembler::disassemble(const image::Image *image, const image::ByteSource *source, ByteAddr begin, ByteAddr end, const InstructionCallback &callback, const CancellationToken &canceled) {
     assert(source != nullptr);
     assert(begin <= end);
 

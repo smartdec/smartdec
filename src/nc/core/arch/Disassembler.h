@@ -61,7 +61,7 @@ public:
      * \param callback Function being called for each disassembled instruction.
      * \param canceled Cancellation token.
      */
-    virtual void disassemble(const image::Image *image, const image::ByteSource *source, ByteAddr begin, ByteAddr end, InstructionCallback callback, const CancellationToken &canceled);
+    virtual void disassemble(const image::Image *image, const image::ByteSource *source, ByteAddr begin, ByteAddr end, const InstructionCallback &callback, const CancellationToken &canceled);
 
     /**
      * Disassembles a single instruction.
