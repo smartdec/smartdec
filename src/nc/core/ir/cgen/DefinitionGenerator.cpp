@@ -1161,7 +1161,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const
     auto identifier = std::make_unique<likec::VariableIdentifier>(makeVariableDeclaration(variable));
 
     if (termLocation == variable->memoryLocation()) {
-        return std::move(identifier);
+        return identifier;
     } else {
         /*
          * Generate pointer arithmetics to get to the right part of the variable.

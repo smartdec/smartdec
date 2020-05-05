@@ -400,7 +400,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<BinaryOperator>
         }
     }
 
-    return std::move(node);
+    return node;
 }
 
 std::unique_ptr<CallOperator> Simplifier::simplify(std::unique_ptr<CallOperator> node) {
@@ -475,7 +475,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<Typecast> node)
         return std::move(node->operand());
     }
 
-    return std::move(node);
+    return node;
 }
 
 std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<UnaryOperator> node) {
@@ -546,7 +546,7 @@ std::unique_ptr<Expression> Simplifier::simplify(std::unique_ptr<UnaryOperator> 
             break;
     }
 
-    return std::move(node);
+    return node;
 }
 
 std::unique_ptr<Expression> Simplifier::simplifyBooleanExpression(std::unique_ptr<Expression> node) {

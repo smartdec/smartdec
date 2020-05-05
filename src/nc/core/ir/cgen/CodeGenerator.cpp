@@ -150,7 +150,7 @@ const likec::StructType *CodeGenerator::makeStructuralType(const types::Type *ty
                     tree_.makeArrayType(tree_.makeIntegerType(CHAR_BIT, false), offsetValue - type->size() / CHAR_BIT)));
             }
             typeDeclaration->type()->addMember(std::make_unique<likec::MemberDeclaration>(
-                QString("f%1").arg(offsetValue), makeType(offsetType->pointee())));
+                QString("0x%1").arg(offsetValue, 0, 16), makeType(offsetType->pointee())));
         }
     }
 
