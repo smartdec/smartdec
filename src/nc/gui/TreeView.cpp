@@ -32,8 +32,9 @@
 #include <QMenu>
 #include <QTreeView>
 #include <QVBoxLayout>
-#include <QtAlgorithms>
 #include <QWheelEvent>
+
+#include <algorithm>
 
 #include <nc/common/make_unique.h>
 #include <nc/common/Foreach.h>
@@ -146,7 +147,7 @@ void TreeView::copy() {
         return;
     }
 
-    qSort(indexes.begin(), indexes.end(), [](const QModelIndex &a, const QModelIndex &b) -> bool {
+    ::std::sort(indexes.begin(), indexes.end(), [](const QModelIndex &a, const QModelIndex &b) -> bool {
         if (a.parent() == b.parent()) {
             return a.row() < b.row() || (a.row() == b.row() && a.column() < b.column());
         } else {
