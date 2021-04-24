@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -33,33 +36,23 @@ namespace nc {
 namespace core {
 namespace ir {
 
-Functions::~Functions() {
-    foreach(Function *function, functions_) {
-        delete function;
-    }
-}
+Functions::Functions() {}
+
+Functions::~Functions() {}
 
 void Functions::addFunction(std::unique_ptr<Function> function) {
-    if (function->entry() && function->entry()->address()) {
-        entry2functions_[*function->entry()->address()].push_back(function.get());
-    }
-
-    functions_.reserve(functions_.size() + 1);
-    functions_.push_back(function.release());
-}
-
-const std::vector<Function *> &Functions::getFunctionsAtAddress(ByteAddr address) const {
-    return nc::find(entry2functions_, address);
+    functions_.push_back(std::move(function));
 }
 
 void Functions::print(QTextStream &out) const {
-    out << "digraph Functions" << this << " {" << endl;
+    out << "digraph Functions" << this << " {" << '\n';
+    out << "compound = true" << '\n';
     
-    foreach (const Function *function, functions_) {
+    foreach (auto function, list()) {
         out << *function;
     }
 
-    out << "}" << endl;
+    out << "}" << '\n';
 }
 
 } // namespace ir

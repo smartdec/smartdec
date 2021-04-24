@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -23,7 +26,6 @@
 #include <nc/config.h>
 
 #include <QObject>
-#include <QString>
 
 #include "Logger.h"
 
@@ -35,18 +37,16 @@ namespace nc {
 class SignalLogger: public QObject, public nc::Logger {
     Q_OBJECT
 
-    public:
+public:
+    void log(LogLevel level, const QString &text) override;
 
-    void log(const QString &text) override {
-        Q_EMIT message(text);
-    }
-
-    Q_SIGNALS:
-
+Q_SIGNAL
     /**
      * Signal emitted when there is a message to be logged.
+     *
+     * \param message Formatted log message.
      */
-    void message(const QString &text);
+    void onMessage(const QString &message);
 };
 
 } // namespace nc

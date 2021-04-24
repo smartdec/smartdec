@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -36,15 +39,13 @@ class LabelDeclaration;
 class LabelIdentifier: public Expression {
     LabelDeclaration *declaration_; ///< Label declaration.
 
-    public:
-
+public:
     /**
-     * Class constructor.
+     * Constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] declaration Label declaration.
      */
-    LabelIdentifier(Tree &tree, LabelDeclaration *declaration);
+    explicit LabelIdentifier(LabelDeclaration *declaration);
 
     /**
      * \return Label declaration.
@@ -55,18 +56,12 @@ class LabelIdentifier: public Expression {
      * \return Label declaration.
      */
     const LabelDeclaration *declaration() const { return declaration_; }
-
-    virtual const Type *getType() const override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::LabelIdentifier, nc::core::likec::Expression::LABEL_IDENTIFIER)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::LabelIdentifier, nc::core::likec::Expression::LABEL_IDENTIFIER)
 
 /* vim:set et sts=4 sw=4: */

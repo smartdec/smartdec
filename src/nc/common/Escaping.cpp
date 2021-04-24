@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -32,7 +35,7 @@ QString escapeDotString(const QString &string) {
     result.reserve(string.size());
 
     foreach (QChar c, string) {
-        switch (c.toAscii()) {
+        switch (c.toLatin1()) {
             case '\\':
                 result += "\\\\";
                 break;
@@ -56,7 +59,10 @@ QString escapeCString(const QString &string) {
     result.reserve(string.size());
 
     foreach (QChar c, string) {
-        switch (c.toAscii()) {
+        switch (c.toLatin1()) {
+            case '\\':
+                result += "\\\\";
+                break;
             case '\a':
                 result += "\\a";
                 break;
@@ -77,6 +83,9 @@ QString escapeCString(const QString &string) {
                 break;
             case '\v':
                 result += "\\v";
+                break;
+            case '"':
+                result += "\\\"";
                 break;
             default:
                 result += c;

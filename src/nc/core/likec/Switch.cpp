@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -22,32 +25,14 @@
 #include "Switch.h"
 
 #include "Expression.h"
-#include "PrintContext.h"
 
 namespace nc {
 namespace core {
 namespace likec {
 
-void Switch::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(body());
-    visitor(expression());
-}
-
-Switch *Switch::rewrite() {
-    assert(expression_);
-    assert(body_);
-
-    rewriteChild(expression_);
-    rewriteChild(body_);
-
-    return this;
-}
-
-void Switch::doPrint(PrintContext &context) const {
-    context.out() << "switch (";
-    expression()->print(context);
-    context.out() << ") ";
-    printNestedStatement(body(), context);
+void Switch::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(body_.get());
+    fun(expression_.get());
 }
 
 } // namespace likec

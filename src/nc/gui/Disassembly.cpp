@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -22,10 +25,7 @@
 #include "Disassembly.h"
 
 #include <nc/core/Context.h>
-#include <nc/core/Module.h>
-#include <nc/core/arch/Architecture.h>
-#include <nc/core/arch/Instructions.h>
-#include <nc/core/arch/disasm/Disassembler.h>
+#include <nc/core/Driver.h>
 
 #include <cassert>
 
@@ -42,17 +42,10 @@ Disassembly::Disassembly(const std::shared_ptr<core::Context> &context, const co
 Disassembly::~Disassembly() {}
 
 void Disassembly::work() {
-    auto newInstructions = std::make_shared<core::arch::Instructions>(*context_->instructions());
-
-    core::arch::disasm::Disassembler disassembler(context_->module()->architecture(), newInstructions.get());
-    disassembler.disassemble(source_, begin_, end_, context_->cancellationToken());
-
-    context_->setInstructions(newInstructions);
-
-    if (context_->cancellationToken().cancellationRequested()) {
-        context_->logToken() << tr("Disassembly canceled.");
-    } else {
-        context_->logToken() << tr("Disassembly completed.");
+    try {
+        core::Driver::disassemble(*context_, source_, begin_, end_);
+    } catch (const CancellationException &) {
+        /* Nothing to do. */
     }
 }
 

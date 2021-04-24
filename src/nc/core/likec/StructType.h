@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -38,11 +41,10 @@ class StructTypeDeclaration;
  * Structural type.
  */
 class StructType: public Type {
-    std::vector<std::unique_ptr<MemberDeclaration> > members_; ///< Members of struct.
+    std::vector<std::unique_ptr<MemberDeclaration>> members_; ///< Members of struct.
     const StructTypeDeclaration *typeDeclaration_; ///< Type declaration.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -53,7 +55,9 @@ class StructType: public Type {
     /**
      * \return Members of struct.
      */
-    const std::vector<std::unique_ptr<MemberDeclaration> > &members() const { return members_; }
+    const std::vector<const MemberDeclaration *> &members() const {
+        return reinterpret_cast<const std::vector<const MemberDeclaration *> &>(members_);
+    }
 
     /**
      * \return Type declaration.
@@ -65,7 +69,7 @@ class StructType: public Type {
      *
      * \param[in] memberDeclaration Declaration of member.
      */
-    void addMember(MemberDeclaration *memberDeclaration);
+    void addMember(std::unique_ptr<MemberDeclaration> memberDeclaration);
 
     /**
      * \return Declaration of member starting at given bit offset in the struct.
@@ -74,15 +78,14 @@ class StructType: public Type {
      */
     const MemberDeclaration *getMember(BitSize offset) const;
 
-    virtual bool isStructure() const override { return true; }
-
-    virtual void print(QTextStream &out) const override;
+    bool isStructure() const override { return true; }
+    void print(QTextStream &out) const override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::StructType, nc::core::likec::Type::STRUCT_TYPE)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::StructType, nc::core::likec::Type::STRUCT_TYPE)
 
 /* vim:set et sts=4 sw=4: */

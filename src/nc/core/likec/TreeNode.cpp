@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,23 +24,19 @@
 
 #include "TreeNode.h"
 
-#include "PrintContext.h"
+#include "TreePrinter.h"
 
 namespace nc {
 namespace core {
 namespace likec {
 
-void TreeNode::print(PrintContext &context) const {
-    if (context.callback()) {
-        context.callback()->onStartPrinting(this);
-    }
+TreeNode::~TreeNode() {}
 
-    doPrint(context);
-    
-    if (context.callback()) {
-        context.callback()->onEndPrinting(this);
-    }
+void TreeNode::print(QTextStream &out) const {
+    TreePrinter(out, nullptr).print(this);
 }
+
+void TreeNode::doCallOnChildren(const std::function<void(TreeNode *)> &) {}
 
 } // namespace likec
 } // namespace core

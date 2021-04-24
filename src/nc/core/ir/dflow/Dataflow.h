@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,117 +25,164 @@
 
 #include <nc/config.h>
 
-#include <vector>
-#include <memory> /* unique_ptr */
+#include <memory>
 
 #include <boost/unordered_map.hpp>
 
-#include <nc/core/ir/MemoryLocation.h>
+#include <nc/common/Range.h>
 
-#include "Value.h"
+#include <nc/core/ir/MemoryLocation.h>
+#include <nc/core/ir/Term.h>
+
+#include "ReachingDefinitions.h"
 
 namespace nc {
 namespace core {
 namespace ir {
-
-class Term;
-
 namespace dflow {
+
+class Value;
 
 /**
  * This class contains results of dataflow and constant propagation and folding analysis.
  */
 class Dataflow {
-    boost::unordered_map<const Term *, std::unique_ptr<Value> > values_; ///< Term values.
-    boost::unordered_map<const Term *, MemoryLocation> memoryLocations_; ///< Term memory locations.
-    boost::unordered_map<const Term *, std::unique_ptr<std::vector<const Term *> > > definitions_; ///< Term definitions.
-    boost::unordered_map<const Term *, std::unique_ptr<std::vector<const Term *> > > uses_; ///< Term uses.
+    /** Mapping from a term to a description of its value. */
+    boost::unordered_map<const Term *, std::unique_ptr<Value>> term2value_;
 
-    public:
+    /** Mapping from a term to its memory location. */
+    boost::unordered_map<const Term *, MemoryLocation> term2location_;
+
+    /** Mapping from a term to the reaching definitions. */
+    boost::unordered_map<const Term *, ReachingDefinitions> term2definitions_;
+
+    /** Mapping from a statement to the reaching definitions. */
+    boost::unordered_map<const Statement *, ReachingDefinitions> statement2definitions_;
+
+public:
+    /**
+     * Constructor.
+     */
+    Dataflow();
 
     /**
-     * \param[in] term Term.
+     * Destructor.
+     */
+    ~Dataflow();
+
+    /**
+     * \param[in] term Valid pointer to a term.
      *
-     * \return Value of the term.
+     * \return Pointer to the value description for this term. Can be nullptr.
+     *         If the term is being assigned to, the value description
+     *         for the right hand side of the assignment is returned.
      */
     Value *getValue(const Term *term);
 
     /**
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to a term.
      *
-     * \return Value of the term.
+     * \return Valid pointer to the value description for this term.
+     *         If the term is being assigned to, the value description
+     *         for the right hand side of the assignment is returned.
      */
     const Value *getValue(const Term *term) const;
 
     /**
-     * \param[in] term Term.
-     *
-     * \return Memory location occupied by the term. If no memory location
-     *         is associated with this term, an empty (default-constructed)
-     *         MemoryLocation object is returned.
+     * \return Mapping from a term to the description of its value.
      */
-    const ir::MemoryLocation &getMemoryLocation(const Term *term) const;
+    boost::unordered_map<const Term *, std::unique_ptr<Value>> &term2value() { return term2value_; }
+
+    /**
+     * \return Mapping from a term to the description of its value.
+     */
+    const boost::unordered_map<const Term *, std::unique_ptr<Value>> &term2value() const { return term2value_; }
+
+    /**
+     * \param[in] term Valid pointer to a term.
+     *
+     * \return Memory location occupied by the term. If no memory location is associated
+     *         with this term, an invalid MemoryLocation object is returned.
+     */
+    const ir::MemoryLocation &getMemoryLocation(const Term *term) const {
+        assert(term != nullptr);
+        return nc::find(term2location_, term);
+    }
 
     /**
      * Associates a memory location with given term.
      *
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to a term.
      * \param[in] memoryLocation Memory location.
+     *
+     * \return Const reference to the memory location stored in the object.
      */
-    void setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation);
+    const MemoryLocation &setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation) {
+        assert(term != nullptr);
+        return (term2location_[term] = memoryLocation);
+    }
 
     /**
-     * Marks given term as not associated with any memory location.
-     *
-     * \param[in] term Term.
+     * \return Mapping from a term to its memory location.
      */
-    void unsetMemoryLocation(const Term *term) { memoryLocations_.erase(term); }
+    boost::unordered_map<const Term *, MemoryLocation> &term2location() { return term2location_; };
 
     /**
-     * \param[in] term Valid pointer to a "read" term.
-     *
-     * \return List of term's definitions. If it has not been set before,
-     *         an empty vector is returned.
+     * \return Mapping from a term to its memory location.
      */
-    const std::vector<const Term *> &getDefinitions(const Term *term) const;
+    const boost::unordered_map<const Term *, MemoryLocation> &term2location() const { return term2location_; };
 
     /**
-     * Sets the list of term's definitions.
+     * \param[in] term Valid pointer to a read term.
      *
-     * \param[in] term Valid pointer to a "read" term.
-     * \param[in] definitions Set of terms being definitions of this "read" term.
+     * \return List of term's definitions. If not set before, it is empty.
      */
-    void setDefinitions(const Term *term, const std::vector<const Term *> &definitions);
+    ReachingDefinitions &getDefinitions(const Term *term) {
+        assert(term != nullptr);
+        assert(term->isRead());
+        return term2definitions_[term];
+    }
 
     /**
-     * Clears the set of term's definitions.
+     * \param[in] term Valid pointer to a read term.
      *
-     * \param[in] term Valie pointer to a "read" term.
+     * \return List of term's definitions. If not set before, it is empty.
      */
-    void clearDefinitions(const Term *term);
+    const ReachingDefinitions &getDefinitions(const Term *term) const {
+        assert(term != nullptr);
+        assert(term->isRead());
+        return nc::find(term2definitions_, term);
+    }
 
     /**
-     * \param[in] term Term.
-     *
-     * \return List of term's uses. If it has not been set before,
-     *         an empty vector is returned.
+     * \return Mapping from a term to its reaching definitions.
      */
-    const std::vector<const Term *> &getUses(const Term *term) const;
+    boost::unordered_map<const Term *, ReachingDefinitions> &term2definitions() { return term2definitions_; }
 
     /**
-     * Adds a use of a term.
-     *
-     * \param[in] term "Write" term being used.
-     * \param[in] use  "Read" term using the "write" term.
+     * \return Mapping from a term to its reaching definitions.
      */
-    void addUse(const Term *term, const Term *use);
+    const boost::unordered_map<const Term *, ReachingDefinitions> &term2definitions() const { return term2definitions_; }
 
     /**
-     * Clears the set of term's definitions.
+     * \param[in] statement Valid pointer to a read statement.
      *
-     * \param[in] term Term.
+     * \return Definitions reaching the given statement.
      */
-    void clearUses(const Term *term) { uses_.erase(term); }
+    ReachingDefinitions &getDefinitions(const Statement *statement) {
+        assert(statement != nullptr);
+        return statement2definitions_[statement];
+    }
+
+    /**
+     * \param[in] statement Valid pointer to a read statement.
+     *
+     * \return Definitions reaching the given statement.
+     */
+    const ReachingDefinitions &getDefinitions(const Statement *statement) const {
+        assert(statement != nullptr);
+        return nc::find(statement2definitions_, statement);
+    }
 };
 
 } // namespace dflow

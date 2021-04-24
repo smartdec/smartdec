@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -50,7 +53,7 @@ class Decompilation: public Activity {
      *
      * \param context Valid pointer to the context.
      */
-    Decompilation(const std::shared_ptr<core::Context> &context);
+    explicit Decompilation(const std::shared_ptr<core::Context> &context);
 
     /**
      * Destructor.

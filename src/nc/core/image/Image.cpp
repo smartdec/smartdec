@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -22,56 +25,89 @@
 #include "Image.h"
 
 #include <nc/common/Foreach.h>
-#include <nc/common/Warnings.h>
+#include <nc/common/Range.h>
+#include <nc/common/make_unique.h>
 
-namespace nc {
-namespace core {
-namespace image {
+#include <nc/core/image/Image.h>
+#include <nc/core/mangling/DefaultDemangler.h>
 
-Image::Image(const Module *module): Reader(module) {}
+#include "Relocation.h"
+#include "Section.h"
 
-Image::~Image() {
-    foreach (Section *section, sections_) {
-        delete section;
-    }
-}
+namespace nc { namespace core { namespace image {
 
-Section *Image::createSection(const QString &name, ByteAddr addr, ByteSize size) {
-    std::unique_ptr<Section> result(new Section(module(), name, addr, size));
-    sections_.push_back(result.get());
-    return result.release();
+Image::Image():
+    demangler_(new mangling::DefaultDemangler())
+{}
+
+Image::~Image() {}
+
+void Image::addSection(std::unique_ptr<Section> section) {
+    assert(section != nullptr);
+    sections_.push_back(std::move(section));
 }
 
 const Section *Image::getSectionContainingAddress(ByteAddr addr) const {
-    foreach (Section *section, sections_) {
-        if (section->containsAddress(addr)) {
+    foreach (auto section, sections()) {
+        if (section->isAllocated() && section->containsAddress(addr)) {
             return section;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 const Section *Image::getSectionByName(const QString &name) const {
-    foreach (Section *section, sections_) {
+    foreach (auto section, sections()) {
         if (section->name() == name) {
             return section;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 ByteSize Image::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
-    if (externalByteSource()) {
-        return externalByteSource()->readBytes(addr, buf, size);
-    } else if (const Section *section = getSectionContainingAddress(addr)) {
+    if (const Section *section = getSectionContainingAddress(addr)) {
         return section->readBytes(addr, buf, size);
     } else {
         return 0;
     }
 }
 
-} // namespace image
-} // namespace core
-} // namespace nc
+const Symbol *Image::addSymbol(std::unique_ptr<Symbol> symbol) {
+    auto result = symbol.get();
+
+    symbols_.push_back(std::move(symbol));
+
+    if (result->value()) {
+        value2symbol_[*result->value()] = result;
+    }
+
+    return result;
+}
+
+const Symbol *Image::getSymbol(ConstantValue value) const {
+    return nc::find(value2symbol_, value);
+}
+
+const Relocation *Image::addRelocation(std::unique_ptr<Relocation> relocation) {
+    auto result = relocation.get();
+
+    relocations_.push_back(std::move(relocation));
+    address2relocation_[result->address()] = result;
+
+    return result;
+}
+
+const Relocation *Image::getRelocation(ByteAddr address) const {
+    return nc::find(address2relocation_, address);
+}
+
+void Image::setDemangler(std::unique_ptr<mangling::Demangler> demangler) {
+    assert(demangler != nullptr);
+
+    demangler_ = std::move(demangler);
+}
+
+}}} // namespace nc::core::image
 
 /* vim:set et sts=4 sw=4: */

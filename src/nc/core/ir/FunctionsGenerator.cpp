@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -66,14 +69,39 @@ void FunctionsGenerator::makeFunctions(const Program &program, Functions &functi
 
     CFG cfg(program.basicBlocks());
 
-    /* Generate all functions being called. Create even empty ones. */
+    auto addFunction = [&](const std::vector<const BasicBlock *> &basicBlocks, const BasicBlock *entry) {
+        auto function = makeFunction(basicBlocks, entry);
+        if (function->isEmpty()) {
+            return;
+        }
+
+        /*
+         * If the function's entry starts with some no-ops, move the function's
+         * entry's address to the first meaningful instruction, unless somebody
+         * calls it using current address.
+         */
+        if (function->entry() && function->entry()->address() &&
+            function->entry()->statements().front() &&
+            function->entry()->statements().front()->instruction() &&
+            *function->entry()->address() != function->entry()->statements().front()->instruction()->addr())
+        {
+            assert(*function->entry()->address() < function->entry()->statements().front()->instruction()->addr());
+            if (!program.isCalledAddress(*function->entry()->address())) {
+                function->entry()->setAddress(function->entry()->statements().front()->instruction()->addr());
+            }
+        }
+
+        functions.addFunction(std::move(function));
+    };
+
+    /* Generate all functions being called. */
     foreach (const BasicBlock *basicBlock, program.basicBlocks()) {
         if (basicBlock->address() && program.isCalledAddress(*basicBlock->address())) {
             boost::unordered_set<const BasicBlock *> visited;
             std::vector<const BasicBlock *> trace;
 
             dfs(cfg, basicBlock, visited, trace);
-            functions.addFunction(makeFunction(trace, basicBlock));
+            addFunction(trace, basicBlock);
             processed.insert(trace.begin(), trace.end());
         }
     }
@@ -84,11 +112,7 @@ void FunctionsGenerator::makeFunctions(const Program &program, Functions &functi
             std::vector<const BasicBlock *> trace;
 
             dfs(cfg, basicBlock, processed, trace);
-
-            auto function = makeFunction(trace, basicBlock);
-            if (!function->isEmpty()) {
-                functions.addFunction(std::move(function));
-            }
+            addFunction(trace, basicBlock);
         }
     }
 
@@ -98,11 +122,7 @@ void FunctionsGenerator::makeFunctions(const Program &program, Functions &functi
             std::vector<const BasicBlock *> trace;
 
             dfs(cfg, basicBlock, processed, trace);
-
-            auto function = makeFunction(trace, basicBlock);
-            if (!function->isEmpty()) {
-                functions.addFunction(std::move(function));
-            }
+            addFunction(trace, basicBlock);
         }
     }
 }
@@ -119,7 +139,7 @@ std::unique_ptr<Function> FunctionsGenerator::makeFunction(const std::vector<con
     /* Set the entry basic block. */
     if (entry) {
         BasicBlock *clonedEntry = nc::find(clones, entry);
-        assert(clonedEntry != NULL && "Entry must have been cloned.");
+        assert(clonedEntry != nullptr && "Entry must have been cloned.");
 
         function->setEntry(clonedEntry);
     }
@@ -165,7 +185,7 @@ FunctionsGenerator::cloneIntoFunction(const std::vector<const BasicBlock *> &bas
 
             /* Remove jumps to direct successors that were not cloned. */
             if (jump->isUnconditional() && !jump->thenTarget()) {
-                basicBlock->popBack();
+                basicBlock->statements().pop_back();
             }
         }
     }

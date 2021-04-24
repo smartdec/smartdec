@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -35,8 +38,7 @@ namespace likec {
  * Access to a struct or union member.
  */
 class MemberAccessOperator: public Expression {
-    public:
-
+public:
     /**
      * Operator id.
      */
@@ -45,24 +47,21 @@ class MemberAccessOperator: public Expression {
         DOT,    ///< a.b
     };
 
-    private:
-
+private:
     AccessKind accessKind_; ///< Operator id.
     std::unique_ptr<Expression> compound_; ///< Accessed struct or union.
     const MemberDeclaration *member_; ///< Accessed member.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] accessKind Access kind.
      * \param[in] compound Accessed struct or union.
      * \param[in] member Accessed member.
      */
-    MemberAccessOperator(Tree &tree, AccessKind accessKind, std::unique_ptr<Expression> compound, const MemberDeclaration *member):
-        Expression(tree, MEMBER_ACCESS_OPERATOR), accessKind_(accessKind), compound_(std::move(compound)), member_(member)
+    MemberAccessOperator(AccessKind accessKind, std::unique_ptr<Expression> compound, const MemberDeclaration *member):
+        Expression(MEMBER_ACCESS_OPERATOR), accessKind_(accessKind), compound_(std::move(compound)), member_(member)
     {}
 
     /**
@@ -78,7 +77,7 @@ class MemberAccessOperator: public Expression {
     /**
      * \return Accessed struct or union.
      */
-    Expression *compound() { return compound_.get(); }
+    std::unique_ptr<Expression> &compound() { return compound_; }
 
     /**
      * \return Accessed struct or union.
@@ -90,20 +89,14 @@ class MemberAccessOperator: public Expression {
      */
     const MemberDeclaration *member() const { return member_; }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual const Type *getType() const override;
-
-    virtual int precedence() const override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::MemberAccessOperator, nc::core::likec::Expression::MEMBER_ACCESS_OPERATOR)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::MemberAccessOperator, nc::core::likec::Expression::MEMBER_ACCESS_OPERATOR)
 
 /* vim:set et sts=4 sw=4: */

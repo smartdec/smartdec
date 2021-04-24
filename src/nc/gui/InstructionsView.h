@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -54,24 +57,23 @@ class InstructionsView: public TreeView {
     /** Instructions currently selected in text. */
     std::vector<const core::arch::Instruction *> selectedInstructions_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
-     * \param parent Pointer to the parent widget. Can be NULL.
+     * \param parent Pointer to the parent widget. Can be nullptr.
      */
-    InstructionsView(QWidget *parent = 0);
+    explicit InstructionsView(QWidget *parent = 0);
 
     /**
-     * \return Pointer to the assembler document being viewed. Can be NULL.
+     * \return Pointer to the assembler document being viewed. Can be nullptr.
      */
     InstructionsModel *model() const { return model_; }
 
     /**
      * Sets the model being viewed.
      *
-     * \param model Pointer to the new model. Can be NULL.
+     * \param model Pointer to the new model. Can be nullptr.
      */
     void setModel(InstructionsModel *model);
 
@@ -80,8 +82,7 @@ class InstructionsView: public TreeView {
      */
     const std::vector<const core::arch::Instruction *> &selectedInstructions() const { return selectedInstructions_; }
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Highlights given instructions.
      *
@@ -90,8 +91,7 @@ class InstructionsView: public TreeView {
      */
     void highlightInstructions(const std::vector<const core::arch::Instruction *> &instructions, bool ensureVisible = true);
 
-    Q_SIGNALS:
-
+Q_SIGNALS:
     /**
      * Signal emitted when the set of currently selected instructions is changed.
      */
@@ -107,8 +107,7 @@ class InstructionsView: public TreeView {
      */
     void decompileSelectedInstructions();
 
-    private Q_SLOTS:
-
+private Q_SLOTS:
     /**
      * Updates information about current selections.
      */

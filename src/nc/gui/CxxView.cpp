@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,21 +24,17 @@
 
 #include "CxxView.h"
 
+#include <QAction>
+#include <QInputDialog>
 #include <QMenu>
 #include <QPlainTextEdit>
-#include <QTextStream>
 
+#include <nc/common/StringToInt.h>
 #include <nc/core/likec/Expression.h>
-#include <nc/core/likec/FunctionDeclaration.h>
-#include <nc/core/likec/FunctionIdentifier.h>
-#include <nc/core/likec/IntegerConstant.h>
+#include <nc/core/likec/FunctionDefinition.h>
 #include <nc/core/likec/LabelDeclaration.h>
-#include <nc/core/likec/LabelIdentifier.h>
 #include <nc/core/likec/LabelStatement.h>
-#include <nc/core/likec/Statement.h>
 #include <nc/core/likec/VariableDeclaration.h>
-#include <nc/core/likec/VariableIdentifier.h>
-#include <nc/core/likec/PrintContext.h>
 
 #include "CppSyntaxHighlighter.h"
 #include "CxxDocument.h"
@@ -44,18 +43,44 @@ namespace nc { namespace gui {
 
 CxxView::CxxView(QWidget *parent):
     TextView(tr("C++"), parent),
-    document_(NULL)
+    document_(nullptr)
 {
-    highlighter_ = new CppSyntaxHighlighter(this);
+    highlighter_ = new CppSyntaxHighlighter(this, new CxxFormatting(this));
+
+    gotoLabelAction_ = new QAction(tr("Go to Label"), this);
+    gotoLabelAction_->setShortcut(Qt::CTRL + Qt::Key_Backslash);
+    gotoLabelAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    textEdit()->addAction(gotoLabelAction_);
+    connect(gotoLabelAction_, SIGNAL(triggered()), this, SLOT(gotoLabel()));
+
+    gotoDeclarationAction_ = new QAction(tr("Go to Declaration"), this);
+    gotoDeclarationAction_->setShortcut(Qt::CTRL + Qt::Key_BracketLeft);
+    gotoDeclarationAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    textEdit()->addAction(gotoDeclarationAction_);
+    connect(gotoDeclarationAction_, SIGNAL(triggered()), this, SLOT(gotoDeclaration()));
+
+    gotoDefinitionAction_ = new QAction(tr("Go to Definition"), this);
+    gotoDefinitionAction_->setShortcut(Qt::CTRL + Qt::Key_BracketRight);
+    gotoDefinitionAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    textEdit()->addAction(gotoDefinitionAction_);
+    connect(gotoDefinitionAction_, SIGNAL(triggered()), this, SLOT(gotoDefinition()));
+
+    renameAction_ = new QAction(tr("Rename..."), this);
+    renameAction_->setShortcut(Qt::Key_F2);
+    renameAction_->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    textEdit()->addAction(renameAction_);
+    connect(renameAction_, SIGNAL(triggered()), this, SLOT(rename()));
+
+    textEdit()->setTextInteractionFlags(Qt::TextEditorInteraction);
 
     connect(textEdit(), SIGNAL(cursorPositionChanged()), this, SLOT(updateSelection()));
     connect(textEdit(), SIGNAL(selectionChanged()), this, SLOT(updateSelection()));
     connect(textEdit(), SIGNAL(textChanged()), this, SLOT(updateSelection()));
 
+    connect(textEdit(), SIGNAL(textChanged()), this, SLOT(highlightReferences()));
     connect(this, SIGNAL(nodeSelectionChanged()), this, SLOT(highlightReferences()));
 
     textEdit()->viewport()->installEventFilter(this);
-    textEdit()->setMouseTracking(true);
 
     connect(this, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateContextMenu(QMenu *)));
 }
@@ -65,19 +90,20 @@ void CxxView::setDocument(CxxDocument *document) {
         return;
     }
 
-    /* QTextEdit crashes when extra selections get out of range. */
-    textEdit()->setExtraSelections(QList<QTextEdit::ExtraSelection>());
-
     /* No signals until we are in a consistent state. */
     textEdit()->blockSignals(true);
 
-    textEdit()->setDocument(document);
+    TextView::setDocument(document);
     highlighter_->setDocument(document);
     document_ = document;
 
     textEdit()->blockSignals(false);
 
     updateSelection();
+}
+
+void CxxView::rehighlight() {
+    highlighter_->rehighlight();
 }
 
 void CxxView::updateSelection() {
@@ -89,10 +115,10 @@ void CxxView::updateSelection() {
     if (document()) {
         QTextCursor cursor = textEdit()->textCursor();
         if (cursor.hasSelection()) {
-            TextRange selection(cursor.selectionStart(), cursor.selectionEnd());
-            nodes = document()->tracker().getObjects(selection);
+            Range<int> range(cursor.selectionStart(), cursor.selectionEnd());
+            nodes = document()->getNodesIn(range);
         } else {
-            if (auto node = document()->tracker().getObject(cursor.position())) {
+            if (auto node = document()->getLeafAt(cursor.position())) {
                 nodes.push_back(node);
             }
         }
@@ -134,69 +160,71 @@ void CxxView::updateSelection() {
     }
 }
 
-boost::optional<ConstantValue> CxxView::getSelectedInteger() const {
-    if (selectedNodes().size() == 1) {
-        const core::likec::TreeNode *node = selectedNodes().front();
-        if (auto expression = node->as<core::likec::Expression>()) {
-            if (auto constant = expression->as<core::likec::IntegerConstant>()) {
-                return constant->value().value();
-            }
-        }
+boost::optional<ConstantValue> CxxView::getIntegerUnderCursor() const {
+    auto cursor = textEdit()->textCursor();
+    cursor.movePosition(QTextCursor::StartOfWord);
+    cursor.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
+
+    if (auto value = stringToInt<ConstantValue>(cursor.selectedText(), 0)) {
+        return *value;
     }
     return boost::none;
 }
 
-const core::likec::FunctionIdentifier *CxxView::getSelectedFunctionIdentifier() const {
-    if (selectedNodes().size() == 1) {
-        const core::likec::TreeNode *node = selectedNodes().front();
-        if (auto expression = node->as<core::likec::Expression>()) {
-            return expression->as<core::likec::FunctionIdentifier>();
-        }
+const core::likec::TreeNode *CxxView::getNodeUnderCursor() const {
+    if (document()) {
+        return document()->getLeafAt(textEdit()->textCursor().position());
     }
-    return NULL;
+    return nullptr;
 }
 
-const core::likec::VariableIdentifier *CxxView::getSelectedVariableIdentifier() const {
-    if (selectedNodes().size() == 1) {
-        const core::likec::TreeNode *node = selectedNodes().front();
-        if (auto expression = node->as<core::likec::Expression>()) {
-            return expression->as<core::likec::VariableIdentifier>();
-        }
+const core::likec::Declaration *CxxView::getDeclarationOfIdentifierUnderCursor() const {
+    if (auto node = getNodeUnderCursor()) {
+        return document()->getDeclarationOfIdentifier(node);
     }
-    return NULL;
+    return nullptr;
 }
 
-const core::likec::LabelIdentifier *CxxView::getSelectedLabelIdentifier() const {
-    if (selectedNodes().size() == 1) {
-        const core::likec::TreeNode *node = selectedNodes().front();
-        if (auto expression = node->as<core::likec::Expression>()) {
-            return expression->as<core::likec::LabelIdentifier>();
+const core::likec::FunctionDefinition *CxxView::getDefinitionOfFunctionUnderCursor() const {
+    if (auto node = getNodeUnderCursor()) {
+        if (auto declaration = node->as<core::likec::Declaration>()) {
+            if (auto functionDeclaration = declaration->as<core::likec::FunctionDeclaration>()) {
+                return document()->getFunctionDefinition(functionDeclaration);
+            }
+        } else if (auto expression = node->as<core::likec::Expression>()) {
+            if (auto functionIdentifier = expression->as<core::likec::FunctionIdentifier>()) {
+                return document()->getFunctionDefinition(functionIdentifier->declaration());
+            }
         }
     }
-    return NULL;
+    return nullptr;
 }
 
-void CxxView::gotoFunctionDeclaration() {
-    if (auto identifier = getSelectedFunctionIdentifier()) {
-        if (auto range = document()->tracker().getRange(identifier->declaration())) {
+void CxxView::gotoDeclaration() {
+    if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
+        if (auto range = document()->getRange(declaration)) {
             moveCursor(range.start());
         }
     }
 }
 
-void CxxView::gotoVariableDeclaration() {
-    if (auto identifier = getSelectedVariableIdentifier()) {
-        if (auto range = document()->tracker().getRange(identifier->declaration())) {
+void CxxView::gotoDefinition() {
+    if (auto definition = getDefinitionOfFunctionUnderCursor()) {
+        if (auto range = document()->getRange(definition)) {
             moveCursor(range.start());
+            return;
         }
     }
+    gotoDeclaration();
 }
 
 void CxxView::gotoLabel() {
-    if (auto identifier = getSelectedLabelIdentifier()) {
-        if (auto statement = document()->getLabelStatement(identifier->declaration())) {
-            if (auto range = document()->tracker().getRange(statement)) {
-                moveCursor(range.start());
+    if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
+        if (auto labelDeclaration = declaration->as<core::likec::LabelDeclaration>()) {
+            if (auto statement = document()->getLabelStatement(labelDeclaration)) {
+                if (auto range = document()->getRange(statement)) {
+                    moveCursor(range.start());
+                }
             }
         }
     }
@@ -209,32 +237,19 @@ void CxxView::highlightReferences() {
 
     std::vector<const core::likec::TreeNode *> nodes;
 
-    if (selectedNodes().size() == 1) {
-        const core::likec::TreeNode *node = selectedNodes().front();
-
-        if (auto *declaration = node->as<core::likec::Declaration>()) {
-            if (declaration->is<core::likec::VariableDeclaration>()) {
-                auto &uses = document()->getUses(declaration);
-                nodes.push_back(declaration);
-                nodes.insert(nodes.end(), uses.begin(), uses.end());
+    auto declaration = getDeclarationOfIdentifierUnderCursor();
+    if (!declaration) {
+        if (auto node = getNodeUnderCursor()) {
+            if (auto decl = node->as<core::likec::Declaration>()) {
+                declaration = decl->as<core::likec::VariableDeclaration>();
             }
-        } else if (auto *expression = node->as<core::likec::Expression>()) {
-            if (auto *identifier = expression->as<core::likec::VariableIdentifier>()) {
-                auto &uses = document()->getUses(identifier->declaration());
-                nodes.push_back(identifier->declaration());
-                nodes.insert(nodes.end(), uses.begin(), uses.end());
-            } else if (auto *identifier = expression->as<core::likec::LabelIdentifier>()) {
-                auto &uses = document()->getUses(identifier->declaration());
-                nodes.insert(nodes.end(), uses.begin(), uses.end());
-            } else if (auto *identifier = expression->as<core::likec::FunctionIdentifier>()) {
-                auto &uses = document()->getUses(identifier->declaration());
-                nodes.insert(nodes.end(), uses.begin(), uses.end());
-            }
-        } else if (auto *statement = node->as<core::likec::Statement>()) {
-            if (auto *labelStatement = statement->as<core::likec::LabelStatement>()) {
-                auto &uses = document()->getUses(labelStatement->label());
-                nodes.insert(nodes.end(), uses.begin(), uses.end());
-            }
+        }
+    }
+    if (declaration) {
+        const auto &uses = document()->getUses(declaration);
+        nodes.insert(nodes.end(), uses.begin(), uses.end());
+        if (declaration->is<core::likec::VariableDeclaration>()) {
+            nodes.push_back(declaration);
         }
     }
 
@@ -246,16 +261,14 @@ void CxxView::highlightNodes(const std::vector<const core::likec::TreeNode *> &n
         return;
     }
 
-    std::vector<TextRange> ranges;
-    ranges.reserve(nodes.size());
+    std::vector<Range<int>> ranges;
 
-    foreach (const core::likec::TreeNode *node, nodes) {
-        if (TextRange range = document()->tracker().getRange(node)) {
-            ranges.push_back(range);
-        }
+    ranges.reserve(nodes.size());
+    foreach (auto node, nodes) {
+        ranges.push_back(document()->getRange(node));
     }
 
-    highlight(ranges, ensureVisible);
+    highlight(std::move(ranges), ensureVisible);
 }
 
 void CxxView::highlightInstructions(const std::vector<const core::arch::Instruction *> &instructions, bool ensureVisible) {
@@ -263,44 +276,85 @@ void CxxView::highlightInstructions(const std::vector<const core::arch::Instruct
         return;
     }
 
-    std::vector<TextRange> ranges;
+    std::vector<Range<int>> ranges;
 
     foreach (const core::arch::Instruction *instruction, instructions) {
-        auto &instructionRanges = document()->getRanges(instruction);
-        ranges.insert(ranges.end(), instructionRanges.begin(), instructionRanges.end());
+        document()->getRanges(instruction, ranges);
     }
 
-    highlight(ranges, ensureVisible);
+    highlight(std::move(ranges), ensureVisible);
 }
 
-QString CxxView::getDeclarationTooltip(int position) {
-    QString tooltipText;
-    if (auto node = document()->tracker().getObject(position)) {
-        if (auto expression = node->as<core::likec::Expression>()) {
-            QTextStream stream(&tooltipText, QIODevice::ReadWrite);
-            core::likec::PrintContext context(stream, NULL);
+QString CxxView::getDeclarationTooltip(int position) const {
+    const int maxLength = 1024;
+    const int maxLineCount = 10;
 
-            if (auto variable = expression->as<core::likec::VariableIdentifier>()) {
-                variable->declaration()->doPrint(context);
-            } else if (auto function = expression->as<core::likec::FunctionIdentifier>()) {
-                function->declaration()->core::likec::FunctionDeclaration::doPrint(context);
+    if (auto node = document()->getLeafAt(position)) {
+        if (auto declaration = document()->getDeclarationOfIdentifier(node)) {
+            if (auto functionDeclaration = declaration->as<core::likec::FunctionDeclaration>()) {
+                if (auto functionDefinition = document()->getFunctionDefinition(functionDeclaration)) {
+                    declaration = functionDefinition;
+                }
+            }
+            if (auto range = document()->getRange(declaration)) {
+                bool truncated = false;
+
+                if (range.length() > maxLength) {
+                    range = make_range(range.start(), range.start() + maxLength);
+                    truncated = true;
+                }
+
+                auto text = document()->getText(range);
+
+                int lineCount = 0;
+                for (int i = 0; i < text.size(); ++i) {
+                    if (text[i] == QChar::ParagraphSeparator) {
+                        text[i] = '\n';
+                        if (++lineCount == maxLineCount) {
+                            text.truncate(i + 1);
+                            truncated = true;
+                            break;
+                        }
+                    }
+                }
+                if (truncated) {
+                    if (!text.endsWith('\n')) {
+                        text += '\n';
+                    }
+                    text += tr("...");
+                }
+                return text;
             }
         }
     }
-    return tooltipText;
+
+    return QString();
+}
+
+void CxxView::rename() {
+    if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
+        auto oldName = document()->getText(document()->getRange(getNodeUnderCursor()));
+        auto newName = QInputDialog::getText(this, tr("Rename"), tr("New name:"), QLineEdit::Normal, oldName);
+        if (!newName.isEmpty()) {
+            document()->rename(declaration, newName);
+        }
+    }
 }
 
 void CxxView::populateContextMenu(QMenu *menu) {
     menu->addSeparator();
 
-    if (getSelectedFunctionIdentifier()) {
-        menu->addAction(tr("Go to Function's Declaration"), this, SLOT(gotoFunctionDeclaration()));
-    }
-    if (getSelectedVariableIdentifier()) {
-        menu->addAction(tr("Go to Variable's Declaration"), this, SLOT(gotoVariableDeclaration()));
-    }
-    if (getSelectedLabelIdentifier()) {
-        menu->addAction(tr("Go to Label"), this, SLOT(gotoLabel()));
+    if (auto declaration = getDeclarationOfIdentifierUnderCursor()) {
+        if (declaration->is<core::likec::LabelDeclaration>()) {
+            menu->addAction(gotoLabelAction_);
+        } else {
+            menu->addAction(gotoDeclarationAction_);
+
+            if (getDefinitionOfFunctionUnderCursor()) {
+                menu->addAction(gotoDefinitionAction_);
+            }
+        }
+        menu->addAction(renameAction_);
     }
 }
 

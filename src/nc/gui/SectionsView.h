@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -25,7 +28,7 @@
 #include "TreeView.h"
 
 QT_BEGIN_NAMESPACE
-class QTreeView;
+class QSortFilterProxyModel;
 QT_END_NAMESPACE
 
 namespace nc {
@@ -43,32 +46,34 @@ class SectionsModel;
 class SectionsView: public TreeView {
     Q_OBJECT
 
-    /** The model being shown. */
+    /** The model being the source of the data. */
     SectionsModel *model_;
 
-    public:
+    /** The model being given to QTreeView. */
+    QSortFilterProxyModel *proxyModel_;
 
+public:
     /**
      * Constructor.
      *
-     * \param parent Pointer to the parent widget. Can be NULL.
+     * \param parent Pointer to the parent widget. Can be nullptr.
      */
-    SectionsView(QWidget *parent = 0);
+    explicit SectionsView(QWidget *parent = 0);
 
     /**
-     * \return Pointer to the model being viewed. Can be NULL.
+     * \return Pointer to the model being viewed. Can be nullptr.
      */
     SectionsModel *model() const { return model_; }
 
     /**
      * Sets the model being viewed.
      *
-     * \param model Pointer to the new model. Can be NULL.
+     * \param model Pointer to the new model. Can be nullptr.
      */
     void setModel(SectionsModel *model);
 
     /**
-     * \returns Pointer to the currently selected section. Can be NULL.
+     * \returns Pointer to the currently selected section. Can be nullptr.
      */
     const core::image::Section *selectedSection() const;
 };

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -55,8 +58,7 @@ class Tree: boost::noncopyable {
     std::multimap<const Type *, std::unique_ptr<ArrayType> > arrayTypes_; ///< Arrays of other types.
     const ErroneousType erroneousType_; ///< Erroneous type.
 
-    public:
-
+public:
     /**
      * Class constructor.
      */
@@ -128,7 +130,7 @@ class Tree: boost::noncopyable {
      * \param[in] out Output stream.
      * \param[in] callback Print callback.
      */
-    void print(QTextStream &out, PrintCallback<const TreeNode> *callback = 0) const;
+    void print(QTextStream &out, PrintCallback<const TreeNode *> *callback = 0) const;
 
     /**
      * \return Void type.
@@ -212,13 +214,6 @@ class Tree: boost::noncopyable {
      * \return Type which is the result of "usual arithmetic conversion" of both types.
      */
     const Type *usualArithmeticConversion(const Type *leftType, const Type *rightType);
-
-    /**
-     * \param name Some string.
-     *
-     * \return A string similar to the given one which is safe to be used as an identifier.
-     */
-    static QString cleanName(const QString &name);
 };
 
 } // namespace likec

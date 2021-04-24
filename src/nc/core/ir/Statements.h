@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -34,44 +37,14 @@ namespace nc {
 namespace core {
 namespace ir {
 
-/**
- * Statement doing really nothing, but capable of delivering some user-defined text.
- * Useful mainly for debugging.
- */
-class Comment: public Statement {
-    QString text_; ///< The comment.
-
-public:
-    /**
-     * Constructor.
-     *
-     * \param[in] text                 The comment.
-     */
-    Comment(const QString &text): Statement(COMMENT), text_(text) {}
-
-    /**
-     * \return                         The comment.
-     */
-    const QString &text() const { return text_; }
-
-    virtual void print(QTextStream &out) const override;
-
-protected:
-    virtual Comment *doClone() const override;
-};
-
 class InlineAssembly: public Statement {
-    public:
-
-    /**
-     * Constructor.
-     */
+public:
     InlineAssembly(): Statement(INLINE_ASSEMBLY) {}
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual InlineAssembly *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /**
@@ -83,70 +56,67 @@ class Assignment: public Statement {
 
 public:
     /**
-     * Class constructor.
-     *
-     * \param[in] left                 Valid pointer to the term being the left-hand side.
-     * \param[in] right                Valid pointer to the term being the right-hand side.
+     * \param[in] left  Valid pointer to the term being the left-hand side.
+     * \param[in] right Valid pointer to the term being the right-hand side.
      *
      * Arguments have to have the same size. Use UnaryOperator for size conversions.
      */
     Assignment(std::unique_ptr<Term> left, std::unique_ptr<Term> right);
 
     /**
-     * \return                         Valid pointer to the term being the left-hand side.
+     * \return Valid pointer to the term being the left-hand side.
      */
     Term *left() { return left_.get(); }
 
     /**
-     * \return                         Valid pointer to the term being the left-hand side.
+     * \return Valid pointer to the term being the left-hand side.
      */
     const Term *left() const { return left_.get(); }
 
     /**
-     * \return                         Valid pointer to the term being the right-hand side.
+     * \return Valid pointer to the term being the right-hand side.
      */
     Term *right() { return right_.get(); }
 
     /**
-     * \return                         Valid pointer to the term being the right-hand side.
+     * \return Valid pointer to the term being the right-hand side.
      */
     const Term *right() const { return right_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Assignment *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /**
- * Statement killing reaching definitions of a term.
+ * A statement reading, writing, or killing a term.
  */
-class Kill: public Statement {
-    std::unique_ptr<Term> term_; ///< Term whose definitions are killed.
+class Touch: public Statement {
+    std::unique_ptr<Term> term_; ///< Term being accessed.
+    Term::AccessType accessType_;
 
 public:
     /**
-     * Class constructor.
-     *
-     * \param[in] term                 Valid pointer to the term whose definitions are killed.
+     * \param[in] term Valid pointer to the term being accessed.
+     * \param[in] accessType Type of term's use.
      */
-    Kill(std::unique_ptr<Term> term);
+    Touch(std::unique_ptr<Term> term, Term::AccessType accessType);
 
     /**
-     * \return                         Valid pointer to the term whose definitions are killed.
+     * \return Valid pointer to the term being accessed.
      */
     Term *term() const { return term_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
+    /**
+     * \return Type of the term's use.
+     */
+    Term::AccessType accessType() const { return accessType_; }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Kill *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /**
@@ -157,10 +127,9 @@ class Call: public Statement {
 
 public:
     /**
-     * Class constructor.
-     *
      * \param[in] target    Call target (function address).
      */
+    explicit
     Call(std::unique_ptr<Term> target);
 
     /**
@@ -173,54 +142,85 @@ public:
      */
     const Term *target() const { return target_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Call *doClone() const override { return new Call(target()->clone()); }
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 /**
- * Return from a function statement.
+ * Return from a program.
  */
-class Return: public Statement {
+class Halt: public Statement {
 public:
-    /**
-     * Default constructor.
-     */
-    Return(): Statement(RETURN) {}
+    Halt(): Statement(HALT) {}
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Return *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
+/**
+ * DataflowAnalyzer, when executing the statement, calls
+ * the function stored in the statement.
+ */
+class Callback: public Statement {
+    std::function<void()> function_; ///< Callback function.
+
+public:
+    /**
+     * \param function Callback function.
+     */
+    explicit
+    Callback(std::function<void()> function):
+        Statement(CALLBACK), function_(std::move(function))
+    {
+        assert(function_);
+    }
+
+    /**
+     * \return Callback function.
+     */
+    const std::function<void()> &function() const { return function_; }
+
+    void print(QTextStream &out) const override;
+
+protected:
+    std::unique_ptr<Statement> doClone() const override;
+};
+
+/**
+ * DataflowAnalyzer remembers definitions reaching this statement.
+ */
+class RememberReachingDefinitions: public Statement {
+public:
+    RememberReachingDefinitions(): Statement(REMEMBER_REACHING_DEFINITIONS) {}
+
+    void print(QTextStream &out) const override;
+
+protected:
+    std::unique_ptr<Statement> doClone() const override;
+};
 
 /*
  * Statement implementation follows.
  */
 
-const Comment *Statement::asComment() const {
-    return as<Comment>();
-}
-
 const Assignment *Statement::asAssignment() const {
     return as<Assignment>();
 }
 
-const Kill *Statement::asKill() const {
-    return as<Kill>();
+const Touch *Statement::asTouch() const {
+    return as<Touch>();
 }
 
 const Call *Statement::asCall() const {
     return as<Call>();
 }
 
-const Return *Statement::asReturn() const {
-    return as<Return>();
+const Callback *Statement::asCallback() const {
+    return as<Callback>();
 }
 
 } // namespace ir

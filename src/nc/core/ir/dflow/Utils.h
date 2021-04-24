@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -26,6 +29,8 @@ namespace nc {
 namespace core {
 namespace ir {
 
+class Jump;
+class JumpTarget;
 class Term;
 
 namespace dflow {
@@ -39,6 +44,30 @@ class Dataflow;
  * \return Valid pointer to the term being the first copy of the given one.
  */
 const ir::Term *getFirstCopy(const Term *term, const Dataflow &dataflow);
+
+/**
+ * \param[in] jump      Valid pointer to a jump.
+ * \param[in] dataflow  Dataflow information.
+ *
+ * \return True iff the jump has a jump target being a return address.
+ */
+bool isReturn(const Jump *jump, const Dataflow &dataflow);
+
+/**
+ * \param[in] target    Jump target.
+ * \param[in] dataflow  Dataflow information.
+ *
+ * \return True iff the jump target is a return address.
+ */
+bool isReturnAddress(const JumpTarget &target, const Dataflow &dataflow);
+
+/**
+ * \param[in] term      Valid pointer to a term.
+ * \param[in] dataflow  Dataflow information.
+ *
+ * \return True iff the term contains a return address.
+ */
+bool isReturnAddress(const Term *term, const Dataflow &dataflow);
 
 } // namespace dflow
 } // namespace ir

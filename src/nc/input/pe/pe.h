@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -32,7 +35,7 @@ typedef uint32_t DWORD;
 typedef uint64_t ULONGLONG;
 
 /*
- * The following definitions were taken from MinGW's winnt.h.
+ * The following definitions were taken from MinGW64's winnt.h.
  */
 
 #define IMAGE_DOS_SIGNATURE 0x5A4D
@@ -72,10 +75,28 @@ typedef struct _IMAGE_FILE_HEADER {
 
 #define IMAGE_SIZEOF_FILE_HEADER 20
 
-BOOST_STATIC_ASSERT(sizeof(IMAGE_FILE_HEADER) == IMAGE_SIZEOF_FILE_HEADER);
+static_assert(sizeof(IMAGE_FILE_HEADER) == IMAGE_SIZEOF_FILE_HEADER, "");
+
+#define IMAGE_FILE_RELOCS_STRIPPED 0x0001
+#define IMAGE_FILE_EXECUTABLE_IMAGE 0x0002
+#define IMAGE_FILE_LINE_NUMS_STRIPPED 0x0004
+#define IMAGE_FILE_LOCAL_SYMS_STRIPPED 0x0008
+#define IMAGE_FILE_AGGRESIVE_WS_TRIM 0x0010
+#define IMAGE_FILE_LARGE_ADDRESS_AWARE 0x0020
+#define IMAGE_FILE_BYTES_REVERSED_LO 0x0080
+#define IMAGE_FILE_32BIT_MACHINE 0x0100
+#define IMAGE_FILE_DEBUG_STRIPPED 0x0200
+#define IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP 0x0400
+#define IMAGE_FILE_NET_RUN_FROM_SWAP 0x0800
+#define IMAGE_FILE_SYSTEM 0x1000
+#define IMAGE_FILE_DLL 0x2000
+#define IMAGE_FILE_UP_SYSTEM_ONLY 0x4000
+#define IMAGE_FILE_BYTES_REVERSED_HI 0x8000
 
 #define IMAGE_FILE_MACHINE_I386 0x014c
 #define IMAGE_FILE_MACHINE_AMD64 0x8664
+#define IMAGE_FILE_MACHINE_ARM 0x01c0
+#define IMAGE_FILE_MACHINE_THUMB 0x01c2
 
 typedef struct _IMAGE_DATA_DIRECTORY {
   DWORD VirtualAddress;
@@ -180,6 +201,23 @@ typedef struct _IMAGE_SECTION_HEADER {
   DWORD Characteristics;
 } IMAGE_SECTION_HEADER,*PIMAGE_SECTION_HEADER;
 
+#define IMAGE_DIRECTORY_ENTRY_EXPORT 0
+#define IMAGE_DIRECTORY_ENTRY_IMPORT 1
+#define IMAGE_DIRECTORY_ENTRY_RESOURCE 2
+#define IMAGE_DIRECTORY_ENTRY_EXCEPTION 3
+#define IMAGE_DIRECTORY_ENTRY_SECURITY 4
+#define IMAGE_DIRECTORY_ENTRY_BASERELOC 5
+#define IMAGE_DIRECTORY_ENTRY_DEBUG 6
+
+#define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE 7
+#define IMAGE_DIRECTORY_ENTRY_GLOBALPTR 8
+#define IMAGE_DIRECTORY_ENTRY_TLS 9
+#define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG 10
+#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT 11
+#define IMAGE_DIRECTORY_ENTRY_IAT 12
+#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT 13
+#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14
+
 #define IMAGE_SIZEOF_SECTION_HEADER 40
 
 BOOST_STATIC_ASSERT(sizeof(IMAGE_SECTION_HEADER) == IMAGE_SIZEOF_SECTION_HEADER);
@@ -229,7 +267,7 @@ BOOST_STATIC_ASSERT(sizeof(IMAGE_SECTION_HEADER) == IMAGE_SIZEOF_SECTION_HEADER)
 
 #define IMAGE_SCN_SCALE_INDEX 0x00000001
 
-#include "pshpack2.h"
+#pragma pack(push,2)
 
 typedef struct _IMAGE_SYMBOL {
   union {
@@ -247,7 +285,7 @@ typedef struct _IMAGE_SYMBOL {
   BYTE NumberOfAuxSymbols;
 } IMAGE_SYMBOL;
 
-#include "poppack.h"
+#pragma pack(pop)
 
 #define IMAGE_SIZEOF_SYMBOL 18
 
@@ -310,5 +348,58 @@ BOOST_STATIC_ASSERT(sizeof(IMAGE_SYMBOL) == IMAGE_SIZEOF_SYMBOL);
 #define IMAGE_SYM_CLASS_SECTION 0x0068
 #define IMAGE_SYM_CLASS_WEAK_EXTERNAL 0x0069
 #define IMAGE_SYM_CLASS_CLR_TOKEN 0x006B
+
+#define IMAGE_REL_BASED_ABSOLUTE 0
+#define IMAGE_REL_BASED_HIGH 1
+#define IMAGE_REL_BASED_LOW 2
+#define IMAGE_REL_BASED_HIGHLOW 3
+#define IMAGE_REL_BASED_HIGHADJ 4
+#define IMAGE_REL_BASED_MIPS_JMPADDR 5
+#define IMAGE_REL_BASED_ARM_MOV32 5
+#define IMAGE_REL_BASED_RISCV_HIGH20 5
+#define IMAGE_REL_BASED_THUMB_MOV32 7
+#define IMAGE_REL_BASED_RISCV_LOW12l 7
+#define IMAGE_REL_BASED_RISCV_LO12S 8
+#define IMAGE_REL_BASED_MIPS_JMPADDR16 9
+#define IMAGE_REL_BASED_DIR64 10
+
+typedef struct _IMAGE_IMPORT_DESCRIPTOR {
+  union {
+    DWORD Characteristics;
+    DWORD OriginalFirstThunk;
+  };
+  DWORD TimeDateStamp;
+
+  DWORD ForwarderChain;
+  DWORD Name;
+  DWORD FirstThunk;
+} IMAGE_IMPORT_DESCRIPTOR;
+
+typedef IMAGE_IMPORT_DESCRIPTOR *PIMAGE_IMPORT_DESCRIPTOR;
+
+typedef struct _IMAGE_IMPORT_BY_NAME {
+  WORD Hint;
+  BYTE Name[1];
+} IMAGE_IMPORT_BY_NAME,*PIMAGE_IMPORT_BY_NAME;
+
+typedef struct _IMAGE_EXPORT_DIRECTORY {
+  DWORD   Characteristics;
+  DWORD   TimeDataStamp;
+  WORD    MajorVersion;
+  WORD    MinorVersion;
+  DWORD   Name;
+  DWORD   Base;
+  DWORD   NumberOfFunctions;
+  DWORD   NumberOfNames;
+  DWORD   AddressOfFunctions;
+  DWORD   AddressOfNames;
+  DWORD   AddressOfNameOrdinal;
+} IMAGE_EXPORT_DIRECTORY;
+typedef IMAGE_EXPORT_DIRECTORY *PIMAGE_EXPORT_DIRECTORY;
+
+typedef struct _IMAGE_BASERELOC_BLOCK_HEADER {
+  DWORD   PageRVA;
+  DWORD   Size;
+} IMAGE_BASE_RELOC_BLOCK_HEADER;
 
 /* vim:set et sts=4 sw=4: */

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -25,121 +28,123 @@
 
 #include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/Warnings.h>
+#include <nc/common/Unreachable.h>
 
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instruction.h>
-#include <nc/core/arch/Register.h>
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/CFG.h>
-#include <nc/core/ir/Function.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calls/CallAnalyzer.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/calls/FunctionAnalyzer.h>
-#include <nc/core/ir/calls/ReturnAnalyzer.h>
-#include <nc/core/ir/misc/CensusVisitor.h>
 
 #include "Dataflow.h"
-#include "SimulationContext.h"
+#include "Value.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace dflow {
 
-void DataflowAnalyzer::analyze(const Function *function, const CancellationToken &canceled) {
-    CFG cfg(function->basicBlocks());
+namespace {
+
+template<class Map, class Pred>
+void remove_if(Map &map, Pred pred) {
+    auto i = map.begin();
+    auto iend = map.end();
+
+    while (i != iend) {
+        if (pred(i->first)) {
+            i = map.erase(i);
+        } else {
+            ++i;
+        }
+    }
+}
+
+} // anonymous namespace
+
+void DataflowAnalyzer::analyze(const CFG &cfg) {
+    /*
+     * Returns true if the given term does not cover given memory location.
+     */
+    auto notCovered = [this](const MemoryLocation &mloc, const Term *term) -> bool {
+        return !dataflow().getMemoryLocation(term).covers(mloc);
+    };
+
+    /* Mapping of a basic block to the definitions reaching its end. */
+    boost::unordered_map<const BasicBlock *, ReachingDefinitions> outDefinitions;
 
     /*
-     * Run simulation until reaching stationary point twice in a row.
+     * Running abstract interpretation until reaching a fixpoint several times in a row.
      */
-    boost::unordered_map<const BasicBlock *, ReachingDefinitions> outputDefinitions;
-
     int niterations = 0;
-    bool changed;
-    bool fixpointReached = false;
+    int nfixpoints = 0;
 
-    do {
-        changed = false;
-
+    while (nfixpoints++ < 3) {
         /*
-         * Compute definitions.
+         * Run abstract interpretation on all basic blocks.
          */
-        foreach (const BasicBlock *basicBlock, function->basicBlocks()) {
-            SimulationContext context(*this, function, fixpointReached);
+        foreach (auto basicBlock, cfg.basicBlocks()) {
+            ReachingDefinitions definitions;
 
-            /* Merge the reaching definitions from predecessors. */
+            /* Merge reaching definitions from predecessors. */
             foreach (const BasicBlock *predecessor, cfg.getPredecessors(basicBlock)) {
-                context.definitions().join(outputDefinitions[predecessor]);
+                definitions.merge(outDefinitions[predecessor]);
             }
 
-            /* If this is a function entry, run the calling convention-specific code. */
-            if (basicBlock == function->entry()) {
-                if (callsData()) {
-                    if (calls::FunctionAnalyzer *functionAnalyzer = callsData()->getFunctionAnalyzer(function)) {
-                        functionAnalyzer->simulateEnter(context);
-                    }
-                }
+            /* Remove definitions that do not cover the memory location that they define. */
+            definitions.filterOut(notCovered);
+
+            /* Execute all the statements in the basic block. */
+            foreach (auto statement, basicBlock->statements()) {
+                execute(statement, definitions);
             }
 
-            /* Simulate all the statements in the basic block. */
-            foreach (const Statement *statement, basicBlock->statements()) {
-                simulate(statement, context);
-            }
-
-            /* Something changed? */
-            ReachingDefinitions &definitions(outputDefinitions[basicBlock]);
-            if (definitions != context.definitions()) {
-                definitions = context.definitions();
-                changed = true;
+            /* Something has changed? */
+            ReachingDefinitions &oldDefinitions(outDefinitions[basicBlock]);
+            if (oldDefinitions != definitions) {
+                oldDefinitions = std::move(definitions);
+                nfixpoints = 0;
             }
         }
 
         /*
-         * Compute uses.
+         * Some terms might have changed their addresses. Filter again.
          */
-        misc::CensusVisitor census(callsData());
-        census(function);
-
-        foreach (const Term *term, census.terms()) {
-            dataflow().clearUses(term);
-        }
-
-        foreach (const Term *term, census.terms()) {
-            if (term->isRead()) {
-                foreach (const Term *definition, dataflow().getDefinitions(term)) {
-                    dataflow().addUse(definition, term);
-                }
-            }
-        }
-
-        /*
-         * Have we reached a fixpoint?
-         */
-        if (changed) {
-            fixpointReached = false;
-        } else if (!fixpointReached) {
-            fixpointReached = true;
-            changed = true;
+        foreach (auto &termAndDefinitions, dataflow().term2definitions()) {
+            termAndDefinitions.second.filterOut(notCovered);
         }
 
         /*
          * Do we loop infinitely?
          */
         if (++niterations >= 30) {
-            ncWarning("Didn't reach a fixpoint after %1 iterations while analyzing dataflow of %2. Giving up.", niterations, function->name());
+            log_.warning(tr("%1: Fixpoint was not reached after %2 iterations.").arg(Q_FUNC_INFO).arg(niterations));
             break;
         }
-    } while (changed && !canceled);
+
+        canceled_.poll();
+    }
+
+    /*
+     * Remove information about terms that disappeared.
+     * Terms can disappear if e.g. a call is deinstrumented during the analysis.
+     */
+    auto disappeared = [](const Term *term){ return term->statement()->basicBlock() == nullptr; };
+
+    std::vector<const Term *> disappearedTerms;
+    foreach (auto &termAndDefinitions, dataflow().term2definitions()) {
+        termAndDefinitions.second.filterOut([disappeared](const MemoryLocation &, const Term *term) { return disappeared(term); } );
+    }
+
+    remove_if(dataflow().term2value(), disappeared);
+    remove_if(dataflow().term2location(), disappeared);
+    remove_if(dataflow().term2definitions(), disappeared);
 }
 
-void DataflowAnalyzer::simulate(const Statement *statement, SimulationContext &context) {
+void DataflowAnalyzer::execute(const Statement *statement, ReachingDefinitions &definitions) {
     switch (statement->kind()) {
-        case Statement::COMMENT:
-            break;
         case Statement::INLINE_ASSEMBLY:
             /*
              * To be completely correct, one should clear reaching definitions.
@@ -147,291 +152,470 @@ void DataflowAnalyzer::simulate(const Statement *statement, SimulationContext &c
              */
             break;
         case Statement::ASSIGNMENT: {
-            const Assignment *assignment = statement->asAssignment();
-
-            simulate(assignment->right(), context);
-            simulate(assignment->left(), context);
-
-            Value *leftValue = dataflow().getValue(assignment->left());
-            Value *rightValue = dataflow().getValue(assignment->right());
-            leftValue->join(*rightValue);
-
-            break;
-        }
-        case Statement::KILL: {
-            const Kill *kill = statement->asKill();
-            simulate(kill->term(), context);
+            auto assignment = statement->asAssignment();
+            computeValue(assignment->right(), definitions);
+            handleWrite(assignment->left(), computeMemoryLocation(assignment->left(), definitions), definitions);
             break;
         }
         case Statement::JUMP: {
-            const Jump *jump = statement->asJump();
+            auto jump = statement->asJump();
 
             if (jump->condition()) {
-                simulate(jump->condition(), context);
+                computeValue(jump->condition(), definitions);
             }
             if (jump->thenTarget().address()) {
-                simulate(jump->thenTarget().address(), context);
+                computeValue(jump->thenTarget().address(), definitions);
             }
             if (jump->elseTarget().address()) {
-                simulate(jump->elseTarget().address(), context);
+                computeValue(jump->elseTarget().address(), definitions);
             }
             break;
         }
         case Statement::CALL: {
-            const Call *call = statement->asCall();
-            simulate(call->target(), context);
-
-            if (callsData()) {
-                const Value *targetValue = dataflow().getValue(call->target());
-                if (targetValue->isConstant()) {
-                    callsData()->setCalledAddress(call, targetValue->constantValue().value());
-                }
-                if (calls::CallAnalyzer *callAnalyzer = callsData()->getCallAnalyzer(call)) {
-                    callAnalyzer->simulateCall(context);
-                }
+            auto call = statement->asCall();
+            computeValue(call->target(), definitions);
+            break;
+        }
+        case Statement::HALT: {
+            break;
+        }
+        case Statement::TOUCH: {
+            auto touch = statement->asTouch();
+            switch (touch->accessType()) {
+                case Term::READ:
+                    computeValue(touch->term(), definitions);
+                    break;
+                case Term::WRITE:
+                    handleWrite(touch->term(), computeMemoryLocation(touch->term(), definitions), definitions);
+                    break;
+                default:
+                    unreachable();
             }
             break;
         }
-        case Statement::RETURN: {
-            if (callsData() && context.function()) {
-                if (calls::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(context.function(), statement->asReturn())) {
-                    returnAnalyzer->simulateReturn(context);
-                }
-            }
+        case Statement::CALLBACK: {
+            statement->asCallback()->function()();
+            break;
+        }
+        case Statement::REMEMBER_REACHING_DEFINITIONS: {
+            dataflow_.getDefinitions(statement) = definitions;
             break;
         }
         default:
-            ncWarning("Was called for unsupported kind of statement: '%1'.", static_cast<int>(statement->kind()));
+            log_.warning(tr("%1: Unknown statement kind: %2.").arg(Q_FUNC_INFO).arg(statement->kind()));
             break;
     }
 }
 
-void DataflowAnalyzer::simulate(const Term *term, SimulationContext &context) {
-    assert(term != NULL);
-
+Value *DataflowAnalyzer::computeValue(const Term *term, const ReachingDefinitions &definitions) {
     switch (term->kind()) {
         case Term::INT_CONST: {
-            const Constant *constant = term->asConstant();
-
+            auto constant = term->asConstant();
             Value *value = dataflow().getValue(constant);
-
-            value->makeConstant(constant->value());
+            value->setAbstractValue(constant->value());
             value->makeNotStackOffset();
-            value->makeNotMultiplication();
-            break;
+            value->makeNotProduct();
+            value->makeNotReturnAddress();
+            return value;
         }
-        case Term::INTRINSIC: /* FALLTHROUGH */
-        case Term::UNDEFINED: {
-            Value *value = dataflow().getValue(term);
-            value->makeNotStackOffset();
-            value->makeNotMultiplication();
-            break;
-        }
-        case Term::MEMORY_LOCATION_ACCESS: {
-            const MemoryLocationAccess *access = term->asMemoryLocationAccess();
-            dataflow().setMemoryLocation(access, access->memoryLocation());
+        case Term::INTRINSIC: {
+            auto intrinsic = term->asIntrinsic();
+            Value *value = dataflow().getValue(intrinsic);
 
-            /* The value of instruction pointer is always easy to guess. */
-            if (architecture()->instructionPointer() &&
-                access->memoryLocation() == architecture()->instructionPointer()->memoryLocation() &&
-                access->statement() &&
-                access->statement()->instruction())
-            {
-                dataflow().getValue(access)->forceConstant(access->statement()->instruction()->addr());
-            }
-            break;
-        }
-        case Term::DEREFERENCE: {
-            const Dereference *dereference = term->asDereference();
-
-            simulate(dereference->address(), context);
-
-            const Value *addressValue = dataflow().getValue(dereference->address());
-            if (addressValue->isConstant()) {
-                if (dereference->domain() == MemoryDomain::MEMORY) {
-                    dataflow().setMemoryLocation(dereference,
-                        MemoryLocation(dereference->domain(), addressValue->constantValue().value() * CHAR_BIT, dereference->size()));
-                } else {
-                    dataflow().setMemoryLocation(dereference,
-                        MemoryLocation(dereference->domain(), addressValue->constantValue().value(), dereference->size()));
+            switch (intrinsic->intrinsicKind()) {
+                case Intrinsic::UNKNOWN: /* FALLTHROUGH */
+                case Intrinsic::UNDEFINED: {
+                    value->setAbstractValue(AbstractValue(term->size(), -1, -1));
+                    value->makeNotStackOffset();
+                    value->makeNotProduct();
+                    value->makeNotReturnAddress();
+                    break;
                 }
-            } else if (addressValue->isStackOffset()) {
-                dataflow().setMemoryLocation(dereference,
-                    MemoryLocation(MemoryDomain::STACK, addressValue->stackOffset().signedValue() * 8, dereference->size()));
-            } else {
-                dataflow().unsetMemoryLocation(dereference);
+                case Intrinsic::ZERO_STACK_OFFSET: {
+                    value->setAbstractValue(AbstractValue(term->size(), -1, -1));
+                    value->makeStackOffset(0);
+                    value->makeNotProduct();
+                    value->makeNotReturnAddress();
+                    break;
+                }
+                case Intrinsic::RETURN_ADDRESS: {
+                    value->setAbstractValue(AbstractValue(term->size(), -1, -1));
+                    value->makeNotStackOffset();
+                    value->makeNotProduct();
+                    value->makeReturnAddress();
+                    break;
+                }
+                default: {
+                    log_.warning(tr("%1: Unknown kind of intrinsic: %2.").arg(Q_FUNC_INFO).arg(intrinsic->intrinsicKind()));
+                    break;
+                }
             }
-            break;
+            return value;
+        }
+        case Term::MEMORY_LOCATION_ACCESS: /* FALLTHROUGH */
+        case Term::DEREFERENCE: {
+            const auto &memoryLocation = computeMemoryLocation(term, definitions);
+            const auto &reachingDefinitions = computeReachingDefinitions(term, memoryLocation, definitions);
+            return computeValue(term, memoryLocation, reachingDefinitions);
         }
         case Term::UNARY_OPERATOR:
-            simulateUnaryOperator(term->asUnaryOperator(), context);
-            break;
+            return computeValue(term->asUnaryOperator(), definitions);
         case Term::BINARY_OPERATOR:
-            simulateBinaryOperator(term->asBinaryOperator(), context);
-            break;
-        case Term::CHOICE: {
-            const Choice *choice = term->asChoice();
-            simulate(choice->preferredTerm(), context);
-            simulate(choice->defaultTerm(), context);
-
-            if (!dataflow().getDefinitions(choice->preferredTerm()).empty()) {
-                *dataflow().getValue(choice) = *dataflow().getValue(choice->preferredTerm());
-            } else {
-                *dataflow().getValue(choice) = *dataflow().getValue(choice->defaultTerm());
-            }
-            break;
+            return computeValue(term->asBinaryOperator(), definitions);
+        default: {
+            log_.warning(tr("%1: Unknown term kind: %2.").arg(Q_FUNC_INFO).arg(term->kind()));
+            return dataflow().getValue(term);
         }
-        default:
-            ncWarning("Was called for unsupported kind of term: '%1'.", static_cast<int>(term->kind()));
-            break;
+    }
+}
+
+const MemoryLocation &DataflowAnalyzer::computeMemoryLocation(const Term *term, const ReachingDefinitions &definitions) {
+    return dataflow().setMemoryLocation(term, [&]() -> MemoryLocation {
+        switch (term->kind()) {
+            case Term::MEMORY_LOCATION_ACCESS: {
+                return term->asMemoryLocationAccess()->memoryLocation();
+            }
+            case Term::DEREFERENCE: {
+                auto dereference = term->asDereference();
+                auto addressValue = computeValue(dereference->address(), definitions);
+
+                if (addressValue->abstractValue().isConcrete()) {
+                    if (dereference->domain() == MemoryDomain::MEMORY) {
+                        return MemoryLocation(
+                            dereference->domain(),
+                            addressValue->abstractValue().asConcrete().value() * CHAR_BIT,
+                            dereference->size());
+                    } else {
+                        return MemoryLocation(
+                            dereference->domain(),
+                            addressValue->abstractValue().asConcrete().value(),
+                            dereference->size());
+                    }
+                } else if (addressValue->isStackOffset()) {
+                    return MemoryLocation(MemoryDomain::STACK, addressValue->stackOffset() * CHAR_BIT, dereference->size());
+                } else {
+                    return MemoryLocation();
+                }
+                break;
+            }
+            default: {
+                log_.warning(tr("%1: Term kind %2 cannot have a memory location.").arg(Q_FUNC_INFO).arg(term->kind()));
+                return MemoryLocation();
+            }
+        }
+    }());
+}
+
+const ReachingDefinitions &DataflowAnalyzer::computeReachingDefinitions(const Term *term,
+                                                                        const MemoryLocation &memoryLocation,
+                                                                        const ReachingDefinitions &definitions) {
+    auto &termDefinitions = dataflow().getDefinitions(term);
+
+    if (isTracked(memoryLocation)) {
+        definitions.project(memoryLocation, termDefinitions);
+    } else {
+        termDefinitions.clear();
     }
 
-    if (const MemoryLocation &memoryLocation = dataflow().getMemoryLocation(term)) {
-        if (!architecture()->isGlobalMemory(memoryLocation)) {
-            if (term->isRead()) {
-                const auto &definitions = context.definitions().getDefinitions(memoryLocation);
-                dataflow().setDefinitions(term, definitions);
+    return termDefinitions;
+}
 
-                Value *value = dataflow().getValue(term);
-                foreach (const Term *definition, definitions) {
-                    value->join(*dataflow().getValue(definition));
-                }
-            }
-            if (term->isWrite()) {
-                context.definitions().addDefinition(memoryLocation, term);
-            }
-            if (term->isKill()) {
-                context.definitions().killDefinitions(memoryLocation);
-            }
+bool DataflowAnalyzer::isTracked(const MemoryLocation &memoryLocation) const {
+    return memoryLocation && !architecture()->isGlobalMemory(memoryLocation);
+}
+
+Value *DataflowAnalyzer::computeValue(const Term *term, const MemoryLocation &memoryLocation,
+                                      const ReachingDefinitions &definitions) {
+    assert(term);
+    assert(term->isRead());
+    assert(memoryLocation || definitions.empty());
+
+    auto value = dataflow().getValue(term);
+
+    if (definitions.empty()) {
+        return value;
+    }
+
+    auto byteOrder = architecture()->getByteOrder(memoryLocation.domain());
+
+    /*
+     * Merge abstract values.
+     */
+    AbstractValue abstractValue(value->abstractValue().size(), 0, 0);
+
+    foreach (const auto &chunk, definitions.chunks()) {
+        assert(memoryLocation.covers(chunk.location()));
+
+        /*
+         * Mask of bits inside abstractValue which are covered by chunk's location.
+         */
+        auto mask = bitMask<ConstantValue>(chunk.location().size());
+        if (byteOrder == ByteOrder::LittleEndian) {
+            mask = bitShift(mask, chunk.location().addr() - memoryLocation.addr());
         } else {
-            if (term->isRead()) {
-                dataflow().clearDefinitions(term);
+            mask = bitShift(mask, memoryLocation.endAddr() - chunk.location().endAddr());
+        }
+
+        foreach (auto definition, chunk.definitions()) {
+            auto definitionLocation = dataflow().getMemoryLocation(definition);
+            assert(definitionLocation.covers(chunk.location()));
+
+            auto definitionValue = dataflow().getValue(definition);
+            auto definitionAbstractValue = definitionValue->abstractValue();
+
+            /*
+             * Shift definition's abstract value to match term's location.
+             */
+            if (byteOrder == ByteOrder::LittleEndian) {
+                definitionAbstractValue.shift(definitionLocation.addr() - memoryLocation.addr());
+            } else {
+                definitionAbstractValue.shift(memoryLocation.endAddr() - definitionLocation.endAddr());
             }
+
+            /* Project the value to the defined location. */
+            definitionAbstractValue.project(mask);
+
+            /* Update the new abstract value. */
+            abstractValue = AbstractValue(abstractValue.size(),
+                abstractValue.zeroBits() | definitionAbstractValue.zeroBits(),
+                abstractValue.oneBits() | definitionAbstractValue.oneBits());
+        }
+    }
+
+    value->setAbstractValue(abstractValue);
+
+    /*
+     * Merge stack offset and product flags.
+     *
+     * Heuristic: merge information only from terms that define lower bits of the term's value.
+     */
+    const std::vector<const Term *> *lowerBitsDefinitions = nullptr;
+
+    if (byteOrder == ByteOrder::LittleEndian) {
+        if (definitions.chunks().front().location().addr() == memoryLocation.addr()) {
+            lowerBitsDefinitions = &definitions.chunks().front().definitions();
         }
     } else {
-        if (term->isRead()) {
-            dataflow().clearDefinitions(term);
+        if (definitions.chunks().back().location().endAddr() == memoryLocation.endAddr()) {
+            lowerBitsDefinitions = &definitions.chunks().back().definitions();
         }
     }
-}
 
-void DataflowAnalyzer::simulateUnaryOperator(const UnaryOperator *unary, SimulationContext &context) {
-    simulate(unary->operand(), context);
+    if (lowerBitsDefinitions) {
+        foreach (auto definition, *lowerBitsDefinitions) {
+            auto definitionValue = dataflow().getValue(definition);
 
-    Value *value = dataflow().getValue(unary);
-    Value *operandValue = dataflow().getValue(unary->operand());
+            if (definitionValue->isNotStackOffset()) {
+                value->makeNotStackOffset();
+            } else if (definitionValue->isStackOffset()) {
+                value->makeStackOffset(definitionValue->stackOffset());
+            }
 
-    if (operandValue->isConstant()) {
-        value->makeConstant(unary->apply(operandValue->constantValue()));
-    } else if (operandValue->isNonconstant()) {
-        value->makeNonconstant();
+            if (definitionValue->isNotProduct()) {
+                value->makeNotProduct();
+            } else if (definitionValue->isProduct()) {
+                value->makeProduct();
+            }
+        }
     }
 
-    value->makeNotStackOffset();
-    value->makeNotMultiplication();
+    /*
+     * Merge return address flag.
+     */
+    if (definitions.chunks().front().location() == memoryLocation) {
+        foreach (auto definition, definitions.chunks().front().definitions()) {
+            auto definitionValue = dataflow().getValue(definition);
+            if (definitionValue->isNotReturnAddress()) {
+                value->makeNotReturnAddress();
+            } else if (definitionValue->isReturnAddress()) {
+                value->makeReturnAddress();
+            }
+        }
+    }
+
+    return value;
 }
 
-void DataflowAnalyzer::simulateBinaryOperator(const BinaryOperator *binary, SimulationContext &context) {
-    simulate(binary->left(), context);
-    simulate(binary->right(), context);
+Value *DataflowAnalyzer::computeValue(const UnaryOperator *unary, const ReachingDefinitions &definitions) {
+    auto value = dataflow().getValue(unary);
+    auto operandValue = computeValue(unary->operand(), definitions);
 
-    Value *value = dataflow().getValue(binary);
-    Value *leftValue = dataflow().getValue(binary->left());
-    Value *rightValue = dataflow().getValue(binary->right());
+    value->setAbstractValue(apply(unary, operandValue->abstractValue()));
 
-    /* Compute constant value. */
-    switch (binary->operatorKind()) {
-        case BinaryOperator::MUL:
-            if (leftValue->isConstant() && leftValue->constantValue().value() == 0) {
-                value->makeConstant(SizedValue(0));
-            } else if (rightValue->isConstant() && rightValue->constantValue().value() == 0) {
-                value->makeConstant(SizedValue(0));
-            } else if (leftValue->isConstant() && rightValue->isConstant()) {
-                value->makeConstant(binary->apply(leftValue->constantValue(), rightValue->constantValue()));
-            } else if (leftValue->isNonconstant() || rightValue->isNonconstant()) {
-                value->makeNonconstant();
+    switch (unary->operatorKind()) {
+        case UnaryOperator::SIGN_EXTEND:
+        case UnaryOperator::ZERO_EXTEND:
+        case UnaryOperator::TRUNCATE:
+            if (operandValue->isNotStackOffset()) {
+                value->makeNotStackOffset();
+            } else if (operandValue->isStackOffset()) {
+                value->makeStackOffset(operandValue->stackOffset());
+            }
+            if (operandValue->isNotProduct()) {
+                value->makeNotProduct();
+            } else if (operandValue->isProduct()) {
+                value->makeProduct();
             }
             break;
-
-        case BinaryOperator::SIGNED_DIV: /* FALLTHROUGH */
-        case BinaryOperator::SIGNED_REM: /* FALLTHROUGH */
-        case BinaryOperator::UNSIGNED_REM: /* FALLTHROUGH */
-        case BinaryOperator::UNSIGNED_DIV: /* FALLTHROUGH */
-            if (leftValue->isConstant() && leftValue->constantValue().value() == 0) {
-                value->makeConstant(SizedValue(0));
-            } else if (leftValue->isConstant() && rightValue->isConstant()) {
-                value->makeConstant(binary->apply(leftValue->constantValue(), rightValue->constantValue()));
-            } else {
-                value->makeNonconstant();
-            }
-            break;
-
         default:
-            if (leftValue->isConstant() && rightValue->isConstant()) {
-                value->makeConstant(binary->apply(leftValue->constantValue(), rightValue->constantValue()));
-            } else if (leftValue->isNonconstant() || rightValue->isNonconstant()) {
-                value->makeNonconstant();
-            }
+            value->makeNotStackOffset();
+            value->makeNotProduct();
             break;
     }
+
+    value->makeNotReturnAddress();
+
+    return value;
+}
+
+Value *DataflowAnalyzer::computeValue(const BinaryOperator *binary, const ReachingDefinitions &definitions) {
+    auto value = dataflow().getValue(binary);
+    auto leftValue = computeValue(binary->left(), definitions);
+    auto rightValue = computeValue(binary->right(), definitions);
+
+    value->setAbstractValue(apply(binary, leftValue->abstractValue(), rightValue->abstractValue()));
 
     /* Compute stack offset. */
     switch (binary->operatorKind()) {
-        case BinaryOperator::ADD:
-            if (leftValue->isConstant()) {
-                if (rightValue->isStackOffset()) {
-                    value->makeStackOffset(leftValue->constantValue().signedValue() + rightValue->stackOffset().signedValue());
-                } else if (rightValue->isNotStackOffset()) {
+        case BinaryOperator::ADD: {
+            if (leftValue->isStackOffset()) {
+                if (rightValue->abstractValue().isConcrete()) {
+                    value->makeStackOffset(leftValue->stackOffset() + rightValue->abstractValue().asConcrete().signedValue());
+                } else if (rightValue->abstractValue().isNondeterministic()) {
                     value->makeNotStackOffset();
                 }
-            } else if (leftValue->isNonconstant()) {
-                value->makeNotStackOffset();
             }
-            if (rightValue->isConstant()) {
-                if (leftValue->isStackOffset()) {
-                    value->makeStackOffset(leftValue->stackOffset().signedValue() + rightValue->constantValue().signedValue());
-                } else if (leftValue->isNotStackOffset()) {
+            if (rightValue->isStackOffset()) {
+                if (leftValue->abstractValue().isConcrete()) {
+                    value->makeStackOffset(rightValue->stackOffset() + leftValue->abstractValue().asConcrete().signedValue());
+                } else if (leftValue->abstractValue().isNondeterministic()) {
                     value->makeNotStackOffset();
                 }
-            } else if (rightValue->isNonconstant()) {
+            }
+            if (leftValue->isNotStackOffset() && rightValue->isNotStackOffset()) {
                 value->makeNotStackOffset();
             }
             break;
-
-        case BinaryOperator::SUB:
-            if (leftValue->isStackOffset() && rightValue->isConstant()) {
-                value->makeStackOffset(leftValue->stackOffset().signedValue() - rightValue->constantValue().signedValue());
-            } else if (leftValue->isNotStackOffset() || rightValue->isNonconstant()) {
+        }
+        case BinaryOperator::SUB: {
+            if (leftValue->isStackOffset() && rightValue->abstractValue().isConcrete()) {
+                value->makeStackOffset(leftValue->stackOffset() - rightValue->abstractValue().asConcrete().signedValue());
+            } else if (leftValue->isNotStackOffset() || rightValue->abstractValue().isNondeterministic()) {
                 value->makeNotStackOffset();
             }
             break;
-
-        case BinaryOperator::BITWISE_AND:
+        }
+        case BinaryOperator::AND: {
             /* Sometimes used for getting aligned stack pointer values. */
-            if (leftValue->isStackOffset() && rightValue->isConstant()) {
-                value->makeStackOffset(leftValue->stackOffset().value() & rightValue->constantValue().value());
-            } else if (rightValue->isStackOffset() && leftValue->isConstant()) {
-                value->makeStackOffset(rightValue->stackOffset().value() & leftValue->constantValue().value());
-            } else if ((leftValue->isNonconstant() && leftValue->isNotStackOffset()) ||
-                       (rightValue->isNonconstant() && rightValue->isNotStackOffset())) {
+            if (leftValue->isStackOffset() && rightValue->abstractValue().isConcrete()) {
+                value->makeStackOffset(leftValue->stackOffset() & rightValue->abstractValue().asConcrete().value());
+            } else if (rightValue->isStackOffset() && leftValue->abstractValue().isConcrete()) {
+                value->makeStackOffset(rightValue->stackOffset() & leftValue->abstractValue().asConcrete().value());
+            } else if ((leftValue->abstractValue().isNondeterministic() && leftValue->isNotStackOffset()) ||
+                       (rightValue->abstractValue().isNondeterministic() && rightValue->isNotStackOffset())) {
                 value->makeNotStackOffset();
             }
             break;
-
-        default:
+        }
+        default: {
             value->makeNotStackOffset();
             break;
+        }
     }
 
-    /* Compute multiplication flag. */
+    /* Compute product flag. */
     switch (binary->operatorKind()) {
         case BinaryOperator::MUL:
         case BinaryOperator::SHL:
-            value->makeMultiplication();
+            value->makeProduct();
             break;
         default:
-            value->makeNotMultiplication();
+            value->makeNotProduct();
             break;
+    }
+
+    value->makeNotReturnAddress();
+
+    return value;
+}
+
+AbstractValue DataflowAnalyzer::apply(const UnaryOperator *unary, const AbstractValue &a) {
+    switch (unary->operatorKind()) {
+        case UnaryOperator::NOT:
+            return ~a;
+        case UnaryOperator::NEGATION:
+            return -a;
+        case UnaryOperator::SIGN_EXTEND:
+            return dflow::AbstractValue(a).signExtend(unary->size());
+        case UnaryOperator::ZERO_EXTEND:
+            return dflow::AbstractValue(a).zeroExtend(unary->size());
+        case UnaryOperator::TRUNCATE:
+            return dflow::AbstractValue(a).resize(unary->size());
+        default:
+            log_.warning(tr("%1: Unknown unary operator kind: %2.").arg(Q_FUNC_INFO).arg(unary->operatorKind()));
+            return dflow::AbstractValue();
+    }
+}
+
+AbstractValue DataflowAnalyzer::apply(const BinaryOperator *binary, const AbstractValue &a, const AbstractValue &b) {
+    switch (binary->operatorKind()) {
+        case BinaryOperator::AND:
+            return a & b;
+        case BinaryOperator::OR:
+            return a | b;
+        case BinaryOperator::XOR:
+            return a ^ b;
+        case BinaryOperator::SHL:
+            return a << b;
+        case BinaryOperator::SHR:
+            return a.asUnsigned() >> b;
+        case BinaryOperator::SAR:
+            return a.asSigned() >> b;
+        case BinaryOperator::ADD:
+            return a + b;
+        case BinaryOperator::SUB:
+            return a - b;
+        case BinaryOperator::MUL:
+            return a * b;
+        case BinaryOperator::SIGNED_DIV:
+            return a.asSigned() / b;
+        case BinaryOperator::SIGNED_REM:
+            return a.asSigned() % b;
+        case BinaryOperator::UNSIGNED_DIV:
+            return a.asUnsigned() / b;
+        case BinaryOperator::UNSIGNED_REM:
+            return a.asUnsigned() % b;
+        case BinaryOperator::EQUAL:
+            return a == b;
+        case BinaryOperator::SIGNED_LESS:
+            return a.asSigned() < b;
+        case BinaryOperator::SIGNED_LESS_OR_EQUAL:
+            return a.asSigned() <= b;
+        case BinaryOperator::UNSIGNED_LESS:
+            return a.asUnsigned() < b;
+        case BinaryOperator::UNSIGNED_LESS_OR_EQUAL:
+            return a.asUnsigned() <= b;
+        default:
+            log_.warning(tr("%1: Unknown binary operator kind: %2.").arg(Q_FUNC_INFO).arg(binary->operatorKind()));
+            return dflow::AbstractValue();
+    }
+}
+
+void DataflowAnalyzer::handleWrite(const Term *term, const MemoryLocation &memoryLocation, ReachingDefinitions &definitions) {
+    definitions.filterOut(
+        [term](const MemoryLocation &, const Term *definition) -> bool {
+            return definition == term;
+        }
+    );
+
+    if (isTracked(memoryLocation)) {
+        definitions.addDefinition(memoryLocation, term);
+    }
+}
+
+void DataflowAnalyzer::handleKill(const MemoryLocation &memoryLocation, ReachingDefinitions &definitions) {
+    if (isTracked(memoryLocation)) {
+        definitions.killDefinitions(memoryLocation);
     }
 }
 

@@ -14,8 +14,17 @@ set(SOURCES
     udis86.c
 )
 
-if(CMAKE_COMPILER_IS_GNUCC)
-    add_definitions(-Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable)
+if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+    add_definitions(
+        -Wno-unused-function
+        -Wno-unused-variable
+        -Wno-unused-but-set-variable
+        -Wno-implicit-fallthrough
+    )
+endif()
+
+if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
+    add_definitions(-Wno-unused-function -Wno-unused-variable)
 endif()
 
 add_library(udis86 ${SOURCES}) 

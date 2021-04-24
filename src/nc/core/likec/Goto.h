@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -42,35 +45,29 @@ class Goto: public Statement {
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] destination Goto destination address.
      */
-    Goto(Tree &tree, std::unique_ptr<Expression> destination):
-        Statement(tree, GOTO), destination_(std::move(destination)) {}
+    explicit Goto(std::unique_ptr<Expression> destination):
+        Statement(GOTO), destination_(std::move(destination)) {}
 
     /**
      * \return Goto destination address.
      */
-    Expression *destination() { return destination_.get(); }
+    std::unique_ptr<Expression> &destination() { return destination_; }
 
     /**
      * \return Goto destination address.
      */
     const Expression *destination() const { return destination_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-
-    virtual Goto *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::Goto, nc::core::likec::Statement::GOTO)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::Goto, nc::core::likec::Statement::GOTO)
 
 /* vim:set et sts=4 sw=4: */

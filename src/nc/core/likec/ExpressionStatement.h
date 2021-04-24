@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -38,22 +41,20 @@ class Expression;
 class ExpressionStatement: public Statement {
     std::unique_ptr<Expression> expression_; ///< Expression used as statement.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] expression Expression used as statement.
      */
-    ExpressionStatement(Tree &tree, std::unique_ptr<Expression> expression):
-        Statement(tree, EXPRESSION_STATEMENT), expression_(std::move(expression))
+    explicit ExpressionStatement(std::unique_ptr<Expression> expression):
+        Statement(EXPRESSION_STATEMENT), expression_(std::move(expression))
     {}
 
     /**
      * \return Expression used for the statement.
      */
-    Expression *expression() { return expression_.get(); }
+    std::unique_ptr<Expression> &expression() { return expression_; }
 
     /**
      * \return Expression used for the statement.
@@ -67,19 +68,14 @@ class ExpressionStatement: public Statement {
      */
     std::unique_ptr<Expression> releaseExpression() { return std::move(expression_); };
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-
-    virtual Statement *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::ExpressionStatement, nc::core::likec::Statement::EXPRESSION_STATEMENT)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::ExpressionStatement, nc::core::likec::Statement::EXPRESSION_STATEMENT)
 
 /* vim:set et sts=4 sw=4: */

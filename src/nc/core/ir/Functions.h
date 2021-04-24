@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -23,15 +26,11 @@
 #include <nc/config.h>
 
 #include <memory>
-#include <vector>
 
 #include <boost/noncopyable.hpp>
-#include <boost/unordered_map.hpp>
 
 #include <nc/common/Printable.h>
-#include <nc/common/Types.h>
-
-#include "CommentText.h"
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
@@ -39,29 +38,41 @@ namespace ir {
 
 class Function;
 
+// TODO: get rid of this class?
 /**
- * Collection of functions in intermediate representation.
+ * Functions in intermediate representation.
  */
 class Functions: public PrintableBase<Functions>, boost::noncopyable {
-    /** The functions. */
-    std::vector<Function *> functions_;
+public:
+    typedef nc::ilist<Function> FunctionList;
 
-    /** Mapping from an entry address to the list of functions with this address. */
-    boost::unordered_map<ByteAddr, std::vector<Function *>> entry2functions_;
-
-    /** Comment for the whole set of functions. */
-    CommentText comment_;
+private:
+    /** List of functions. */
+    FunctionList functions_;
 
 public:
+    /**
+     * Constructor.
+     */
+    Functions();
+
     /**
      * Destructor.
      */
     ~Functions();
 
     /**
-     * \return Intermediate representations of functions.
+     * \return List of functions.
+     *
+     * \warning Do not insert functions into the container directly.
+     *          Use methods of Functions class instead.
      */
-    const std::vector<Function *> &functions() const { return functions_; }
+    FunctionList &list() { return functions_; }
+
+    /**
+     * \return List of functions.
+     */
+    const FunctionList &list() const { return functions_; }
 
     /**
      * Adds intermediate representation of a function and takes ownership of it.
@@ -71,28 +82,11 @@ public:
     void addFunction(std::unique_ptr<Function> function);
 
     /**
-     * \param address Entry address.
-     *
-     * \return Pointer to the functions with given entry address.
-     */
-    const std::vector<Function *> &getFunctionsAtAddress(ByteAddr address) const;
-
-    /**
      * Prints the intermediate representation of all functions into a stream in DOT format.
      *
      * \param[in] out Output stream.
      */
     void print(QTextStream &out) const;
-
-    /**
-     * \return Comment for this set of functions.
-     */
-    CommentText &comment() { return comment_; }
-
-    /**
-     * \return Comment for this set of functions.
-     */
-    const CommentText &comment() const { return comment_; }
 };
 
 } // namespace ir

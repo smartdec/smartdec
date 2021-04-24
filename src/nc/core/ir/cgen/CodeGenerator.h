@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -29,17 +32,22 @@
 
 #include <nc/core/ir/MemoryLocation.h>
 
+#include "NameGenerator.h"
+
 namespace nc {
 
 class CancellationToken;
 
 namespace core {
 
-class Context;
+namespace image {
+    class Image;
+}
 
 namespace likec {
     class FunctionDeclaration;
     class FunctionDefinition;
+    class Expression;
     class StructType;
     class Tree;
     class Type;
@@ -49,10 +57,36 @@ namespace likec {
 namespace ir {
 
 class Function;
+class Functions;
 class Term;
+
+namespace calling {
+    class CalleeId;
+    class FunctionSignature;
+    class Hooks;
+    class Signatures;
+}
+
+namespace cflow {
+    class Graphs;
+}
+
+namespace dflow {
+    class Dataflows;
+}
+
+namespace liveness {
+    class Livenesses;
+}
 
 namespace types {
     class Type;
+    class Types;
+}
+
+namespace vars {
+    class Variable;
+    class Variables;
 }
 
 namespace cgen {
@@ -61,11 +95,18 @@ namespace cgen {
  * LikeC code generator.
  */
 class CodeGenerator: boost::noncopyable {
-    /** Context with the analyzed program. */
-    core::Context &context_;
-
-    /** Abstract syntax tree to generate code in. */
     likec::Tree &tree_;
+    const image::Image &image_;
+    const Functions &functions_;
+    const calling::Hooks &hooks_;
+    const calling::Signatures &signatures_;
+    const dflow::Dataflows &dataflows_;
+    const vars::Variables &variables_;
+    const cflow::Graphs &graphs_;
+    const liveness::Livenesses &livenesses_;
+    const types::Types &types_;
+    const CancellationToken &cancellationToken_;
+    const NameGenerator nameGenerator_;
 
     /** Types being translated to LikeC. */
     std::vector<const ir::types::Type *> typeCreationStack_;
@@ -73,36 +114,38 @@ class CodeGenerator: boost::noncopyable {
     /** Structural types generated for IR types. */
     boost::unordered_map<const ir::types::Type *, const likec::StructType *> traits2structType_;
 
-    /** Serial number for giving names to global variables. */
-    int serial_;
-
     /** Already declared global variables. */
-    boost::unordered_map<MemoryLocation, likec::VariableDeclaration *> variableDeclarations_;
+    boost::unordered_map<const vars::Variable *, likec::VariableDeclaration *> variableDeclarations_;
 
     /** Mapping of functions to their declarations. */
-    boost::unordered_map<const Function *, likec::FunctionDeclaration *> function2declaration_;
+    boost::unordered_map<const calling::FunctionSignature *, likec::FunctionDeclaration *> signature2declaration_;
 
 public:
 
-    /*
+    /**
      * Constructor.
      *
-     * \param context Context with the analyzed program.
-     * \param tree Abstract syntax tree to generate code in.
+     * \param[out] tree Abstract syntax tree to generate code in.
+     * \param[in] image Executable image being decompiled.
+     * \param[in] functions Intermediate representation of functions.
+     * \param[in] hooks Hooks manager.
+     * \param[in] signatures Signatures of functions.
+     * \param[in] dataflows Dataflow information for all functions.
+     * \param[in] variables Information about reconstructed variables.
+     * \param[in] graphs Reduced control-flow graphs.
+     * \param[in] livenesses Liveness information for all functions.
+     * \param[in] types Information about types.
+     * \param[in] cancellationToken Cancellation token.
      */
-    CodeGenerator(core::Context &context, likec::Tree &tree):
-        context_(context), tree_(tree), serial_(0)
+    CodeGenerator(likec::Tree &tree, const image::Image &image, const Functions &functions, const calling::Hooks &hooks,
+        const calling::Signatures &signatures, const dflow::Dataflows &dataflows, const vars::Variables &variables,
+        const cflow::Graphs &graphs, const liveness::Livenesses &livenesses, const types::Types &types,
+        const CancellationToken &cancellationToken
+    ):
+        tree_(tree), image_(image), functions_(functions), hooks_(hooks), signatures_(signatures),
+        dataflows_(dataflows), variables_(variables), graphs_(graphs), livenesses_(livenesses),
+        types_(types), cancellationToken_(cancellationToken), nameGenerator_(image)
     {}
-
-    /**
-     * Virtual destructor.
-     */
-    virtual ~CodeGenerator() {}
-
-    /**
-     * \return Context with the analyzer program.
-     */
-    core::Context &context() const { return context_; }
 
     /**
      * \return Abstract syntax tree to generate code in.
@@ -110,11 +153,61 @@ public:
     likec::Tree &tree() const { return tree_; }
 
     /**
-     * Translates input program into LikeC compilation unit.
-     *
-     * \param[in] canceled Cancellation token.
+     * \return Executable image being decompiled.
      */
-    void makeCompilationUnit(const CancellationToken &canceled);
+    const image::Image &image() const { return image_; }
+
+    /**
+     * \return Intermediate representation of functions.
+     */
+    const Functions &functions() const { return functions_; }
+
+    /**
+     * \return Hooks of calling conventions.
+     */
+    const calling::Hooks &hooks() const { return hooks_; }
+
+    /**
+     * \return Signatures of functions.
+     */
+    const calling::Signatures &signatures() const { return signatures_; }
+
+    /**
+     * \return Dataflow information for all functions.
+     */
+    const ir::dflow::Dataflows &dataflows() const { return dataflows_; }
+
+    /**
+     * \return Reconstructed variables.
+     */
+    const vars::Variables &variables() const { return variables_; }
+
+    /**
+     * \return Reduced control-flow graphs.
+     */
+    const cflow::Graphs &graphs() const { return graphs_; }
+
+    /**
+     * \return Liveness information for all functions.
+     */
+    const liveness::Livenesses &livenesses() const { return livenesses_; }
+
+    /**
+     * \return Information about types.
+     */
+    const types::Types &types() const { return types_; }
+
+    /**
+     * \return Cancellation token.
+     */
+    const CancellationToken &cancellationToken() const { return cancellationToken_; }
+
+    const NameGenerator &nameGenerator() const { return nameGenerator_; }
+
+    /**
+     * Translates input program into LikeC compilation unit.
+     */
+    void makeCompilationUnit();
 
     /**
      * Creates high-level type object from given type traits.
@@ -133,32 +226,37 @@ public:
 #endif
 
     /**
-     * Returns a declaration of global variable for given term.
-     * If necessary, the declaration is created and added to the code of current compilation unit.
+     * \param variable Valid pointer to a variable.
      *
-     * \param[in] memoryLocation Memory location of the global variable.
-     * \param[in] type Valid pointer to the type traits of the global variable.
-     *
-     * \return Valid pointer to the global variable declaration.
+     * \return Valid pointer to the LikeC type of this variable.
      */
-    likec::VariableDeclaration *makeGlobalVariableDeclaration(const MemoryLocation &memoryLocation, const types::Type *type);
+    const likec::Type *makeVariableType(const vars::Variable *variable);
 
     /**
-     * \param[in] addr Entry address of a function.
+     * \param[in] variable Valid pointer to a global variable.
      *
-     * \return Declaration for function with this entry address, or 0 if no functions with such entry address are known.
-     * Declaration is created when needed.
+     * \return Valid pointer to corresponding global variable declaration.
+     */
+    likec::VariableDeclaration *makeGlobalVariableDeclaration(const vars::Variable *variable);
+
+    /**
+     * \param[in] memoryLocation Valid memory location.
+     * \param[in] type Valid pointer to its type.
+     *
+     * \return Pointer to the expression representing the initial value of this location.
+     *         Can be nullptr.
+     */
+    std::unique_ptr<likec::Expression> makeInitialValue(const MemoryLocation &memoryLocation, const likec::Type *type);
+
+    /**
+     * Creates a function's declaration, if it was not yet, and adds it to the compilation unit.
+     *
+     * \param[in] addr Address of a function.
+     *
+     * \return Pointer to the declaration for a function with this address.
+     *         Will be nullptr if no signature is known for the function at this address.
      */
     likec::FunctionDeclaration *makeFunctionDeclaration(ByteAddr addr);
-
-    /**
-     * Creates function's definition, if it wasn't yet, and adds it to the compilation unit.
-     *
-     * \param[in] function Function.
-     *
-     * \return Declaration for this function.
-     */
-    virtual likec::FunctionDeclaration *makeFunctionDeclaration(const Function *function);
 
     /**
      * Creates function's definition and adds it to the compilation unit.
@@ -167,15 +265,20 @@ public:
      *
      * \return Created function definition.
      */
-    virtual likec::FunctionDefinition *makeFunctionDefinition(const Function *function);
+    likec::FunctionDefinition *makeFunctionDefinition(const Function *function);
 
     /**
      * Registers a declaration of a function.
      *
-     * \param[in] function Function.
-     * \param[in] declaration Function declaration.
+     * \param[in] signature Valid pointer to the signature of this function.
+     * \param[in] declaration Valid pointer to the function's declaration.
+     *
+     * This function is called from DeclarationGenerator and DefinitionGenerator
+     * immediately after they have created the declaration or definition.
+     * Thus, when a function, whose body is being generated, is looking for
+     * its own declaration, CodeGenerator already knows about it.
      */
-    void setFunctionDeclaration(const Function *function, likec::FunctionDeclaration *declaration);
+    void setFunctionDeclaration(const calling::FunctionSignature *signature, likec::FunctionDeclaration *declaration);
 };
 
 } // namespace cgen

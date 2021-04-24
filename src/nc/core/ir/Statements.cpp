@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -23,22 +26,17 @@
 
 #include <QTextStream>
 
+#include <nc/common/Unreachable.h>
+#include <nc/common/make_unique.h>
+
 #include <nc/core/arch/Instruction.h>
 
 namespace nc {
 namespace core {
 namespace ir {
 
-Comment *Comment::doClone() const {
-    return new Comment(text());
-}
-
-void Comment::print(QTextStream &out) const {
-    out << text_ << endl;
-}
-
-InlineAssembly *InlineAssembly::doClone() const {
-    return new InlineAssembly();
+std::unique_ptr<Statement> InlineAssembly::doClone() const {
+    return std::make_unique<InlineAssembly>();
 }
 
 void InlineAssembly::print(QTextStream &out) const {
@@ -46,92 +44,93 @@ void InlineAssembly::print(QTextStream &out) const {
     if (instruction()) {
         out << *instruction();
     }
-    out << " }" << endl;
+    out << " }" << '\n';
 }
 
 Assignment::Assignment(std::unique_ptr<Term> left, std::unique_ptr<Term> right):
     Statement(ASSIGNMENT), left_(std::move(left)), right_(std::move(right))
 {
-    assert(left_ && right_ && left_->size() == right_->size());
+    assert(left_);
+    assert(right_);
+    assert(left_->size() == right_->size());
 
-    left_->initFlags(Term::WRITE, right_.get());
-    right_->initFlags(Term::READ);
-
-    left_->setStatementRecursively(this);
-    right_->setStatementRecursively(this);
+    left_->setStatement(this);
+    right_->setStatement(this);
 }
 
-void Assignment::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(left_.get());
-    visitor(right_.get());
-}
-
-void Assignment::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(left_.get());
-    visitor(right_.get());
-}
-
-Assignment *Assignment::doClone() const {
-    return new Assignment(left()->clone(), right()->clone());
+std::unique_ptr<Statement> Assignment::doClone() const {
+    return std::make_unique<Assignment>(left()->clone(), right()->clone());
 }
 
 void Assignment::print(QTextStream &out) const {
-    out << *left_ << " = " << *right_ << endl;
+    out << *left_ << " = " << *right_ << '\n';
 }
 
-Kill::Kill(std::unique_ptr<Term> term):
-    Statement(KILL), term_(std::move(term))
+Touch::Touch(std::unique_ptr<Term> term, Term::AccessType accessType):
+    Statement(TOUCH), term_(std::move(term)), accessType_(accessType)
 {
     assert(term_);
 
-    term_->initFlags(Term::KILL);
-    term_->setStatementRecursively(this);
+    term_->setStatement(this);
 }
 
-void Kill::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(term_.get());
+std::unique_ptr<Statement> Touch::doClone() const {
+    return std::make_unique<Touch>(term()->clone(), term()->accessType());
 }
 
-void Kill::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(term_.get());
-}
-
-Kill *Kill::doClone() const {
-    return new Kill(term()->clone());
-}
-
-void Kill::print(QTextStream &out) const {
-    out << "kill(" << *term_ << ")" << endl;
+void Touch::print(QTextStream &out) const {
+    switch (term()->accessType()) {
+        case Term::READ:
+            out << "read";
+            break;
+        case Term::WRITE:
+            out << "write";
+            break;
+        default:
+            unreachable();
+    }
+    out << "(" << *term_ << ")" << '\n';
 }
 
 Call::Call(std::unique_ptr<Term> target):
     Statement(CALL), 
     target_(std::move(target))
 {
-    assert(target_ != NULL && "Jump target must be not NULL.");
+    assert(target_ != nullptr);
 
-    target_->initFlags(Term::READ);
-    target_->setStatementRecursively(this);
+    target_->setStatement(this);
 }
 
-void Call::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(target_.get());
-}
-
-void Call::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(target_.get());
+std::unique_ptr<Statement> Call::doClone() const {
+    return std::make_unique<Call>(target()->clone());
 }
 
 void Call::print(QTextStream &out) const {
-    out << "call " << *target_ << endl;
+    out << "call " << *target_ << '\n';
 }
 
-Return *Return::doClone() const {
-    return new Return();
+std::unique_ptr<Statement> Halt::doClone() const {
+    return std::make_unique<Halt>();
 }
 
-void Return::print(QTextStream &out) const {
-    out << "return" << endl;
+void Halt::print(QTextStream &out) const {
+    out << "halt" << '\n';
+}
+
+std::unique_ptr<Statement> Callback::doClone() const {
+    return std::make_unique<Callback>(function());
+}
+
+void Callback::print(QTextStream &out) const {
+    out << "callback" << '\n';
+}
+
+std::unique_ptr<Statement> RememberReachingDefinitions::doClone() const {
+    return std::make_unique<RememberReachingDefinitions>();
+}
+
+void RememberReachingDefinitions::print(QTextStream &out) const {
+    out << "remember_reaching_definitions" << '\n';
 }
 
 } // namespace ir

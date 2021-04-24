@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -39,40 +42,45 @@ class IntegerConstant: public Expression {
     SizedValue value_; ///< Value of the constant.
     const IntegerType *type_; ///< Type of the constant.
 
-    public:
+public:
+    /**
+     * Class constructor.
+     *
+     * \param[in] value Value of the constant.
+     * \param[in] type Type of the constant. The type size must be equal to the value size.
+     */
+    IntegerConstant(const SizedValue &value, const IntegerType *type);
 
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
-     * \param[in] value Value of the constant.
+     * \param[in] value Value.
      * \param[in] type Type of the constant.
      */
-    IntegerConstant(Tree &tree, const SizedValue &value, const IntegerType *type);
+    IntegerConstant(ConstantValue value, const IntegerType *type);
 
     /**
-     * \return Value of the constant.
+     * \return The value of the constant.
      */
     const SizedValue &value() const { return value_; }
+
+    /**
+     * Sets the value of the constant.
+     *
+     * \param[in] value The new value.
+     */
+    void setValue(const SizedValue &value);
 
     /**
      * \return Type of the constant.
      */
     const IntegerType *type() const { return type_; }
-
-    virtual const Type *getType() const override { return type(); }
-
-    virtual bool isZero() const override { return value().value() == 0; }
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::IntegerConstant, nc::core::likec::Expression::INTEGER_CONSTANT)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::IntegerConstant, nc::core::likec::Expression::INTEGER_CONSTANT)
 
 /* vim:set et sts=4 sw=4: */

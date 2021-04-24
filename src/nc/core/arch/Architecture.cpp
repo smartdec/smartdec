@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,15 +24,10 @@
 
 #include "Architecture.h"
 
-#include <boost/range/adaptor/map.hpp>
-
-#include <nc/common/BitTwiddling.h>
 #include <nc/common/Foreach.h>
 
-#include <nc/core/arch/irgen/InstructionAnalyzer.h>
-
-#include "Operands.h"
-#include "Registers.h"
+#include <nc/core/ir/MemoryLocation.h>
+#include <nc/core/ir/calling/Convention.h>
 
 namespace nc {
 namespace core {
@@ -38,118 +36,66 @@ namespace arch {
 Architecture::Architecture():
     mBitness(0),
     mMaxInstructionSize(0),
-    mInstructionDisassembler(NULL),
-    mInstructionAnalyzer(NULL),
-    mUniversalAnalyzer(NULL),
-    mMnemonics(NULL),
-    mRegisters(NULL),
-    mInstructionPointer(NULL)
+    mMasterAnalyzer(nullptr),
+    mRegisters(nullptr)
 {}
 
-void Architecture::initBitness(SmallBitSize bitness) {
+Architecture::~Architecture() {}
+
+void Architecture::setName(QString name) {
+    assert(mName.isEmpty() && "Name must be non-empty.");
+    assert(!name.isEmpty() && "Name cannot be reset.");
+
+    mName = std::move(name);
+}
+
+void Architecture::setBitness(SmallBitSize bitness) {
     assert(bitness > 0 && "Bitness must be a positive integer.");
     assert(mBitness == 0 && "Bitness cannot be reset.");
 
     mBitness = bitness;
 }
 
-void Architecture::initMaxInstructionSize(SmallBitSize size) {
-    assert(size > 0 && "Maximum instruction size must be a positive integer.");
-    assert(mMaxInstructionSize == 0 && "Maximum instruction cannot be reset.");
+void Architecture::setMaxInstructionSize(SmallBitSize size) {
+    assert(size > 0 && "Maximal instruction size must be a positive integer.");
+    assert(mMaxInstructionSize == 0 && "Maximal instruction size cannot be reset.");
 
     mMaxInstructionSize = size;
 }
 
-void Architecture::initInstructionDisassembler(disasm::InstructionDisassembler *disassembler) {
-    assert(disassembler != NULL);
-    assert(mInstructionDisassembler == NULL && "Instruction disassembler cannot be reset.");
+void Architecture::setMasterAnalyzer(const MasterAnalyzer *masterAnalyzer) {
+    assert(masterAnalyzer != nullptr);
+    assert(mMasterAnalyzer == nullptr && "Master analyzer is already set.");
 
-    mInstructionDisassembler = disassembler;
+    mMasterAnalyzer = masterAnalyzer;
 }
 
-void Architecture::initInstructionPointer(const Register *reg) {
-    assert(reg != NULL);
-    assert(mInstructionPointer == NULL && "Instruction pointer cannot be reset.");
-
-    mInstructionPointer = reg;
-}
-
-void Architecture::initInstructionAnalyzer(irgen::InstructionAnalyzer *instructionAnalyzer) {
-    assert(instructionAnalyzer != NULL);
-    assert(mInstructionAnalyzer == NULL && "Instruction analyzer cannot be reset.");
-
-    mInstructionAnalyzer = instructionAnalyzer;
-}
-
-void Architecture::initUniversalAnalyzer(const UniversalAnalyzer *universalAnalyzer) {
-    assert(universalAnalyzer != NULL);
-    assert(mUniversalAnalyzer == NULL && "Universal analyzer is already set.");
-
-    mUniversalAnalyzer = universalAnalyzer;
-}
-
-void Architecture::initMnemonics(Mnemonics *mnemonics) {
-    assert(mnemonics != NULL);
-    assert(mMnemonics == NULL && "Instruction dictionary already initialized.");
-
-    mMnemonics = mnemonics;
-}
-
-void Architecture::initRegisters(Registers *registers) {
-    assert(registers != NULL);
-    assert(mMnemonics == NULL && "Register container already initialized.");
+void Architecture::setRegisters(Registers *registers) {
+    assert(registers != nullptr);
+    assert(mRegisters == nullptr && "Register container is already set.");
 
     mRegisters = registers;
-    foreach(const Register *regizter, registers->registers()) {
-        addRegisterOperand(regizter);
-    }
-}
-
-Architecture::~Architecture() {
-    foreach(Operand *operand, mConstantOperands | boost::adaptors::map_values) {
-        delete operand;
-    }
-
-    foreach(Operand *operand, mRegisterOperandByNumber) {
-        delete operand;
-    }
-}
-
-RegisterOperand *Architecture::registerOperand(int number) const {
-    if (number < 0 || static_cast<std::size_t>(number) >= mRegisterOperandByNumber.size())
-        return NULL;
-        
-    return mRegisterOperandByNumber[number];
-}
-
-RegisterOperand *Architecture::registerOperand(const Register *regizter) const {
-    return registerOperand(regizter->number());
-}
-
-void Architecture::addRegisterOperand(const Register *regizter) {
-    assert(regizter != NULL);
-
-    int number = regizter->number();
-
-    assert(number >= 0);
-    assert(registerOperand(regizter) == NULL); /* No re-registration. */
-
-    if(static_cast<std::size_t>(number) >= mRegisterOperandByNumber.size())
-        mRegisterOperandByNumber.resize((number + 1) * 2, NULL);
-    
-    mRegisterOperandByNumber[number] = new RegisterOperand(regizter);
-}
-
-ConstantOperand *Architecture::constantOperand(const SizedValue &value) const {
-    auto &result = mConstantOperands[std::make_pair(value.value(), value.size())];
-    if (!result) {
-        result = new ConstantOperand(value);
-    }
-    return result;
 }
 
 bool Architecture::isGlobalMemory(const ir::MemoryLocation &memoryLocation) const {
     return memoryLocation.domain() == ir::MemoryDomain::MEMORY;
+}
+
+void Architecture::addCallingConvention(std::unique_ptr<ir::calling::Convention> convention) {
+    assert(convention != nullptr);
+    assert(getCallingConvention(convention->name()) == nullptr &&
+           "No two calling conventions with the same name allowed.");
+
+    conventions_.push_back(std::move(convention));
+}
+
+const ir::calling::Convention *Architecture::getCallingConvention(const QString &name) const {
+    foreach (auto convention, conventions()) {
+        if (convention->name() == name) {
+            return convention;
+        }
+    }
+    return nullptr;
 }
 
 } // namespace arch

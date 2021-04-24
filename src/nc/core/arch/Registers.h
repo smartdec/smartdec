@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -28,7 +31,6 @@
 
 #include <QString>
 #include <QHash>
-#include <QSet>
 
 #include "Register.h"
 
@@ -63,12 +65,12 @@ public:
 
     /**
      * \param number                   Register number.
-     * \returns                        Register for the given number, or NULL if
+     * \returns                        Register for the given number, or nullptr if
      *                                 no such register exists.
      */
-    const Register *regizter(int number) const {
+    const Register *getRegister(int number) const {
         if(number < 0 || static_cast<std::size_t>(number) >= mRegisterByNumber.size())
-            return NULL;
+            return nullptr;
 
         return mRegisterByNumber[number];
     }
@@ -76,35 +78,10 @@ public:
     /**
      * \param location                 Register's memory location.
      * \returns                        Register for the given memory location,
-     *                                 or NULL if there is no such register.
+     *                                 or nullptr if there is no such register.
      */
-    const Register *regizter(const ir::MemoryLocation &location) const {
-        return mRegisterByLocation.value(location, NULL);
-    }
-
-    /**
-     * \param[in] name                 Register name.
-     * \return                         Corresponding register, or NULL if 
-     *                                 register with such name doesn't exist.
-     */
-    const Register *regizter(const QString &name) const {
-        return mRegisterByName.value(name, NULL);
-    }
-
-    /**
-     * \param[in] number               Register number.
-     * \return                         True if register is a stack pointer.
-     */
-    bool isStackPointer(int number) const {
-        return mStackPointerNumbers.contains(number);
-    }
-
-    /**
-     * \param[in] memoryLocation       Memory location.
-     * \return                         True if memory location stores a stack pointer.
-     */
-    bool isStackPointer(const ir::MemoryLocation &memoryLocation) const {
-        return mStackPointerLocations.contains(memoryLocation);
+    const Register *getRegister(const ir::MemoryLocation &location) const {
+        return mRegisterByLocation.value(location, nullptr);
     }
 
 protected:
@@ -112,58 +89,31 @@ protected:
      * Registers the given register. This register container takes ownership of
      * the given register.
      * 
-     * \param[in] regizter             Register to register.
+     * \param[in] reg   Valid pointer to a register.
      */
-    void registerRegister(Register *regizter) {
-        assert(regizter != NULL);
-        assert(this->regizter(regizter->number()) == NULL); /* Re-registration not allowed. */
+    void registerRegister(Register *reg) {
+        assert(reg != nullptr);
+        assert(getRegister(reg->number()) == nullptr); /* Re-registration not allowed. */
 
-        mRegisters.push_back(regizter);
+        mRegisters.push_back(reg);
 
-        mRegisterByName[regizter->lowercaseName()] = regizter;
-        mRegisterByName[regizter->uppercaseName()] = regizter;
+        if (static_cast<std::size_t>(reg->number()) >= mRegisterByNumber.size()) {
+            mRegisterByNumber.resize((reg->number() + 1) * 2);
+        }
+        mRegisterByNumber[reg->number()] = reg;
 
-        if(static_cast<std::size_t>(regizter->number()) >= mRegisterByNumber.size())
-            mRegisterByNumber.resize((regizter->number() + 1) * 2);
-        mRegisterByNumber[regizter->number()] = regizter;
-
-        mRegisterByLocation[regizter->memoryLocation()] = regizter;
-    }
-
-    /**
-     * Registers the given register as stack pointer.
-     * 
-     * \param[in] number               Register number.
-     */
-    void registerStackPointer(int number) {
-        assert(regizter(number) != NULL); /* Register number must be registered. */
-        assert(!mStackPointerNumbers.contains(number)); /* Re-registration not allowed. */
-
-        mStackPointerNumbers.insert(number);
-        mStackPointerLocations.insert(regizter(number)->memoryLocation());
+        mRegisterByLocation[reg->memoryLocation()] = reg;
     }
 
 private:
     /** All registers. */
     std::vector<const Register *> mRegisters;
 
-    /** Register name (uppercase or lowercase) to register number map. */
-    QHash<QString, Register *> mRegisterByName;
-
     /** Register number to register map. */
     std::vector<Register *> mRegisterByNumber;
 
     /** Map from memory location to register. */
     QHash<ir::MemoryLocation, Register *> mRegisterByLocation;
-
-    /** Set of register numbers that are stack pointers. */
-    QSet<int> mStackPointerNumbers;
-
-    /** Set of memory locations that are stack pointers. */
-    QSet<ir::MemoryLocation> mStackPointerLocations;
-
-    /** Null string to return reference to in case number was not found. */
-    QString mNullString;
 };
 
 
@@ -177,24 +127,12 @@ public:
         return instance()->Registers::registers();
     }
 
-    static const Register *regizter(int number) {
-        return instance()->Registers::regizter(number);
+    static const Register *getRegister(int number) {
+        return instance()->Registers::getRegister(number);
     }
 
-    static const Register *regizter(const ir::MemoryLocation &location) {
-        return instance()->Registers::regizter(location);
-    }
-
-    static const Register *regizter(const QString &name) {
-        return instance()->Registers::regizter(name);
-    }
-
-    static bool isStackPointer(int number) {
-        return instance()->Registers::isStackPointer(number);
-    }
-
-    static bool isStackPointer(const ir::MemoryLocation &memoryLocation) {
-        return instance()->Registers::isStackPointer(memoryLocation);
+    static const Register *getRegister(const ir::MemoryLocation &location) {
+        return instance()->Registers::getRegister(location);
     }
 
     static Derived *instance() {

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -31,6 +34,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
+class Expression;
+
 /**
  * Case label.
  */
@@ -38,16 +43,14 @@ class CaseLabel: public Statement {
     /** Case expression. */
     std::unique_ptr<Expression> expression_;
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] expression Valid pointer to the case expression.
      */
-    CaseLabel(Tree &tree, std::unique_ptr<Expression> &&expression):
-        Statement(tree, CASE_LABEL), expression_(std::move(expression))
+    explicit CaseLabel(std::unique_ptr<Expression> expression):
+        Statement(CASE_LABEL), expression_(std::move(expression))
     {
         assert(expression_);
     }
@@ -56,16 +59,12 @@ class CaseLabel: public Statement {
      * \return Valid pointer to the case expression.
      */
     Expression *expression() const { return expression_.get(); }
-
-    protected:
-
-    virtual void doPrint(PrintContext &callback) const override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::CaseLabel, nc::core::likec::Statement::CASE_LABEL)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::CaseLabel, nc::core::likec::Statement::CASE_LABEL)
 
 /* vim:set et sts=4 sw=4: */

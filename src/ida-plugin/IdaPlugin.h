@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -27,6 +30,8 @@
 #include <boost/noncopyable.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/factory.hpp>
+
+#include <nc/common/Unused.h>
 
 namespace nc { namespace ida {
 
@@ -69,8 +74,9 @@ static_assert(                                                                  
     boost::is_base_of< ::nc::ida::IdaPlugin, plugin_class>::value,              \
     "Plugins registered with NC_IDA_REGISTER_PLUGIN macro must implement IdaPlugin interface." \
 );                                                                              \
-static bool BOOST_PP_CAT(registered_, __LINE__) =                               \
-    ::nc::ida::detail::IdaPluginRegistrator::registerPlugin(boost::factory<plugin_class *>()); \
+static bool BOOST_PP_CAT(registered_, plugin_class) =                           \
+    (NC_UNUSED(BOOST_PP_CAT(registered_, plugin_class)),                        \
+     ::nc::ida::detail::IdaPluginRegistrator::registerPlugin(boost::factory<plugin_class *>()));\
 
 }} // namespace nc::ida
 

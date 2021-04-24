@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -36,16 +39,18 @@
 #include <QTextStream>
 #include <QTreeView>
 
+#include <nc/common/Branding.h>
 #include <nc/common/Exception.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/GitSHA1.h>
-#include <nc/common/make_unique.h>
 #include <nc/common/SignalLogger.h>
-#include <nc/core/Module.h>
+#include <nc/common/make_unique.h>
+
 #include <nc/core/Context.h>
+#include <nc/core/Driver.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 #include <nc/core/image/Section.h>
+#include <nc/core/image/Symbol.h>
 #include <nc/core/ir/Program.h>
 
 #include "Command.h"
@@ -61,11 +66,13 @@
 #include "Project.h"
 #include "SectionsModel.h"
 #include "SectionsView.h"
+#include "SymbolsModel.h"
+#include "SymbolsView.h"
 
 namespace nc { namespace gui {
 
-MainWindow::MainWindow(QWidget *parent):
-    QMainWindow(parent)
+MainWindow::MainWindow(Branding branding, QWidget *parent):
+    QMainWindow(parent), branding_(std::move(branding))
 {
     setDockNestingEnabled(true);
     setTabPosition(Qt::AllDockWidgetAreas, QTabWidget::North);
@@ -75,13 +82,13 @@ MainWindow::MainWindow(QWidget *parent):
     createMenus();
 
     auto logger = std::make_shared<SignalLogger>();
-    connect(logger.get(), SIGNAL(message(const QString &)), logView_, SLOT(log(const QString &)));
-    connect(logger.get(), SIGNAL(message(const QString &)), progressDialog_, SLOT(setLabelText(const QString &)));
-    connect(logger.get(), SIGNAL(message(const QString &)), this, SLOT(setStatusText(const QString &)));
+    connect(logger.get(), SIGNAL(onMessage(const QString &)), logView_, SLOT(log(const QString &)));
+    connect(logger.get(), SIGNAL(onMessage(const QString &)), progressDialog_, SLOT(setLabelText(const QString &)));
+    connect(logger.get(), SIGNAL(onMessage(const QString &)), this, SLOT(setStatusText(const QString &)));
 
     logToken_ = LogToken(logger);
 
-    settings_ = new QSettings("decompilation.info", "SmartDec", this);
+    settings_ = new QSettings(branding_.organizationName(), branding_.applicationName(), this);
     loadSettings();
 
     updateGuiState();
@@ -101,7 +108,6 @@ void MainWindow::createWidgets() {
     statusBar()->addPermanentWidget(statusProgressBar_, 0);
 
     instructionsView_ = new InstructionsView(this);
-    instructionsView_->setModel(new InstructionsModel(this));
     instructionsView_->setObjectName("InstructionsView");
     addDockWidget(Qt::LeftDockWidgetArea, instructionsView_);
 
@@ -122,15 +128,20 @@ void MainWindow::createWidgets() {
     connect(cxxView_, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateCxxContextMenu(QMenu *)));
 
     sectionsView_ = new SectionsView(this);
-    sectionsView_->setModel(new SectionsModel(this));
     sectionsView_->setObjectName("SectionsView");
     addDockWidget(Qt::RightDockWidgetArea, sectionsView_);
     sectionsView_->hide();
 
     connect(sectionsView_, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateSectionsContextMenu(QMenu *)));
 
+    symbolsView_ = new SymbolsView(this);
+    symbolsView_->setObjectName("SymbolsView");
+    addDockWidget(Qt::RightDockWidgetArea, symbolsView_);
+    symbolsView_->hide();
+
+    connect(symbolsView_, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateSymbolsContextMenu(QMenu *)));
+
     inspectorView_ = new InspectorView(this);
-    inspectorView_->setModel(new InspectorModel(this));
     inspectorView_->setObjectName("InspectorView");
     addDockWidget(Qt::RightDockWidgetArea, inspectorView_);
     inspectorView_->hide();
@@ -155,6 +166,9 @@ void MainWindow::createWidgets() {
     progressDialog_->setRange(0, 0);
     progressDialog_->setWindowModality(Qt::WindowModal);
     progressDialog_->setWindowTitle(windowTitle());
+#if QT_VERSION > QT_VERSION_CHECK(5,4,0) //https://bugreports.qt.io/browse/QTBUG-47042
+    progressDialog_->reset();
+#endif
 }
 
 void MainWindow::createActions() {
@@ -164,6 +178,9 @@ void MainWindow::createActions() {
 
     exportCfgAction_ = new QAction(tr("&Export CFG..."), this);
     connect(exportCfgAction_, SIGNAL(triggered()), this, SLOT(exportCfg()));
+
+    loadStyleSheetAction_ = new QAction(tr("Load st&yle sheet..."), this);
+    connect(loadStyleSheetAction_, SIGNAL(triggered()), this, SLOT(loadStyleSheet()));
 
     quitAction_ = new QAction(tr("&Quit"), this);
     quitAction_->setShortcuts(QKeySequence::Quit);
@@ -192,6 +209,10 @@ void MainWindow::createActions() {
     sectionsViewAction_->setText(tr("&Sections"));
     sectionsViewAction_->setShortcut(Qt::ALT + Qt::Key_S);
 
+    symbolsViewAction_ = symbolsView_->toggleViewAction();
+    symbolsViewAction_->setText(tr("S&ymbols"));
+    symbolsViewAction_->setShortcut(Qt::ALT + Qt::Key_Y);
+
     inspectorViewAction_ = inspectorView_->toggleViewAction();
     inspectorViewAction_->setText(tr("Inspec&tor"));
     inspectorViewAction_->setShortcut(Qt::ALT + Qt::Key_T);
@@ -203,7 +224,7 @@ void MainWindow::createActions() {
     aboutQtAction_ = new QAction(tr("About &Qt"), this);
     connect(aboutQtAction_, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
 
-    aboutAction_ = new QAction(tr("&About SmartDec"), this);
+    aboutAction_ = new QAction(tr("&About %1").arg(branding_.applicationName()), this);
     connect(aboutAction_, SIGNAL(triggered()), this, SLOT(about()));
 
     deleteSelectedInstructionsAction_ = new QAction(tr("Delete"), this);
@@ -225,6 +246,8 @@ void MainWindow::createMenus() {
     fileMenu->addSeparator();
     fileMenu->addAction(exportCfgAction_);
     fileMenu->addSeparator();
+    fileMenu->addAction(loadStyleSheetAction_);
+    fileMenu->addSeparator();
     fileMenu->addAction(quitAction_);
 
     QMenu *analyseMenu = menuBar()->addMenu(tr("&Analyse"));
@@ -238,6 +261,7 @@ void MainWindow::createMenus() {
     QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
     viewMenu->addAction(instructionsViewAction_);
     viewMenu->addAction(sectionsViewAction_);
+    viewMenu->addAction(symbolsViewAction_);
     viewMenu->addAction(inspectorViewAction_);
     viewMenu->addAction(logViewAction_);
 
@@ -252,31 +276,57 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 }
 
 void MainWindow::loadSettings() {
-    if (parent() == NULL) {
-        restoreGeometry(settings_->value("geometry").toByteArray());
+    setStyleSheetFile(settings_->value("styleSheetFile", QString()).toString());
+    if (parent() == nullptr) {
+        restoreGeometry(settings_->value("geometry", saveGeometry()).toByteArray());
     }
-    restoreState(settings_->value("windowState").toByteArray());
+    restoreState(settings_->value("windowState", saveState()).toByteArray());
     setDecompileAutomatically(settings_->value("decompileAutomatically", true).toBool());
+
+    foreach (QObject *child, children()) {
+        if (auto textView = qobject_cast<TextView *>(child)) {
+            if (!textView->objectName().isEmpty()) {
+                textView->setDocumentFont(settings_->value(textView->objectName() + ".font", textView->documentFont()).value<QFont>());
+            }
+        } else if (auto treeView = qobject_cast<TreeView *>(child)) {
+            if (!treeView->objectName().isEmpty()) {
+                treeView->setDocumentFont(settings_->value(treeView->objectName() + ".font", treeView->documentFont()).value<QFont>());
+            }
+        }
+    }
 }
 
 void MainWindow::saveSettings() {
-    if (parent() == NULL) {
+    settings_->setValue("styleSheetFile", styleSheetFile_);
+    if (parent() == nullptr) {
         settings_->setValue("geometry", saveGeometry());
     }
     settings_->setValue("windowState", saveState());
     settings_->setValue("decompileAutomatically", decompileAutomatically());
+
+    foreach (QObject *child, children()) {
+        if (auto textView = qobject_cast<TextView *>(child)) {
+            if (!textView->objectName().isEmpty()) {
+                settings_->setValue(textView->objectName() + ".font", textView->documentFont());
+            }
+        } else if (auto treeView = qobject_cast<TreeView *>(child)) {
+            if (!treeView->objectName().isEmpty()) {
+                settings_->setValue(treeView->objectName() + ".font", treeView->documentFont());
+            }
+        }
+    }
 }
 
 void MainWindow::updateGuiState() {
-    exportCfgAction_->setEnabled(project() != NULL);
-    disassembleAction_->setEnabled(project() != NULL);
-    decompileAction_->setEnabled(project() != NULL);
-    cancelAllAction_->setEnabled(project() != NULL && project()->commandQueue()->front() != NULL);
+    exportCfgAction_->setEnabled(project() != nullptr);
+    disassembleAction_->setEnabled(project() != nullptr);
+    decompileAction_->setEnabled(project() != nullptr);
+    cancelAllAction_->setEnabled(project() != nullptr && project()->commandQueue()->front() != nullptr);
 
     if (project() && !project()->name().isEmpty()) {
-        setWindowTitle(tr("%1 - SmartDec").arg(project()->name()));
+        setWindowTitle(tr("%1 - %2").arg(project()->name()).arg(branding_.applicationName()));
     } else {
-        setWindowTitle("SmartDec");
+        setWindowTitle(branding_.applicationName());
     }
 
     if (project() && project()->commandQueue()->front() && !project()->commandQueue()->front()->isBackground()) {
@@ -315,7 +365,7 @@ void MainWindow::open(const QStringList &filenames) {
 
     foreach (const QString &filename, filenames) {
         try {
-            context->parse(filename);
+            core::Driver::parse(*context, filename);
         } catch (const nc::Exception &e) {
             QMessageBox::critical(this, tr("Error"), e.unicodeWhat());
             return;
@@ -328,7 +378,7 @@ void MainWindow::open(const QStringList &filenames) {
     auto project = std::make_unique<gui::Project>();
     project->setName(QFileInfo(filenames.front()).fileName());
     project->setContext(context);
-    project->setModule(context->module());
+    project->setImage(context->image());
     project->setInstructions(context->instructions());
 
     open(std::move(project));
@@ -347,18 +397,16 @@ void MainWindow::open(std::unique_ptr<Project> project) {
 
     project_ = std::move(project);
 
-    sectionsView_->model()->setModule();
-    disassemblyDialog_->setModule();
-    instructionsView_->model()->setInstructions();
-    cxxView_->document()->setContext();
-    inspectorView_->model()->setContext();
+    imageChanged();
+    instructionsChanged();
+    treeChanged();
 
     /* Log messages to the log window. */
     project_->setLogToken(logToken_);
 
     /* Connect the project to the slots for updating views. */
     connect(project_.get(), SIGNAL(nameChanged()), this, SLOT(updateGuiState()));
-    connect(project_.get(), SIGNAL(moduleChanged()), this, SLOT(moduleChanged()));
+    connect(project_.get(), SIGNAL(imageChanged()), this, SLOT(imageChanged()));
     connect(project_.get(), SIGNAL(instructionsChanged()), this, SLOT(instructionsChanged()));
     connect(project_.get(), SIGNAL(treeChanged()), this, SLOT(treeChanged()));
 
@@ -371,24 +419,39 @@ void MainWindow::open(std::unique_ptr<Project> project) {
     connect(cancelAllAction_, SIGNAL(triggered()), project_.get(), SLOT(cancelAll()));
 
     updateGuiState();
-
-    moduleChanged();
-    instructionsChanged();
-    treeChanged();
 }
 
-void MainWindow::moduleChanged() {
-    sectionsView_->model()->setModule(project()->module());
-    disassemblyDialog_->setModule(project()->module());
+void MainWindow::imageChanged() {
+    if (sectionsView_->model()) {
+        sectionsView_->model()->deleteLater();
+    }
+    sectionsView_->setModel(new SectionsModel(this, project()->image()));
+
+    if (symbolsView_->model()) {
+        symbolsView_->model()->deleteLater();
+    }
+    symbolsView_->setModel(new SymbolsModel(this, project()->image()));
+
+    disassemblyDialog_->setImage(project()->image());
 }
 
 void MainWindow::instructionsChanged() {
-    instructionsView_->model()->setInstructions(project()->instructions());
+    if (instructionsView_->model()) {
+        instructionsView_->model()->deleteLater();
+    }
+    instructionsView_->setModel(new InstructionsModel(this, project()->instructions()));
 }
 
 void MainWindow::treeChanged() {
-    cxxView_->document()->setContext(project()->context());
-    inspectorView_->model()->setContext(project()->context());
+    if (cxxView_->document()) {
+        cxxView_->document()->deleteLater();
+    }
+    cxxView_->setDocument(new CxxDocument(this, project()->context()));
+
+    if (inspectorView_->model()) {
+        inspectorView_->model()->deleteLater();
+    }
+    inspectorView_->setModel(new InspectorModel(this, project()->context()));
 }
 
 void MainWindow::populateInstructionsContextMenu(QMenu *menu) {
@@ -401,8 +464,8 @@ void MainWindow::populateInstructionsContextMenu(QMenu *menu) {
 }
 
 void MainWindow::populateCxxContextMenu(QMenu *menu) {
-    if (auto address = cxxView_->getSelectedInteger()) {
-        menu->addAction(tr("Jump to address %1").arg(*address, 0, 16), this, SLOT(jumpToAddress()));
+    if (auto address = cxxView_->getIntegerUnderCursor()) {
+        menu->addAction(tr("Jump to address %1").arg(*address, 0, 16), this, SLOT(jumpToSelectedAddress()));
     }
 }
 
@@ -410,6 +473,14 @@ void MainWindow::populateSectionsContextMenu(QMenu *menu) {
     if (sectionsView_->selectedSection()) {
         menu->addSeparator();
         menu->addAction(tr("Disassemble..."), this, SLOT(disassembleSelectedSection()));
+    }
+}
+
+void MainWindow::populateSymbolsContextMenu(QMenu *menu) {
+    if (auto symbol = symbolsView_->selectedSymbol()) {
+        if (symbol->value()) {
+            menu->addAction(tr("Jump to address %1").arg(*symbol->value(), 0, 16), this, SLOT(jumpToSymbolAddress()));
+        }
     }
 }
 
@@ -438,11 +509,40 @@ void MainWindow::exportCfg() {
     }
 }
 
+void MainWindow::loadStyleSheet() {
+    QString filename = QFileDialog::getOpenFileName(this, tr("What Qt style sheet file should I load?"), QString(), tr("Style sheets (*.qss *.css);;All Files(*)"));
+
+    if (filename.isEmpty()) {
+        if (QMessageBox::question(this, tr("Question"), tr("Do you want me to load an empty style sheet?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+            setStyleSheetFile(filename);
+        }
+    } else {
+        if (!setStyleSheetFile(filename)) {
+            QMessageBox::critical(this, tr("Error"), tr("File %1 could not be opened for reading.").arg(filename));
+        }
+    }
+}
+
+bool MainWindow::setStyleSheetFile(const QString &filename) {
+    if (filename.isEmpty()) {
+        setStyleSheet(QString());
+    } else {
+        QFile file(filename);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            return false;
+        }
+        setStyleSheet(QLatin1String(file.readAll()));
+    }
+    cxxView_->rehighlight();
+    styleSheetFile_ = filename;
+    return true;
+}
+
 void MainWindow::disassemble() {
     if (!project()) {
         return;
     }
-    if (project()->module()->image()->sections().empty()) {
+    if (project()->image()->sections().empty()) {
         QMessageBox::critical(this, tr("Error"), tr("Sorry, the file you are currently working on does not contain any information about sections. There is nothing I could disassemble."));
         return;
     }
@@ -538,20 +638,31 @@ void MainWindow::highlightTreeInInstructions() {
 }
 
 void MainWindow::highlightCxxInTree() {
-    if (inspectorView_->isVisible()) {
-        /* Prevent things from getting slow... */
-        if (cxxView_->selectedNodes().size() < 100) {
-            inspectorView_->blockSignals(true);
-            inspectorView_->highlightNodes(cxxView_->selectedNodes());
-            inspectorView_->blockSignals(false);
+    /*
+     * We avoid trying to highlight too many nodes in the inspector,
+     * as it is slow: each node must be searched and selected.
+     */
+    if (inspectorView_->isVisible() && cxxView_->selectedNodes().size() < 100) {
+        inspectorView_->blockSignals(true);
+        inspectorView_->highlightNodes(cxxView_->selectedNodes());
+        inspectorView_->blockSignals(false);
+    }
+}
+
+void MainWindow::jumpToSelectedAddress() {
+    if (auto address = cxxView_->getIntegerUnderCursor()) {
+        if (jumpToAddress(*address)) {
+            instructionsView_->show();
         }
     }
 }
 
-void MainWindow::jumpToAddress() {
-    if (auto address = cxxView_->getSelectedInteger()) {
-        if (jumpToAddress(*address)) {
-            instructionsView_->show();
+void MainWindow::jumpToSymbolAddress() {
+    if (auto symbol = symbolsView_->selectedSymbol()) {
+        if (symbol->value()) {
+            if (jumpToAddress(*symbol->value())) {
+                instructionsView_->show();
+            }
         }
     }
 }
@@ -575,21 +686,27 @@ void MainWindow::setStatusText(const QString &text) {
 }
 
 void MainWindow::about() {
-    QMessageBox::about(this, tr("About SmartDec"), tr(
-        "<h3>About SmartDec</h3>"
-        "<p>SmartDec is a retargetable native code to C/C++ decompiler.</p>"
-        "<p>This is revision %1 built on %2.</p>"
-        "<p>SmartDec supports the following architectures:<ul>"
+    QMessageBox::about(this, tr("About %1").arg(branding_.applicationName()), tr(
+        "<h3>About %1</h3>"
+        "<p>%1 is a native code to C/C++ decompiler.</p>"
+        "<p>This is version %2.</p>"
+        "<p>%1 supports the following architectures:<ul>"
+        "<li>ARM (little endian, big endian, powered by <a href=\"http://www.capstone-engine.org/\">Capstone</a>),</li>"
         "<li>Intel x86,</li>"
         "<li>Intel x86-64.</li>"
         "</ul></p>"
-        "<p>SmartDec supports the following input file formats:<ul>"
-        "<li>ELF (32 and 64-bit),</li>"
-        "<li>PE (32 and 64-bit).</li>"
+        "<p>%1 supports the following input file formats:<ul>"
+        "<li>ELF,</li>"
+        "<li>Mach-O,</li>"
+        "<li>PE.</li>"
         "</ul></p>"
-        "<p>Report bugs to <a href=\"mailto:yegor.derevenets@gmail.com\">yegor.derevenets@gmail.com</a>.</p>"
-        "<p>SmartDec home page: <a href=\"http://decompilation.info/\">decompilation.info</a>.</p>"
-        ).arg(QString(git_sha1).left(5)).arg(__DATE__));
+        "<p>Report bugs to <a href=\"%3\">%3</a>.</p>"
+        "<p>The software is distributed under the terms of <a href=\"%5\">%4</a>.</p>")
+        .arg(branding_.applicationName())
+        .arg(branding_.applicationVersion())
+        .arg(branding_.reportBugsTo())
+        .arg(branding_.licenseName())
+        .arg(branding_.licenseUrl()));
 }
 
 }} // namespace nc::gui

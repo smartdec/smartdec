@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,70 +25,54 @@
 
 #include <nc/config.h>
 
-#include <boost/noncopyable.hpp>
+#include <memory>
+#include <vector>
 
 #include <nc/common/Printable.h>
-
-#include "Region.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 
-class BasicBlock;
-
 namespace cflow {
 
-class BasicBlockNode;
 class Edge;
 class Node;
+class Region;
 
 /**
  * Control flow graph data structure suitable for performing structural analysis on it.
  */
-class Graph: public PrintableBase<Graph>, boost::noncopyable {
-    std::vector<Node *> nodes_; ///< All nodes of the graph.
-    std::vector<Edge *> edges_; ///< All edges of the graph.
+class Graph: public PrintableBase<Graph> {
+    std::vector<std::unique_ptr<Node>> nodes_; ///< All nodes of the graph.
+    std::vector<std::unique_ptr<Edge>> edges_; ///< All edges of the graph.
     Region *root_; ///< Root region.
 
-    public:
-
-    /**
-     * Class constructor.
-     */
-    Graph(): root_(NULL) {}
-
-    /**
-     * Class destructor.
-     */
+public:
+    Graph();
     ~Graph();
 
     /**
      * Sets the root region.
      *
-     * \param[in] root Pointer to the new root region. Can be NULL.
+     * \param[in] root Pointer to the new root region. Can be nullptr.
      */
     void setRoot(Region *root) { root_ = root; }
 
     /**
-     * \return Pointer to the root region. Can be NULL.
+     * \return Pointer to the root region. Can be nullptr.
      */
     Region *root() { return root_; }
 
     /**
-     * \return Pointer to the root region. Can be NULL.
+     * \return Pointer to the root region. Can be nullptr.
      */
     const Region *root() const { return root_; }
 
     /**
-     * \return All nodes of the graph.
+     * \return Nodes of the graph.
      */
-    const std::vector<Node *> &nodes() const { return nodes_; }
-
-    /**
-     * \return All edges of the graph.
-     */
-    const std::vector<Edge *> &edges() const { return edges_; }
+    const std::vector<const Node *> &nodes() const { return reinterpret_cast<const std::vector<const Node *> &>(nodes_); }
 
     /**
      * Adds a node into the graph.
@@ -94,15 +81,20 @@ class Graph: public PrintableBase<Graph>, boost::noncopyable {
      *
      * \return Given pointer to the node.
      */
-    void addNode(Node *node);
+    template<class T>
+    T *addNode(std::unique_ptr<T> node) {
+        auto result = node.get();
+        nodes_.push_back(std::move(node));
+        return result;
+    }
 
     /**
-     * Creates new edge in the graph.
+     * Creates a new edge in the graph.
      *
      * \param[in] tail The node edge goes from.
      * \param[in] head The node edge goes to.
      *
-     * \return New edge.
+     * \return Valid pointer to the created edge.
      */
     Edge *createEdge(Node *tail, Node *head);
 

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,14 +24,15 @@
 
 #include "Reader.h"
 
-#include <cassert>
-
-#include <nc/core/Module.h>
-#include <nc/core/arch/Architecture.h>
+#include <QString>
 
 namespace nc {
 namespace core {
 namespace image {
+
+ByteSize Reader::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
+    return externalByteSource_->readBytes(addr, buf, size);
+}
 
 QString Reader::readAsciizString(ByteAddr addr, ByteSize maxSize) const {
     assert(maxSize >= 0);
@@ -47,22 +51,6 @@ QString Reader::readAsciizString(ByteAddr addr, ByteSize maxSize) const {
     } else {
         buf.get()[size] = '\0';
         return QString::fromLatin1(buf.get());
-    }
-}
-
-boost::optional<ByteAddr> Reader::readPointer(ByteAddr addr) const {
-    return readPointer(addr, module()->architecture()->bitness() / 8);
-}
-
-boost::optional<ByteAddr> Reader::readPointer(ByteAddr addr, ByteSize size) const {
-    ByteAddr result = 0;
-    size = std::min(static_cast<ByteSize>(sizeof(result)), size);
-
-    // TODO: this works only if compiled on little-endian architecture.
-    if (readBytes(addr, &result, size) == size) {
-        return result;
-    } else {
-        return boost::none;
     }
 }
 

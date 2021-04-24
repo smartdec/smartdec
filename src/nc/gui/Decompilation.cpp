@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -22,9 +25,7 @@
 #include "Decompilation.h"
 
 #include <nc/core/Context.h>
-#include <nc/core/Module.h>
-#include <nc/core/UniversalAnalyzer.h>
-#include <nc/core/arch/Architecture.h>
+#include <nc/core/Driver.h>
 
 #include <cassert>
 
@@ -40,7 +41,11 @@ Decompilation::Decompilation(const std::shared_ptr<core::Context> &context):
 Decompilation::~Decompilation() {}
 
 void Decompilation::work() {
-    context_->module()->architecture()->universalAnalyzer()->decompile(context_.get());
+    try {
+        core::Driver::decompile(*context_);
+    } catch (const CancellationException &) {
+        /* Nothing to do. */
+    }
 }
 
 }} // namespace nc::gui

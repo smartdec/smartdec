@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -20,6 +23,8 @@
 
 #pragma once
 
+#include <nc/config.h>
+
 #include <nc/core/input/Parser.h>
 
 namespace nc {
@@ -33,18 +38,15 @@ namespace pe {
  * http://en.wikibooks.org/wiki/X86_Disassembly/Windows_Executable_Files
  */
 class PeParser: public core::input::Parser {
-    public:
-
+public:
     /**
      * Constructor.
      */
     PeParser();
 
-    protected:
-
+protected:
     virtual bool doCanParse(QIODevice *source) const override;
-
-    virtual void doParse(QIODevice *source, core::Module *module) const override;
+    virtual void doParse(QIODevice *source, core::image::Image *image, const LogToken &log) const override;
 };
 
 } // namespace pe

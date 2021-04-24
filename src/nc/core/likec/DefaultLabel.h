@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -32,24 +35,14 @@ namespace likec {
  * Default case label.
  */
 class DefaultLabel: public Statement {
-    public:
-
-    /**
-     * Class constructor.
-     *
-     * \param[in] tree Owning tree.
-     */
-    DefaultLabel(Tree &tree): Statement(tree, DEFAULT_LABEL) {}
-
-    protected:
-
-    virtual void doPrint(PrintContext &callback) const override;
+public:
+    DefaultLabel(): Statement(DEFAULT_LABEL) {}
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::DefaultLabel, nc::core::likec::Statement::DEFAULT_LABEL)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::DefaultLabel, nc::core::likec::Statement::DEFAULT_LABEL)
 
 /* vim:set et sts=4 sw=4: */

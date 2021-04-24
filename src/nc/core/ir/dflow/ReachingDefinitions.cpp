@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -22,7 +25,7 @@
 #include "ReachingDefinitions.h"
 
 #include <algorithm>
-#include <functional>
+#include <iterator>
 
 #include <QTextStream>
 
@@ -35,153 +38,170 @@ namespace core {
 namespace ir {
 namespace dflow {
 
-namespace {
+void ReachingDefinitions::addDefinition(const MemoryLocation &mloc, const Term *term) {
+    assert(mloc);
 
-/**
- * Predicate functor returning true iff the memory location of a reaching
- * definition overlaps the memory location passed to the constructor.
- */
-class Overlap: public std::unary_function<const ReachingDefinition &, bool> {
-    MemoryLocation sample_;
-
-    public:
-
-    Overlap(const MemoryLocation &sample): sample_(sample) {}
-
-    bool operator()(const MemoryLocation &mloc) const {
-        return sample_.domain() == mloc.domain() &&
-               mloc.addr() < sample_.addr() + sample_.size() &&
-               sample_.addr() < mloc.addr() + mloc.size();
-    }
-
-    bool operator()(const ReachingDefinition &def) const {
-        return operator()(def.first);
-    }
-};
-
-/**
- * Predicate returning true iff the memory location of a definition
- * is within the domain passed to the constructor.
- */
-class WithinDomain: public std::unary_function<const ReachingDefinition &, bool> {
-    Domain domain_;
-
-    public:
-
-    WithinDomain(Domain domain): domain_(domain) {}
-
-    bool operator()(const ReachingDefinition &def) const {
-        return def.first.domain() == domain_;
-    }
-};
-
-/**
- * Comparator establishing a total order on ReachingDefinition objects.
- */
-class Before: public std::binary_function<const ReachingDefinition &, const ReachingDefinition &, bool> {
-    public:
-
-    bool operator()(const ReachingDefinition &a, const ReachingDefinition &b) const {
-        return a.first < b.first;
-    }
-};
-
-} // anonymous namespace
-
-void ReachingDefinitions::addDefinition(const MemoryLocation &memoryLocation, const Term *term) {
-    assert(memoryLocation.domain() != MemoryDomain::UNKNOWN);
-
-    killDefinitions(memoryLocation);
+    killDefinitions(mloc);
     
-    definitions_.push_back(ReachingDefinition(memoryLocation, std::vector<const Term *>(1, term)));
+    auto i = std::lower_bound(chunks_.begin(), chunks_.end(), mloc,
+        [](const Chunk &a, const MemoryLocation &b) -> bool {
+            return a.location() < b;
+        });
+
+    chunks_.insert(i, Chunk(mloc, std::vector<const Term *>(1, term)));
+
+    selfTest();
 }
 
-void ReachingDefinitions::killDefinitions(const MemoryLocation &memoryLocation) {
-    assert(memoryLocation.domain() != MemoryDomain::UNKNOWN);
+void ReachingDefinitions::killDefinitions(const MemoryLocation &mloc) {
+    assert(mloc);
 
-    definitions_.erase(std::remove_if(definitions_.begin(), definitions_.end(), Overlap(memoryLocation)), definitions_.end());
-}
+    if (chunks_.empty()) {
+        return;
+    }
 
-const std::vector<const Term *> &ReachingDefinitions::getDefinitions(const MemoryLocation &memoryLocation) const {
-    foreach (const ReachingDefinition &definition, definitions_) {
-        if (definition.first == memoryLocation) {
-            return definition.second;
+    std::vector<Chunk> result;
+    result.reserve(chunks_.size() + 1);
+
+    foreach (auto &chunk, chunks_) {
+        if (!mloc.overlaps(chunk.location())) {
+            result.push_back(std::move(chunk));
+        } else {
+            if (chunk.location().addr() < mloc.addr()) {
+                if (mloc.endAddr() < chunk.location().endAddr()) {
+                    result.push_back(Chunk(
+                        MemoryLocation(mloc.domain(), chunk.location().addr(), mloc.addr() - chunk.location().addr()),
+                        chunk.definitions()));
+                } else {
+                    result.push_back(Chunk(
+                        MemoryLocation(mloc.domain(), chunk.location().addr(), mloc.addr() - chunk.location().addr()),
+                        std::move(chunk.definitions())));
+                }
+            }
+            if (mloc.endAddr() < chunk.location().endAddr()) {
+                result.push_back(Chunk(
+                    MemoryLocation(mloc.domain(), mloc.endAddr(), chunk.location().endAddr() - mloc.endAddr()),
+                    std::move(chunk.definitions())));
+            }
         }
     }
 
-    static const std::vector<const Term *> empty;
-    return empty;
+    chunks_ = std::move(result);
+
+    selfTest();
+}
+
+void ReachingDefinitions::project(const MemoryLocation &mloc, ReachingDefinitions &result) const {
+    assert(mloc);
+
+    result.clear();
+
+    foreach (const auto &chunk, chunks_) {
+        if (chunk.location().domain() == mloc.domain()) {
+            auto addr = std::max(chunk.location().addr(), mloc.addr());
+            auto endAddr = std::min(chunk.location().endAddr(), mloc.endAddr());
+
+            if (addr < endAddr) {
+                result.chunks_.push_back(Chunk(
+                    MemoryLocation(mloc.domain(), addr, endAddr - addr),
+                    chunk.definitions()));
+            }
+        }
+    }
+
+    result.selfTest();
 }
 
 std::vector<MemoryLocation> ReachingDefinitions::getDefinedMemoryLocationsWithin(Domain domain) const {
     std::vector<MemoryLocation> result;
-    result.reserve(definitions_.size());
+    result.reserve(chunks_.size());
 
-    foreach (const ReachingDefinition &definition, definitions_) {
-        if (definition.first.domain() == domain) {
-            result.push_back(definition.first);
+    foreach (const auto &chunk, chunks_) {
+        if (chunk.location().domain() == domain) {
+            result.push_back(chunk.location());
         }
     }
 
     return result;
 }
 
-void ReachingDefinitions::join(ReachingDefinitions &those) {
-    std::sort(definitions_.begin(), definitions_.end(), Before());
-    std::sort(those.definitions_.begin(), those.definitions_.end(), Before());
+void ReachingDefinitions::merge(const ReachingDefinitions &those) {
+    selfTest();
 
-    std::vector<ReachingDefinition> result;
-    result.reserve(definitions_.size() + those.definitions_.size());
+    std::vector<Chunk> result;
+    result.reserve(chunks_.size() + those.chunks_.size());
 
-    std::vector<ReachingDefinition>::iterator i = definitions_.begin();
-    std::vector<ReachingDefinition>::iterator iend = definitions_.end();
+    auto i = chunks_.begin();
+    auto iend = chunks_.end();
 
-    std::vector<ReachingDefinition>::iterator j = those.definitions_.begin();
-    std::vector<ReachingDefinition>::iterator jend = those.definitions_.end();
+    auto j = those.chunks_.begin();
+    auto jend = those.chunks_.end();
 
-    while (i != iend && j != jend) {
-        if (Before()(*i, *j)) {
-            result.push_back(*i++);
-        } else if (Before()(*j, *i)) {
-            result.push_back(*j++);
-        } else {
-            result.push_back(*i++);
-            std::vector<const Term *> &terms(result.back().second);
-            terms.insert(terms.end(), j->second.begin(), j->second.end());
-            std::sort(terms.begin(), terms.end());
-            terms.erase(std::unique(terms.begin(), terms.end()), terms.end());
+    while (i != iend || j != jend) {
+        auto a = i != iend ? i->location() : MemoryLocation();
+        auto b = j != jend ? j->location() : MemoryLocation();
+
+        if (!result.empty()) {
+            const auto &c = result.back().location();
+            if (c.domain() == a.domain() && c.endAddr() > a.addr()) {
+                a = MemoryLocation(a.domain(), c.endAddr(), a.endAddr() - c.endAddr());
+            }
+            if (c.domain() == b.domain() && c.endAddr() > b.addr()) {
+                b = MemoryLocation(b.domain(), c.endAddr(), b.endAddr() - c.endAddr());
+            }
+        }
+
+        if (!b) {
+            result.push_back(Chunk(a, i->definitions()));
+            ++i;
+        } else if (!a) {
+            result.push_back(Chunk(b, j->definitions()));
             ++j;
+        } else if (a.domain() < b.domain()) {
+            result.push_back(Chunk(a, i->definitions()));
+            ++i;
+        } else if (b.domain() < a.domain()) {
+            result.push_back(Chunk(b, j->definitions()));
+            ++j;
+        } else if (a.endAddr() <= b.addr()) {
+            result.push_back(Chunk(a, i->definitions()));
+            ++i;
+        } else if (b.endAddr() <= a.addr()) {
+            result.push_back(Chunk(b, j->definitions()));
+            ++j;
+        } else if (a.addr() < b.addr()) {
+            result.push_back(Chunk(MemoryLocation(a.domain(), a.addr(), b.addr() - a.addr()), i->definitions()));
+        } else if (b.addr() < a.addr()) {
+            result.push_back(Chunk(MemoryLocation(b.domain(), b.addr(), a.addr() - b.addr()), j->definitions()));
+        } else {
+            std::vector<const Term *> merged;
+            merged.reserve(i->definitions().size() + j->definitions().size());
+            std::set_union(i->definitions().begin(), i->definitions().end(), j->definitions().begin(), j->definitions().end(), std::back_inserter(merged));
+
+            if (a.size() < b.size()) {
+                result.push_back(Chunk(a, std::move(merged)));
+                ++i;
+            } else if (b.size() < a.size()) {
+                result.push_back(Chunk(b, std::move(merged)));
+                ++j;
+            } else {
+                result.push_back(Chunk(a, std::move(merged)));
+                ++i;
+                ++j;
+            }
         }
     }
-    while (i != iend) {
-        result.push_back(*i++);
-    }
-    while (j != jend) {
-        result.push_back(*j++);
-    }
 
-    definitions_.swap(result);
-}
+    chunks_ = std::move(result);
 
-void ReachingDefinitions::sort() {
-    std::sort(definitions_.begin(), definitions_.end(), Before());
-    foreach (ReachingDefinition &definition, definitions_) {
-        std::sort(definition.second.begin(), definition.second.end());
-    }
-}
-
-bool ReachingDefinitions::operator==(ReachingDefinitions &those) {
-    sort();
-    those.sort();
-
-    return definitions_ == those.definitions_;
+    selfTest();
 }
 
 void ReachingDefinitions::print(QTextStream &out) const {
     out << '{';
-    foreach (const ReachingDefinition &definition, definitions_) {
-        out << definition.first << ':';
-        foreach (const Term *term, definition.second) {
+    foreach (const auto &chunk, chunks_) {
+        out << chunk.location() << ':';
+        foreach (const Term *term, chunk.definitions()) {
             out << ' ' << *term;
         }
         out << ';';

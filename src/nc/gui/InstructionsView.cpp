@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,13 +24,9 @@
 
 #include "InstructionsView.h"
 
-#include <QAction>
-#include <QMenu>
 #include <QTreeView>
 
 #include <nc/common/Foreach.h>
-
-#include <nc/core/arch/Instruction.h>
 
 #include "InstructionsModel.h"
 
@@ -35,7 +34,7 @@ namespace nc { namespace gui {
 
 InstructionsView::InstructionsView(QWidget *parent):
     TreeView(tr("Instructions"), parent),
-    model_(NULL)
+    model_(nullptr)
 {
     treeView()->setHeaderHidden(true);
     treeView()->setItemsExpandable(false);
@@ -77,28 +76,13 @@ void InstructionsView::updateSelection() {
 }
 
 void InstructionsView::highlightInstructions(const std::vector<const core::arch::Instruction *> &instructions, bool ensureVisible) {
-    QModelIndex index;
-
-    disconnect(treeView()->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-               this, SLOT(updateSelection()));
-
-    treeView()->selectionModel()->clearSelection();
-
     if (model()) {
-        foreach (const auto &instruction, instructions) {
-            index = model()->getIndex(instruction);
-            treeView()->selectionModel()->select(index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+        model()->setHighlightedInstructions(instructions);
+
+        if (ensureVisible && !instructions.empty()) {
+            treeView()->scrollTo(model()->getIndex(instructions.back()));
         }
     }
-
-    if (ensureVisible) {
-        treeView()->scrollTo(index);
-    }
-
-    connect(treeView()->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-            this, SLOT(updateSelection()));
-
-    updateSelection();
 }
 
 }} // namespace nc::gui

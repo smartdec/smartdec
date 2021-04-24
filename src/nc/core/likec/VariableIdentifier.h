@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -23,11 +26,12 @@
 #include <nc/config.h>
 
 #include "Expression.h"
-#include "VariableDeclaration.h"
 
 namespace nc {
 namespace core {
 namespace likec {
+
+class VariableDeclaration;
 
 /**
  * Variable identifier.
@@ -35,16 +39,14 @@ namespace likec {
 class VariableIdentifier: public Expression {
     VariableDeclaration *declaration_; ///< Variable declaration.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] declaration Variable declaration.
      */
-    VariableIdentifier(Tree &tree, VariableDeclaration *declaration):
-        Expression(tree, VARIABLE_IDENTIFIER), declaration_(declaration)
+    explicit VariableIdentifier(VariableDeclaration *declaration):
+        Expression(VARIABLE_IDENTIFIER), declaration_(declaration)
     {}
 
     /**
@@ -56,16 +58,12 @@ class VariableIdentifier: public Expression {
      * \return Variable declaration.
      */
     const VariableDeclaration *declaration() const { return declaration_; }
-
-    virtual const Type *getType() const override { return declaration_->type(); }
-
-    virtual void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::VariableIdentifier, nc::core::likec::Expression::VARIABLE_IDENTIFIER)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::VariableIdentifier, nc::core::likec::Expression::VARIABLE_IDENTIFIER)
 
 /* vim:set et sts=4 sw=4: */

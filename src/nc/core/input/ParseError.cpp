@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -31,7 +34,7 @@ QString ParseError::unicodeWhat() const noexcept {
             return tr("%1:%2: %3").arg(*line).arg(*column).arg(Exception::unicodeWhat());
         }
 
-        if (const ByteOffset *offset = boost::get_error_info<ErrorOffset>(*this)) {
+        if (const ByteSize *offset = boost::get_error_info<ErrorOffset>(*this)) {
             return tr("offset 0x%1: %2").arg(*offset, 0, 16).arg(Exception::unicodeWhat());
         }
 

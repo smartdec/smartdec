@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -25,7 +28,6 @@
 #include <cassert>
 
 #include <nc/common/Unused.h>
-#include <nc/common/Visitor.h>
 
 #include "TreeNode.h"
 
@@ -38,15 +40,13 @@ namespace ir {
 
 namespace likec {
 
-class Expression;
-
 /**
  * Base class for statement node.
  */
 class Statement: public TreeNode {
-    NC_CLASS_WITH_KINDS(Statement, statementKind)
+    NC_BASE_CLASS(Statement, statementKind)
 
-    const ir::Statement *statement_; ///< Formulae statement that this statement was created from.
+    const ir::Statement *statement_; ///< IR statement from which this statement was created.
 
 public:
     enum {
@@ -61,54 +61,40 @@ public:
         RETURN,                         ///< Return.
         WHILE,                          ///< While loop.
         INLINE_ASSEMBLY,                ///< Inline assembly.
-        COMMENT,                        ///< Comment statement.
         SWITCH,                         ///< Switch.
         CASE_LABEL,                     ///< Case label.
         DEFAULT_LABEL,                  ///< Default case label.
-        USER_STATEMENT = 1000           ///< Base for user-defined statements.
     };
 
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] statementKind Statement kind.
      */
-    Statement(Tree &tree, int statementKind):
-        TreeNode(tree, STATEMENT), statementKind_(statementKind), statement_(NULL)
+    explicit Statement(int statementKind):
+        TreeNode(STATEMENT), statementKind_(statementKind), statement_(nullptr)
     {}
 
     /**
-     * \return Formulae statement that this statement was created from.
+     * \return Pointer to the IR statement from which this statement was created. Can be nullptr.
      */
     const ir::Statement *statement() const { return statement_; }
 
     /**
-     * \param[in] statement Formulae statement that this statement was created from.
+     * \param[in] statement Valid pointer to a statement.
      */
     void setStatement(const ir::Statement *statement) {
-        assert(statement != NULL);
-        assert(statement_ == NULL); /* Must be used for initialization only. */
+        assert(statement != nullptr);
+        assert(statement_ == nullptr); /* Must be used for initialization only. */
 
         statement_ = statement;
     }
-
-    virtual Statement *rewrite() override { return this; }
-
-protected:
-    /**
-     * Prints nested statement doing appropriate indenting in case of blocks and usual statements.
-     *
-     * \param[in] statement Statement to print.
-     * \param[in] context Print context.
-     */
-    static void printNestedStatement(const Statement *statement, PrintContext &context);
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::TreeNode, nc::core::likec::Statement, nc::core::likec::TreeNode::STATEMENT)
+NC_SUBCLASS(nc::core::likec::TreeNode, nc::core::likec::Statement, nc::core::likec::TreeNode::STATEMENT)
 
 /* vim:set et sts=4 sw=4: */

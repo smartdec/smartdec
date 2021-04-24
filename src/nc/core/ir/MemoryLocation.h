@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -43,8 +46,7 @@ class MemoryLocation: public boost::equality_comparable1<MemoryLocation>, public
     BitAddr addr_; ///< Address of the memory region in bits.
     BitSize size_; ///< Size of the memory region in bits.
 
-    public:
-
+public:
     /**
      * Class default constructor.
      */
@@ -107,8 +109,74 @@ class MemoryLocation: public boost::equality_comparable1<MemoryLocation>, public
      * \param offset Offset in bits.
      * \return New memory location.
      */
-    MemoryLocation shifted(BitOffset offset) const {
+    MemoryLocation shifted(BitSize offset) const {
         return MemoryLocation(domain_, addr_ + offset, size_);
+    }
+
+    /**
+     * \param size New size.
+     * \return New memory location.
+     */
+    MemoryLocation resized(BitSize size) const {
+        return MemoryLocation(domain_, addr_, size);
+    }
+
+    /**
+     * \param that Memory location.
+     *
+     * \return True if *this covers that.
+     */
+    bool covers(const MemoryLocation &that) const {
+        return domain() == that.domain() && addr() <= that.addr() && that.endAddr() <= endAddr();
+    }
+
+    /**
+     * \param that Memory location.
+     *
+     * \return True if *this overlaps with that.
+     */
+    bool overlaps(const MemoryLocation &that) const {
+        return domain() == that.domain() && that.addr() < endAddr() && addr() < that.endAddr();
+    }
+
+    /**
+     * \param a A memory location.
+     * \param b A memory location in the same domain.
+     *
+     * \return The smallest memory location covering a and b.
+     */
+    static MemoryLocation merge(const MemoryLocation &a, const MemoryLocation &b) {
+        if (!a) {
+            return b;
+        } else if (!b) {
+            return a;
+        } else {
+            assert(a.domain() == b.domain());
+
+            auto addr = std::min(a.addr(), b.addr());
+            auto endAddr = std::max(a.endAddr(), b.endAddr());
+
+            return MemoryLocation(a.domain(), addr, endAddr - addr);
+        }
+    }
+
+    void merge(const MemoryLocation &that) {
+        *this = merge(*this, that);
+    }
+
+    static MemoryLocation intersect(const MemoryLocation &a, const MemoryLocation &b) {
+        if (!a || !b || a.domain() != b.domain()) {
+            return MemoryLocation();
+        } else {
+            auto addr = std::max(a.addr(), b.addr());
+            auto endAddr = std::min(a.endAddr(), b.endAddr());
+
+            if (addr < endAddr) {
+                return MemoryLocation(a.domain(), addr, endAddr - addr);
+            } else {
+                return MemoryLocation();
+            }
+        }
     }
 };
 
@@ -126,7 +194,7 @@ inline bool operator==(const MemoryLocation &a, const MemoryLocation &b) {
  * \param[in] a Memory location.
  * \param[in] b Memory location.
  *
- * \return True, if memory location a is in some sense is before memory location b.
+ * \return True if (a.domain(), a.addr(), b.size()) is lexicographically smaller than (a.domain(), a.addr(), b.size()), false otherwise.
  */
 inline bool operator<(const MemoryLocation &a, const MemoryLocation &b) {
     return a.domain() < b.domain() || (a.domain() == b.domain() && (a.addr() < b.addr() || (a.addr() == b.addr() && a.size() < b.size())));
@@ -142,7 +210,7 @@ namespace std {
  * This makes it possible to use memory locations as keys in hash maps.
  */
 template<>
-class hash<nc::core::ir::MemoryLocation>: public unary_function<nc::core::ir::MemoryLocation, size_t> {
+struct hash<nc::core::ir::MemoryLocation>: public unary_function<nc::core::ir::MemoryLocation, size_t> {
 public:
     result_type operator()(const argument_type &location) const {
         return hash_value(location.domain()) ^ hash_value(location.addr()) ^ hash_value(location.size());

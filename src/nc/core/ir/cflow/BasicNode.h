@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -38,17 +41,15 @@ namespace cflow {
 class BasicNode: public Node {
     const ir::BasicBlock *basicBlock_; ///< Basic block.
 
-    public:
-
+public:
     /**
-     * Class constructor.
-     *
-     * \param graph Valid pointer to the graph this node belongs to.
-     * \param basicBlock Basic block.
+     * \param basicBlock Valid pointer to a basic block.
      */
-    BasicNode(Graph &graph, const ir::BasicBlock *basicBlock):
-        Node(graph, BASIC), basicBlock_(basicBlock)
-    {}
+    BasicNode(const ir::BasicBlock *basicBlock):
+        Node(BASIC), basicBlock_(basicBlock)
+    {
+        assert(basicBlock_ != nullptr);
+    }
 
     /**
      * \return Basic block.
@@ -56,9 +57,7 @@ class BasicNode: public Node {
     const ir::BasicBlock *basicBlock() const { return basicBlock_; }
 
     virtual const BasicBlock *getEntryBasicBlock() const override { return basicBlock_; }
-
     virtual bool isCondition() const override;
-
     virtual void print(QTextStream &out) const override;
 };
 

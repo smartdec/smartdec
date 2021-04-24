@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -23,52 +26,18 @@
 
 #include <nc/common/Foreach.h>
 
-#include "PrintContext.h"
-
 namespace nc {
 namespace core {
 namespace likec {
 
-void FunctionDefinition::visitChildNodes(Visitor<TreeNode> &visitor) {
-    FunctionDeclaration::visitChildNodes(visitor);
+void FunctionDefinition::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    FunctionDeclaration::doCallOnChildren(fun);
 
-    visitor(block_.get());
+    fun(block_.get());
 
     foreach (const auto &label, labels_) {
-        visitor(label.get());
+        fun(label.get());
     }
-}
-
-FunctionDefinition *FunctionDefinition::rewrite() {
-    rewriteChild(block_);
-    rewriteChildren(labels_);
-    return this;
-}
-
-void FunctionDefinition::doPrint(PrintContext &context) const {
-    printComment(context);
-
-    context.out() << *type()->returnType() << " " << identifier() << '(';
-
-    bool comma = false;
-    foreach (const auto &argument, arguments()) {
-        if (comma) {
-            context.out() << ", ";
-        } else {
-            comma = true;
-        }
-        argument->print(context);
-    }
-
-    if (type()->variadic()) {
-        if (comma) {
-            context.out() << ", ";
-        }
-        context.out() << "...";
-    }
-    
-    context.out() << ") ";
-    block_->print(context);
 }
 
 } // namespace likec

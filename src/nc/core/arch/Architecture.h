@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,43 +25,46 @@
 
 #include <nc/config.h>
 
-#include <utility> /* For std::pair. */
+#include <memory>
 #include <vector>
 
-#include <boost/unordered_map.hpp>
+#include <QString>
 
-#include <nc/common/SizedValue.h>
+#include <nc/common/ByteOrder.h>
 #include <nc/common/Types.h>
-#include <nc/core/ir/MemoryLocation.h>
+
+#include <nc/core/ir/MemoryDomain.h>
 
 namespace nc {
 namespace core {
 
-class UniversalAnalyzer;
+class MasterAnalyzer;
 
-namespace arch {
+namespace ir {
+    class MemoryLocation;
 
-namespace disasm {
-    class InstructionDisassembler;
+    namespace calling {
+        class Convention;
+    }
 }
 
 namespace irgen {
     class InstructionAnalyzer;
 }
 
-class ConstantOperand;
-class Mnemonics;
+namespace arch {
+
+class Disassembler;
 class Register;
-class RegisterOperand;
 class Registers;
 
 /**
- * Architecture.
+ * Immutable class describing an architecture.
  */
 class Architecture {
 public:
     /**
-     * Default constructor.
+     * Constructor.
      */
     Architecture();
 
@@ -68,34 +74,34 @@ public:
     virtual ~Architecture();
 
     /**
-     * \returns                        Architecture's bitness.
+     * \return Name of the architecture.
+     */
+    const QString &name() const { return mName; }
+
+    /**
+     * \returns Architecture's bitness (data pointer size).
      */
     SmallBitSize bitness() const { assert(mBitness); return mBitness; }
 
     /**
-     * \return                         Maximum length of an instruction.
+     * \return Maximal length of an instruction.
      */
     SmallByteSize maxInstructionSize() const { assert(mMaxInstructionSize); return mMaxInstructionSize; }
 
     /**
      * \returns Valid pointer to the disassembler for a single instruction.
      */
-    const disasm::InstructionDisassembler *instructionDisassembler() const { return mInstructionDisassembler; }
+    virtual std::unique_ptr<Disassembler> createDisassembler() const = 0;
 
     /**
      * \returns Valid pointer to the instruction analyzer for this architecture.
      */
-    const irgen::InstructionAnalyzer *instructionAnalyzer() const { return mInstructionAnalyzer; }
+    virtual std::unique_ptr<irgen::InstructionAnalyzer> createInstructionAnalyzer() const = 0;
 
     /**
      * \returns Valid pointer to the universal analyzer for this architecture.
      */
-    const UniversalAnalyzer *universalAnalyzer() const { return mUniversalAnalyzer; }
-
-    /**
-     * \returns Valid pointer to the mnemonic container for this architecture.
-     */
-    const Mnemonics *mnemonics() const { return mMnemonics; }
+    const MasterAnalyzer *masterAnalyzer() const { return mMasterAnalyzer; }
 
     /**
      * \returns Valid pointer to the register container for this architecture.
@@ -103,28 +109,11 @@ public:
     const Registers *registers() const { return mRegisters; }
 
     /**
-     * \param number                   Register number.
-     * \returns                        Operand for the given register number,
-     *                                 or NULL if no such register number exists.
+     * \param domain Memory domain.
+     *
+     * \return Byte order for this domain.
      */
-    RegisterOperand *registerOperand(int number) const;
-
-    /**
-     * \param regizter                 Register.
-     * \returns                        Operand for the given register.
-     */
-    RegisterOperand *registerOperand(const Register *regizter) const;
-
-    /**
-     * \param value                    Constant value.
-     * \returns                        Operand for the given constant value.
-     */
-    ConstantOperand *constantOperand(const SizedValue &value) const;
-
-    /**
-     * \return                         Pointer to instruction pointer register. Can be NULL.
-     */
-    const Register *instructionPointer() const { return mInstructionPointer; }
+    virtual ByteOrder getByteOrder(ir::Domain domain) const = 0;
 
     /**
      * \param memoryLocation Memory location.
@@ -133,56 +122,62 @@ public:
      */
     virtual bool isGlobalMemory(const ir::MemoryLocation &memoryLocation) const;
 
+    /**
+     * \return List of available calling conventions.
+     */
+    const std::vector<const ir::calling::Convention *> &conventions() const {
+        return reinterpret_cast<const std::vector<const ir::calling::Convention *> &>(conventions_);
+    }
+
+    /**
+     * \param name Name of a calling convention.
+     *
+     * \return Pointer to the calling convention with the given name. Can be nullptr.
+     */
+    const ir::calling::Convention *getCallingConvention(const QString &name) const;
+
 protected:
     /**
-     * \param bitness                  Architecture bitness.
+     * Sets the name of the architecture.
+     * The name must be sent only once.
+     *
+     * \param name Non-empty new name of the architecture.
      */
-    void initBitness(SmallBitSize bitness);
+    void setName(QString name);
 
     /**
-     * \param size                     Architecture's maximum instruction size.
+     * Sets the architecture's bitness.
+     *
+     * \param bitness Architecture's bitness.
      */
-    void initMaxInstructionSize(SmallBitSize size);
+    void setBitness(SmallBitSize bitness);
 
     /**
-     * \param disassembler             Valid pointer to the disassembler of a single instruction.
+     * \param size Architecture's maximum instruction size.
      */
-    void initInstructionDisassembler(disasm::InstructionDisassembler *disassembler);
+    void setMaxInstructionSize(SmallBitSize size);
 
     /**
-     * \param instructionAnalyzer Valid pointer to the instruction analyzer for this architecture.
+     * \param masterAnalyzer Valid pointer to the master analyzer for this architecture.
      */
-    void initInstructionAnalyzer(irgen::InstructionAnalyzer *instructionAnalyzer);
-
-    /**
-     * \param universalAnalyzer Valid pointer to the universal analyzer for this architecture.
-     */
-    void initUniversalAnalyzer(const UniversalAnalyzer *universalAnalyzer);
-
-    /**
-     * \param mnemonics Valid pointer to the mnemonics container for this architecture.
-     */
-    void initMnemonics(Mnemonics *mnemonics);
+    void setMasterAnalyzer(const MasterAnalyzer *masterAnalyzer);
 
     /**
      * \param registers Valid pointer to the registers container for this architecture.
      */
-    void initRegisters(Registers *registers);
+    void setRegisters(Registers *registers);
 
     /**
-     * Sets the operand being the instruction pointer.
+     * Adds a calling convention.
+     * There must be no convention with the same name already added.
      *
-     * \param reg Instruction pointer register operand.
+     * \param convention Valid pointer to the calling convention.
      */
-    void initInstructionPointer(const Register *reg);
+    void addCallingConvention(std::unique_ptr<ir::calling::Convention> convention);
 
 private:
-    /**
-     * Creates cached register operand for the given register.
-     * 
-     * \param regizter                 Register to register.
-     */
-    void addRegisterOperand(const Register *regizter);
+    /** Name of the architecture. */
+    QString mName;
 
     /** Architecture's bitness. */
     SmallBitSize mBitness;
@@ -190,29 +185,14 @@ private:
     /** Maximum length of an instruction on this architecture. */
     SmallBitSize mMaxInstructionSize;
 
-    /** Disassembler for parsing a single instruction. */
-    disasm::InstructionDisassembler *mInstructionDisassembler;
-
-    /** Instruction analyzer for this architecture. */
-    irgen::InstructionAnalyzer *mInstructionAnalyzer;
-
-    /** Universal analyzer for this architecture. */
-    const UniversalAnalyzer *mUniversalAnalyzer;
-
-    /** Instruction dictionary for this architecture. */
-    Mnemonics *mMnemonics;
+    /** Master analyzer for this architecture. */
+    const MasterAnalyzer *mMasterAnalyzer;
 
     /** Register container for this architecture. */
     Registers *mRegisters;
 
-    /** Instruction pointer register. */
-    const Register *mInstructionPointer;
-
-    /** Cached register operands. */
-    std::vector<RegisterOperand *> mRegisterOperandByNumber;
-
-    /** Cached constant operands. */
-    mutable boost::unordered_map<std::pair<ConstantValue, SmallBitSize>, ConstantOperand *> mConstantOperands;
+    /** Calling conventions. */
+    std::vector<std::unique_ptr<ir::calling::Convention>> conventions_;
 };
 
 } // namespace arch

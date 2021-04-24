@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,11 +25,14 @@
 
 #include <nc/config.h>
 
+#include <QCoreApplication>
+
+#include <nc/common/CancellationToken.h>
+#include <nc/common/LogToken.h>
+
 #include <cassert>
 
 namespace nc {
-
-class CancellationToken;
 
 namespace core {
 
@@ -36,59 +42,51 @@ namespace arch {
 
 namespace ir {
 
-class BasicBlock;
-class Function;
+class CFG;
+class MemoryLocation;
 class Statement;
 class Term;
 class UnaryOperator;
 class BinaryOperator;
 
-namespace calls {
-    class CallsData;
-}
-
 namespace dflow {
 
+class AbstractValue;
 class Dataflow;
-class SimulationContext;
+class ReachingDefinitions;
+class Value;
 
 /**
- * Analyzer of function's dataflow.
+ * Implements a dataflow analysis based on abstract interpretation loop.
  */
 class DataflowAnalyzer {
-    Dataflow &dataflow_; ///< Results of analyses.
+    Q_DECLARE_TR_FUNCTIONS(DataflowAnalyzer)
+
+    Dataflow &dataflow_; ///< Dataflow information.
     const arch::Architecture *architecture_; ///< Valid pointer to architecture description.
-    calls::CallsData *callsData_; ///< Calls data.
+    const CancellationToken &canceled_;
+    const LogToken &log_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
-     * \param dataflow An object where to store results of analyses.
-     * \param architecture Valid pointer to architecture description.
-     * \param callsData Pointer to the calls data. Can be NULL.
+     * \param dataflow      An object where to store results of analyses.
+     * \param architecture  Valid pointer to architecture description.
+     * \param canceled      Cancellation token.
+     * \param log           Log token.
      */
-    DataflowAnalyzer(Dataflow &dataflow, const arch::Architecture *architecture, calls::CallsData *callsData = NULL):
-        dataflow_(dataflow), architecture_(architecture), callsData_(callsData)
+    DataflowAnalyzer(Dataflow &dataflow, const arch::Architecture *architecture,
+        const CancellationToken &canceled, const LogToken &log):
+        dataflow_(dataflow), architecture_(architecture), canceled_(canceled), log_(log)
     {
-        assert(architecture != NULL);
+        assert(architecture != nullptr);
     }
 
     /**
-     * Virtual destructor.
-     */
-    virtual ~DataflowAnalyzer() {}
-
-    /**
      * An object where the results of analyses are stored.
      */
-    Dataflow &dataflow() { return dataflow_; }
-
-    /**
-     * An object where the results of analyses are stored.
-     */
-    const Dataflow &dataflow() const { return dataflow_; }
+    Dataflow &dataflow() const { return dataflow_; }
 
     /**
      * \return Valid pointer to architecture description.
@@ -96,51 +94,128 @@ class DataflowAnalyzer {
     const arch::Architecture *architecture() const { return architecture_; }
 
     /**
-     * \return Pointer to the calls data. Can be NULL.
+     * Performs joint reaching definitions and constant propagation/folding
+     * analysis on the given control flow graph.
+     *
+     * \param[in] cfg Control flow graph to run dataflow analysis on.
      */
-    calls::CallsData *callsData() const { return callsData_; }
+    void analyze(const CFG &cfg);
 
     /**
-     * Performs joint dataflow and constant propagation/folding analysis on a function.
+     * Executes a statement.
      *
-     * \param[in] function Function to analyze.
-     * \param[in] canceled Cancellation token.
+     * \param statement     Valid pointer to a statement.
+     * \param definitions   Reaching definitions.
      */
-    void analyze(const Function *function, const CancellationToken &canceled);
+    void execute(const Statement *statement, ReachingDefinitions &definitions);
+
+private:
+    /**
+     * Computes the value of the given term.
+     *
+     * \param term          Valid pointer to a term.
+     * \param definitions   Reaching definitions.
+     *
+     * \return Valid pointer to the computed value, owned by dataflow().
+     */
+    Value *computeValue(const Term *term, const ReachingDefinitions &definitions);
 
     /**
-     * Simulates execution of a statement.
+     * Computes the memory location of the given term.
      *
-     * \param[in] statement             Valid pointer to a statement.
-     * \param     context               Simulation context.
+     * \param term          Valid pointer to a term.
+     * \param definitions   Reaching definitions.
+     *
+     * \return Reference to the computed memory location, owned by dataflow().
      */
-    virtual void simulate(const Statement *statement, SimulationContext &context);
+    const MemoryLocation &computeMemoryLocation(const Term *term, const ReachingDefinitions &definitions);
 
     /**
-     * Simulates computing of a term.
+     * Computes reaching definitions of the given term.
      *
-     * \param[in] term                  Valid pointer to a term.
-     * \param     context               Simulation context.
-     */
-    virtual void simulate(const Term *term, SimulationContext &context);
-
-    protected:
-
-    /**
-     * Simulates computing of a unary operator.
+     * \param term              Valid pointer to a term.
+     * \param memoryLocation    Memory location of this term.
+     * \param definitions       Reaching definitions.
      *
-     * \param[in] unary                 Valid pointer to a UnaryOperator instance.
-     * \param     context               Simulation context.
+     * \return Reference to the computed reaching definitions, owned by dataflow().
      */
-    virtual void simulateUnaryOperator(const UnaryOperator *unary, SimulationContext &context);
+    const ReachingDefinitions &computeReachingDefinitions(const Term *term, const MemoryLocation &memoryLocation,
+                                                          const ReachingDefinitions &definitions);
 
     /**
-     * Simulates computing of a binary operator.
+     * \param memoryLocation Memory location.
      *
-     * \param[in] binary                Valid pointer to a BinaryOperator instance.
-     * \param     context               Simulation context.
+     * \return True if reaching definitions for this memory location must be tracked,
+     *         false otherwise.
      */
-    virtual void simulateBinaryOperator(const BinaryOperator *binary, SimulationContext &context);
+    bool isTracked(const MemoryLocation &memoryLocation) const;
+
+    /**
+     * Computes the value of a term by merging the values of its reaching definitions.
+     *
+     * \param term              Valid pointer to a read term.
+     * \param memoryLocation    Memory location of this term.
+     * \param definitions       Reaching definitions of this memory location.
+     *
+     * \return Valid pointer to the computed value, owned by dataflow().
+     */
+    Value *computeValue(const Term *term, const MemoryLocation &memoryLocation, const ReachingDefinitions &definitions);
+
+    /**
+     * Executes a unary operator.
+     *
+     * \param[in] unary     Valid pointer to a UnaryOperator instance.
+     * \param definitions   Reaching definitions.
+     */
+    Value *computeValue(const UnaryOperator *unary, const ReachingDefinitions &definitions);
+
+    /**
+     * Executes a binary operator.
+     *
+     * \param[in] binary    Valid pointer to a BinaryOperator instance.
+     * \param definitions   Reaching definitions.
+     */
+    Value *computeValue(const BinaryOperator *binary, const ReachingDefinitions &definitions);
+
+    /**
+     * Applies a unary operator to an abstract value.
+     *
+     * \param unary Valid pointer to the unary operand.
+     * \param a Operand value.
+     *
+     * \return Resulting abstract value. Its size is equal to unary->size().
+     */
+    AbstractValue apply(const UnaryOperator *unary, const AbstractValue &a);
+
+    /**
+     * Applies a binary operator to abstract values.
+     *
+     * \param binary Valid pointer to the binary operand.
+     * \param a Left operand's value.
+     * \param b Right operand's value.
+     *
+     * \return Resulting abstract value. Its size is equal to unary->size().
+     */
+    AbstractValue apply(const BinaryOperator *binary, const AbstractValue &a, const AbstractValue &b);
+
+    /**
+     * Remembers in the reaching definitions that the given term
+     * now defines the given memory location.
+     *
+     * \param term              Valid pointer to a term.
+     * \param memoryLocation    Memory location.
+     * \param definitions       Reaching definitions.
+     */
+    void handleWrite(const Term *term, const MemoryLocation &memoryLocation, ReachingDefinitions &definitions);
+
+    /**
+     * Removes all definitions of the given memory location from the
+     * reaching definitions.
+     *
+     * \param memoryLocation    Memory location.
+     * \param definitions       Reaching definitions.
+     */
+    void handleKill(const MemoryLocation &memoryLocation, ReachingDefinitions &definitions);
 };
 
 } // namespace dflow

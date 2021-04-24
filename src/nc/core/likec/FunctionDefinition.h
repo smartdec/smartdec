@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -38,7 +41,7 @@ namespace likec {
  */
 class FunctionDefinition: public FunctionDeclaration {
     std::unique_ptr<Block> block_; ///< Block of the function.
-    std::vector<std::unique_ptr<LabelDeclaration> > labels_; ///< Label declarations.
+    std::vector<std::unique_ptr<LabelDeclaration>> labels_; ///< Label declarations.
 
 public:
     /**
@@ -49,20 +52,25 @@ public:
      * \param[in] returnType Function return type.
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    FunctionDefinition(Tree &tree, const QString &identifier, const Type *returnType = 0, bool variadic = false):
-        FunctionDeclaration(tree, FUNCTION_DEFINITION, identifier, returnType, variadic),
-        block_(new Block(tree))
+    FunctionDefinition(Tree &tree, QString identifier, const Type *returnType, bool variadic = false):
+        FunctionDeclaration(tree, FUNCTION_DEFINITION, std::move(identifier), returnType, variadic),
+        block_(new Block())
     {}
 
     /**
      * \return Block of the function.
      */
-    Block *block() { return block_.get(); }
+    std::unique_ptr<Block> &block() { return block_; }
 
     /**
      * \return Block of the function.
      */
     const Block *block() const { return block_.get(); }
+
+    /**
+     * \return Labels of the function.
+     */
+    std::vector<std::unique_ptr<LabelDeclaration>> &labels() { return labels_; };
 
     /**
      * Adds invisible label declaration to the function.
@@ -71,17 +79,14 @@ public:
      */
     void addLabel(std::unique_ptr<LabelDeclaration> label) { labels_.push_back(std::move(label)); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-
-    FunctionDefinition *rewrite() override;
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Declaration, nc::core::likec::FunctionDefinition, nc::core::likec::Declaration::FUNCTION_DEFINITION)
+NC_SUBCLASS(nc::core::likec::Declaration, nc::core::likec::FunctionDefinition, nc::core::likec::Declaration::FUNCTION_DEFINITION)
 
 /* vim:set et sts=4 sw=4: */

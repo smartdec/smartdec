@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -32,21 +35,20 @@ namespace image {
  * Source of bytes of an image or its section.
  */
 class ByteSource {
-    public:
-
+public:
     /**
      * Virtual destructor.
      */
     virtual ~ByteSource() {}
 
     /**
-     * Reads a sequence of bytes from the image.
+     * Reads a sequence of bytes.
      *
-     * \param[in] addr                 Linear address of the first byte to read.
-     * \param[out] buf                 Buffer to write bytes to.
-     * \param[in] size                 Number of bytes to read.
+     * \param[in] addr  Linear address of the first byte to read.
+     * \param[out] buf  Valid pointer to the buffer to read into.
+     * \param[in] size  Number of bytes to read.
      *
-     * \return                         Number of bytes actually read and copied into the buffer.
+     * \return Number of bytes actually read and copied into the buffer.
      */
     virtual ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const = 0;
 };

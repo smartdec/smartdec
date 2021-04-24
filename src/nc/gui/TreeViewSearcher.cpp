@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -33,20 +36,31 @@ namespace nc { namespace gui {
 TreeViewSearcher::TreeViewSearcher(QTreeView *treeView):
     treeView_(treeView), hvalue_(-1), vvalue_(-1)
 {
-    assert(treeView != NULL);
+    assert(treeView != nullptr);
 }
 
 void TreeViewSearcher::startTrackingViewport() {
-    connect(treeView_->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-        this, SLOT(rememberViewport()));
+    if (treeView_->selectionModel()) {
+        connect(treeView_->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+                this, SLOT(rememberViewport()));
+    }
 }
 
 void TreeViewSearcher::stopTrackingViewport() {
-    disconnect(treeView_->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-        this, SLOT(rememberViewport()));
+    if (treeView_->selectionModel()) {
+        disconnect(treeView_->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+            this, SLOT(rememberViewport()));
+    }
 }
 
 void TreeViewSearcher::rememberViewport() {
+    if (!treeView_->selectionModel()) {
+        hvalue_ = vvalue_ = -1;
+        selectedIndexes_.clear();
+        currentIndex_ = QModelIndex();
+        return;
+    }
+
     selectedIndexes_ = treeView_->selectionModel()->selectedIndexes();
     currentIndex_ = treeView_->selectionModel()->currentIndex();
     hvalue_ = treeView_->horizontalScrollBar()->value();
@@ -54,7 +68,9 @@ void TreeViewSearcher::rememberViewport() {
 }
 
 void TreeViewSearcher::restoreViewport() {
-    assert(hvalue_ != -1);
+    if (hvalue_ == -1 || !treeView_->selectionModel()) {
+        return;
+    }
 
     treeView_->setCurrentIndex(currentIndex_);
 
@@ -185,7 +201,7 @@ bool TreeViewSearcher::find(const QString &expression, FindFlags flags) {
         return true;
     }
 
-    if (treeView_->model() == NULL) {
+    if (treeView_->model() == nullptr) {
         return false;
     }
 

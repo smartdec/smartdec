@@ -5,7 +5,7 @@
  *
  * This file is to be used inside a constructor of registers container. 
  * It generates the necessary boilerplate to fill the container.
- * For example usage, see <tt>IntelRegisters.cpp</tt>.
+ * For example usage, see <tt>X86Registers.cpp</tt>.
  */
 
 /* Including this one in the middle of a function is OK. */
@@ -24,7 +24,7 @@
         int number;
         const char *name;
         nc::core::ir::Domain domain;
-        nc::BitOffset offset;
+        nc::BitSize offset;
         nc::BitSize size;
         const char *comment;
     };

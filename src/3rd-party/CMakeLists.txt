@@ -1,11 +1,6 @@
+add_subdirectory(capstone)
 add_subdirectory(libudis86)
-
-if(${NC_WITH_LIBIBERTY})
-    add_subdirectory(libiberty)
-endif()
-
-if(${NC_WITH_UNDNAME})
-    add_subdirectory(undname)
-endif()
+add_subdirectory(libiberty)
+add_subdirectory(undname)
 
 # vim:set et sts=4 sw=4 nospell:

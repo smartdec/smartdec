@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -36,39 +39,39 @@ class FunctionDeclaration;
 class FunctionIdentifier: public Expression {
     FunctionDeclaration *declaration_; ///< Declaration of accessed function.
 
-    public:
-
+public:
     /**
-     * Class constructor.
-     *
-     * \param[in] tree Owning tree.
-     * \param[in] declaration Function declaration.
+     * \param[in] declaration Valid pointer to a function declaration.
      */
-    FunctionIdentifier(Tree &tree, FunctionDeclaration *declaration):
-        Expression(tree, FUNCTION_IDENTIFIER), declaration_(declaration)
-    {}
+    explicit FunctionIdentifier(FunctionDeclaration *declaration):
+        Expression(FUNCTION_IDENTIFIER), declaration_(declaration)
+    {
+        assert(declaration != nullptr);
+    }
 
     /**
-     * \return Variable declaration.
+     * \return Valid pointer to the function declaration.
      */
     FunctionDeclaration *declaration() { return declaration_; }
 
     /**
-     * \return Variable declaration.
+     * \return Valid pointer to the function declaration.
      */
     const FunctionDeclaration *declaration() const { return declaration_; }
 
-    virtual const Type *getType() const override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+    /**
+     * \param declaration Valid pointer to the function declaration.
+     */
+    void setDeclaration(FunctionDeclaration *declaration) {
+        assert(declaration != nullptr);
+        declaration_ = declaration;
+    }
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::FunctionIdentifier, nc::core::likec::Expression::FUNCTION_IDENTIFIER)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::FunctionIdentifier, nc::core::likec::Expression::FUNCTION_IDENTIFIER)
 
 /* vim:set et sts=4 sw=4: */

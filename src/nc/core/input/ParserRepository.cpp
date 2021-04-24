@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -23,59 +26,54 @@
 
 #include <cassert>
 
-#include <QHash>
-
 #include <nc/common/Foreach.h>
-#include <nc/common/Warnings.h>
 #include <nc/common/make_unique.h>
 
 #include <nc/input/elf/ElfParser.h>
+#include <nc/input/mach-o/MachOParser.h>
 #include <nc/input/pe/PeParser.h>
+#include <nc/input/le/LeParser.h>
 
 #include "Parser.h"
 
 namespace nc { namespace core { namespace input {
 
-Q_GLOBAL_STATIC_WITH_INITIALIZER(ParserRepository, parserRepository, {
-    /* Register default parsers. */
-    x->registerParser(std::make_unique<nc::input::elf::ElfParser>());
-    x->registerParser(std::make_unique<nc::input::pe::PeParser>());
-});
+namespace {
 
-class ParserRepositoryPrivate {
-public:
-    ~ParserRepositoryPrivate() {
-        foreach(Parser *parser, parsers) {
-            delete parser;
-        }
-    }
+ParserRepository *createInstance() {
+    static ParserRepository result;
+    result.registerParser(std::make_unique<nc::input::elf::ElfParser>());
+    result.registerParser(std::make_unique<nc::input::mach_o::MachOParser>());
+    result.registerParser(std::make_unique<nc::input::pe::PeParser>());
+    result.registerParser(std::make_unique<nc::input::le::LeParser>());
+    return &result;
+}
 
-    QHash<QString, Parser *> name2parser;
-    std::vector<Parser *> parsers;
-};
-
-ParserRepository::ParserRepository(): 
-    d(new ParserRepositoryPrivate()) 
-{}
+} // anonymous namespace
 
 ParserRepository *ParserRepository::instance() {
-    return parserRepository();
+    static auto repository = createInstance();
+    return repository;
 }
 
 void ParserRepository::registerParser(std::unique_ptr<Parser> parser) {
-    assert(parser != NULL);
+    assert(parser != nullptr);
     assert(!getParser(parser->name()) && "Cannot register two parsers with the same name.");
 
-    d->name2parser[parser->name()] = parser.get();
-    d->parsers.push_back(parser.release());
+    parsers_.push_back(std::move(parser));
 }
 
-Parser *ParserRepository::getParser(const QString &name) {
-    return d->name2parser.value(name);
+const Parser *ParserRepository::getParser(const QString &name) const {
+    foreach (auto parser, parsers()) {
+        if (parser->name() == name) {
+            return parser;
+        }
+    }
+    return nullptr;
 }
 
-const std::vector<Parser *> &ParserRepository::parsers() const {
-    return d->parsers;
+const std::vector<const Parser *> &ParserRepository::parsers() const {
+    return reinterpret_cast<const std::vector<const Parser *> &>(parsers_);
 }
 
 }}} // namespace nc::core::input

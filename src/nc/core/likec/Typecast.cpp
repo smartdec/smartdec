@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,75 +24,12 @@
 
 #include "Typecast.h"
 
-#include <nc/common/make_unique.h>
-
-#include "BinaryOperator.h"
-#include "IntegerConstant.h"
-#include "PrintContext.h"
-#include "MemberAccessOperator.h"
-#include "StructType.h"
-#include "UnaryOperator.h"
-#include "Types.h"
-#include "Tree.h"
-
 namespace nc {
 namespace core {
 namespace likec {
 
-void Typecast::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(operand());
-}
-
-Expression *Typecast::rewrite() {
-    rewriteChild(operand_);
-
-    /* Convert cast of pointer to a structure to a cast of pointer to its first field. */
-    if (type_->isPointer() && !type_->isStructurePointer()) {
-        if (const PointerType *pointerType = operand()->getType()->as<PointerType>()) {
-            if (const StructType *structType = pointerType->pointeeType()->as<StructType>()) {
-                if (const MemberDeclaration *member = structType->getMember(0)) {
-                    setOperand(std::make_unique<UnaryOperator>(tree(), UnaryOperator::REFERENCE,
-                        std::make_unique<MemberAccessOperator>(tree(), MemberAccessOperator::ARROW, releaseOperand(), member)));
-                }
-            }
-        }
-    }
-
-    /*
-     * (int32_t*)(int64_t)expr -> (int32_t*)expr
-     */
-    if (type_->isScalar()) {
-        if (Typecast *typecast = operand()->as<Typecast>()) {
-            const Type *operandType = typecast->operand()->getType();
-
-            if (typecast->type()->isScalar() &&
-                operandType->isScalar() &&
-                type_->size() == typecast->type()->size() &&
-                typecast->type()->size() == operandType->size())
-            {
-                setOperand(typecast->releaseOperand());
-            }
-        }
-    }
-
-    /* This really must be the last rule. */
-    if (type_ == operand()->getType()) {
-        return releaseOperand().release();
-    }
-
-    return this;
-}
-
-void Typecast::doPrint(PrintContext &context) const {
-    context.out() << '(' << *type() << ')';
-    bool braces = operand()->is<BinaryOperator>();
-    if (braces) {
-        context.out() << '(';
-    }
-    operand()->print(context);
-    if (braces) {
-        context.out() << ')';
-    }
+void Typecast::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(operand_.get());
 }
 
 } // namespace likec

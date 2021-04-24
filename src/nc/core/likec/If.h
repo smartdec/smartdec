@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -39,21 +42,18 @@ class If: public Statement {
     std::unique_ptr<Statement> thenStatement_; ///< Then-statement.
     std::unique_ptr<Statement> elseStatement_; ///< Else-statement.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] condition Condition.
      * \param[in] thenStatement Statement of "then" branch.
      * \param[in] elseStatement Statement of "else" branch.
      */
-    If(Tree &tree,
-       std::unique_ptr<Expression> condition,
+    If(std::unique_ptr<Expression> condition,
        std::unique_ptr<Statement> thenStatement,
-       std::unique_ptr<Statement> elseStatement = NULL)
-    :  Statement(tree, IF),
+       std::unique_ptr<Statement> elseStatement = nullptr)
+    :  Statement(IF),
        condition_(std::move(condition)),
        thenStatement_(std::move(thenStatement)),
        elseStatement_(std::move(elseStatement))
@@ -62,7 +62,7 @@ class If: public Statement {
     /**
      * \return Condition.
      */
-    Expression *condition() { return condition_.get(); }
+    std::unique_ptr<Expression> &condition() { return condition_; }
 
     /**
      * \return Condition.
@@ -72,7 +72,7 @@ class If: public Statement {
     /**
      * \return Then-statement.
      */
-    Statement *thenStatement() { return thenStatement_.get(); }
+    std::unique_ptr<Statement> &thenStatement() { return thenStatement_; }
 
     /**
      * \return Then-statement.
@@ -82,26 +82,21 @@ class If: public Statement {
     /**
      * \return Else-statement.
      */
-    Statement *elseStatement() { return elseStatement_.get(); }
+    std::unique_ptr<Statement> &elseStatement() { return elseStatement_; }
 
     /**
      * \return Else-statement.
      */
     const Statement *elseStatement() const { return elseStatement_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-
-    virtual If *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::If, nc::core::likec::Statement::IF)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::If, nc::core::likec::Statement::IF)
 
 /* vim:set et sts=4 sw=4: */

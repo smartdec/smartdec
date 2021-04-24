@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -27,10 +30,9 @@
 
 #include <boost/noncopyable.hpp>
 
-#include <nc/common/Kinds.h>
 #include <nc/common/Printable.h>
+#include <nc/common/Subclass.h>
 #include <nc/common/Types.h>
-#include <nc/common/Visitor.h>
 
 #include "MemoryLocation.h"
 
@@ -40,9 +42,7 @@ namespace ir {
 
 class Constant;
 class Intrinsic;
-class Undefined;
 class BinaryOperator;
-class Choice;
 class Dereference;
 class MemoryLocationAccess;
 class UnaryOperator;
@@ -51,13 +51,9 @@ class Statement;
 
 /**
  * Base class for different kinds of expressions of intermediate representation.
- * 
- * Terms are supposed to be immutable <i>at the interface level</i>.
- * That is, once created and initialized, they cannot be changed.
- * This is why there is no point in using <tt>const Term</tt> type.
  */
 class Term: public Printable, boost::noncopyable {
-    NC_CLASS_WITH_KINDS(Term, kind)
+    NC_BASE_CLASS(Term, kind)
 
 public:
     /**
@@ -65,129 +61,103 @@ public:
      */
     enum {
         INT_CONST, ///< Integer constant.
-        INTRINSIC, ///< Intrinsic function call.
-        UNDEFINED, ///< Undefined value.
+        INTRINSIC, ///< Some special value.
         MEMORY_LOCATION_ACCESS, ///< Access to an abstract memory location.
         DEREFERENCE, ///< Dereference.
         UNARY_OPERATOR, ///< Unary operator.
         BINARY_OPERATOR, ///< Binary operator.
-        CHOICE, ///< Choice between two terms.
-        USER = 1000 ///< Base for user-defined terms.
     };
 
-    enum Flags {
-        WRITE = 0x1,
-        READ  = 0x2,
-        KILL  = 0x4,
-        FLAGS_MASK = 0x7
+    /**
+     * How term is used.
+     */
+    enum AccessType {
+        READ,      ///< Term is read.
+        WRITE,     ///< Term is written.
     };
 
 private:
-    SmallBitSize size_; ///< Size of this term's value in bits.
-
-    bool isRead_; ///< Term is read.
-    bool isWrite_; ///< Term is written.
-    bool isKill_; ///< Term is killed.
-
-    Term *assignee_; ///< RHS of assignment operator, whose LHS is this term.
-
     const Statement *statement_; ///< Statement that this term belongs to.
+    SmallBitSize size_; ///< Size of this term's value in bits.
 
 public:
     /**
      * Class constructor.
      *
-     * \param[in] kind                 Kind of this term.
-     * \param[in] size                 Size of this term's value in bits.
+     * \param[in] kind Kind of this term.
+     * \param[in] size Size of this term's value in bits.
      */
     Term(int kind, SmallBitSize size):
-        kind_(kind), size_(size),
-        isRead_(false), isWrite_(false), isKill_(false),
-        assignee_(0), statement_(NULL)
+        kind_(kind), statement_(nullptr), size_(size)
     {
         assert(size != 0);
     }
 
     /**
-     * Initializes this term's flags.
-     * 
-     * \param[in] flags                Term flags.
-     * \param[in] assignee             Expression that is assigned to this term, if any.
-     */
-    void initFlags(int flags, Term *assignee = NULL) {
-        assert(!hasFlags());
-        assert((flags & ~FLAGS_MASK) == 0);
-
-        isRead_ = (flags & READ) != 0;
-        isWrite_ = (flags & WRITE) != 0;
-        isKill_ = (flags & KILL) != 0;
-        assignee_ = assignee;
-
-        assert(hasFlags());
-    }
-
-    /**
-     * \returns                        Size of this term's value in bits.
+     * \returns Size of this term's value in bits.
      */
     SmallBitSize size() const { return size_; }
 
     /**
-     * \return                         True, if term is used for reading.
-     */
-    bool isRead() const { assert(hasFlags()); return isRead_; }
-
-    /**
-     * \return                         True, if term is used for writing.
-     */
-    bool isWrite() const { assert(hasFlags()); return isWrite_; }
-
-    /**
-     * \return                         True, if term is used for killing.
-     */
-    bool isKill() const { assert(hasFlags()); return isKill_; }
-
-    /**
-     * \return                         Expression that this term is assigned to.
-     */
-    Term *assignee() const { assert(isWrite()); return assignee_; }
-
-    /**
-     * \return                         Statement this term belongs to.
+     * \return Pointer to the statement this term belongs to. Can be nullptr.
      */
     const Statement *statement() const { return statement_; }
 
     /**
-     * \param[in] statement            Statement this term belongs to.
+     * Sets the statement this term and its children belong to.
+     *
+     * \param[in] statement Valid pointer to the statement.
+     *
+     * \note Must be called only once for each term.
      */
-    void setStatement(const Statement *statement) { statement_ = statement; }
+    void setStatement(const Statement *statement);
 
     /**
-     * Sets the statement that this term and child terms belong to.
-     *
-     * \param[in] statement            Statement this term and child terms belong to.
+     * \return Term's access type.
      */
-    void setStatementRecursively(const Statement *statement);
+    AccessType accessType() const;
 
     /**
-     * Calls visitor for term's child terms.
-     *
-     * \param[in] visitor              Visitor.
+     * \return True if term is used for reading, false otherwise.
      */
-    virtual void visitChildTerms(Visitor<Term> &visitor);
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const;
+    bool isRead() const { return accessType() == READ; }
+
+    /**
+     * \return True if term is used for writing, false otherwise.
+     */
+    bool isWrite() const { return accessType() == WRITE; }
+
+    /**
+     * \return If the term stands in the left hand side of an assignment,
+     *         returns the right hand size of this assignment. Otherwise,
+     *         nullptr is returned.
+     */
+    const Term *source() const;
 
     /**
      * \return Clone of the term.
      */
-    std::unique_ptr<Term> clone() const { return std::unique_ptr<Term>(doClone()); }
+    std::unique_ptr<Term> clone() const { return doClone(); }
 
-    inline bool isConstant() const;
-    inline bool isIntrinsic() const;
-    inline bool isMemoryLocationAccess() const;
-    inline bool isDereference() const;
-    inline bool isUnaryOperator() const;
-    inline bool isBinaryOperator() const;
-    inline bool isChoice() const;
+    /**
+     * Calls a given function on all the children of this term.
+     *
+     * \param fun Valid function.
+     */
+    void callOnChildren(const std::function<void(const Term *)> &fun) const {
+        assert(fun);
+        const_cast<Term *>(this)->doCallOnChildren(fun);
+    }
+
+    /**
+     * Calls a given function on all the children of this term.
+     *
+     * \param fun Valid function.
+     */
+    void callOnChildren(const std::function<void(Term *)> &fun) {
+        assert(fun);
+        doCallOnChildren(fun);
+    }
 
     /* The following functions are defined in Terms.h. */
 
@@ -197,22 +167,19 @@ public:
     inline const Dereference *asDereference() const;
     inline const UnaryOperator *asUnaryOperator() const;
     inline const BinaryOperator *asBinaryOperator() const;
-    inline const Choice *asChoice() const;
 
 protected:
     /**
-     * \returns                        Whether this term's flags were initialized.
+     * \return Valid pointer to the clone of this term.
      */
-    bool hasFlags() const {
-        return isRead_ || isWrite_ || isKill_;
-    }
+    virtual std::unique_ptr<Term> doClone() const = 0;
 
     /**
-     * Actually clones the term.
+     * Calls a given function on all the children of this term.
      *
-     * \return Clone of the term.
+     * \param fun Valid function.
      */
-    virtual Term *doClone() const = 0;
+    virtual void doCallOnChildren(const std::function<void(Term *)> &fun) = 0;
 };
 
 }}} // namespace nc::core::ir
@@ -221,35 +188,20 @@ protected:
  * Defines a compile-time mapping from term class to term kind.
  * Makes it possible to use the given class as an argument to <tt>Term::as</tt>
  * and <tt>Term::is</tt> template functions.
- * 
+ *
  * Must be used at global namespace.
- * 
- * \param CLASS                        Term class.
- * \param KIND                         Term kind.
+ *
+ * \param CLASS Term class.
+ * \param KIND  Term kind.
  */
 #define NC_REGISTER_TERM_CLASS(CLASS, KIND)                                     \
-    NC_REGISTER_CLASS_KIND(nc::core::ir::Term, CLASS, KIND)
+    NC_SUBCLASS(nc::core::ir::Term, CLASS, KIND)
 
 NC_REGISTER_TERM_CLASS(nc::core::ir::Constant,             nc::core::ir::Term::INT_CONST)
 NC_REGISTER_TERM_CLASS(nc::core::ir::Intrinsic,            nc::core::ir::Term::INTRINSIC)
-NC_REGISTER_TERM_CLASS(nc::core::ir::Undefined,            nc::core::ir::Term::UNDEFINED)
 NC_REGISTER_TERM_CLASS(nc::core::ir::MemoryLocationAccess, nc::core::ir::Term::MEMORY_LOCATION_ACCESS)
 NC_REGISTER_TERM_CLASS(nc::core::ir::Dereference,          nc::core::ir::Term::DEREFERENCE)
 NC_REGISTER_TERM_CLASS(nc::core::ir::UnaryOperator,        nc::core::ir::Term::UNARY_OPERATOR)
 NC_REGISTER_TERM_CLASS(nc::core::ir::BinaryOperator,       nc::core::ir::Term::BINARY_OPERATOR)
-NC_REGISTER_TERM_CLASS(nc::core::ir::Choice,               nc::core::ir::Term::CHOICE)
-
-
-namespace nc { namespace core { namespace ir {
-
-bool Term::isConstant() const { return is<Constant>(); } 
-bool Term::isIntrinsic() const { return is<Intrinsic>(); } 
-bool Term::isMemoryLocationAccess() const { return is<MemoryLocationAccess>(); }
-bool Term::isDereference() const { return is<Dereference>(); }
-bool Term::isUnaryOperator() const { return is<UnaryOperator>(); }
-bool Term::isBinaryOperator() const { return is<BinaryOperator>(); }
-bool Term::isChoice() const { return is<Choice>(); }
-
-}}} // namespace nc::core::ir
 
 /* vim:set et sts=4 sw=4: */

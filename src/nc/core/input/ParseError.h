@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -33,7 +36,7 @@ typedef boost::error_info<struct LineTag, int> ErrorLine;
 /** Error info structure for error column.  */
 typedef boost::error_info<struct ColumnTag, int> ErrorColumn;
 /** Error info structure for error offset. */
-typedef boost::error_info<struct PositionTag, ByteOffset> ErrorOffset;
+typedef boost::error_info<struct PositionTag, ByteSize> ErrorOffset;
 
 /**
  * Parse error.

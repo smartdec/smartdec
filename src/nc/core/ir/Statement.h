@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -29,9 +32,9 @@
 
 #include <QString>
 
-#include <nc/common/Kinds.h>
 #include <nc/common/Printable.h>
-#include <nc/common/Visitor.h>
+#include <nc/common/Subclass.h>
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
@@ -42,42 +45,40 @@ namespace arch {
 
 namespace ir {
 
-class BasicBlock;
-class Term;
-
-class Comment;
-class InlineAssembly;
 class Assignment;
-class Kill;
-class Jump;
+class BasicBlock;
 class Call;
-class Return;
+class Callback;
+class Halt;
+class InlineAssembly;
+class Jump;
+class Term;
+class Touch;
 
 /**
  * Base class for different kinds of statements of intermediate representation.
- * 
- * Statements are supposed to be immutable <i>at the interface level</i>.
  */
-class Statement: public Printable, boost::noncopyable {
-    NC_CLASS_WITH_KINDS(Statement, kind)
+class Statement: public Printable, public nc::ilist_item, boost::noncopyable {
+    NC_BASE_CLASS(Statement, kind)
 
 public:
     /**
      * Statement kind.
      */
     enum {
-        COMMENT,        ///< Comment.
         INLINE_ASSEMBLY,///< Inline assembly.
         ASSIGNMENT,     ///< Assignment.
-        KILL,           ///< Killing of a reaching definition.
-        JUMP,           ///< Jump to an address.
+        JUMP,           ///< Jump.
         CALL,           ///< Function call.
-        RETURN,         ///< Return from function call.
+        HALT,           ///< Return from a program.
+        TOUCH,          ///< Reads or writes a term.
+        CALLBACK,       ///< Custom operation.
+        REMEMBER_REACHING_DEFINITIONS, ///< Remembers reaching definition.
         USER = 1000     ///< Base for user-defined statements.
     };
 
 private:
-    BasicBlock *basicBlock_; ///< Basic block this statement is a part of.
+    BasicBlock *basicBlock_; ///< Basic block to which this statement belongs.
     const arch::Instruction *instruction_; ///< Instruction from which this statement was generated.
 
 public:
@@ -86,74 +87,69 @@ public:
      *
      * \param[in] kind Kind of the statement.
      */
-    Statement(int kind): kind_(kind), basicBlock_(NULL), instruction_(NULL) {}
+    explicit Statement(int kind): kind_(kind), basicBlock_(nullptr), instruction_(nullptr) {}
 
     /**
-     * \return Basic block that this statement is a part of.
+     * \return Pointer to the basic block to which this statement belongs.
+     *         Can be nullptr.
      */
-    BasicBlock *basicBlock() const { return basicBlock_; }
+    BasicBlock *basicBlock() { return basicBlock_; }
 
     /**
-     * Sets basic block that this statement is a part of.
+     * \return Pointer to the basic block to which this statement belongs.
+     *         Can be nullptr.
+     */
+    const BasicBlock *basicBlock() const { return basicBlock_; }
+
+    /**
+     * Sets the pointer to the basic block to which this statement belongs.
      *
-     * \param[in] basicBlock Basic block.
+     * \param[in] basicBlock Pointer to the basic block. Can be nullptr.
      */
     void setBasicBlock(BasicBlock *basicBlock) { basicBlock_ = basicBlock; }
 
     /**
-     * \param[in] instruction Instruction that this statement was generated from.
+     * \param[in] instruction Instruction from which this statement was generated.
      */
     void setInstruction(const arch::Instruction *instruction) {
-        assert(instruction);
-        assert(!instruction_); /* Must be used for initialization only. */
-
+        assert(!instruction_ && "Instruction must be set only once.");
         instruction_ = instruction;
     }
 
     /**
-     * \return Instruction that this statement was generated from. Can be NULL.
+     * \return Instruction that this statement was generated from. Can be nullptr.
      */
     const arch::Instruction *instruction() const { return instruction_; }
 
     /**
-     * Calls visitor for statement's terms.
-     *
-     * \param[in] visitor Visitor for terms.
+     * \return True iff this a terminator statement, i.e. a statement
+     *         which can be only the last statement of a basic block.
      */
-    virtual void visitChildTerms(Visitor<Term> &visitor);
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const;
+    bool isTerminator() const {
+        return is<Jump>() || is<Halt>();
+    }
 
     /**
-     * Clones the statement via doClone() and copies properties common to all statements.
+     * Clones the statement and sets the instruction of the clone
+     * to the instruction of this statement.
      *
-     * \returns                        Valid pointer to the clone.
+     * \returns Valid pointer to the clone.
      */
     std::unique_ptr<Statement> clone() const;
 
-    inline bool isComment() const;
-    inline bool isInlineAssembly() const;
-    inline bool isAssignment() const;
-    inline bool isKill() const;
-    inline bool isJump() const;
-    inline bool isCall() const;
-    inline bool isReturn() const;
-
     /* The following functions are defined in Statements.h. */
 
-    inline const Comment *asComment() const;
     inline const Assignment *asAssignment() const;
-    inline const Kill *asKill() const;
     inline const Jump *asJump() const;
     inline const Call *asCall() const;
-    inline const Return *asReturn() const;
+    inline const Touch *asTouch() const;
+    inline const Callback *asCallback() const;
     
 protected:
     /**
-     * Actually clones the statement.
-     *
-     * \return Valid pointer to the clone.
+     * \return Valid pointer to the clone of the statement.
      */
-    virtual Statement *doClone() const = 0;
+    virtual std::unique_ptr<Statement> doClone() const = 0;
 };
 
 }}} // namespace nc::core::ir
@@ -169,46 +165,14 @@ protected:
  * \param KIND                         Statement kind.
  */
 #define NC_REGISTER_STATEMENT_CLASS(CLASS, KIND)                                \
-    NC_REGISTER_CLASS_KIND(nc::core::ir::Statement, CLASS, KIND)
+    NC_SUBCLASS(nc::core::ir::Statement, CLASS, KIND)
 
-NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Comment,        nc::core::ir::Statement::COMMENT)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::InlineAssembly, nc::core::ir::Statement::INLINE_ASSEMBLY)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Assignment,     nc::core::ir::Statement::ASSIGNMENT)
-NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Kill,           nc::core::ir::Statement::KILL)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Jump,           nc::core::ir::Statement::JUMP)
 NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Call,           nc::core::ir::Statement::CALL)
-NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Return,         nc::core::ir::Statement::RETURN)
-
-namespace nc { namespace core { namespace ir {
-
-bool Statement::isComment() const {
-    return is<Comment>();
-}
-
-bool Statement::isInlineAssembly() const {
-    return is<InlineAssembly>();
-}
-
-bool Statement::isAssignment() const {
-    return is<Assignment>();
-}
-
-bool Statement::isKill() const {
-    return is<Kill>();
-}
-
-bool Statement::isJump() const {
-    return is<Jump>();
-}
-
-bool Statement::isCall() const {
-    return is<Call>();
-}
-
-bool Statement::isReturn() const {
-    return is<Return>();
-}
-
-}}} // namespace nc::core::ir
+NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Halt,           nc::core::ir::Statement::HALT)
+NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Touch,          nc::core::ir::Statement::TOUCH)
+NC_REGISTER_STATEMENT_CLASS(nc::core::ir::Callback,       nc::core::ir::Statement::CALLBACK)
 
 /* vim:set et sts=4 sw=4: */

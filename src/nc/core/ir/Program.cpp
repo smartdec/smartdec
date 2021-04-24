@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,6 +24,7 @@
 
 #include "Program.h"
 
+#include <algorithm> /* std::find_if */
 #include <cassert>
 
 #include <QTextStream>
@@ -43,13 +47,13 @@ Program::Program() {}
 Program::~Program() {}
 
 void Program::addRange(BasicBlock *basicBlock) {
-    assert(basicBlock != NULL);
+    assert(basicBlock != nullptr);
     assert(basicBlock->address() && basicBlock->successorAddress() && "Basic block must be memory-bound.");
     range2basicBlock_[AddrRange(*basicBlock->address(), *basicBlock->successorAddress())] = basicBlock;
 }
 
 void Program::removeRange(BasicBlock *basicBlock) {
-    assert(basicBlock != NULL);
+    assert(basicBlock != nullptr);
     assert(basicBlock->address() && basicBlock->successorAddress() && "Basic block must be memory-bound.");
     range2basicBlock_.erase(AddrRange(*basicBlock->address(), *basicBlock->successorAddress()));
 }
@@ -72,14 +76,11 @@ BasicBlock *Program::createBasicBlock(ByteAddr address) {
     } else if (BasicBlock *basicBlock = getBasicBlockCovering(address)) {
         removeRange(basicBlock);
 
-        std::size_t i = 0;
-        for (std::size_t size = basicBlock->statements().size(); i < size; ++i) {
-            if (basicBlock->statements()[i]->instruction()->addr() >= address) {
-                break;
-            }
-        }
+        auto iterator = std::find_if(basicBlock->statements().begin(), basicBlock->statements().end(), [address](const Statement *statement) {
+            return statement->instruction()->addr() >= address;
+        });
 
-        BasicBlock *result = takeOwnership(basicBlock->split(i, address));
+        BasicBlock *result = takeOwnership(basicBlock->split(iterator, address));
 
         addRange(basicBlock);
         addRange(result);
@@ -88,7 +89,6 @@ BasicBlock *Program::createBasicBlock(ByteAddr address) {
     } else {
         BasicBlock *result = takeOwnership(std::make_unique<BasicBlock>(address));
         addRange(result);
-
         return result;
     }
 }
@@ -101,7 +101,7 @@ BasicBlock *Program::getBasicBlockForInstruction(const arch::Instruction *instru
         /* Maybe this instruction stands next to an existing basic block? */
         result = getBasicBlockCovering(instruction->addr() - 1);
 
-        /* No way? Create new block. */
+        /* No? Create a new block. */
         if (!result) {
             result = createBasicBlock(instruction->addr());
         }
@@ -115,13 +115,13 @@ BasicBlock *Program::getBasicBlockForInstruction(const arch::Instruction *instru
 }
 
 BasicBlock *Program::takeOwnership(std::unique_ptr<BasicBlock> basicBlock) {
-    assert(basicBlock != NULL);
+    assert(basicBlock != nullptr);
 
     BasicBlock *result = basicBlock.get();
     basicBlocks_.push_back(std::move(basicBlock));
 
     if (result->address()) {
-        assert(getBasicBlockStartingAt(*result->address()) == NULL);
+        assert(getBasicBlockStartingAt(*result->address()) == nullptr);
         start2basicBlock_[*result->address()] = result;
     }
 
@@ -129,9 +129,9 @@ BasicBlock *Program::takeOwnership(std::unique_ptr<BasicBlock> basicBlock) {
 }
 
 void Program::print(QTextStream &out) const {
-    out << "digraph Program" << this << " {" << endl;
+    out << "digraph Program" << this << " {" << '\n';
     out << CFG(basicBlocks());
-    out << "}" << endl;
+    out << "}" << '\n';
 }
 
 } // namespace ir

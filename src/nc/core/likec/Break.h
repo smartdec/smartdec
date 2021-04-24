@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -32,24 +35,14 @@ namespace likec {
  * Break statement.
  */
 class Break: public Statement {
-    public:
-
-    /**
-     * Constructor.
-     *
-     * \param[in] tree Owning tree.
-     */
-    Break(Tree &tree): Statement(tree, BREAK) {}
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+public:
+    Break(): Statement(BREAK) {}
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::Break, nc::core::likec::Statement::BREAK)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::Break, nc::core::likec::Statement::BREAK)
 
 /* vim:set et sts=4 sw=4: */

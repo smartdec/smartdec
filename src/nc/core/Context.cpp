@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,31 +24,20 @@
 
 #include "Context.h"
 
-#include <cstdint> /* For std::uintptr_t. */
-
-#include <QFile>
-#include <QTextStream>
-
 #include <nc/common/Foreach.h>
-#include <nc/common/Exception.h>
 
-#include <nc/core/Module.h>
-#include <nc/core/UniversalAnalyzer.h>
 #include <nc/core/arch/Architecture.h>
 #include <nc/core/arch/Instructions.h>
-#include <nc/core/arch/disasm/Disassembler.h>
 #include <nc/core/image/Image.h>
-#include <nc/core/input/Parser.h>
-#include <nc/core/input/ParserRepository.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Program.h>
-#include <nc/core/ir/calls/CallingConventionDetector.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/cflow/Graph.h>
-#include <nc/core/ir/dflow/Dataflow.h>
-#include <nc/core/ir/misc/TermToFunction.h>
+#include <nc/core/ir/calling/Conventions.h>
+#include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/Signatures.h>
+#include <nc/core/ir/cflow/Graphs.h>
+#include <nc/core/ir/dflow/Dataflows.h>
+#include <nc/core/ir/liveness/Livenesses.h>
 #include <nc/core/ir/types/Types.h>
-#include <nc/core/ir/usage/Usage.h>
 #include <nc/core/ir/vars/Variables.h>
 #include <nc/core/likec/Tree.h>
 
@@ -53,188 +45,64 @@ namespace nc {
 namespace core {
 
 Context::Context():
-    module_(std::make_shared<Module>()),
-    instructions_(std::make_shared<const arch::Instructions>())
+    image_(std::make_shared<image::Image>()),
+    instructions_(std::make_shared<arch::Instructions>())
 {}
 
 Context::~Context() {}
 
-void Context::setModule(const std::shared_ptr<Module> &module) {
-    assert(module);
-    module_ = module;
+void Context::setImage(const std::shared_ptr<image::Image> &image) {
+    image_ = image;
 }
 
 void Context::setInstructions(const std::shared_ptr<const arch::Instructions> &instructions) {
-    assert(instructions);
     instructions_ = instructions;
     Q_EMIT instructionsChanged();
 }
 
 void Context::setProgram(std::unique_ptr<ir::Program> program) {
-    assert(program);
-    assert(!program_);
     program_ = std::move(program);
 }
 
 void Context::setFunctions(std::unique_ptr<ir::Functions> functions) {
-    assert(functions);
-    assert(!functions_);
     functions_ = std::move(functions);
 }
 
-void Context::setCallsData(std::unique_ptr<ir::calls::CallsData> callsData) {
-    assert(callsData);
-    assert(!callsData_);
-    callsData_ = std::move(callsData);
+void Context::setConventions(std::unique_ptr<ir::calling::Conventions> conventions) {
+    conventions_ = std::move(conventions);
 }
 
-void Context::setCallingConventionDetector(std::unique_ptr<ir::calls::CallingConventionDetector> detector) {
-    assert(detector);
-    assert(!callingConventionDetector_);
-    callingConventionDetector_ = std::move(detector);
+void Context::setHooks(std::unique_ptr<ir::calling::Hooks> hooks) {
+    hooks_ = std::move(hooks);
 }
 
-void Context::setTermToFunction(std::unique_ptr<ir::misc::TermToFunction> termToFunction) {
-    assert(termToFunction);
-    assert(!termToFunction_);
-    termToFunction_ = std::move(termToFunction);
+void Context::setSignatures(std::unique_ptr<ir::calling::Signatures> signatures) {
+    signatures_ = std::move(signatures);
 }
 
-void Context::setDataflow(const ir::Function *function, std::unique_ptr<ir::dflow::Dataflow> dataflow) {
-    assert(function);
-    assert(dataflow);
-    auto &entry = dataflows_[function];
-    assert(!entry);
-    entry = std::move(dataflow);
+void Context::setDataflows(std::unique_ptr<ir::dflow::Dataflows> dataflows) {
+    dataflows_ = std::move(dataflows);
 }
 
-const ir::dflow::Dataflow *Context::getDataflow(const ir::Function *function) const {
-    return nc::find(dataflows_, function).get();
+void Context::setVariables(std::unique_ptr<ir::vars::Variables> variables) {
+    variables_ = std::move(variables);
 }
 
-void Context::setUsage(const ir::Function *function, std::unique_ptr<ir::usage::Usage> usage) {
-    assert(function);
-    assert(usage);
-    auto &entry = usages_[function];
-    assert(!entry);
-    entry = std::move(usage);
+void Context::setLivenesses(std::unique_ptr<ir::liveness::Livenesses> livenesses) {
+    livenesses_ = std::move(livenesses);
 }
 
-const ir::usage::Usage *Context::getUsage(const ir::Function *function) const {
-    return nc::find(usages_, function).get();
+void Context::setGraphs(std::unique_ptr<ir::cflow::Graphs> graphs) {
+    graphs_ = std::move(graphs);
 }
 
-void Context::setTypes(const ir::Function *function, std::unique_ptr<ir::types::Types> types) {
-    assert(function);
-    assert(types);
-    auto &entry = types_[function];
-    assert(!entry);
-    entry = std::move(types);
-}
-
-const ir::types::Types *Context::getTypes(const ir::Function *function) const {
-    return nc::find(types_, function).get();
-}
-
-void Context::setVariables(const ir::Function *function, std::unique_ptr<ir::vars::Variables> variables) {
-    assert(function);
-    assert(variables);
-    auto &entry = variables_[function];
-    assert(!entry);
-    entry = std::move(variables);
-}
-
-const ir::vars::Variables *Context::getVariables(const ir::Function *function) const {
-    return nc::find(variables_, function).get();
-}
-
-void Context::setRegionGraph(const ir::Function *function, std::unique_ptr<ir::cflow::Graph> graph) {
-    assert(function);
-    assert(graph);
-    auto &entry = regionGraphs_[function];
-    assert(!entry);
-    entry = std::move(graph);
-}
-
-const ir::cflow::Graph *Context::getRegionGraph(const ir::Function *function) const {
-    return nc::find(regionGraphs_, function).get();
+void Context::setTypes(std::unique_ptr<ir::types::Types> types) {
+    types_ = std::move(types);
 }
 
 void Context::setTree(std::unique_ptr<likec::Tree> tree) {
-    assert(tree);
-    assert(!tree_);
     tree_ = std::move(tree);
     Q_EMIT treeChanged();
-}
-
-void Context::parse(const QString &filename) {
-    // TODO: move to ParserRepository
-
-    QFile source(filename);
-
-    if (!source.open(QIODevice::ReadOnly)) {
-        throw nc::Exception(tr("Could not open file \"%1\" for reading.").arg(filename));
-    }
-
-    logToken() << tr("Choosing a parser for %1...").arg(filename);
-
-    input::Parser *suitableParser = NULL;
-
-    foreach(input::Parser *parser, input::ParserRepository::instance()->parsers()) {
-        logToken() << tr("Trying %1 parser...").arg(parser->name());
-        if (parser->canParse(&source)) {
-            suitableParser = parser;
-            break;
-        }
-    }
-
-    if (!suitableParser) {
-        throw nc::Exception(tr("File %1 has unknown format.").arg(filename));
-    }
-
-    logToken() << tr("Parsing using %1 parser...").arg(suitableParser->name());
-
-    suitableParser->parse(&source, module().get());
-
-    logToken() << tr("Parsing completed.");
-}
-
-void Context::disassemble() {
-    logToken() << tr("Disassembling code sections...");
-
-    foreach (const image::Section *section, module()->image()->sections()) {
-        if (section->isCode()) {
-            disassemble(section);
-        }
-    }
-}
-
-void Context::disassemble(const image::Section *section) {
-    assert(section != NULL);
-
-    logToken() << tr("Disassembling section %1...").arg(section->name());
-
-    disassemble(section, section->addr(), section->addr() + section->size());
-}
-
-void Context::disassemble(const image::ByteSource *source, ByteAddr begin, ByteAddr end) {
-    assert(source != NULL);
-
-    logToken() << tr("Disassembling addresses from 0x%2 to 0x%3...").arg(begin, 0, 16).arg(end, 0, 16);
-
-    auto newInstructions = std::make_shared<arch::Instructions>(*instructions());
-
-    arch::disasm::Disassembler disassembler(module()->architecture(), newInstructions.get());
-    disassembler.disassemble(source, begin, end, cancellationToken());
-
-    setInstructions(newInstructions);
-}
-
-void Context::decompile() {
-    if (instructions()->all().empty()) {
-        disassemble();
-    }
-    module()->architecture()->universalAnalyzer()->decompile(this);
 }
 
 } // namespace core

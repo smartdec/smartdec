@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,8 +25,8 @@
 
 #include <nc/config.h>
 
-#include <nc/common/Kinds.h>
 #include <nc/common/Printable.h>
+#include <nc/common/Subclass.h>
 #include <nc/common/Types.h>
 
 namespace nc {
@@ -36,7 +39,7 @@ namespace likec {
  * Type objects are usually created and owned by Tree (notable exception is FunctionDeclaration which creates and owns FunctionPointerType).
  */
 class Type: public Printable {
-    NC_CLASS_WITH_KINDS(Type, kind)
+    NC_BASE_CLASS(Type, kind)
 
     BitSize size_; ///< Type size in bits.
 
@@ -112,9 +115,9 @@ class Type: public Printable {
     virtual bool isPointer() const { return false; }
 
     /**
-     * \return True, if the type is integer or pointer.
+     * \return True, if the type is an arithmetic type or a pointer.
      */
-    virtual bool isScalar() const { return isInteger() || isPointer(); }
+    virtual bool isScalar() const { return isArithmetic() || isPointer(); }
 
     /**
      * \return True if the type is structure.

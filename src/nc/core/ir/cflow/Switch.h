@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -54,30 +57,28 @@ class Switch: public Region {
     /** Default basic block. */
     const BasicBlock *defaultBasicBlock_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
-     * \param graph         Graph this node belongs to.
      * \param switchNode    Valid pointer to the node doing the table-based jump.
      * \param switchTerm    Valid pointer to the term being switched upon.
      * \param jumpTableSize Size of the jump table.
      */
-    Switch(Graph &graph, BasicNode *switchNode, const Term *switchTerm, std::size_t jumpTableSize):
-        Region(graph, Region::SWITCH),
+    Switch(BasicNode *switchNode, const Term *switchTerm, std::size_t jumpTableSize):
+        Region(Region::SWITCH),
         switchNode_(switchNode),
         switchTerm_(switchTerm),
         jumpTableSize_(jumpTableSize),
-        boundsCheckNode_(NULL),
-        defaultBasicBlock_(NULL)
+        boundsCheckNode_(nullptr),
+        defaultBasicBlock_(nullptr)
     {
         assert(switchNode);
         assert(switchTerm);
     }
 
     /**
-     * \return Pointer to the node that does table-based jump. Can be NULL.
+     * \return Pointer to the node that does table-based jump. Can be nullptr.
      */
     BasicNode *switchNode() const { return switchNode_; };
 
@@ -92,26 +93,26 @@ class Switch: public Region {
     std::size_t jumpTableSize() const { return jumpTableSize_; }
 
     /**
-     * \return Pointer to the bounds check node. Can be NULL.
+     * \return Pointer to the bounds check node. Can be nullptr.
      */
     BasicNode *boundsCheckNode() const { return boundsCheckNode_; }
 
     /**
      * Sets the pointer to the bounds check node.
      *
-     * \param node Pointer to the node. Can be NULL.
+     * \param node Pointer to the node. Can be nullptr.
      */
     void setBoundsCheckNode(BasicNode *node) { boundsCheckNode_ = node; }
 
     /**
-     * \return Pointer to the basic block to be marked by default label. Can be NULL.
+     * \return Pointer to the basic block to be marked by default label. Can be nullptr.
      */
     const BasicBlock *defaultBasicBlock() const { return defaultBasicBlock_; }
 
     /**
      * Sets the basic block to be marked by default label.
      *
-     * \param basicBlock Pointer to the basic block. Can be NULL.
+     * \param basicBlock Pointer to the basic block. Can be nullptr.
      */
     void setDefaultBasicBlock(const BasicBlock *basicBlock) { defaultBasicBlock_ = basicBlock; }
 };

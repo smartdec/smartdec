@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -37,9 +40,9 @@ class LogView: public TextView {
     /**
      * Constructor.
      *
-     * \param[in] parent Pointer to the parent widget. Can be NULL.
+     * \param[in] parent Pointer to the parent widget. Can be nullptr.
      */
-    LogView(QWidget *parent = 0);
+    explicit LogView(QWidget *parent = 0);
 
     public Q_SLOTS:
 

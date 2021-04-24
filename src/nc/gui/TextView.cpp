@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -27,16 +30,19 @@
 #include <QEvent>
 #include <QFile>
 #include <QFileDialog>
+#include <QFontDialog>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QScrollBar>
 #include <QTextStream>
 #include <QVBoxLayout>
+#include <QWheelEvent>
 
 #include <nc/common/Foreach.h>
 #include <nc/common/make_unique.h>
 
+#include "Colors.h"
 #include "GotoLineWidget.h"
 #include "SearchWidget.h"
 #include "TextEditSearcher.h"
@@ -54,6 +60,8 @@ TextView::TextView(const QString &title, QWidget *parent):
     textEdit_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(textEdit_, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(showContextMenu(const QPoint &)));
     connect(this, SIGNAL(contextMenuCreated(QMenu *)), this, SLOT(populateContextMenu(QMenu *)));
+    connect(textEdit_->horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(updateExtraSelections()));
+    connect(textEdit_->verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(updateExtraSelections()));
 
     auto searchWidget = new SearchWidget(std::make_unique<TextEditSearcher>(textEdit_), this);
     searchWidget->hide();
@@ -122,6 +130,20 @@ TextView::TextView(const QString &title, QWidget *parent):
     connect(closeEverythingAction, SIGNAL(triggered()), searchWidget, SLOT(deactivate()));
     connect(closeEverythingAction, SIGNAL(triggered()), gotoLineWidget, SLOT(deactivate()));
     connect(closeEverythingAction, SIGNAL(triggered()), textEdit(), SLOT(setFocus()));
+
+    selectFontAction_ = new QAction(tr("Select Font..."), this);
+    addAction(selectFontAction_);
+
+    connect(selectFontAction_, SIGNAL(triggered()), this, SLOT(selectFont()));
+}
+
+void TextView::setDocument(QTextDocument *document) {
+    /* QTextEdit crashes when extra selections get out of range. */
+    textEdit()->setExtraSelections(QList<QTextEdit::ExtraSelection>());
+    highlighting_.clear();
+
+    textEdit_->setDocument(document);
+    setDocumentFont(documentFont());
 }
 
 void TextView::updatePositionStatus() {
@@ -151,36 +173,27 @@ void TextView::populateContextMenu(QMenu *menu) {
     menu->addAction(findPreviousAction_);
     menu->addSeparator();
     menu->addAction(openGotoLineAction_);
+    menu->addSeparator();
+    menu->addAction(selectFontAction_);
+    menu->addSeparator();
 }
 
-void TextView::highlight(const std::vector<TextRange> &ranges, bool ensureVisible) {
-    QList<QTextEdit::ExtraSelection> selections;
-
-    foreach (const TextRange &range, ranges) {
-        QTextEdit::ExtraSelection selection;
-        selection.cursor = textEdit()->textCursor();
-        selection.cursor.setPosition(range.start());
-        selection.cursor.setPosition(range.end(), QTextCursor::KeepAnchor);
-        selection.format.setBackground(QBrush(QColor(Qt::lightGray)));
-        selections.append(selection);
-    }
-
+void TextView::highlight(std::vector<Range<int>> ranges, bool ensureVisible) {
     if (!ranges.empty()) {
-        std::vector<TextRange> sortedRanges(ranges.begin(), ranges.end());
-        std::sort(sortedRanges.begin(), sortedRanges.end());
+        std::sort(ranges.begin(), ranges.end());
 
         if (ensureVisible) {
-            std::vector<TextRange> difference;
+            std::vector<Range<int>> difference;
 
             set_difference(
-                sortedRanges.begin(), sortedRanges.end(),
+                ranges.begin(), ranges.end(),
                 highlighting_.begin(), highlighting_.end(),
                 std::back_inserter(difference));
 
             if (difference.empty()) {
                 set_difference(
                     highlighting_.begin(), highlighting_.end(),
-                    sortedRanges.begin(), sortedRanges.end(),
+                    ranges.begin(), ranges.end(),
                     std::back_inserter(difference));
             }
 
@@ -192,9 +205,31 @@ void TextView::highlight(const std::vector<TextRange> &ranges, bool ensureVisibl
             }
         }
 
-        highlighting_.swap(sortedRanges);
+        highlighting_.swap(ranges);
     } else {
         highlighting_.clear();
+    }
+
+    updateExtraSelections();
+}
+
+void TextView::updateExtraSelections() {
+    auto size = textEdit()->viewport()->size();
+    auto firstVisiblePosition = textEdit()->cursorForPosition(QPoint(0, 0)).position();
+    auto lastVisiblePosition = textEdit()->cursorForPosition(QPoint(size.width() - 1, size.height() - 1)).position();
+
+    auto first = std::lower_bound(highlighting_.begin(), highlighting_.end(), firstVisiblePosition,
+                                  [](const Range<int> &range, int pos) { return range.end() < pos; });
+
+    QList<QTextEdit::ExtraSelection> selections;
+
+    for (auto i = first; i != highlighting_.end() && i->start() <= lastVisiblePosition; ++i) {
+        QTextEdit::ExtraSelection selection;
+        selection.cursor = textEdit()->textCursor();
+        selection.cursor.setPosition(i->start());
+        selection.cursor.setPosition(i->end(), QTextCursor::KeepAnchor);
+        selection.format.setBackground(QColor(highlightColor));
+        selections.append(selection);
     }
 
     textEdit()->setExtraSelections(selections);
@@ -224,13 +259,26 @@ void TextView::saveAs() {
 }
 
 void TextView::zoomIn(int delta) {
-    QFont font = textEdit()->document()->defaultFont();
+    QFont font = documentFont();
     font.setPointSize(std::max(font.pointSize() + delta, 1));
-    textEdit()->document()->setDefaultFont(font);
+    setDocumentFont(font);
 }
 
 void TextView::zoomOut(int delta) {
     zoomIn(-delta);
+}
+
+const QFont &TextView::documentFont() const {
+    return textEdit()->font();
+}
+
+void TextView::setDocumentFont(const QFont &font) {
+    textEdit()->setFont(font);
+    textEdit()->document()->setDefaultFont(font);
+}
+
+void TextView::selectFont() {
+    setDocumentFont(QFontDialog::getFont(nullptr, documentFont(), this));
 }
 
 bool TextView::eventFilter(QObject *watched, QEvent *event) {
@@ -242,15 +290,24 @@ bool TextView::eventFilter(QObject *watched, QEvent *event) {
             disconnect(textEdit_, SIGNAL(cursorPositionChanged()), this, SLOT(updatePositionStatus()));
         }
     }
-    if (watched == textEdit() || watched == textEdit()->viewport()) {
-        if (event->type() == QEvent::Wheel) {
+    if (watched == textEdit()->viewport()) {
+        if (event->type() == QEvent::Resize) {
+            updateExtraSelections();
+        } else if (event->type() == QEvent::Wheel) {
             auto wheelEvent = static_cast<QWheelEvent *>(event);
 
-            if (wheelEvent->orientation() == Qt::Vertical && wheelEvent->modifiers() & Qt::ControlModifier) {
-                if (wheelEvent->delta() > 0) {
-                    zoomIn(1 + wheelEvent->delta() / 360);
+            int delta;
+            #if QT_VERSION >= 0x050000
+                delta = wheelEvent->angleDelta().y();
+            #else
+                delta = wheelEvent->orientation() == Qt::Vertical ? wheelEvent->delta() : 0;
+            #endif
+
+            if (wheelEvent->modifiers() & Qt::ControlModifier) {
+                if (delta > 0) {
+                    zoomIn(1 + delta / 360);
                 } else {
-                    zoomOut(1 - wheelEvent->delta() / 360);
+                    zoomOut(1 - delta / 360);
                 }
                 return true;
             }

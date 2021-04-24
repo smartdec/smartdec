@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,39 +24,46 @@
 
 #include "Term.h"
 
-#include "Statement.h"
+#include "Statements.h"
 
 namespace nc { namespace core { namespace ir {
 
-namespace {
+void Term::setStatement(const Statement *statement) {
+    assert(statement_ == nullptr);
+    assert(statement != nullptr);
 
-class SetStatementVisitor: public Visitor<Term> {
-    const Statement *statement_;
+    statement_ = statement;
 
-    public:
-
-    SetStatementVisitor(const Statement *statement): statement_(statement) {}
-
-    void operator()(Term *term) override {
-        term->setStatement(statement_);
-        term->visitChildTerms(*this);
-    }
-};
-
-} // anonymous namespace
-
-void Term::setStatementRecursively(const Statement *statement) {
-    SetStatementVisitor visitor(statement);
-    visitor(this);
+    callOnChildren([statement](Term *term) { term->setStatement(statement); });
 }
 
-void Term::visitChildTerms(Visitor<Term> & /*visitor*/) {
-    /* Nothing to do */
-} 
+Term::AccessType Term::accessType() const {
+    assert(statement() && "Each term must belong to a statement.");
 
-void Term::visitChildTerms(Visitor<const Term> & /*visitor*/) const {
-    /* Nothing to do */
-} 
+    if (auto assignment = statement()->asAssignment()) {
+        if (assignment->left() == this) {
+            return WRITE;
+        } else {
+            return READ;
+        }
+    } else if (auto touch = statement()->asTouch()) {
+        return touch->accessType();
+    } else {
+        return READ;
+    }
+}
+
+const Term *Term::source() const {
+    assert(statement() && "Each term must belong to a statement.");
+
+    if (auto assignment = statement()->as<Assignment>()) {
+        if (assignment->left() == this) {
+            return assignment->right();
+        }
+    }
+
+    return nullptr;
+}
 
 }}} // namespace nc::core::ir
 

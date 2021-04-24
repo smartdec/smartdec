@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -44,31 +47,26 @@ namespace gui {
 class InstructionsModel: public QAbstractItemModel {
     Q_OBJECT
 
-    public:
-
+public:
     /**
      * Constructor.
      *
-     * \param parent  Pointer to the parent object. Can be NULL.
+     * \param parent  Pointer to the parent object. Can be nullptr.
+     * \param instructions Pointer to the set of instructions. Can be nullptr.
      */
-    InstructionsModel(QObject *parent = NULL);
+    explicit InstructionsModel(QObject *parent = nullptr, std::shared_ptr<const core::arch::Instructions> instructions = nullptr);
 
     /**
-     * Sets the associated module.
+     * Sets the set of instructions that must be highlighted.
      *
-     * \param instructions Pointer to a set of instructions. Can be NULL.
+     * \param instructions Instructions that must be highlighted.
      */
-    void setInstructions(const std::shared_ptr<const core::arch::Instructions> &instructions = std::shared_ptr<const core::arch::Instructions>());
-
-    /**
-     * \return Pointer to the associated set of instructions. Can be NULL.
-     */
-    const std::shared_ptr<const core::arch::Instructions> &instructions() const { return instructions_; }
+    void setHighlightedInstructions(std::vector<const core::arch::Instruction *> instructions);
 
     /**
      * \param index Model index.
      *
-     * \return Pointer to the instruction associated with the index. Can be NULL.
+     * \return Pointer to the instruction associated with the index. Can be nullptr.
      */
     const core::arch::Instruction *getInstruction(const QModelIndex &index) const;
 
@@ -79,24 +77,21 @@ class InstructionsModel: public QAbstractItemModel {
      */
     QModelIndex getIndex(const core::arch::Instruction *instruction) const;
 
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    virtual QModelIndex parent(const QModelIndex &index) const override;
-    virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QModelIndex parent(const QModelIndex &index) const override;
+    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
 
-    private:
-
+private:
     /** Associated set of instructions. */
     std::shared_ptr<const core::arch::Instructions> instructions_;
 
     /** Set of instructions as a vector (needed for direct access by index). */
     std::vector<const core::arch::Instruction *> instructionsVector_;
 
-    /**
-     * Updates the contents of the model.
-     */
-    void updateContents();
+    /** Sorted vector of instructions that must be highlighted. */
+    std::vector<const core::arch::Instruction *> highlightedInstructions_;
 };
 
 }} // namespace nc::gui

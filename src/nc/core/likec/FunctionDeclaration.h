@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -23,12 +26,13 @@
 #include <nc/config.h>
 
 #include <vector>
-#include <memory> /* unique_ptr */
+#include <memory>
 
+#include "ArgumentDeclaration.h"
 #include "Commentable.h"
 #include "Declaration.h"
+#include "FunctionIdentifier.h"
 #include "FunctionPointerType.h"
-#include "ArgumentDeclaration.h"
 
 namespace nc {
 namespace core {
@@ -40,6 +44,7 @@ namespace likec {
 class FunctionDeclaration: public Declaration, public Commentable {
     std::unique_ptr<FunctionPointerType> type_; ///< Type of pointer to this function.
     std::vector<std::unique_ptr<ArgumentDeclaration> > arguments_; ///< Function arguments.
+    std::unique_ptr<FunctionIdentifier> functionIdentifier_;
 
 public:
     /**
@@ -50,10 +55,9 @@ public:
      * \param[in] returnType Function return type.
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    FunctionDeclaration(Tree &tree, const QString &identifier, const Type *returnType = 0, bool variadic = false);
+    FunctionDeclaration(Tree &tree, QString identifier, const Type *returnType, bool variadic = false);
 
-    protected:
-
+protected:
     /**
      * Class constructor having declaration kind argument used by FunctionDefinition.
      *
@@ -63,36 +67,49 @@ public:
      * \param[in] returnType Function return type.
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    FunctionDeclaration(Tree &tree, int declarationKind, const QString &identifier, const Type *returnType = 0, bool variadic = false);
+    FunctionDeclaration(Tree &tree, int declarationKind, QString identifier, const Type *returnType, bool variadic = false);
 
-    public:
-
+public:
     /**
      * \return Type of pointer to this function.
      */
     const FunctionPointerType *type() const { return type_.get(); }
 
     /**
+     * \return Valid pointer to the function identifier used in the declaration.
+     */
+    const FunctionIdentifier *functionIdentifier() const { return functionIdentifier_.get(); }
+
+    /**
      * Function arguments.
      */
-    const std::vector<std::unique_ptr<ArgumentDeclaration> > &arguments() const { return arguments_; }
+    const std::vector<std::unique_ptr<ArgumentDeclaration>> &arguments() const { return arguments_; }
 
     /**
      * Adds argument to the function.
+     *
+     * \param argument Valid pointer to the argument declaration.
      */
-    void addArgument(ArgumentDeclaration *argument);
+    void addArgument(std::unique_ptr<ArgumentDeclaration> argument);
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
+    /**
+     * \param declaration Valid pointer to the first declaration of the function.
+     */
+    void setFirstDeclaration(FunctionDeclaration *declaration) { functionIdentifier_->setDeclaration(declaration); }
 
-    virtual FunctionDeclaration *rewrite() override { return this; }
+    /**
+     * \return Valid pointer to the first declaration of the function.
+     */
+    FunctionDeclaration *getFirstDeclaration() const { return functionIdentifier_->declaration(); }
 
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Declaration, nc::core::likec::FunctionDeclaration, nc::core::likec::Declaration::FUNCTION_DECLARATION)
+NC_SUBCLASS(nc::core::likec::Declaration, nc::core::likec::FunctionDeclaration, nc::core::likec::Declaration::FUNCTION_DECLARATION)
 
 /* vim:set et sts=4 sw=4: */

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -44,9 +47,9 @@ class GotoLineWidget: public QWidget {
      * Constructor.
      *
      * \param[in] textEdit  Valid pointer to the associated QPlainTextEdit instance.
-     * \param[in] parent    Pointer to the parent widget. Can be NULL.
+     * \param[in] parent    Pointer to the parent widget. Can be nullptr.
      */
-    GotoLineWidget(QPlainTextEdit *textEdit, QWidget *parent = NULL);
+    explicit GotoLineWidget(QPlainTextEdit *textEdit, QWidget *parent = nullptr);
 
     /**
      * \return Valid pointer to the associated QPlainTextEdit instance.

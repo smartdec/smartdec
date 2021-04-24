@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -35,7 +38,7 @@ namespace cflow {
 LoopExplorer::LoopExplorer(Node *entry, const Dfs &dfs):
     entry_(entry)
 {
-    assert(entry != NULL);
+    assert(entry != nullptr);
 
     /*
      * Find all nodes that can be reached from the back-edge
@@ -60,7 +63,7 @@ LoopExplorer::LoopExplorer(Node *entry, const Dfs &dfs):
 }
 
 void LoopExplorer::backwardVisit(Node *node) {
-    assert(node != NULL);
+    assert(node != nullptr);
     assert(find(node2color_, node) == WHITE);
 
     node2color_[node] = GRAY;
@@ -77,7 +80,7 @@ void LoopExplorer::backwardVisit(Node *node) {
 }
 
 void LoopExplorer::forwardVisit(Node *node) {
-    assert(node != NULL);
+    assert(node != nullptr);
     assert(find(node2color_, node) == GRAY);
 
     node2color_[node] = BLACK;

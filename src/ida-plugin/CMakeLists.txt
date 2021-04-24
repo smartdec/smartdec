@@ -1,9 +1,10 @@
 set(MOC_HEADERS
+    DecompilerPlugin.h
     NavigationHelper.h
-    SmartDecPlugin.h
 )
 
 set(SOURCES
+    DecompilerPlugin.cpp
     IdaByteSource.cpp
     IdaByteSource.h
     IdaDemangler.cpp
@@ -13,7 +14,6 @@ set(SOURCES
     IdaPlugin.cpp
     IdaPlugin.h
     NavigationHelper.cpp
-    SmartDecPlugin.cpp
     ${MOC_HEADERS}
 )
 
@@ -35,10 +35,11 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     add_definitions(-Wno-ignored-attributes -Wno-format-security -Wno-logical-op-parentheses)
 endif()
 
-qt4_wrap_cpp(SOURCES ${MOC_HEADERS})
+qt4_wrap_cpp(SOURCES ${MOC_HEADERS} OPTIONS -DQ_MOC_RUN)
 
 add_library(ida-plugin SHARED ${SOURCES})
-target_link_libraries(ida-plugin nc-gui nc-core ${Boost_LIBRARIES} ${QT_LIBRARIES} ${IDA_LIBRARIES})
-set_target_properties(ida-plugin PROPERTIES OUTPUT_NAME smartdec PREFIX "" SUFFIX ${IDA_PLUGIN_EXT})
+target_link_libraries(ida-plugin nc nc-gui ${Boost_LIBRARIES} ${NC_QT_CORE} ${NC_QT_WIDGETS} ${IDA_LIBRARIES})
+set_target_properties(ida-plugin PROPERTIES OUTPUT_NAME "snowman" PREFIX "" SUFFIX "${IDA_PLUGIN_EXT}")
+install(TARGETS ida-plugin RUNTIME DESTINATION bin LIBRARY DESTINATION lib)
 
 # vim:set et sts=4 sw=4 nospell:

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -31,7 +34,7 @@ namespace ir {
 namespace cflow {
 
 Edge::Edge(Node *tail, Node *head):
-    tail_(NULL), head_(NULL)
+    tail_(nullptr), head_(nullptr)
 {
     setTail(tail);
     setHead(head);
@@ -39,7 +42,7 @@ Edge::Edge(Node *tail, Node *head):
 
 void Edge::setTail(Node *tail) {
     if (tail_) {
-        tail_->outEdges_.erase(std::remove(tail_->outEdges_.begin(), tail_->outEdges_.end(), this), tail_->outEdges_.end());
+        tail_->outEdges_.erase(std::find(tail_->outEdges_.begin(), tail_->outEdges_.end(), this));
     }
     tail_ = tail;
     if (tail_) {
@@ -49,7 +52,7 @@ void Edge::setTail(Node *tail) {
 
 void Edge::setHead(Node *head) {
     if (head_) {
-        head_->inEdges_.erase(std::remove(head_->inEdges_.begin(), head_->inEdges_.end(), this), head_->inEdges_.end());
+        head_->inEdges_.erase(std::find(head_->inEdges_.begin(), head_->inEdges_.end(), this));
     }
     head_ = head;
     if (head_) {

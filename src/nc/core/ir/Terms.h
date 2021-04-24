@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,16 +25,11 @@
 
 #include <nc/config.h>
 
-#include <boost/optional.hpp>
-
 #include <nc/common/SizedValue.h>
 
 #include "Term.h"
 
 namespace nc {
-
-class SizedValue;
-
 namespace core {
 namespace ir {
 
@@ -39,78 +37,72 @@ namespace ir {
  * Constant integer.
  */
 class Constant: public Term {
-    SizedValue value_; ///< Value of the constant.
+    ConstantValue value_; ///< Value of the constant.
 
 public:
     /**
      * Class constructor.
      *
-     * \param[in] value                Value of the constant.
+     * \param[in] value Value of the constant.
      */
-    Constant(const SizedValue &value): Term(INT_CONST, value.size()), value_(value) {}
+    Constant(const SizedValue &value): Term(INT_CONST, value.size()), value_(value.value()) {}
 
     /**
-     * \return Value of the constant. Bits starting from size() and higher are zero.
+     * \return Value of the constant.
      */
-    const SizedValue &value() const { return value_; }
+    SizedValue value() const { return SizedValue(size(), value_, SizedValue::exact); }
 
     /**
      * Sets the value of the constant.
      *
-     * \param[in] value New value.
+     * \param[in] value New value. It is truncated to the lower size() bits.
      */
-    void setValue(const SizedValue &value) { value_ = SizedValue(value.value(), size()); }
+    void setValue(ConstantValue value) { value_ = bitTruncate(value, size()); }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Constant *doClone() const { return new Constant(value()); }
+    std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
- * Value computed using built-in function.
+ * Term representing a special value.
  */
 class Intrinsic: public Term {
-    NC_CLASS_WITH_KINDS(Intrinsic, intrinsicKind)
+    int intrinsicKind_;     ///< Kind of this intrinsic.
 
 public:
+    /**
+     * Intrinsic kinds.
+     */
     enum {
-        UNKNOWN,    ///< Unknown intrinsic.
-        USER = 1000 ///< First user intrinsic.
+        UNKNOWN,            ///< Unknown intrinsic.
+        UNDEFINED,          ///< Undefined value, generally not a stack offset.
+        ZERO_STACK_OFFSET,  ///< Undefined value, zero stack offset.
+        RETURN_ADDRESS,     ///< Return address (e.g. saved by a call instruction).
     };
 
     /**
      * Constructor.
      *
-     * \param[in] intrinsicKind         Kind of the convention.
-     * \param[in] size                  Size of this term's value in bits.
+     * \param[in] intrinsicKind Type of this intrinsic.
+     * \param[in] size          Size of this term's value in bits.
      */
     Intrinsic(int intrinsicKind, SmallBitSize size):
         Term(INTRINSIC, size), intrinsicKind_(intrinsicKind)
     {}
 
-    virtual void print(QTextStream &out) const override;
-
-protected:
-    virtual Intrinsic *doClone() const { return new Intrinsic(intrinsicKind(), size()); }
-};
-
-/**
- * Undefined.
- */
-class Undefined: public Term {
-public:
     /**
-     * Constructor.
-     * 
-     * \param[in] size                 Size of this term's value in bits.
+     * \return Kind of this intrinsic.
      */
-    Undefined(SmallBitSize size): Term(UNDEFINED, size) {}
+    int intrinsicKind() const { return intrinsicKind_; }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Undefined *doClone() const { return new Undefined(size()); }
+    std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
@@ -132,10 +124,11 @@ public:
      */
     const MemoryLocation &memoryLocation() const { return memoryLocation_; }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual MemoryLocationAccess *doClone() const { return new MemoryLocationAccess(memoryLocation()); }
+    std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
@@ -170,226 +163,152 @@ public:
      */
     const Term *address() const { return address_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Dereference *doClone() const { return new Dereference(address()->clone(), domain(), size()); }
+    std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
- * Base class for unary operators.
+ * Unary operator.
  */
 class UnaryOperator: public Term {
-    NC_CLASS_WITH_KINDS(UnaryOperator, operatorKind)
-
-    std::unique_ptr<Term> operand_; ///< The operand of the unary operator.
-
 public:
-    enum {
-        BITWISE_NOT, ///< Bitwise NOT.
-        LOGICAL_NOT, ///< Logical NOT.
-        NEGATION, ///< Negation.
+    /**
+     * Unary operator kinds.
+     */
+    enum OperatorKind {
+        NOT, ///< Bitwise NOT.
+        NEGATION, ///< Integer negation.
         SIGN_EXTEND, ///< Sign extend.
         ZERO_EXTEND, ///< Zero extend.
-        RESIZE, ///< Just copy bits. Zero extend or truncate as necessary.
-        USER = 1000 ///< Base for user-defined operators.
+        TRUNCATE, ///< Truncate.
     };
 
+private:
+    int operatorKind_; ///< Operator kind.
+    std::unique_ptr<Term> operand_; ///< Operand.
+
+public:
     /**
      * Class constructor.
      *
-     * \param[in] operatorKind         Subkind of the unary operator.
-     * \param[in] operand              The operand of the unary operator.
-     * \param[in] size                 Size of this term's value in bits.
+     * \param[in] operatorKind  Kind of the unary operator.
+     * \param[in] operand       The operand of the unary operator.
+     * \param[in] size          Size of this term's value in bits.
+     *
+     * \note If operator's kind is NOT or NEGATION, operator's size must be equal to operand's size.
+     * \note If operator's kind is *_EXTEND, operator's size must be strictly greater than operand's size.
+     * \note If operator's kind is TRUNCATE, operator's size must be strictly smaller than operand's size.
      */
     UnaryOperator(int operatorKind, std::unique_ptr<Term> operand, SmallBitSize size);
 
     /**
-     * Class constructor. 
-     * 
-     * Size is taken from the given operand.
-     * 
-     * \param[in] operatorKind         Subkind of the unary operator.
-     * \param[in] operand              The operand of the unary operator.
+     * \return Kind of the operator.
      */
-    UnaryOperator(int operatorKind, std::unique_ptr<Term> operand);
+    int operatorKind() const { return operatorKind_; }
 
     /**
-     * \return                         The operand of the unary operator.
+     * \return Valid pointer to the operand of this operator.
      */
     Term *operand() { return operand_.get(); }
 
     /**
-     * \return                         The operand of the unary operator.
+     * \return Valid pointer to the operand of this operator.
      */
     const Term *operand() const { return operand_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
-    /**
-     * Applies the unary operator to the integer argument.
-     *
-     * \param a                        Argument.
-     * \return                         Result of application of this unary operator to the given argument,
-     *                                 or boost::none when the operator is not applicable.
-     */
-    virtual boost::optional<SizedValue> apply(const SizedValue &a) const;
-
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual UnaryOperator *doClone() const { return new UnaryOperator(operatorKind(), operand()->clone(), size()); }
+    std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
 /**
- * Base class for binary operators.
+ * Binary operator.
  */
 class BinaryOperator: public Term {
-    NC_CLASS_WITH_KINDS(BinaryOperator, operatorKind)
-
-    std::unique_ptr<Term> left_; ///< Left operand.
-    std::unique_ptr<Term> right_; ///< Right operand.
-
 public:
-    enum {
+    /**
+     * Binary operator kinds.
+     */
+    enum OperatorKind {
+        AND, ///< Bitwise AND.
+        OR,  ///< Bitwise OR.
+        XOR, ///< Bitwise XOR.
+        SHL, ///< Bit shift left.
+        SHR, ///< Bit shift right.
+        SAR, ///< Arithmetic bit shift right.
         ADD, ///< Integer addition.
         SUB, ///< Integer subtraction.
         MUL, ///< Integer multiplication.
         SIGNED_DIV, ///< Signed integer division.
-        UNSIGNED_DIV, ///< Unsigned integer division.
         SIGNED_REM, ///< Signed integer remainder.
+        UNSIGNED_DIV, ///< Unsigned integer division.
         UNSIGNED_REM, ///< Unsigned integer remainder.
-        BITWISE_AND, ///< Bitwise AND.
-        LOGICAL_AND, ///< Logical AND.
-        BITWISE_OR, ///< Bitwise OR.
-        LOGICAL_OR, ///< Logical OR.
-        BITWISE_XOR, ///< Bitwise XOR.
-        SHL, ///< Bit shift left.
-        SHR, ///< Bit shift right.
-        SAR, ///< Arithmetic bit shift right.
-        EQUAL, ///< Equality operator for integers.
+        EQUAL, ///< Equality.
         SIGNED_LESS, ///< Integer signed less.
         SIGNED_LESS_OR_EQUAL, ///< Integer signed less or equal.
-        SIGNED_GREATER, ///< Integer signed greater.
-        SIGNED_GREATER_OR_EQUAL, ///< Signed greater or equal for integer.
         UNSIGNED_LESS, ///< Integer unsigned less.
         UNSIGNED_LESS_OR_EQUAL, ///< Integer unsigned less or equal.
-        UNSIGNED_GREATER, ///< Integer unsigned greater.
-        UNSIGNED_GREATER_OR_EQUAL, ///< Integer unsigned greater or equal.
-        USER = 1000 ///< Base for user-defined operators.
     };
 
-    /**
-     * Class constructor.
-     * 
-     * Size of left and right operands is expected to be equal.
-     *
-     * \param[in] operatorKind         Subkind of the binary operator.
-     * \param[in] left                 Left operand.
-     * \param[in] right                Right operand.
-     * \param[in] size                 Size of this term's value in bits.
-     */
-    BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right, SmallBitSize size);
-
-    /**
-     * Class constructor.
-     * 
-     * Size is taken from the given operands.
-     *
-     * \param[in] operatorKind         Subkind of the binary operator.
-     * \param[in] left                 Left operand.
-     * \param[in] right                Right operand.
-     */
-    BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right);
-
-    /**
-     * \return                         Left operand.
-     */
-    Term *left() { return left_.get(); }
-
-    /**
-     * \return                         Left operand.
-     */
-    const Term *left() const { return left_.get(); }
-
-    /**
-     * \return                         Right operand.
-     */
-    Term *right() { return right_.get(); }
-
-    /**
-     * \return                         Right operand.
-     */
-    const Term *right() const { return right_.get(); }
-
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
-    /**
-     * Applies the binary operator to two integer arguments.
-     *
-     * \param a                        Left argument.
-     * \param b                        Right argument.
-     * \return                         a op b, or boost::none if result is undefined.
-     */
-    virtual boost::optional<SizedValue> apply(const SizedValue &a, const SizedValue &b) const;
-
-    virtual void print(QTextStream &out) const override;
-
-protected:
-    virtual BinaryOperator *doClone() const;
-};
-
-/**
- * Special kind of binary operator which is equal to its first argument, if the latter
- * is defined, and equal to the second argument otherwise. Just like a Phi-function.
- */
-class Choice: public Term {
-    std::unique_ptr<Term> preferredTerm_; ///< Preferred term (used if defined).
-    std::unique_ptr<Term> defaultTerm_; ///< Default term (used if preferred term is not defined).
+private:
+    int operatorKind_; ///< Operator kind.
+    std::unique_ptr<Term> left_; ///< Left operand.
+    std::unique_ptr<Term> right_; ///< Right operand.
 
 public:
     /**
      * Class constructor.
      *
-     * \param preferredTerm Preferred term (used if defined).
-     * \param defaultTerm Default term (used if preferred term is not defined).
+     * \param[in] operatorKind  Kind of the binary operator.
+     * \param[in] left          Left operand.
+     * \param[in] right         Right operand.
+     * \param[in] size          Size of this term's value in bits.
+     *
+     * \note If operator's kind is AND, OR, XOR, ADD, SUB, MUL, *_DIV, *_REM,
+     *       then operator's size and operands' sizes must be equal.
+     * \note If operator's kind is SHL, SHR, SAR,
+     *       then operator's size must be equal to left operand's size.
+     * \note If operator's kind is EQUAL, *_LESS, *_LESS_OR_EQUAL,
+     *       then operand's sizes must be equal, and operator's size must be 1.
      */
-    Choice(std::unique_ptr<Term> preferredTerm, std::unique_ptr<Term> defaultTerm);
+    BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right, SmallBitSize size);
 
     /**
-     * \return Preferred term.
+     * \return Kind of the operator.
      */
-    Term *preferredTerm() { return preferredTerm_.get(); }
+    int operatorKind() const { return operatorKind_; }
 
     /**
-     * \return Preferred term.
+     * \return Valid pointer to the left operand of this operator.
      */
-    const Term *preferredTerm() const { return preferredTerm_.get(); }
+    Term *left() { return left_.get(); }
 
     /**
-     * \return Default term.
+     * \return Valid pointer to the left operand of this operator.
      */
-    Term *defaultTerm() { return defaultTerm_.get(); }
+    const Term *left() const { return left_.get(); }
 
     /**
-     * \return Default term.
+     * \return Valid pointer to the right operand of this operator.
      */
-    const Term *defaultTerm() const { return defaultTerm_.get(); }
+    Term *right() { return right_.get(); }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
+    /**
+     * \return Valid pointer to the right operand of this operator.
+     */
+    const Term *right() const { return right_.get(); }
 
-    virtual void print(QTextStream &out) const override;
+    void print(QTextStream &out) const override;
 
 protected:
-    virtual Choice *doClone() const;
+    std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
-
 
 /*
  * Term implementation follows.
@@ -401,7 +320,6 @@ const MemoryLocationAccess *Term::asMemoryLocationAccess() const { return as<Mem
 const Dereference *Term::asDereference() const { return as<Dereference>(); }
 const UnaryOperator *Term::asUnaryOperator() const { return as<UnaryOperator>(); }
 const BinaryOperator *Term::asBinaryOperator() const { return as<BinaryOperator>(); }
-const Choice *Term::asChoice() const { return as<Choice>(); }
 
 }}} // namespace nc::core::ir
 

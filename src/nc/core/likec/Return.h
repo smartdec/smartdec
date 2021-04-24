@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -30,46 +33,41 @@ namespace nc {
 namespace core {
 namespace likec {
 
+class Expression;
+
 /**
  * Return statement with optional returned value.
  */
 class Return: public Statement {
     std::unique_ptr<Expression> returnValue_; ///< Returned value.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
-     * \param[in] tree Owning tree.
-     * \param[in] returnValue Returned value. Can be NULL.
+     * \param[in] returnValue Returned value. Can be nullptr.
      */
-    Return(Tree &tree, std::unique_ptr<Expression> returnValue = NULL):
-        Statement(tree, RETURN), returnValue_(std::move(returnValue)) {}
+    explicit Return(std::unique_ptr<Expression> returnValue = nullptr):
+        Statement(RETURN), returnValue_(std::move(returnValue)) {}
 
     /**
-     * \return Returned value. Can be NULL.
+     * \return Returned value. Can be nullptr.
      */
-    Expression *returnValue() { return returnValue_.get(); }
+    std::unique_ptr<Expression> &returnValue() { return returnValue_; }
 
     /**
-     * \return Returned value. Can be NULL.
+     * \return Returned value. Can be nullptr.
      */
     const Expression *returnValue() const { return returnValue_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-
-    virtual Statement *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::Return, nc::core::likec::Statement::RETURN)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::Return, nc::core::likec::Statement::RETURN)
 
 /* vim:set et sts=4 sw=4: */

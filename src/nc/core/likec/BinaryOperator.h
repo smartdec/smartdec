@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -34,7 +37,7 @@ namespace likec {
  * Base class for binary operators.
  */
 class BinaryOperator: public Expression {
-    NC_CLASS_WITH_KINDS(BinaryOperator, operatorKind)
+    NC_BASE_CLASS(BinaryOperator, operatorKind)
 
     std::unique_ptr<Expression> left_; ///< Left operand.
     std::unique_ptr<Expression> right_; ///< Right operand.
@@ -65,19 +68,18 @@ class BinaryOperator: public Expression {
         GT,
         GEQ,
         COMMA,
-        USER_OPERATOR = 1000    ///< Base value for user-defined operators.
+        ARRAY_SUBSCRIPT
     };
 
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] operatorKind Operator's kind.
      * \param[in] left Left operand.
      * \param[in] right Right operand.
      */
-    BinaryOperator(Tree &tree, int operatorKind, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right):
-        Expression(tree, BINARY_OPERATOR), operatorKind_(operatorKind), left_(std::move(left)), right_(std::move(right))
+    BinaryOperator(int operatorKind, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right):
+        Expression(BINARY_OPERATOR), operatorKind_(operatorKind), left_(std::move(left)), right_(std::move(right))
     {}
 
     /**
@@ -90,7 +92,7 @@ class BinaryOperator: public Expression {
     /**
      * \return Left operand.
      */
-    Expression *left() { return left_.get(); }
+    std::unique_ptr<Expression> &left() { return left_; }
 
     /**
      * \return Left operand.
@@ -98,60 +100,23 @@ class BinaryOperator: public Expression {
     const Expression *left() const { return left_.get(); }
 
     /**
-     * Sets right operand of this operator.
-     * Old operand is deleted.
-     *
-     * \param expression New right operand.
-     */
-    void setLeft(std::unique_ptr<Expression> expression) { left_ = std::move(expression); }
-
-    /**
-     * Releases operator's ownership of left operand.
-     *
-     * \return Operand.
-     */
-    std::unique_ptr<Expression> releaseLeft() { return std::move(left_); }
-
-    /**
      * \return Right operand.
      */
-    Expression *right() { return right_.get(); }
-
-    /**
-     * Sets left operand of this operator.
-     * Old operand is deleted.
-     *
-     * \param expression New left operand.
-     */
-    void setRight(std::unique_ptr<Expression> expression) { right_ = std::move(expression); }
-
-    /**
-     * Releases operator's ownership of right operand.
-     *
-     * \return Operand.
-     */
-    std::unique_ptr<Expression> releaseRight() { return std::move(right_); }
+    std::unique_ptr<Expression> &right() { return right_; }
 
     /**
      * \return Right operand.
      */
     const Expression *right() const { return right_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual const Type *getType() const override;
-    virtual int precedence() const override;
-    virtual Expression *rewrite() override;
-
-    protected:
-
-    virtual const Type *getType(const Type *leftType, const Type *rightType) const;
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::BinaryOperator, nc::core::likec::Expression::BINARY_OPERATOR)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::BinaryOperator, nc::core::likec::Expression::BINARY_OPERATOR)
 
 /* vim:set et sts=4 sw=4: */

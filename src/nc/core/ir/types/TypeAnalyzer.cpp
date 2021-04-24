@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -23,19 +26,23 @@
 
 #include <nc/common/CancellationToken.h>
 #include <nc/common/Foreach.h>
-#include <nc/common/Unreachable.h>
-#include <nc/common/Warnings.h>
 
+#include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
+#include <nc/core/ir/Functions.h>
+#include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/calls/FunctionSignature.h>
-#include <nc/core/ir/calls/ReturnAnalyzer.h>
-#include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/calling/CallHook.h>
+#include <nc/core/ir/calling/EntryHook.h>
+#include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/ReturnHook.h>
+#include <nc/core/ir/calling/Signatures.h>
+#include <nc/core/ir/dflow/Dataflows.h>
+#include <nc/core/ir/dflow/Utils.h>
 #include <nc/core/ir/dflow/Value.h>
-#include <nc/core/ir/misc/CensusVisitor.h>
-#include <nc/core/ir/usage/Usage.h>
+#include <nc/core/ir/liveness/Livenesses.h>
+#include <nc/core/ir/vars/Variables.h>
 
 #include "Type.h"
 #include "Types.h"
@@ -45,92 +52,155 @@ namespace core {
 namespace ir {
 namespace types {
 
-void TypeAnalyzer::analyze(const Function *function, const CancellationToken &canceled) {
-    ir::misc::CensusVisitor census(callsData());
-    census(function);
+void TypeAnalyzer::analyze() {
+    uniteTypesOfAssignedTerms();
+    uniteVariableTypes();
+    uniteArgumentTypes();
+    markStackPointersAsPointers();
 
-    /* Join term types with types of definitions. */
-    foreach (const Term *term, census.terms()) {
-        if (term->isRead()) {
-            foreach (const Term *definition, dataflow().getDefinitions(term)) {
-                types().getType(term)->unionSet(types().getType(definition));
+    /*
+     * Recompute types until reaching fixpoint.
+     */
+    bool changed;
+    do {
+        changed = false;
+
+        foreach (const Function *function, functions_.list()) {
+            while (analyze(function)) {
+                changed = true;
+                canceled_.poll();
+            }
+            canceled_.poll();
+        }
+    } while (changed);
+}
+
+void TypeAnalyzer::uniteTypesOfAssignedTerms() {
+    /*
+     * Unite types of arguments of left and right hand sides of assignments.
+     */
+    foreach (const auto &functionAndLiveness, livenesses_) {
+        foreach (const Term *term, functionAndLiveness.second->liveTerms()) {
+            if (auto source = term->source()) {
+                types_.getType(term)->unionSet(types_.getType(source));
             }
         }
-    } 
+    }
+}
 
-    /* Join types of terms used for return values. */
-    if (callsData()) {
-        if (const calls::FunctionSignature *signature = callsData()->getFunctionSignature(function)) {
-            if (signature->returnValue()) {
-                const Term *firstReturnTerm = NULL;
-                foreach (const Return *ret, callsData()->getReturns(function)) {
-                    if (calls::ReturnAnalyzer *returnAnalyzer = callsData()->getReturnAnalyzer(function, ret)) {
-                        const Term *returnTerm = returnAnalyzer->getReturnValueTerm(signature->returnValue());
-                        if (firstReturnTerm == NULL) {
-                            firstReturnTerm = returnTerm;
-                        } else {
-                            types().getType(firstReturnTerm)->unionSet(types().getType(returnTerm));
+namespace {
+
+void uniteTypes(Type *&a, Type *b) {
+    if (a == nullptr) {
+        a = b;
+    } else {
+        a->unionSet(b);
+    }
+};
+
+} // anonymous namespace
+
+void TypeAnalyzer::uniteVariableTypes() {
+    foreach (const vars::Variable *variable, variables_.list()) {
+        boost::unordered_map<MemoryLocation, Type *> location2type;
+
+        foreach (const auto &termAndLocation, variable->termsAndLocations()) {
+            uniteTypes(location2type[termAndLocation.location], types_.getType(termAndLocation.term));
+        }
+    }
+}
+
+void TypeAnalyzer::uniteArgumentTypes() {
+    foreach (auto function, functions_.list()) {
+        const auto &dataflow = *dataflows_.at(function);
+
+        if (auto entryHook = hooks_.getEntryHook(function)) {
+            if (auto signature = signatures_.getSignature(function)) {
+                foreach (const auto &term, signature->arguments()) {
+                    types_.getType(term.get())->unionSet(types_.getType(entryHook->getArgumentTerm(term.get())));
+                }
+            }
+        }
+
+        foreach (auto basicBlock, function->basicBlocks()) {
+            foreach (auto statement, basicBlock->statements()) {
+                if (auto call = statement->asCall()) {
+                    if (auto callHook = hooks_.getCallHook(call)) {
+                        if (auto signature = signatures_.getSignature(call)) {
+                            foreach (const auto &term, signature->arguments()) {
+                                types_.getType(term.get())->unionSet(types_.getType(callHook->getArgumentTerm(term.get())));
+                            }
+                            if (auto returnValue = signature->returnValue().get()) {
+                                types_.getType(returnValue)->unionSet(types_.getType(callHook->getReturnValueTerm(returnValue)));
+                            }
+                        }
+                    }
+                } else if (auto jump = statement->asJump()) {
+                    if (dflow::isReturn(jump, dataflow)) {
+                        if (auto returnHook = hooks_.getReturnHook(jump)) {
+                            if (auto signature = signatures_.getSignature(function)) {
+                                if (auto returnValue = signature->returnValue().get()) {
+                                    types_.getType(returnValue)->unionSet(types_.getType(returnHook->getReturnValueTerm(returnValue)));
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     }
+}
 
-    /*
-     * We want to keep the natural ordering of terms in function's code.
-     * Iterative process converges much faster then.
-     * This is why we don't just take usage().usedTerms_.
-     */
-    std::vector<const Term *> terms(census.terms().begin(), census.terms().end());
-    terms.erase(std::remove_if(terms.begin(), terms.end(),
-        [this](const Term *term) { return !this->usage().isUsed(term); }), terms.end());
-
-    bool changed;
-    do {
-        foreach (const Term *term, terms) {
-            analyze(term);
-        }
-        reverse_foreach (const Term *term, terms) {
-            analyze(term);
-        }
-        foreach (const Statement *statement, census.statements()) {
-            analyze(statement);
-        }
-        reverse_foreach (const Statement *statement, census.statements()) {
-            analyze(statement);
-        }
-
-        changed = false;
-        foreach (auto &item, types().types()) {
-            if (item.second->changed()) {
-                changed = true;
+void TypeAnalyzer::markStackPointersAsPointers() {
+    foreach (const auto &functionAndLiveness, livenesses_) {
+        const auto &dataflow = *dataflows_.at(functionAndLiveness.first);
+        foreach (const auto term, functionAndLiveness.second->liveTerms()) {
+            if (dataflow.getValue(term)->isStackOffset()) {
+                types_.getType(term)->makePointer();
             }
         }
-    } while (changed && !canceled);
+    }
+}
+
+bool TypeAnalyzer::analyze(const Function *function) {
+    const auto &liveness = *livenesses_.at(function);
+
+    /*
+     * Going in both directions makes the process
+     * converge much faster on some examples.
+     */
+    foreach (const Term *term, liveness.liveTerms()) {
+        analyze(term);
+    }
+    reverse_foreach (const Term *term, liveness.liveTerms()) {
+        analyze(term);
+    }
+
+    bool changed = false;
+    foreach (const Term *term, liveness.liveTerms()) {
+        if (types_.getType(term)->changed()) {
+            changed = true;
+        }
+    }
+    return changed;
 }
 
 void TypeAnalyzer::analyze(const Term *term) {
     switch (term->kind()) {
-        case Term::INT_CONST:
-            analyze(term->asConstant());
-            break;
-        case Term::INTRINSIC:
-            break;
-        case Term::UNDEFINED:
-            break;
+        case Term::INT_CONST: /* FALLTHROUGH */
+        case Term::INTRINSIC: /* FALLTHROUGH */
         case Term::MEMORY_LOCATION_ACCESS:
             break;
-        case Term::DEREFERENCE:
-            analyze(term->asDereference());
+        case Term::DEREFERENCE: {
+            auto dereference = term->asDereference();
+            types_.getType(dereference->address())->makePointer(types_.getType(dereference));
             break;
+        }
         case Term::UNARY_OPERATOR:
             analyze(term->asUnaryOperator());
             break;
         case Term::BINARY_OPERATOR:
             analyze(term->asBinaryOperator());
-            break;
-        case Term::CHOICE:
             break;
         default:
             unreachable();
@@ -138,21 +208,12 @@ void TypeAnalyzer::analyze(const Term *term) {
     }
 }
 
-void TypeAnalyzer::analyze(const Constant * /*constant*/) {
-    /* Nothing to do. */
-}
-
-void TypeAnalyzer::analyze(const Dereference *dereference) {
-    types().getType(dereference->address())->makePointer(types().getType(dereference));
-}
-
 void TypeAnalyzer::analyze(const UnaryOperator *unary) {
-    Type *type = types().getType(unary);
-    Type *operandType = types().getType(unary->operand());
+    Type *type = types_.getType(unary);
+    Type *operandType = types_.getType(unary->operand());
 
     switch (unary->operatorKind()) {
-        case UnaryOperator::BITWISE_NOT: /* FALLTHROUGH */
-        case UnaryOperator::LOGICAL_NOT:
+        case UnaryOperator::NOT:
             operandType->makeInteger();
             type->makeInteger();
             break;
@@ -164,13 +225,13 @@ void TypeAnalyzer::analyze(const UnaryOperator *unary) {
             break;
         case UnaryOperator::SIGN_EXTEND:
             operandType->makeSigned();
+            type->makeSigned();
             break;
         case UnaryOperator::ZERO_EXTEND:
-            if (operandType->isSigned()) {
-                type->makeUnsigned();
-            }
+            operandType->makeUnsigned();
+            type->makeUnsigned();
             break;
-        case UnaryOperator::RESIZE:
+        case UnaryOperator::TRUNCATE:
             break;
         default:
             unreachable();
@@ -179,16 +240,72 @@ void TypeAnalyzer::analyze(const UnaryOperator *unary) {
 }
 
 void TypeAnalyzer::analyze(const BinaryOperator *binary) {
-    /* Be careful: these pointers become kinda invalid after doing unionSet(). */
-    Type *type = types().getType(binary);
-    Type *leftType = types().getType(binary->left());
-    Type *rightType = types().getType(binary->right());
+    /* Be careful: these pointers become invalid after the first call to unionSet(). */
+    Type *type = types_.getType(binary);
+    Type *leftType = types_.getType(binary->left());
+    Type *rightType = types_.getType(binary->right());
 
-    const dflow::Value *value = dataflow().getValue(binary->left());
-    const dflow::Value *leftValue = dataflow().getValue(binary->left());
-    const dflow::Value *rightValue = dataflow().getValue(binary->right());
+    const auto &dataflow = *dataflows_.at(binary->statement()->basicBlock()->function());
+    const dflow::Value *value = dataflow.getValue(binary->left());
+    const dflow::Value *leftValue = dataflow.getValue(binary->left());
+    const dflow::Value *rightValue = dataflow.getValue(binary->right());
 
     switch (binary->operatorKind()) {
+        case BinaryOperator::AND: /* FALLTHROUGH */
+        case BinaryOperator::OR: /* FALLTHROUGH */
+        case BinaryOperator::XOR:
+            leftType->makeInteger();
+            rightType->makeInteger();
+            type->makeInteger();
+
+            leftType->makeUnsigned();
+            rightType->makeUnsigned();
+            type->makeUnsigned();
+            break;
+
+        case BinaryOperator::SHL:
+            leftType->makeInteger();
+            rightType->makeInteger();
+            type->makeInteger();
+
+            rightType->makeUnsigned();
+            if (leftType->isSigned()) {
+                type->makeSigned();
+            }
+            if (leftType->isUnsigned()) {
+                type->makeUnsigned();
+            }
+            if (type->isSigned()) {
+                leftType->makeSigned();
+            }
+            if (type->isUnsigned()) {
+                leftType->makeUnsigned();
+            }
+
+            if (rightValue->abstractValue().isConcrete()) {
+                type->updateFactor(leftType->factor() *
+                    shiftLeft<ConstantValue>(1, rightValue->abstractValue().asConcrete().value()));
+            }
+            break;
+
+        case BinaryOperator::SHR:
+            leftType->makeInteger();
+            rightType->makeInteger();
+            type->makeInteger();
+
+            leftType->makeUnsigned();
+            type->makeUnsigned();
+            break;
+
+        case BinaryOperator::SAR:
+            leftType->makeInteger();
+            rightType->makeInteger();
+            type->makeInteger();
+
+            leftType->makeSigned();
+            type->makeSigned();
+            break;
+
         case BinaryOperator::ADD:
             if (leftType->isInteger() && rightType->isInteger()) {
                 type->makeInteger();
@@ -215,18 +332,18 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
                     leftType->makeInteger();
                 }
                 if (!leftType->isPointer() && !rightType->isPointer()) {
-                    if (leftValue->isMultiplication()) {
+                    if (leftValue->isProduct()) {
                         rightType->makePointer();
-                    } else if (rightValue->isMultiplication()) {
+                    } else if (rightValue->isProduct()) {
                         leftType->makePointer();
-                    } else if (leftValue->isConstant()) {
-                        if (leftValue->constantValue().value() < 4096) {
+                    } else if (leftValue->abstractValue().isConcrete()) {
+                        if (leftValue->abstractValue().asConcrete().value() < 4096) {
                             leftType->makeInteger();
                         } else {
                             leftType->makePointer();
                         }
-                    } else if (rightValue->isConstant()) {
-                        if (rightValue->constantValue().value() < 4096) {
+                    } else if (rightValue->abstractValue().isConcrete()) {
+                        if (rightValue->abstractValue().asConcrete().value() < 4096) {
                             rightType->makeInteger();
                         } else {
                             rightType->makePointer();
@@ -254,34 +371,40 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
                 }
             }
 
-            if (rightValue->isConstant()) {
-                if (type == leftType) {
-                    type->updateFactor(rightValue->constantValue().absoluteValue());
-                } else {
-#ifdef NC_STRUCT_RECOVERY
-                    if (!value->isStackOffset()) {
-                        leftType->addOffset(rightValue->constantValue().signedValue(), type);
-                    }
-#endif
-                }
-            }
-            if (leftValue->isConstant()) {
-                if (type == rightType) {
-                    type->updateFactor(leftValue->constantValue().absoluteValue());
-                } else {
-#ifdef NC_STRUCT_RECOVERY
-                    if (!value->isStackOffset()) {
-                        rightType->addOffset(leftValue->constantValue().signedValue(), type);
-                    }
-#endif
-                }
-            }
-
-            if (leftType->isPointer() && rightValue->isMultiplication()) {
+            if (leftType->isPointer() && rightValue->isProduct()) {
                 type->makePointer(leftType->pointee());
             }
-            if (rightType->isPointer() && leftValue->isMultiplication()) {
+            if (rightType->isPointer() && leftValue->isProduct()) {
                 type->makePointer(rightType->pointee());
+            }
+            if (type->isPointer() && rightValue->isProduct()) {
+                leftType->makePointer(type->pointee());
+            }
+            if (type->isPointer() && leftValue->isProduct()) {
+                rightType->makePointer(type->pointee());
+            }
+
+            if (rightValue->abstractValue().isConcrete()) {
+                if (type == leftType) {
+                    type->updateFactor(rightValue->abstractValue().asConcrete().absoluteValue());
+                } else {
+#ifdef NC_STRUCT_RECOVERY
+                    if (!value->isStackOffset()) {
+                        leftType->addOffset(rightValue->abstractValue().asConcrete().signedValue(), type);
+                    }
+#endif
+                }
+            }
+            if (leftValue->abstractValue().isConcrete()) {
+                if (type == rightType) {
+                    type->updateFactor(leftValue->abstractValue().asConcrete().absoluteValue());
+                } else {
+#ifdef NC_STRUCT_RECOVERY
+                    if (!value->isStackOffset()) {
+                        rightType->addOffset(leftValue->abstractValue().asConcrete().signedValue(), type);
+                    }
+#endif
+                }
             }
             break;
 
@@ -316,20 +439,23 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
                 }
             }
 
-            if (rightValue->isConstant()) {
+            if (leftType->isPointer() && rightValue->isProduct()) {
+                type->makePointer(leftType->pointee());
+            }
+            if (type->isPointer() && rightValue->isProduct()) {
+                leftType->makePointer(type->pointee());
+            }
+
+            if (rightValue->abstractValue().isConcrete()) {
                 if (type == leftType) {
-                    type->updateFactor(rightValue->constantValue().absoluteValue());
+                    type->updateFactor(rightValue->abstractValue().asConcrete().absoluteValue());
                 } else {
 #ifdef NC_STRUCT_RECOVERY
                     if (!value->isStackOffset()) {
-                        leftType->addOffset(-rightValue->constantValue().signedValue(), type);
+                        leftType->addOffset(-rightValue->abstractValue().asConcrete().signedValue(), type);
                     }
 #endif
                 }
-            }
-
-            if (leftType->isPointer() && rightValue->isMultiplication()) {
-                type->makePointer(leftType->pointee());
             }
             break;
 
@@ -337,7 +463,7 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
             type->makeInteger();
             leftType->makeInteger();
             rightType->makeInteger();
-            
+
             if (leftType->isUnsigned() || rightType->isUnsigned()) {
                 type->makeUnsigned();
             }
@@ -357,15 +483,25 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
                 }
             }
 
-            if (rightValue->isConstant()) {
-                type->updateFactor(leftType->factor() * rightValue->constantValue().value());
+            if (rightValue->abstractValue().isConcrete()) {
+                type->updateFactor(leftType->factor() * rightValue->abstractValue().asConcrete().value());
             }
-            if (leftValue->isConstant()) {
-                type->updateFactor(rightType->factor() * leftValue->constantValue().value());
+            if (leftValue->abstractValue().isConcrete()) {
+                type->updateFactor(rightType->factor() * leftValue->abstractValue().asConcrete().value());
             }
             break;
 
         case BinaryOperator::SIGNED_DIV:
+            leftType->makeInteger();
+            rightType->makeInteger();
+            type->makeInteger();
+
+            leftType->makeSigned();
+            rightType->makeSigned();
+            type->makeSigned();
+            break;
+
+        case BinaryOperator::SIGNED_REM:
             leftType->makeInteger();
             rightType->makeInteger();
             type->makeInteger();
@@ -389,16 +525,6 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
             type->makeUnsigned();
             break;
 
-        case BinaryOperator::SIGNED_REM:
-            leftType->makeInteger();
-            rightType->makeInteger();
-            type->makeInteger();
-
-            leftType->makeSigned();
-            rightType->makeSigned();
-            type->makeSigned();
-            break;
-
         case BinaryOperator::UNSIGNED_REM:
             type->makeInteger();
             leftType->makeInteger();
@@ -413,70 +539,12 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
             type->makeUnsigned();
             break;
 
-        case BinaryOperator::BITWISE_AND: /* FALLTHROUGH */
-        case BinaryOperator::LOGICAL_AND: /* FALLTHROUGH */
-        case BinaryOperator::BITWISE_OR: /* FALLTHROUGH */
-        case BinaryOperator::LOGICAL_OR: /* FALLTHROUGH */
-        case BinaryOperator::BITWISE_XOR:
-            leftType->makeInteger();
-            rightType->makeInteger();
-            type->makeInteger();
-
-            leftType->makeUnsigned();
-            rightType->makeUnsigned();
-            type->makeUnsigned();
-            break;
-
-        case BinaryOperator::SHL:
-            leftType->makeInteger();
-            rightType->makeInteger();
-            type->makeInteger();
-
-            rightType->makeUnsigned();
-            if (leftType->isSigned()) {
-                type->makeSigned();
-            }
-            if (leftType->isUnsigned()) {
-                type->makeUnsigned();
-            }
-            if (type->isSigned()) {
-                leftType->makeSigned();
-            }
-            if (type->isUnsigned()) {
-                leftType->makeUnsigned();
-            }
-
-            if (rightValue->isConstant()) {
-                type->updateFactor(leftType->factor() * (ConstantValue(1) << rightValue->constantValue().value()));
-            }
-            break;
-
-        case BinaryOperator::SHR:
-            leftType->makeInteger();
-            rightType->makeInteger();
-            type->makeInteger();
-
-            leftType->makeUnsigned();
-            type->makeUnsigned();
-            break;
-
-        case BinaryOperator::SAR:
-            leftType->makeInteger();
-            rightType->makeInteger();
-            type->makeInteger();
-
-            leftType->makeSigned();
-            type->makeSigned();
-            break;
-
         case BinaryOperator::EQUAL:
             leftType->unionSet(rightType);
             break;
 
         case BinaryOperator::SIGNED_LESS: /* FALLTHROUGH */
         case BinaryOperator::SIGNED_LESS_OR_EQUAL: /* FALLTHROUGH */
-        case BinaryOperator::SIGNED_GREATER: /* FALLTHROUGH */
-        case BinaryOperator::SIGNED_GREATER_OR_EQUAL:
             leftType->makeSigned();
             rightType->makeSigned();
             leftType->unionSet(rightType);
@@ -484,8 +552,6 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
 
         case BinaryOperator::UNSIGNED_LESS: /* FALLTHROUGH */
         case BinaryOperator::UNSIGNED_LESS_OR_EQUAL: /* FALLTHROUGH */
-        case BinaryOperator::UNSIGNED_GREATER: /* FALLTHROUGH */
-        case BinaryOperator::UNSIGNED_GREATER_OR_EQUAL:
             if (rightType->isSigned()) {
                 leftType->makeUnsigned();
             } else if (leftType->isSigned()) {
@@ -499,28 +565,6 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
 
         default:
             unreachable();
-            break;
-    }
-}
-
-void TypeAnalyzer::analyze(const Statement *statement) {
-    switch (statement->kind()) {
-        case Statement::COMMENT:
-            break;
-        case Statement::INLINE_ASSEMBLY:
-            break;
-        case Statement::ASSIGNMENT: {
-            const Assignment *assignment = statement->asAssignment();
-            types().getType(assignment->left())->unionSet(types().getType(assignment->right()));
-            break;
-        }
-        case Statement::KILL:  /* FALLTHROUGH */
-        case Statement::JUMP: /* FALLTHROUGH */
-        case Statement::CALL: /* FALLTHROUGH */
-        case Statement::RETURN: /* FALLTHROUGH */
-            break;
-        default:
-            ncWarning("Was called for unsupported kind of statement.");
             break;
     }
 }

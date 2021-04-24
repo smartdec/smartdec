@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -42,12 +45,12 @@ const std::shared_ptr<const Instruction> &Instructions::getCovering(ByteAddr add
     }
 }
 
-bool Instructions::add(const std::shared_ptr<const Instruction> &instruction) {
-    assert(instruction != NULL);
+bool Instructions::add(std::shared_ptr<const Instruction> instruction) {
+    assert(instruction != nullptr);
 
     auto &existing = address2instruction_[instruction->addr()];
     if (!existing) {
-        existing = instruction;
+        existing = std::move(instruction);
         return true;
     } else {
         return false;
@@ -62,7 +65,7 @@ bool Instructions::remove(const Instruction *instruction) {
     }
 }
 
-void Instructions::print(QTextStream &out, PrintCallback<const Instruction> *callback) const {
+void Instructions::print(QTextStream &out, PrintCallback<const Instruction *> *callback) const {
     if (all().empty()) {
         return;
     }
@@ -71,7 +74,7 @@ void Instructions::print(QTextStream &out, PrintCallback<const Instruction> *cal
 
     foreach (const auto &instr, all()) {
         if (instr->addr() != successorAddress) {
-            out << endl;
+            out << '\n';
         }
         successorAddress = instr->endAddr();
 
@@ -80,7 +83,8 @@ void Instructions::print(QTextStream &out, PrintCallback<const Instruction> *cal
         }
 
         int integerBase = out.integerBase();
-        hex(out) << instr->addr() << ":\t";
+        out.setIntegerBase(16);
+        out << instr->addr() << ":\t";
         out.setIntegerBase(integerBase);
 
         out << *instr;
@@ -89,7 +93,7 @@ void Instructions::print(QTextStream &out, PrintCallback<const Instruction> *cal
             callback->onEndPrinting(instr.get());
         }
 
-        out << endl;
+        out << '\n';
     }
 }
 

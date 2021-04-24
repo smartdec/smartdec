@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -34,16 +37,17 @@ namespace nc {
 namespace core {
 namespace ir {
 
-Function::Function(): entry_(NULL) {}
+Function::Function(): entry_(nullptr) {}
 
 Function::~Function() {}
 
 void Function::addBasicBlock(std::unique_ptr<BasicBlock> basicBlock) {
+    basicBlock->setFunction(this);
     basicBlocks_.push_back(std::move(basicBlock));
 }
 
 bool Function::isEmpty() const {
-    foreach (const BasicBlock *basicBlock, basicBlocks()) {
+    foreach (auto basicBlock, basicBlocks()) {
         if (!basicBlock->statements().empty()) {
             return false;
         }
@@ -52,9 +56,9 @@ bool Function::isEmpty() const {
 }
 
 void Function::print(QTextStream &out) const {
-    out << "subgraph cluster" << this << " {" << endl;
+    out << "subgraph cluster" << this << " {" << '\n';
     out << CFG(basicBlocks());
-    out << '}' << endl;
+    out << '}' << '\n';
 }
 
 } // namespace ir

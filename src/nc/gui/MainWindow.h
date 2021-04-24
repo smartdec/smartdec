@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -26,6 +29,7 @@
 
 #include <memory> /* std::shared_ptr */
 
+#include <nc/common/Branding.h>
 #include <nc/common/Types.h>
 #include <nc/common/LogToken.h>
 
@@ -52,6 +56,7 @@ class InstructionsView;
 class LogView;
 class Project;
 class SectionsView;
+class SymbolsView;
 
 /**
  * Main window of the decompiler.
@@ -59,9 +64,12 @@ class SectionsView;
 class MainWindow: public QMainWindow {
     Q_OBJECT
 
+    Branding branding_;
+
     InstructionsView *instructionsView_; ///< Instructions view.
     CxxView *cxxView_; ///< C++ view.
     SectionsView *sectionsView_; ///< Sections view.
+    SymbolsView *symbolsView_; ///< Symbols view.
     InspectorView *inspectorView_; ///< Inspector view.
     LogView *logView_; ///< Log window.
     DisassemblyDialog *disassemblyDialog_; ///< Disassembly dialog.
@@ -71,34 +79,38 @@ class MainWindow: public QMainWindow {
 
     QAction *openAction_; ///< Action for opening a file.
     QAction *exportCfgAction_; ///< Action for exporting CFG in DOT format.
+    QAction *loadStyleSheetAction_; ///< Action for loading a Qt style sheet.
     QAction *quitAction_; ///< Action for closing the main window.
     QAction *disassembleAction_; ///< Action for opening disassembly dialog.
     QAction *decompileAction_; ///< Action for starting decompilation.
     QAction *cancelAllAction_; ///< Action for cancelling all scheduled commands.
     QAction *decompileAutomaticallyAction_; ///< Action for toggling automatic decompilation.
     QAction *instructionsViewAction_; ///< Action for showing/hiding the instructions window.
-    QAction *sectionsViewAction_; ///< Action for showing/hiding the sections' window.
+    QAction *sectionsViewAction_; ///< Action for showing/hiding the sections window.
+    QAction *symbolsViewAction_; ///< Action for showing/hiding the symbols window.
     QAction *inspectorViewAction_; ///< Action for showing/hiding the tree inspector.
     QAction *logViewAction_; ///< Action for showing/hiding the log window.
-    QAction *aboutAction_; ///< Action for showing 'About SmartDec' dialog.
+    QAction *aboutAction_; ///< Action for showing 'About Application' dialog.
     QAction *aboutQtAction_; ///< Action for showing 'About Qt' dialog.
     QAction *deleteSelectedInstructionsAction_; ///< Action for deleting selected instructions.
     QAction *decompileSelectedInstructionsAction_; ///< Action for decompiling selected instructions.
 
     QSettings *settings_; ///< Application settings.
 
+    QString styleSheetFile_; ///< The Qt style sheet file.
+
     std::unique_ptr<Project> project_; ///< Current project.
 
     LogToken logToken_; ///< Log token.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
-     * \param[in] parent    Pointer to the parent widget. Can be NULL.
+     * \param[in] branding  Branding.
+     * \param[in] parent    Pointer to the parent widget. Can be nullptr.
      */
-    MainWindow(QWidget *parent = NULL);
+    explicit MainWindow(Branding branding, QWidget *parent = nullptr);
 
     /**
      * Destructor.
@@ -126,7 +138,7 @@ class MainWindow: public QMainWindow {
     QAction *quitAction() const { return quitAction_; }
 
     /**
-     * \return Valid pointer to the project. Can be NULL.
+     * \return Valid pointer to the project. Can be nullptr.
      */
     Project *project() { return project_.get(); }
 
@@ -136,8 +148,7 @@ class MainWindow: public QMainWindow {
      */
     bool decompileAutomatically() const;
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Sets whether decompilation must be performed when a user changes the project.
      *
@@ -157,8 +168,7 @@ class MainWindow: public QMainWindow {
      */
     void open(const QStringList &filenames);
 
-    public:
-
+public: 
     /**
      * Opens a project.
      *
@@ -166,8 +176,7 @@ class MainWindow: public QMainWindow {
      */
     void open(std::unique_ptr<Project> project);
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Sets window title. And emits windowTitleChanged signal.
      *
@@ -175,8 +184,7 @@ class MainWindow: public QMainWindow {
      */
     void setWindowTitle(const QString &title);
 
-    Q_SIGNALS:
-
+Q_SIGNALS:
     /**
      * This signal is emitted when the window changes its title.
      *
@@ -184,8 +192,7 @@ class MainWindow: public QMainWindow {
      */
     void windowTitleChanged(const QString &title);
 
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Finds the instruction covering the given address and highlights it
      * in the instructions view.
@@ -203,12 +210,10 @@ class MainWindow: public QMainWindow {
      */
     void setStatusText(const QString &text = QString());
 
-    protected:
-
+protected:
     virtual void closeEvent(QCloseEvent *event) override;
 
-    private:
-
+private:
     /**
      * Creates window widgets.
      */
@@ -234,8 +239,18 @@ class MainWindow: public QMainWindow {
      */
     void saveSettings();
 
-    private Q_SLOTS:
+    /**
+     * Sets the style sheet file to the given filename, loads and applies the
+     * style sheet from the file.
+     *
+     * \param filename The filename.
+     *
+     * \return True if the style sheet was successfully loaded, false
+     * otherwise.
+     */
+    bool setStyleSheetFile(const QString &filename);
 
+private Q_SLOTS:
     /**
      * Disable or enable actions depending on current state.
      * Also, shows or hides progress dialog, depending on the command being currently executed.
@@ -243,9 +258,9 @@ class MainWindow: public QMainWindow {
     void updateGuiState();
 
     /**
-     * This slot handles the event of setting a new module.
+     * This slot handles the event of setting a new image.
      */
-    void moduleChanged();
+    void imageChanged();
 
     /**
      * This slot handles the changes in the set of instructions.
@@ -279,9 +294,21 @@ class MainWindow: public QMainWindow {
     void populateSectionsContextMenu(QMenu *menu);
 
     /**
+     * Populates context menu of symbols view with actions.
+     *
+     * \param menu Valid pointer to the context menu.
+     */
+    void populateSymbolsContextMenu(QMenu *menu);
+
+    /**
      * Export CFG in DOT format.
      */
     void exportCfg();
+
+    /**
+     * Opens a load style sheet dialog.
+     */
+    void loadStyleSheet();
 
     /**
      * Opens disassembly dialog.
@@ -341,10 +368,15 @@ class MainWindow: public QMainWindow {
     /**
      * Jumps to the address under cursor in C++ view.
      */
-    void jumpToAddress();
+    void jumpToSelectedAddress();
 
     /**
-     * Shows 'About SmartDec' dialog.
+     * Jumps to the address of the symbol under cursor in the symbols view.
+     */
+    void jumpToSymbolAddress();
+
+    /**
+     * Shows 'About Application' dialog.
      */
     void about();
 };

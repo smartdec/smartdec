@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -64,7 +67,7 @@ namespace {
 // -------------------------------------------------------------------------- //
 // Plugin interface
 // -------------------------------------------------------------------------- //
-    char name[] = "SmartDec";
+    char name[] = "Snowman";
     char help[] = "";
     char hotkey[] = "";
     char comment[] = "";
@@ -82,7 +85,12 @@ namespace {
         return PLUGIN_KEEP;
     }
 
-    void idaapi run(int /*arg*/) {
+#if IDA_SDK_VERSION >= 700
+    bool idaapi run(size_t /*arg*/)
+#else
+    void idaapi run(int /*arg*/)
+#endif
+    {
         /* Documentation says:
          * 
          * The plugin can be passed an integer argument from the plugins.cfg
@@ -93,6 +101,9 @@ namespace {
         foreach (auto &plugin, storage->plugins) {
             (*plugin)();
         }
+#if IDA_SDK_VERSION >= 700
+        return true;
+#endif
     }
 
     void idaapi terminate() {

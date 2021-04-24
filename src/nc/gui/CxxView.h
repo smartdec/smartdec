@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,8 +25,6 @@
 
 #include <nc/config.h>
 
-#include <QTextCursor>
-
 #include <boost/optional.hpp>
 
 #include <nc/common/Types.h>
@@ -43,10 +44,9 @@ namespace core {
     }
 
     namespace likec {
-        class FunctionIdentifier;
-        class LabelIdentifier;
+        class Declaration;
+        class FunctionDefinition;
         class TreeNode;
-        class VariableIdentifier;
     }
 }
 
@@ -60,6 +60,14 @@ class CppSyntaxHighlighter;
  */
 class CxxView: public TextView {
     Q_OBJECT
+
+    /** Syntax highlighter for C++ code. */
+    CppSyntaxHighlighter *highlighter_;
+
+    QAction *gotoLabelAction_;
+    QAction *gotoDeclarationAction_;
+    QAction *gotoDefinitionAction_;
+    QAction *renameAction_;
 
     /** Pointer to the C++ document being viewed. */
     CxxDocument *document_;
@@ -76,22 +84,23 @@ class CxxView: public TextView {
     /** Instructions currently selected in text. */
     std::vector<const core::arch::Instruction *> selectedInstructions_;
 
-    /** Syntax highlighter for C++ code. */
-    CppSyntaxHighlighter *highlighter_;
-
-    public:
-
+public:
     /**
      * Constructor.
      *
-     * \param[in] parent Pointer to the parent widget. Can be NULL.
+     * \param[in] parent Pointer to the parent widget. Can be nullptr.
      */
-    CxxView(QWidget *parent = 0);
+    explicit CxxView(QWidget *parent = nullptr);
 
     /**
-     * \return Pointer to the C++ document being viewed. Can be NULL.
+     * \return Pointer to the C++ document being viewed. Can be nullptr.
      */
     CxxDocument *document() const { return document_; }
+
+    /**
+     * \return Rehighlights the whole document.
+     */
+    void rehighlight();
 
     /**
      * \return LikeC tree nodes currently selected in text.
@@ -114,31 +123,30 @@ class CxxView: public TextView {
     const std::vector<const core::arch::Instruction *> &selectedInstructions() const { return selectedInstructions_; }
 
     /**
+     * \return Pointer to the node under cursor. Can be nullptr.
+     */
+    const core::likec::TreeNode *getNodeUnderCursor() const;
+
+    /**
      * \return Integer under cursor, if any, or boost::none otherwise.
      */
-    boost::optional<ConstantValue> getSelectedInteger() const;
+    boost::optional<ConstantValue> getIntegerUnderCursor() const;
 
     /**
-     * \return Pointer to the function identifier under cursor. Can be NULL.
+     * \return Pointer to the declaration of the identifier under cursor. Can be nullptr.
      */
-    const core::likec::FunctionIdentifier *getSelectedFunctionIdentifier() const;
+    const core::likec::Declaration *getDeclarationOfIdentifierUnderCursor() const;
 
     /**
-     * \return Pointer to the variable identifier under cursor. Can be NULL.
+     * \return Pointer to the declaration of the function whose identifier or declaration is under cursor. Can be nullptr.
      */
-    const core::likec::VariableIdentifier *getSelectedVariableIdentifier() const;
+    const core::likec::FunctionDefinition *getDefinitionOfFunctionUnderCursor() const;
 
-    /**
-     * \return Pointer to the label identifier under cursor. Can be NULL.
-     */
-    const core::likec::LabelIdentifier *getSelectedLabelIdentifier() const;
-
-    public Q_SLOTS:
-
+public Q_SLOTS:
     /**
      * Sets the document being viewed.
      *
-     * \param document Pointer to the new document. Can be NULL.
+     * \param document Pointer to the new document. Can be nullptr.
      */
     void setDocument(CxxDocument *document);
 
@@ -158,8 +166,7 @@ class CxxView: public TextView {
      */
     void highlightInstructions(const std::vector<const core::arch::Instruction *> &instructions, bool ensureVisible = true);
 
-    Q_SIGNALS:
-
+Q_SIGNALS:
     /**
      * Signal emitted when the set of currently selected LikeC tree nodes is changed.
      */
@@ -180,8 +187,7 @@ class CxxView: public TextView {
      */
     void termSelectionChanged();
 
-    private Q_SLOTS:
-
+private Q_SLOTS:
     /**
      * Updates information about current selections.
      */
@@ -193,32 +199,24 @@ class CxxView: public TextView {
     void highlightReferences();
 
     /**
-     * Goes to the declaration of the function under cursor.
+     * Goes to the declaration of the identifier under cursor.
      */
-    void gotoFunctionDeclaration();
+    void gotoDeclaration();
 
     /**
-     * Goes to the declaration of the variable under cursor.
+     * Goes to the definition of the function under cursor.
      */
-    void gotoVariableDeclaration();
+    void gotoDefinition();
 
     /**
      * Goes to the label under cursor.
      */
     void gotoLabel();
 
-    private:
-
     /**
-     * Generates the tooltip text displaying the declaration of the function or the variable in a given position.
-     *
-     * \param position Position in the text.
-     *
-     * \return Generated tooltip text.
+     * Renames whatever is under cursor into whatever the user says.
      */
-    QString getDeclarationTooltip(int position);
-    
-    private Q_SLOTS:
+    void rename();
 
     /**
      * Populates the context menu being created.
@@ -227,8 +225,17 @@ class CxxView: public TextView {
      */
     void populateContextMenu(QMenu *menu);
 
-    protected:
+private:
+    /**
+     * Generates the tooltip text displaying the declaration of the function or the variable in a given position.
+     *
+     * \param position Position in the text.
+     *
+     * \return Generated tooltip text.
+     */
+    QString getDeclarationTooltip(int position) const;
     
+protected:
     virtual bool eventFilter(QObject *watched, QEvent *event) override;
 };
 

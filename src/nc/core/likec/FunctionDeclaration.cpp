@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -24,58 +27,36 @@
 #include <nc/common/Foreach.h>
 
 #include "Tree.h"
-#include "PrintContext.h"
 
 namespace nc {
 namespace core {
 namespace likec {
 
-FunctionDeclaration::FunctionDeclaration(Tree &tree, const QString &identifier, const Type *returnType, bool variadic):
-    Declaration(tree, FUNCTION_DECLARATION, identifier),
-    type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic))
-{}
+FunctionDeclaration::FunctionDeclaration(Tree &tree, QString identifier, const Type *returnType, bool variadic):
+    Declaration(FUNCTION_DECLARATION, std::move(identifier)),
+    type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic)),
+    functionIdentifier_(new FunctionIdentifier(this))
+{
+    assert(returnType != nullptr);
+}
 
-FunctionDeclaration::FunctionDeclaration(Tree &tree, int declarationKind, const QString &identifier, const Type *returnType, bool variadic):
-    Declaration(tree, declarationKind, identifier),
-    type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic))
-{}
+FunctionDeclaration::FunctionDeclaration(Tree &tree, int declarationKind, QString identifier, const Type *returnType, bool variadic):
+    Declaration(declarationKind, std::move(identifier)),
+    type_(new FunctionPointerType(tree.pointerSize(), returnType, variadic)),
+    functionIdentifier_(new FunctionIdentifier(this))
+{
+    assert(returnType != nullptr);
+}
 
-void FunctionDeclaration::addArgument(ArgumentDeclaration *argument) {
-    arguments_.push_back(std::unique_ptr<ArgumentDeclaration>(argument));
+void FunctionDeclaration::addArgument(std::unique_ptr<ArgumentDeclaration> argument) {
     type_->addArgumentType(argument->type());
+    arguments_.push_back(std::move(argument));
 }
 
-void FunctionDeclaration::visitChildNodes(Visitor<TreeNode> &visitor) {
-    Declaration::visitChildNodes(visitor);
-
+void FunctionDeclaration::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     foreach (const auto &argument, arguments_) {
-        visitor(argument.get());
+        fun(argument.get());
     }
-}
-
-void FunctionDeclaration::doPrint(PrintContext &context) const {
-    printComment(context);
-
-    context.out() << *type()->returnType() << ' ' << identifier() << '(';
-
-    bool comma = false;
-    foreach (const auto &argument, arguments_) {
-        if (comma) {
-            context.out() << ", ";
-        } else {
-            comma = true;
-        }
-        argument->print(context);
-    }
-
-    if (type()->variadic()) {
-        if (comma) {
-            context.out() << ", ";
-        }
-        context.out() << "...";
-    }
-    
-    context.out() << ");";
 }
 
 } /* namespace likec */

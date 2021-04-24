@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -22,25 +25,15 @@
 #include "LabelIdentifier.h"
 
 #include "LabelDeclaration.h"
-#include "PrintContext.h"
-#include "Tree.h"
 
 namespace nc {
 namespace core {
 namespace likec {
 
-LabelIdentifier::LabelIdentifier(Tree &tree, LabelDeclaration *declaration):
-    Expression(tree, LABEL_IDENTIFIER), declaration_(declaration)
+LabelIdentifier::LabelIdentifier(LabelDeclaration *declaration):
+    Expression(LABEL_IDENTIFIER), declaration_(declaration)
 {
-    declaration_->addReference();
-}
-
-void LabelIdentifier::doPrint(PrintContext &context) const {
-    context.out() << declaration_->identifier();
-}
-
-const Type *LabelIdentifier::getType() const {
-    return tree().makePointerType(tree().pointerSize(), tree().makeVoidType());
+    declaration_->incReferenceCount();
 }
 
 } // namespace likec

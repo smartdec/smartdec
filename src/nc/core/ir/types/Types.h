@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -33,7 +36,7 @@ namespace types {
 class Type;
 
 /**
- * Information about computed type traits.
+ * Information about types of terms.
  */
 class Types {
     mutable boost::unordered_map<const Term *, std::unique_ptr<Type> > types_; ///< Mapping of terms to their type traits.
@@ -67,7 +70,7 @@ class Types {
     /**
      * \return Mapping of terms to their type traits.
      */
-    boost::unordered_map<const Term *, std::unique_ptr<Type> > &types() { return types_; };
+    boost::unordered_map<const Term *, std::unique_ptr<Type> > &map() { return types_; };
 };
 
 }}}} // namespace nc::core::ir::types

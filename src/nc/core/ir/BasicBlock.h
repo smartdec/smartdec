@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -23,32 +26,36 @@
 #include <nc/config.h>
 
 #include <memory>
-#include <vector>
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include <nc/common/Printable.h>
 #include <nc/common/Types.h>
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
 namespace ir {
 
+class Function;
 class Jump;
-class Return;
 class Statement;
 
 /**
- * Basic block of a function.
+ * Basic block.
  */
-class BasicBlock: public PrintableBase<BasicBlock>, boost::noncopyable {
+class BasicBlock: public PrintableBase<BasicBlock>, public nc::ilist_item, boost::noncopyable {
+public:
+    typedef nc::ilist<Statement> Statements;
+
+private:
     boost::optional<ByteAddr> address_; ///< Address of basic block.
     boost::optional<ByteAddr> successorAddress_; ///< Address of the end of the basic block.
-    std::vector<std::unique_ptr<Statement>> statements_; ///< Statements.
+    Statements statements_; ///< Statements.
+    Function *function_; ///< Function this basic block belongs to.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
@@ -67,6 +74,13 @@ class BasicBlock: public PrintableBase<BasicBlock>, boost::noncopyable {
     const boost::optional<ByteAddr> &address() const { return address_; }
 
     /**
+     * Sets the address of this basic block.
+     *
+     * \param address New address.
+     */
+    void setAddress(const boost::optional<ByteAddr> &address);
+
+    /**
      * \return Address of the basic block's successor.
      */
     const boost::optional<ByteAddr> &successorAddress() const { return successorAddress_; }
@@ -79,77 +93,124 @@ class BasicBlock: public PrintableBase<BasicBlock>, boost::noncopyable {
     void setSuccessorAddress(const boost::optional<ByteAddr> &successorAddress);
 
     /**
-     * \return Statements of the basic block.
+     * \return Pointer to the function this basic block belongs to. Can be nullptr.
      */
-    const std::vector<Statement *> &statements() {
-        return reinterpret_cast<const std::vector<Statement *> &>(statements_);
-    }
+    Function *function() { return function_; }
+
+    /**
+     * \return Pointer to the function this basic block belongs to. Can be nullptr.
+     */
+    const Function *function() const { return function_; }
+
+    /**
+     * Sets the function this basic block belongs to.
+     *
+     * \param function Pointer to the function. Can be nullptr.
+     */
+    void setFunction(Function *function) { function_ = function; }
+
+    /**
+     * \return Statements of the basic block.
+     *
+     * \warning Do not insert or erase statements into/from the container
+     *          directly. Use the methods of BasicBlock class instead.
+     */
+    Statements &statements() { return statements_; }
 
     /**
      * \return Statements of the basic block.
      */
-    const std::vector<const Statement *> &statements() const {
-        return reinterpret_cast<const std::vector<const Statement *> &>(statements_);
-    }
+    const Statements &statements() const { return statements_; }
 
     /**
-     * Adds a statement to the end of the basic block.
+     * Inserts a statement at the given position.
+     *
+     * \param position Position where the statement must be inserted.
+     * \param statement Valid pointer to the statement being inserted.
+     *
+     * \return Valid pointer to the inserted statement.
+     */
+    Statement *insert(Statements::const_iterator position, std::unique_ptr<Statement> statement);
+
+    /**
+     * Insertes a statement at the front of the basic block.
      *
      * \param statement Valid pointer to the statement being added.
-     */
-    void addStatement(std::unique_ptr<Statement> statement);
-
-    /**
-     * Adds given statements after given existing statements.
      *
-     * \param addedStatements   List of pairs (existing statement, added statement).
-     *                          First components of the pairs must appear in the basic
-     *                          block in the same order as they appear in this list.
+     * \return Valid pointer to the inserted statement.
      */
-    void addStatements(std::vector<std::pair<const Statement *, std::unique_ptr<Statement>>> &&addedStatements);
+    Statement *pushFront(std::unique_ptr<Statement> statement);
 
     /**
-     * Removes the last statement of the basic block.
+     * Inserts a statement at the end of the basic block.
+     *
+     * \param statement Valid pointer to the statement being added.
+     *
+     * \return Valid pointer to the inserted statement.
      */
-    void popBack();
+    Statement *pushBack(std::unique_ptr<Statement> statement);
+
+    /**
+     * Inserts a statement after a given one.
+     *
+     * \param after Valid pointer to the statement after which to insert.
+     * \param statement Valid pointer to the statement being inserted.
+     *
+     * \return Valid pointer to the inserted statement.
+     */
+    Statement *insertAfter(const Statement *after, std::unique_ptr<Statement> statement);
+
+    /**
+     * Inserts a statement before a given one.
+     *
+     * \param before Valid pointer to the statement before which to insert.
+     * \param statement Valid pointer to the statement being inserted.
+     *
+     * \return Valid pointer to the inserted statement.
+     */
+    Statement *insertBefore(const Statement *before, std::unique_ptr<Statement> statement);
+
+    /**
+     * Erases a statement pointed by the given iterator.
+     * Sets the basic block pointer in this statement to nullptr.
+     *
+     * \param statement Valid pointer to the erased statement.
+     *
+     * \return The erased statement.
+     */
+    std::unique_ptr<Statement> erase(Statement *statement);
 
     /**
      * \return Valid pointer to the last statement in the basic block if this
-     *         is a jump or return, NULL otherwise.
+     *         is a terminator statement, nullptr otherwise.
      */
     const Statement *getTerminator() const;
 
     /**
      * \return Valid pointer to the last statement in the basic block if this
-     *         is a jump, NULL otherwise.
+     *         is a jump, nullptr otherwise.
      */
     Jump *getJump();
 
     /**
      * \return Valid pointer to the last statement in the basic block if this
-     *         is a jump, NULL otherwise.
+     *         is a jump, nullptr otherwise.
      */
     const Jump *getJump() const;
 
     /**
-     * \return Valid pointer to the last statement in the basic block if this
-     *         is a return, NULL otherwise.
-     */
-    const Return *getReturn() const;
-
-    /**
-     * Breaks the basic block into two parts. First part contains first 'index'
-     * statements and remains in the original basic block. Second part
-     * containing all other statements is moved to newly created
-     * basic block.
+     * Breaks the basic block into two parts. The first part contains the
+     * statements before the given position and remains in the original basic
+     * block. The second part includes remaining statements and is moved to a
+     * newly created basic block.
      *
-     * \param[in] index Index of the first statements of the second part.
+     * \param[in] position Iterator identifying the first statement of the second part.
      * \param[in] address Start address to give to the newly created basic block.
      *
      * \return Valid pointer to the newly created basic block containing the
-     * second part of statements.
+     *         second part of statements.
      */
-    std::unique_ptr<BasicBlock> split(std::size_t index, const boost::optional<ByteAddr> &address);
+    std::unique_ptr<BasicBlock> split(Statements::const_iterator position, const boost::optional<ByteAddr> &address);
 
     /**
      * \return A valid pointer to the basic block which is a copy of this one.

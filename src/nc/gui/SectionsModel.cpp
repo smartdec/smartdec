@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -25,63 +28,49 @@
 
 #include <nc/common/Unreachable.h>
 
-#include <nc/core/Module.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Section.h>
 
 namespace nc { namespace gui {
 
 enum SectionsModelColumns {
-    SMC_NAME,
-    SMC_ADDRESS,
-    SMC_SIZE,
-    SMC_TYPE,
-    SMC_PERMISSIONS,
-    SMC_COUNT
+    COL_NAME,
+    COL_ADDRESS,
+    COL_SIZE,
+    COL_TYPE,
+    COL_PERMISSIONS,
+    COL_COUNT
 };
 
-SectionsModel::SectionsModel(QObject *parent):
-    QAbstractItemModel(parent)
-{
-    updateContents();
-}
-
-void SectionsModel::setModule(const std::shared_ptr<const core::Module> &module) {
-    if (module != module_) {
-        module_ = module;
-        updateContents();
-    }
-}
-
-void SectionsModel::updateContents() {
-    beginResetModel();
-    endResetModel();
-}
+SectionsModel::SectionsModel(QObject *parent, std::shared_ptr<const core::image::Image> image):
+    QAbstractItemModel(parent), image_(std::move(image))
+{}
 
 const core::image::Section *SectionsModel::getSection(const QModelIndex &index) const {
     return static_cast<const core::image::Section *>(index.internalPointer());
 }
 
 int SectionsModel::rowCount(const QModelIndex &parent) const {
-    if (!module()) {
+    if (!image_) {
         return 0;
     }
     if (parent == QModelIndex()) {
-        return static_cast<int>(module()->image()->sections().size());
+        return static_cast<int>(image_->sections().size());
     } else {
         return 0;
     }
 }
 
 int SectionsModel::columnCount(const QModelIndex & /*parent*/) const {
-    return SMC_COUNT;
+    return COL_COUNT;
 }
 
 QModelIndex SectionsModel::index(int row, int column, const QModelIndex &parent) const {
-    if (!module()) {
+    if (!image_) {
         return QModelIndex();
     }
     if (row < rowCount(parent)) {
-        return createIndex(row, column, module()->image()->sections()[row]);
+        return createIndex(row, column, (void *)image_->sections()[row]);
     } else {
         return QModelIndex();
     }
@@ -92,15 +81,27 @@ QModelIndex SectionsModel::parent(const QModelIndex & /*index*/) const {
 }
 
 QVariant SectionsModel::data(const QModelIndex &index, int role) const {
-    if (role == Qt::DisplayRole) {
+    if (role == Qt::DisplayRole || role == SortRole) {
         auto section = getSection(index);
         assert(section);
 
         switch (index.column()) {
-            case SMC_NAME: return section->name();
-            case SMC_ADDRESS: return QString("%1").arg(section->addr(), 0, 16);
-            case SMC_SIZE: return QString("%1").arg(section->size(), 0, 16);
-            case SMC_TYPE: {
+            case COL_NAME: return section->name();
+            case COL_ADDRESS: {
+                if (role == Qt::DisplayRole) {
+                    return QString("%1").arg(section->addr(), 0, 16);
+                } else {
+                    return static_cast<qlonglong>(section->addr());
+                }
+            }
+            case COL_SIZE: {
+                if (role == Qt::DisplayRole) {
+                    return QString("%1").arg(section->size(), 0, 16);
+                } else {
+                    return static_cast<qlonglong>(section->size());
+                }
+            }
+            case COL_TYPE: {
                 QStringList result;
                 if (section->isCode()) {
                     result << tr("code");
@@ -116,7 +117,7 @@ QVariant SectionsModel::data(const QModelIndex &index, int role) const {
                 }
                 return result.join(tr(", "));
             }
-            case SMC_PERMISSIONS: {
+            case COL_PERMISSIONS: {
                 QString result;
                 if (section->isReadable()) {
                     result += tr("r");
@@ -139,11 +140,11 @@ QVariant SectionsModel::headerData(int section, Qt::Orientation orientation, int
     if (orientation == Qt::Horizontal) {
         if (role == Qt::DisplayRole) {
             switch (section) {
-                case SMC_NAME: return tr("Name");
-                case SMC_ADDRESS: return tr("Address");
-                case SMC_SIZE: return tr("Size");
-                case SMC_TYPE: return tr("Type");
-                case SMC_PERMISSIONS: return tr("Permissions");
+                case COL_NAME: return tr("Name");
+                case COL_ADDRESS: return tr("Address");
+                case COL_SIZE: return tr("Size");
+                case COL_TYPE: return tr("Type");
+                case COL_PERMISSIONS: return tr("Permissions");
                 default: unreachable();
             }
         }

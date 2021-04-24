@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -38,7 +41,7 @@ namespace types {
 class Type;
 
 /**
- * Traits of term's type.
+ * Information about a type of a term.
  */
 class Type: public DisjointSet<Type>, public PrintableBase<Type> {
     SmallBitSize size_; ///< Type size in bits.
@@ -55,7 +58,7 @@ class Type: public DisjointSet<Type>, public PrintableBase<Type> {
     ConstantValue factor_; ///< GCD of all increments or decrements of variables of this type.
 
 #ifdef NC_STRUCT_RECOVERY
-    std::map<ByteOffset, Type *> offsets_; ///< Type traits of byte offsets to values of this type.
+    std::map<ByteSize, Type *> offsets_; ///< Type traits of byte offsets to values of this type.
 #endif
 
     bool changed_; ///< Type properties have changed since last call to changed().
@@ -165,7 +168,7 @@ class Type: public DisjointSet<Type>, public PrintableBase<Type> {
     /**
      * \return Type traits of offsets to values of this type.
      */
-    const std::map<ByteOffset, Type *> &offsets() const { return offsets_; };
+    const std::map<ByteSize, Type *> &offsets() const { return offsets_; };
 
     /**
      * Adds information about type traits of value which is an offset to a value of this type.
@@ -173,7 +176,7 @@ class Type: public DisjointSet<Type>, public PrintableBase<Type> {
      * \param[in] offset Offset in bytes.
      * \param[in] typeTraits Type traits of this offset.
      */
-    void addOffset(ByteOffset offset, Type *typeTraits);
+    void addOffset(ByteSize offset, Type *typeTraits);
 #endif
 
     /**

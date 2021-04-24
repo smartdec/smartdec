@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -30,6 +33,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
+class Expression;
+
 /**
  * While loop.
  */
@@ -37,23 +42,21 @@ class While: public Statement {
     std::unique_ptr<Expression> condition_; ///< Loop condition.
     std::unique_ptr<Statement> body_; ///< Loop body.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] condition Valid pointer to the loop condition.
      * \param[in] body Valid pointer to the loop body.
      */
-    While(Tree &tree, std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body):
-        Statement(tree, WHILE), condition_(std::move(condition)), body_(std::move(body))
+    While(std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body):
+        Statement(WHILE), condition_(std::move(condition)), body_(std::move(body))
     {}
 
     /**
      * \return Loop condition.
      */
-    Expression *condition() { return condition_.get(); }
+    std::unique_ptr<Expression> &condition() { return condition_; }
 
     /**
      * \return Loop condition.
@@ -63,25 +66,21 @@ class While: public Statement {
     /**
      * \return Loop body.
      */
-    Statement *body() { return body_.get(); }
+    std::unique_ptr<Statement> &body() { return body_; }
 
     /**
      * \return Loop body.
      */
     const Statement *body() const { return body_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual While *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::While, nc::core::likec::Statement::WHILE)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::While, nc::core::likec::Statement::WHILE)
 
 /* vim:set et sts=4 sw=4: */

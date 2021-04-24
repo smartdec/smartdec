@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -29,9 +32,9 @@
 namespace nc {
 
 namespace core {
-    class Module;
     namespace image {
         class Section;
+        class Image;
     }
 }
 
@@ -43,50 +46,34 @@ namespace gui {
 class SectionsModel: public QAbstractItemModel {
     Q_OBJECT
 
-    public:
+    std::shared_ptr<const core::image::Image> image_;
+
+public:
+    enum {
+        SortRole = Qt::UserRole
+    };
 
     /**
      * Constructor.
      *
-     * \param parent  Pointer to the parent object. Can be NULL.
+     * \param parent    Pointer to the parent object. Can be nullptr.
+     * \param image     Pointer to the image. Can be nullptr.
      */
-    SectionsModel(QObject *parent = NULL);
-
-    /**
-     * Sets the associated module.
-     *
-     * \param module Pointer to a module. Can be NULL.
-     */
-    void setModule(const std::shared_ptr<const core::Module> &module = std::shared_ptr<const core::Module>());
-
-    /**
-     * \return Pointer to the associated module. Can be NULL.
-     */
-    const std::shared_ptr<const core::Module> &module() const { return module_; }
+    explicit SectionsModel(QObject *parent = nullptr, std::shared_ptr<const core::image::Image> image = nullptr);
 
     /**
      * \param index Model index.
      *
-     * \return Pointer to the section associated with the index. Can be NULL.
+     * \return Pointer to the section associated with the index. Can be nullptr.
      */
     const core::image::Section *getSection(const QModelIndex &index) const;
 
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    virtual QModelIndex parent(const QModelIndex &index) const override;
-    virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
-    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-
-    private:
-
-    /** Associated module. */
-    std::shared_ptr<const core::Module> module_;
-
-    /**
-     * Updates the contents of the model.
-     */
-    void updateContents();
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QModelIndex parent(const QModelIndex &index) const override;
+    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 };
 
 }} // namespace nc::gui

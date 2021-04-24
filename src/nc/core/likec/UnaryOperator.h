@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -34,11 +37,10 @@ namespace likec {
  * Base class for unary operators.
  */
 class UnaryOperator: public Expression {
-    NC_CLASS_WITH_KINDS(UnaryOperator, operatorKind)
+    NC_BASE_CLASS(UnaryOperator, operatorKind)
     std::unique_ptr<Expression> operand_; ///< Operand.
 
-    public:
-
+public:
     /**
      * Operator id.
      */
@@ -56,12 +58,11 @@ class UnaryOperator: public Expression {
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] operatorKind Operator's kind.
      * \param[in] operand Operand.
      */
-    UnaryOperator(Tree &tree, int operatorKind, std::unique_ptr<Expression> operand):
-        Expression(tree, UNARY_OPERATOR), operatorKind_(operatorKind), operand_(std::move(operand)) {}
+    UnaryOperator(int operatorKind, std::unique_ptr<Expression> operand):
+        Expression(UNARY_OPERATOR), operatorKind_(operatorKind), operand_(std::move(operand)) {}
 
     /**
      * Sets operator's kind.
@@ -73,42 +74,21 @@ class UnaryOperator: public Expression {
     /**
      * \return Operand.
      */
-    Expression *operand() { return operand_.get(); }
+    std::unique_ptr<Expression> &operand() { return operand_; }
 
     /**
      * \return Operand.
      */
     const Expression *operand() const { return operand_.get(); }
 
-    /**
-     * Sets the operand of this operator.
-     * Old operand is deleted.
-     *
-     * \param operand New operand.
-     */
-    void setOperand(std::unique_ptr<Expression> operand) { operand_ = std::move(operand); }
-
-    /**
-     * Releases operator's ownership of operand.
-     *
-     * \return Operand.
-     */
-    std::unique_ptr<Expression> releaseOperand() { return std::move(operand_); }
-
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual const Type *getType() const override;
-    virtual Expression *rewrite() override;
-    virtual int precedence() const override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::UnaryOperator, nc::core::likec::Expression::UNARY_OPERATOR)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::UnaryOperator, nc::core::likec::Expression::UNARY_OPERATOR)
 
 /* vim:set et sts=4 sw=4: */

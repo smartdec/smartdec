@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -61,7 +64,7 @@ class TreeViewSearcher: public QObject, public Searcher {
      *
      * \param treeView Valid pointer to the controlled widget.
      */
-    TreeViewSearcher(QTreeView *treeView);
+    explicit TreeViewSearcher(QTreeView *treeView);
 
     public Q_SLOTS:
 

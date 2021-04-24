@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -22,33 +25,14 @@
 #include "DoWhile.h"
 
 #include "Expression.h"
-#include "PrintContext.h"
 
 namespace nc {
 namespace core {
 namespace likec {
 
-void DoWhile::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(body());
-    visitor(condition_.get());
-}
-
-DoWhile *DoWhile::rewrite() {
-    assert(condition_);
-    assert(body_);
-
-    rewriteChild(condition_);
-    rewriteChild(body_);
-
-    return this;
-}
-
-void DoWhile::doPrint(PrintContext &context) const {
-    context.out() << "do ";
-    body()->print(context);
-    context.out() << " while (";
-    condition_->print(context);
-    context.out() << ");";
+void DoWhile::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(body_.get());
+    fun(condition_.get());
 }
 
 } // namespace likec

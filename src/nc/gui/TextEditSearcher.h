@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -58,7 +61,7 @@ class TextEditSearcher: public QObject, public Searcher {
      *
      * \param textEdit Valid pointer to the controlled widget.
      */
-    TextEditSearcher(QPlainTextEdit *textEdit);
+    explicit TextEditSearcher(QPlainTextEdit *textEdit);
 
     public Q_SLOTS:
 

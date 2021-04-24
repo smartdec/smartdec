@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -29,25 +32,27 @@ class CancellationToken;
 namespace core {
 namespace ir {
 
-class Assignment;
 class BinaryOperator;
-class Constant;
-class Dereference;
 class Function;
-class Statement;
+class Functions;
 class Term;
 class UnaryOperator;
 
-namespace calls {
-    class CallsData;
+namespace calling {
+    class Hooks;
+    class Signatures;
 }
 
 namespace dflow {
-    class Dataflow;
+    class Dataflows;
 }
 
-namespace usage {
-    class Usage;
+namespace liveness {
+    class Livenesses;
+}
+
+namespace vars {
+    class Variables;
 }
 
 namespace types {
@@ -55,87 +60,95 @@ namespace types {
 class Types;
 
 /**
- * Class computing the traits of terms' types.
+ * This class performs interprocedural reconstruction of types.
  */
 class TypeAnalyzer {
     Types &types_; ///< Information about terms' types.
-    const dflow::Dataflow &dataflow_; ///< Dataflow information.
-    const usage::Usage &usage_; ///< Set of terms producing actual high-level code.
-    calls::CallsData *callsData_; ///< Calls data.
+    const Functions &functions_; ///< Intermediate representations of functions.
+    const dflow::Dataflows &dataflows_; ///< Dataflow information.
+    const vars::Variables &variables_; ///< Information about reconstructed variables.
+    const liveness::Livenesses &livenesses_; ///< Set of terms producing actual high-level code.
+    const calling::Hooks &hooks_; ///< Hooks manager.
+    const calling::Signatures &signatures_; ///< Signatures of functions.
+    const CancellationToken &canceled_;
 
-    public:
-
+public:
     /**
-     * Class constructor.
+     * Constructor.
      *
-     * \param types Information about terms' types.
-     * \param dataflow Dataflow information.
-     * \param usage Set of terms producing actual high-level code.
-     * \param callsData Pointer to the calls data. Can be NULL.
+     * \param[out] types Information about types of terms.
+     * \param[in] functions Intermediate representations of functions.
+     * \param[in] dataflows Dataflow information.
+     * \param[in] variables Information about reconstructed variables.
+     * \param[in] livenesses Liveness information.
+     * \param[in] hooks Hooks manager.
+     * \param[in] signatures Signatures of functions.
+     * \param[in] canceled Cancellation token.
      */
-    TypeAnalyzer(Types &types, const dflow::Dataflow &dataflow, const usage::Usage &usage, calls::CallsData *callsData):
-        types_(types), dataflow_(dataflow), usage_(usage), callsData_(callsData)
+    TypeAnalyzer(Types &types, const Functions &functions, const dflow::Dataflows &dataflows,
+        const vars::Variables &variables, const liveness::Livenesses &livenesses,
+        const calling::Hooks &hooks, const calling::Signatures &signatures,
+        const CancellationToken &canceled
+    ):
+        types_(types), functions_(functions), dataflows_(dataflows), variables_(variables),
+        livenesses_(livenesses), hooks_(hooks), signatures_(signatures), canceled_(canceled)
     {}
 
     /**
-     * Virtual destructor.
+     * Computes type traits for all terms in all functions.
      */
-    virtual ~TypeAnalyzer() {}
+    void analyze();
+
+private:
+    /**
+     * Unites types of terms assigned to each other.
+     */
+    void uniteTypesOfAssignedTerms();
 
     /**
-     * \return Information about terms' types.
+     * Unites types of terms accessing the same part of the same variable.
      */
-    Types &types() { return types_; }
+    void uniteVariableTypes();
 
     /**
-     * \return Information about terms' types.
+     * Unites types of terms representing matching arguments and return values.
      */
-    const Types &types() const { return types_; }
+    void uniteArgumentTypes();
 
     /**
-     * \return Dataflow information.
+     * Marks types of terms whose value is believed to be a stack pointer
+     * as pointer.
      */
-    const dflow::Dataflow& dataflow() const { return dataflow_; }
+    void markStackPointersAsPointers();
 
     /**
-     * \return Usage information.
-     */
-    const usage::Usage& usage() const { return usage_; }
-
-    /**
-     * \return Pointer to the calls data. Can be NULL.
-     */
-    calls::CallsData *callsData() const { return callsData_; }
-
-    /**
-     * Computes type traits for all the terms in given function.
+     * Recomputes types of terms in the given function.
      *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] canceled Cancellation token.
+     * \param function Valid pointer to a function.
+     *
+     * \return True if types changed, false otherwise.
      */
-    void analyze(const Function *function, const CancellationToken &canceled);
-
-    protected:
+    bool analyze(const Function *function);
 
     /**
-     * Updates the information about type traits of given term and (possibly) its children.
+     * Recomputes type of the given term.
      *
-     * \param[in] term Term to analyze.
+     * \param term Valid pointer to a term.
      */
-    virtual void analyze(const Term *term);
+    void analyze(const Term *term);
 
     /**
-     * Updates the information about type traits of terms being the arguments of given statement.
+     * Recomputes type of the given term.
      *
-     * \param[in] statement Statement to analyze.
+     * \param unary Valid pointer to a unary operator term.
      */
-    virtual void analyze(const Statement *statement);
-
-    private:
-
-    void analyze(const Constant *constant);
-    void analyze(const Dereference *dereference);
     void analyze(const UnaryOperator *unary);
+
+    /**
+     * Recomputes type of the given term.
+     *
+     * \param binary Valid pointer to a binary operator term.
+     */
     void analyze(const BinaryOperator *binary);
 };
 

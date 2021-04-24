@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -54,24 +57,24 @@ public:
      * \param[in] thenTarget    Jump target if condition is non-zero.
      * \param[in] elseTarget    Jump target if condition is zero.
      */
-    Jump(std::unique_ptr<Term> condition, JumpTarget &&thenTarget, JumpTarget &&elseTarget);
+    Jump(std::unique_ptr<Term> condition, JumpTarget thenTarget, JumpTarget elseTarget);
 
     /**
      * Constructor of an unconditional jump.
      *
      * \param[in] thenTarget    Jump target.
      */
-    Jump(JumpTarget &&thenTarget);
+    Jump(JumpTarget thenTarget);
 
     /**
-     * \return Pointer to the term representing jump condition. NULL for unconditional jump.
+     * \return Pointer to the term representing jump condition, nullptr for unconditional jump.
      */
     const Term *condition() const { return condition_.get(); }
 
     /**
      * \return True if this is a conditional jump, false if this is an unconditional jump.
      */
-    bool isConditional() const { return condition() != NULL; }
+    bool isConditional() const { return condition() != nullptr; }
 
     /**
      * \return True if this is a unconditional jump, false if this is an conditional jump.
@@ -98,13 +101,10 @@ public:
      */
     const JumpTarget &elseTarget() const { return elseTarget_; }
 
-    virtual void visitChildTerms(Visitor<Term> &visitor) override;
-    virtual void visitChildTerms(Visitor<const Term> &visitor) const override;
-
     virtual void print(QTextStream &out) const override;
 
 protected:
-    virtual Jump *doClone() const override;
+    std::unique_ptr<Statement> doClone() const override;
 };
 
 const Jump *Statement::asJump() const {

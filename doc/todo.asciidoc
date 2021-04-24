@@ -1,0 +1,59 @@
+Snowman: Things to be done
+==========================
+:toc:
+Yegor Derevenets <yegor.derevenets@gmail.com>
+
+Here is a list of things that should be done, sorted by descending priority.
+
+Robustness against Fuzzying
+---------------------------
+Snowman might crash or eat all the memory on some malformed input files, obtained, e.g., via fuzzying.
+See `tests/malformed-elf` for examples.
+One must debug these examples and add additional checks to fix the crashes.
+
+Custom Shortcuts in IDA plugin
+------------------------------
+One should make F3 and Ctrl-F3 changeable to something else.
+
+No-return Functions
+-------------------
+One should compute the set of no-return functions (or basic blocks, or addresses) and use this information when building the control-flow graph of the whole program, namely, chop basic blocks after no-return function calls.
+
+Use Names from IDA
+------------------
+Use names assigned to registers and structs created by the user in IDA in the decompiler's output.
+
+Better support for ARM
+----------------------
+Needed: more descriptions of instructions, description of the calling convention, testing.
+
+x86 Floating-Point Arithmetic
+-----------------------------
+Needed: descriptions of floating-point instructions.
+Idea: implement pushes and pops from/to FPU stack as a sequence of assignments, e.g.: `st(7)=st(6), st(6)=st(5), ..., st(1) = st(0)`.
+Might be a bit much of code, but it is much better than tracking the FPU stack pointer value (that may come different from different branches).
+Will require more clever code generation concerning elimination of unnecessary copies.
+Will require support for floating types in `likec`.
+
+[[SessionSaving]]
+Session Saving
+--------------
+One should be able to store a session and reopen it, with all decompilation results being there.
+
+Session Saving in IDA
+---------------------
+One should restore windows in IDA on reopening the project.
+Depends on <<SessionSaving>>.
+
+Refactoring
+-----------
+Currently, it is unclear how to remember the names given by the user and reuse them in further decompilations.
+Related to this topic: changing calling convention by the user.
+
+Eliminating Term Access Types
+-----------------------------
+Term access types should go: they are not some property of a term.
+
+Pass Manager
+------------
+`MasterAnalyzer` should eventually become a `PassManager`.

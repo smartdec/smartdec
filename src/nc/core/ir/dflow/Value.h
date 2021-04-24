@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -24,10 +27,9 @@
 
 #include <cassert>
 
-#include <boost/optional.hpp>
-
-#include <nc/common/SizedValue.h>
 #include <nc/common/Types.h>
+
+#include "AbstractValue.h"
 
 namespace nc {
 namespace core {
@@ -35,140 +37,112 @@ namespace ir {
 namespace dflow {
 
 /**
- * Traits of term's value.
+ * Dataflow information about a term.
  */
 class Value {
-    SmallBitSize size_; ///< Size of the value in bits.
+    AbstractValue abstractValue_; ///< Abstract value of the term, in the host byte order.
 
-    bool isConstant_; ///< Value is constant.
-    bool isNonconstant_; ///< Value is nonconstant.
+    bool isStackOffset_; ///< Value is a stack pointer with a known offset from the frame base.
+    bool isNotStackOffset_; ///< Value is not a stack pointer with a known offset from the frame base.
 
-    SizedValue constantValue_; ///< The value of a constant, if the value is a constant.
+    SignedConstantValue stackOffset_; ///< Offset to stack frame base (in bytes), if the value is a stack pointer.
 
-    bool isStackOffset_; ///< Value is a pointer to stack.
-    bool isNotStackOffset_; ///< Value is not a pointer to stack.
+    bool isProduct_; ///< Value was computed via multiplication.
+    bool isNotProduct_; ///< Value was computed not via multiplication.
 
-    SizedValue stackOffset_; ///< Offset to stack frame base (in bytes), if the value is a stack pointer.
+    bool isReturnAddress_; ///< Value is a return address.
+    bool isNotReturnAddress_; ///< Value is not a return address.
 
-    bool isMultiplication_; ///< Value has been computed via multiplication.
-    bool isNotMultiplication_; ///< Value has not been computed via multiplication.
-
-    public:
-
-    static const SmallBitSize MAX_SIZE = sizeof(ConstantValue) * CHAR_BIT; ///< Max size of a value, in bits.
-
+public:
     /**
      * Class constructor.
+     *
+     * \param size Size of the term.
      */
     Value(SmallBitSize size);
 
     /**
-     * \return Size of the value in bits.
+     * \return Abstract value of the term.
      */
-    SmallBitSize size() const { return size_; }
+    const AbstractValue &abstractValue() const { return abstractValue_; }
 
     /**
-     * \return True, if value is constant.
-     */
-    bool isConstant() const { return isConstant_ && !isNonconstant_; }
-
-    /**
-     * \return True, if value is nonconstant.
-     */
-    bool isNonconstant() const { return isNonconstant_; }
-
-    /**
-     * Mark the value as constant with given value.
-     * If the value is already known to be a constant with another value, the value is marked as nonconstant.
+     * Sets the abstract value of the term.
      *
-     * \param[in] value The value of a constant.
-     */
-    void makeConstant(const SizedValue &value);
-
-    /**
-     * Mark the value as constant with given value.
-     * If the value is boost::none, the value is marked as nonconstant.
+     * \param value New abstract value.
      *
-     * \param[in] value The value of a constant.
+     * The value is resized to the size given to constructor of this class.
      */
-    void makeConstant(const boost::optional<SizedValue> &value) {
-        if (value) {
-            makeConstant(*value);
-        } else {
-            makeNonconstant();
-        }
-    }
+    void setAbstractValue(AbstractValue value) { abstractValue_ = value.resize(abstractValue_.size()); }
 
     /**
-     * Mark the value as nonconstant.
-     */
-    void makeNonconstant() { isNonconstant_ = true; }
-
-    /**
-     * Forcedly mark the value as constant with given value, even if the opposite was known before.
-     *
-     * \param[in] value The value of a constant.
-     */
-    void forceConstant(const SizedValue &value);
-
-    /**
-     * \return The value of a constant, if the value is constant.
-     */
-    const SizedValue &constantValue() const { assert(isConstant()); return constantValue_; }
-
-    /**
-     * \return True, if the value is a pointer to stack.
+     * \return True if the value is stack pointer with a known offset
+     *         from the frame base, false otherwise.
      */
     bool isStackOffset() const { return isStackOffset_ && !isNotStackOffset_; }
 
     /**
-     * \return True, if the value is not a pointer to stack.
+     * \return True if the value is not a stack pointer with a known offset
+     *         from the frame base, false otherwise.
      */
     bool isNotStackOffset() const { return isNotStackOffset_; }
 
     /**
-     * Merks the value as a stack pointer to given stack frame offset.
+     * Marks the value as a stack pointer with a given offset.
      *
      * \param[in] offset Offset to stack frame base.
      */
-    void makeStackOffset(SizedValue offset);
+    void makeStackOffset(SignedConstantValue offset);
 
     /**
-     * Marks the value as not a pointer to stack.
+     * Marks the value as not a stack pointer.
      */
     void makeNotStackOffset() { isNotStackOffset_ = true; }
 
     /**
      * \return Offset to stack frame base (in bytes), if the value is a stack pointer.
      */
-    const SizedValue &stackOffset() const { assert(isStackOffset()); return stackOffset_; }
+    SignedConstantValue stackOffset() const { assert(isStackOffset()); return stackOffset_; }
 
     /**
      * \return True, if the value has been computed via multiplication.
      */
-    bool isMultiplication() const { return isMultiplication_ && !isNotMultiplication_; }
+    bool isProduct() const { return isProduct_ && !isNotProduct_; }
 
     /**
      * \return True, if the value has not been computed via multiplication.
      */
-    bool isNotMultiplication() const { return isNotMultiplication_; }
+    bool isNotProduct() const { return isNotProduct_; }
 
     /**
      * Marks the value as being computed via multiplication.
      */
-    void makeMultiplication() { isMultiplication_ = true; }
+    void makeProduct() { isProduct_ = true; }
 
     /**
      * Marks the value as being computed not via multiplication.
      */
-    void makeNotMultiplication() { isNotMultiplication_ = true; }
+    void makeNotProduct() { isNotProduct_ = true; }
 
     /**
-     * Adds information about other value's traits to this value's traits.
-     *
-     * \param[in] value Another value.
+     * \return True if the value is a return address.
      */
-    void join(const Value &value);
+    bool isReturnAddress() const { return isReturnAddress_ && !isNotReturnAddress_; }
+
+    /**
+     * \return True if the value is a not return address.
+     */
+    bool isNotReturnAddress() const { return isNotReturnAddress_; }
+
+    /**
+     * Marks the value as being a return address.
+     */
+    void makeReturnAddress() { isReturnAddress_ = true; }
+
+    /**
+     * Marks the value as being not a return address.
+     */
+    void makeNotReturnAddress() { isNotReturnAddress_ = true; }
 };
 
 } // namespace dflow

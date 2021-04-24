@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -40,11 +43,16 @@ void BasicNode::print(QTextStream &out) const {
     QString label;
     QTextStream ls(&label);
 
+    if (basicBlock()->address()) {
+        ls << QString("address %1").arg(*basicBlock()->address(), 0, 16) << '\n';
+    }
+    ls << QString("basic block %1").arg(reinterpret_cast<uintptr_t>(basicBlock()), 0, 16) << '\n';
+
     foreach (const Statement *statement, basicBlock()->statements()) {
         ls << *statement;
     }
 
-    out << "node" << this << " [shape=box,label=\"" << escapeDotString(label) << "\"]" << endl;
+    out << "node" << this << " [shape=box,label=\"" << escapeDotString(label) << "\"]" << '\n';
 }
 
 bool BasicNode::isCondition() const {

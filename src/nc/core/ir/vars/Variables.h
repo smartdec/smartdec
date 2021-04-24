@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -26,6 +29,8 @@
 
 #include <boost/unordered_map.hpp>
 
+#include <nc/common/Range.h>
+
 #include "Variable.h"
 
 namespace nc {
@@ -37,26 +42,39 @@ class Term;
 namespace vars {
 
 /**
- * Container for information about which term realizes which variable of reconstructed program.
+ * Information about reconstructed variables.
  */
 class Variables {
-    mutable boost::unordered_map<const Term *, std::unique_ptr<Variable> > variables_; ///< Mapping of terms to variables.
+    /** All variables. */
+    std::vector<std::unique_ptr<Variable>> variables_;
 
-    public:
+    /** Mapping of terms to variables. */
+    boost::unordered_map<const Term *, Variable *> term2variable_;
+
+public:
+    /**
+     * \return List of all reconstructed variables.
+     */
+    const std::vector<const Variable *> &list() const {
+        return reinterpret_cast<const std::vector<const Variable *> &>(variables_);
+    }
 
     /**
-     * \param[in] term Term.
+     * Adds information about reconstructed variable.
      *
-     * \return Variable represented by this term.
+     * \param variable Valid pointer to the information about the variable.
      */
-    Variable *getVariable(const Term *term);
+    void addVariable(std::unique_ptr<Variable> variable);
 
     /**
-     * \param[in] term Term.
+     * \param term Valid pointer to a term.
      *
-     * \return Variable represented by this term.
+     * \return Pointer to the variable corresponding to the term. Can be nullptr.
      */
-    const Variable *getVariable(const Term *term) const;
+    const Variable *getVariable(const Term *term) const {
+        assert(term != nullptr);
+        return nc::find(term2variable_, term);
+    }
 };
 
 } // namespace vars

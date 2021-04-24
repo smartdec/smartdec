@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,8 +25,11 @@
 
 #include <nc/config.h>
 
+#include <algorithm>
+#include <cassert>
 #include <vector>
 
+#include <nc/common/Foreach.h>
 #include <nc/common/Printable.h>
 
 #include <nc/core/ir/MemoryLocation.h>
@@ -37,22 +43,82 @@ class Term;
 namespace dflow {
 
 /**
- * Pair of memory location and its definitions.
- */
-typedef std::pair<MemoryLocation, std::vector<const Term *> > ReachingDefinition;
-
-/**
  * Reaching definitions.
  */
 class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
-    std::vector<ReachingDefinition> definitions_; ///< The definitions: pairs of memory locations and sets of terms defining it.
+public:
+    /*
+     * Memory location and the list of terms defining this memory location.
+     */
+    class Chunk {
+        MemoryLocation location_; ///< Memory location.
+        std::vector<const Term *> definitions_; ///< Terms defining this memory location.
 
-    public:
+        public:
+
+        /*
+         * Constructor.
+         *
+         * \param location      Valid memory location.
+         * \param definitions   List of terms defining this memory location.
+         */
+        Chunk(const MemoryLocation &location, std::vector<const Term *> definitions):
+            location_(location), definitions_(std::move(definitions))
+        {
+            assert(location);
+        }
+
+        /**
+         * \return Memory location.
+         */
+        const MemoryLocation &location() const { return location_; }
+
+        /**
+         * \return List of terms defining the memory location.
+         */
+        std::vector<const Term *> &definitions() { return definitions_; }
+
+        /**
+         * \return List of terms defining the memory location.
+         */
+        const std::vector<const Term *> &definitions() const { return definitions_; }
+
+        /**
+         * \param that Another object of the same type.
+         *
+         * \return True if *this and that have the same memory location and list of terms,
+         *         false otherwise.
+         */
+        bool operator==(const Chunk &that) const {
+            return location_ == that.location_ && definitions_ == that.definitions_;
+        }
+    };
+
+private:
+    /**
+     * Pairs of memory locations and terms defining them.
+     * The pairs are sorted by memory location.
+     * Terms are sorted using default comparator.
+     */
+    std::vector<Chunk> chunks_;
+
+public:
+    /**
+     * \return Pairs of memory locations and vectors of terms defining them.
+     *         The pairs are sorted by memory location.
+     *         Terms are sorted using default comparator.
+     */
+    const std::vector<Chunk> &chunks() const { return chunks_; }
+
+    /**
+     * \return True if the list of pairs (chunks) is empty, false otherwise.
+     */
+    bool empty() const { return chunks_.empty(); }
 
     /**
      * Clears the reaching definitions.
      */
-    void clear() { definitions_.clear(); }
+    void clear() { chunks_.clear(); }
 
     /**
      * Adds a definition of memory location, removing all previous definitions of overlapping memory locations.
@@ -70,11 +136,27 @@ class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
     void killDefinitions(const MemoryLocation &memoryLocation);
 
     /**
-     * \return Definitions of given memory location.
+     * Computes a subset of reaching definitions defining (parts of)
+     * given memory location.
      *
-     * \param[in] memoryLocation Memory location.
+     * \param[in]  memoryLocation   Memory location.
+     * \param[out] result           Resulting reaching definitions.
      */
-    const std::vector<const Term *> &getDefinitions(const MemoryLocation &memoryLocation) const;
+    void project(const MemoryLocation &memoryLocation, ReachingDefinitions &result) const;
+
+    /**
+     * \param[in]  memoryLocation   Memory location.
+     *
+     * \return A subset of reaching definitions defining (parts of)
+     * given memory location.
+     *
+     * \note Prefer using project() as it does less memory allocations.
+     */
+    ReachingDefinitions projected(const MemoryLocation &memoryLocation) const {
+        ReachingDefinitions result;
+        project(memoryLocation, result);
+        return result;
+    }
 
     /**
      * \return All defined memory locations in the domain.
@@ -88,28 +170,59 @@ class ReachingDefinitions: public PrintableBase<ReachingDefinitions> {
      *
      * \param[in] those Reaching definitions.
      */
-    void join(ReachingDefinitions &those);
-
-    /**
-     * Sorts reaching definitions so that two sorted instances of reaching definitions can be compared for equality.
-     */
-    void sort();
+    void merge(const ReachingDefinitions &those);
 
     /**
      * \return True, if these and given reaching definitions are the same.
      *
      * \param[in] those Reaching definitions.
      */
-    bool operator==(ReachingDefinitions &those);
+    bool operator==(const ReachingDefinitions &those) const { return chunks_ == those.chunks_; }
 
     /**
      * \return True, if these and given reaching definitions are different.
      *
      * \param[in] those Reaching definitions.
      */
-    bool operator!=(ReachingDefinitions &those) { return !(*this == those); }
+    bool operator!=(const ReachingDefinitions &those) const { return !(*this == those); }
+
+    /**
+     * Removes all reaching definitions for which given predicate returns true.
+     *
+     * \param pred Predicate functor accepting two arguments: a memory location
+     *             and a valid pointer to a term covering this location.
+     * \tparam T Predicate functor type.
+     */
+    template<class T>
+    void filterOut(const T &pred) {
+        selfTest();
+        foreach (auto &chunk, chunks_) {
+            chunk.definitions().erase(
+                std::remove_if(chunk.definitions().begin(), chunk.definitions().end(),
+                    [&](const Term *term) -> bool { return pred(chunk.location(), term); }),
+                chunk.definitions().end());
+        }
+        chunks_.erase(
+            std::remove_if(chunks_.begin(), chunks_.end(),
+                [](const Chunk &chunk) -> bool { return chunk.definitions().empty(); }),
+            chunks_.end());
+        selfTest();
+    }
 
     void print(QTextStream &out) const;
+
+private:
+    /**
+     * Checks if the data structure is in a valid state.
+     * Fails with an assertion if not.
+     */
+    void selfTest() const {
+#ifndef NDEBUG
+        for (std::size_t i = 1; i < chunks_.size(); ++i) {
+            assert(chunks_[i-1].location() < chunks_[i].location());
+        }
+#endif
+    }
 };
 
 } // namespace dflow

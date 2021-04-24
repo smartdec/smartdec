@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,43 +24,45 @@
 
 #include "CodeGenerator.h"
 
-#include <nc/core/Module.h>
-#include <nc/core/Context.h>
-#include <nc/core/arch/Architecture.h>
-#include <nc/core/arch/Registers.h>
-
 #include <nc/common/CancellationToken.h>
+#include <nc/common/Foreach.h>
+#include <nc/common/Range.h>
 #include <nc/common/make_unique.h>
 
+#include <nc/core/arch/Architecture.h>
+#include <nc/core/image/Image.h>
+#include <nc/core/image/Reader.h>
+#include <nc/core/image/Relocation.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
-#include <nc/core/ir/calls/CallsData.h>
+#include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/Signatures.h>
 #include <nc/core/ir/types/Type.h>
-
+#include <nc/core/ir/types/Types.h>
+#include <nc/core/ir/vars/Variable.h>
 #include <nc/core/likec/FunctionDefinition.h>
+#include <nc/core/likec/IntegerConstant.h>
 #include <nc/core/likec/StructType.h>
 #include <nc/core/likec/StructTypeDeclaration.h>
 #include <nc/core/likec/Tree.h>
+#include <nc/core/likec/Typecast.h>
 
 #include "DefinitionGenerator.h"
+#include "NameGenerator.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace cgen {
 
-void CodeGenerator::makeCompilationUnit(const CancellationToken &canceled) {
-    ir::Functions *functions = context().functions();
+void CodeGenerator::makeCompilationUnit() {
+    tree().setPointerSize(image().platform().architecture()->bitness());
+    tree().setIntSize(image().platform().intSize());
+    tree().setRoot(std::make_unique<likec::CompilationUnit>());
 
-    tree().setPointerSize(context().module()->architecture()->bitness());
-    tree().setRoot(std::make_unique<likec::CompilationUnit>(tree()));
-    tree().root()->setComment(functions->comment().text());
-
-    foreach (const Function *function, functions->functions()) {
-        if (canceled) {
-            break;
-        }
+    foreach (const Function *function, functions().list()) {
         makeFunctionDefinition(function);
+        cancellationToken().poll();
     }
 
     tree().rewriteRoot();
@@ -95,11 +100,11 @@ const likec::StructType *CodeGenerator::makeStructuralType(const types::Type *ty
     assert(typeTraits->findSet() == typeTraits);
 
     if (!typeTraits->isPointer()) {
-        return NULL;
+        return nullptr;
     }
 
     if (typeTraits->offsets().size() < 2) {
-        return NULL;
+        return nullptr;
     }
 
     auto i = traits2structType_.find(typeTraits);
@@ -109,7 +114,7 @@ const likec::StructType *CodeGenerator::makeStructuralType(const types::Type *ty
 
     bool isStruct = false;
     foreach (auto offset, typeTraits->offsets()) {
-        ByteOffset offsetValue = offset.first;
+        ByteSize offsetValue = offset.first;
         const types::Type *offsetType = offset.second->findSet();
 
         if (offsetValue > 0 && offsetType == typeTraits) {
@@ -122,16 +127,16 @@ const likec::StructType *CodeGenerator::makeStructuralType(const types::Type *ty
         }
     }
     if (!isStruct) {
-        return NULL;
+        return nullptr;
     }
 
-    auto typeDeclaration = std::make_unique<likec::StructTypeDeclaration>(tree_, QString("s%1").arg(traits2structType_.size()));
+    auto typeDeclaration = std::make_unique<likec::StructTypeDeclaration>(QString("s%1").arg(traits2structType_.size()));
 
     likec::StructType *type = typeDeclaration->type();
     traits2structType_[typeTraits] = type;
 
     foreach (auto offset, typeTraits->offsets()) {
-        ByteOffset offsetValue = offset.first;
+        ByteSize offsetValue = offset.first;
         const types::Type *offsetType = offset.second->findSet();
 
         if (offsetValue > 0 && offsetType == typeTraits) {
@@ -140,12 +145,12 @@ const likec::StructType *CodeGenerator::makeStructuralType(const types::Type *ty
 
         if (offsetValue >= 0 && offsetType->pointee() && offsetType->pointee()->size()) {
             if (offsetValue > type->size() / CHAR_BIT) {
-                typeDeclaration->type()->addMember(new likec::MemberDeclaration(
-                    tree_, QString("pad%1").arg(offsetValue),
+                typeDeclaration->type()->addMember(std::make_unique<likec::MemberDeclaration>(
+                    QString("pad%1").arg(offsetValue),
                     tree_.makeArrayType(tree_.makeIntegerType(CHAR_BIT, false), offsetValue - type->size() / CHAR_BIT)));
             }
-            typeDeclaration->type()->addMember(new likec::MemberDeclaration(
-                tree_, QString("f%1").arg(offsetValue), makeType(offsetType->pointee())));
+            typeDeclaration->type()->addMember(std::make_unique<likec::MemberDeclaration>(
+                QString("f%1").arg(offsetValue, 0, 16), makeType(offsetType->pointee())));
         }
     }
 
@@ -155,79 +160,102 @@ const likec::StructType *CodeGenerator::makeStructuralType(const types::Type *ty
 }
 #endif
 
-likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const MemoryLocation &memoryLocation, const types::Type *type) {
-    if (likec::VariableDeclaration *result = nc::find(variableDeclarations_, memoryLocation)) {
+const likec::Type *CodeGenerator::makeVariableType(const vars::Variable *variable) {
+    assert(variable != nullptr);
+
+    foreach (auto termAndLocation, variable->termsAndLocations()) {
+        if (termAndLocation.location == variable->memoryLocation()) {
+            return makeType(types().getType(termAndLocation.term));
+        }
+    }
+
+    return tree().makeIntegerType(variable->memoryLocation().size(), true);
+}
+
+likec::VariableDeclaration *CodeGenerator::makeGlobalVariableDeclaration(const vars::Variable *variable) {
+    assert(variable != nullptr);
+    assert(variable->isGlobal());
+
+    if (auto result = nc::find(variableDeclarations_, variable)) {
         return result;
     } else {
-        QString name;
-        QString comment;
+        auto type = makeVariableType(variable);
+        auto initialValue = makeInitialValue(variable->memoryLocation(), type);
+        auto nameAndComment = nameGenerator().getGlobalVariableName(variable->memoryLocation());
 
-        if (memoryLocation.domain() == MemoryDomain::MEMORY) {
-            ByteAddr addr = memoryLocation.addr() / CHAR_BIT;
-            comment = context().module()->getName(addr);
-            if (!comment.isEmpty()) {
-                name = likec::Tree::cleanName(context().module()->getName(addr));
-                if (name == comment) {
-                    comment = QString();
-                }
-            }
-        }
+        auto declaration = std::make_unique<likec::VariableDeclaration>(
+            std::move(nameAndComment.name()),
+            type,
+            std::move(initialValue));
+        declaration->setComment(std::move(nameAndComment.comment()));
 
-#ifdef NC_REGISTER_VARIABLE_NAMES
-        if (name.isEmpty()) {
-            if (const arch::Register *reg = context().module()->architecture()->registers()->regizter(memoryLocation)) {
-                name = reg->lowercaseName();
-            }
-        }
-#endif
-
-        if (name.isEmpty()) {
-            name = QString("g%1").arg(++serial_);
-        }
-
-        auto declaration = std::make_unique<likec::VariableDeclaration>(tree(), name, makeType(type));
-        declaration->setComment(comment);
         result = declaration.get();
-
         tree().root()->addDeclaration(std::move(declaration));
-        variableDeclarations_[memoryLocation] = result;
+        variableDeclarations_[variable] = result;
 
         return result;
     }
 }
 
-likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(const Function *function) {
-    if (likec::FunctionDeclaration *result = nc::find(function2declaration_, function)) {
-        return result;
-    } else {
-        DeclarationGenerator generator(*this, function);
+std::unique_ptr<likec::Expression> CodeGenerator::makeInitialValue(const MemoryLocation &memoryLocation, const likec::Type *type) {
+    assert(memoryLocation);
+    assert(type != nullptr);
 
-        tree().root()->addDeclaration(generator.createDeclaration());
-        setFunctionDeclaration(function, generator.declaration());
+    if (memoryLocation.domain() == MemoryDomain::MEMORY &&
+        memoryLocation.addr() % CHAR_BIT == 0 &&
+        memoryLocation.size() % CHAR_BIT == 0 &&
+        type->isScalar())
+    {
+        ByteAddr addr = memoryLocation.addr() / CHAR_BIT;
+        ByteSize size = memoryLocation.size() / CHAR_BIT;
 
-        return generator.declaration();
+        if (auto value = image::Reader(&image()).readInt<ConstantValue>(
+                addr, size, image().platform().architecture()->getByteOrder(MemoryDomain::MEMORY))) {
+            if (auto integerType = type->as<likec::IntegerType>()) {
+                return std::make_unique<likec::IntegerConstant>(*value, integerType);
+            } else {
+                return std::make_unique<likec::Typecast>(
+                    likec::Typecast::REINTERPRET_CAST,
+                    type,
+                    std::make_unique<likec::IntegerConstant>(*value, tree().makeIntegerType(type->size(), true)));
+            }
+        }
     }
+
+    return nullptr;
 }
 
-// TODO: make this function succeed even when there are no Function objects associated with the address.
 likec::FunctionDeclaration *CodeGenerator::makeFunctionDeclaration(ByteAddr addr) {
-    foreach (const Function *function, context().functions()->getFunctionsAtAddress(addr)) {
-        return makeFunctionDeclaration(function);
+    auto signature = signatures().getSignature(addr).get();
+    if (!signature) {
+        return nullptr;
     }
-    return NULL;
+
+    if (auto declaration = nc::find(signature2declaration_, signature)) {
+        return declaration;
+    }
+
+    DeclarationGenerator generator(*this, calling::EntryAddress(addr), signature);
+    tree().root()->addDeclaration(generator.createDeclaration());
+    return generator.declaration();
 }
 
 likec::FunctionDefinition *CodeGenerator::makeFunctionDefinition(const Function *function) {
-    DefinitionGenerator generator(*this, function);
-
+    DefinitionGenerator generator(*this, function, cancellationToken());
     tree().root()->addDeclaration(generator.createDefinition());
-    setFunctionDeclaration(function, generator.definition());
-
     return generator.definition();
 }
 
-void CodeGenerator::setFunctionDeclaration(const Function *function, likec::FunctionDeclaration *declaration) {
-    function2declaration_[function] = declaration;
+void CodeGenerator::setFunctionDeclaration(const calling::FunctionSignature *signature, likec::FunctionDeclaration *declaration) {
+    assert(signature != nullptr);
+    assert(declaration != nullptr);
+
+    auto &currentDeclaration = signature2declaration_[signature];
+    if (currentDeclaration == nullptr) {
+        currentDeclaration = declaration;
+    } else {
+        declaration->setFirstDeclaration(currentDeclaration);
+    }
 }
 
 } // namespace cgen

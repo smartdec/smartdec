@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,13 +25,16 @@
 
 #include <nc/config.h>
 
-#include <vector>
+#include <functional>
 #include <utility> /* For std::pair. */
+#include <vector>
 
 #include <QString>
 
+#include <nc/common/ByteOrder.h>
 #include <nc/common/RangeClass.h>
 #include <nc/common/Types.h>
+#include <nc/core/image/Platform.h>
 
 QT_BEGIN_NAMESPACE
 class QApplication;
@@ -40,7 +46,9 @@ QT_USE_NAMESPACE
 namespace nc {
 
 namespace core {
-    class Module;
+    namespace image {
+        class Image;
+    }
 }
 
 namespace ida {
@@ -91,16 +99,26 @@ public:
     static QString demangle(const QString &mangled);
 
     /**
-     * \returns Name of the archtecture of the current binary.
+     * \returns The name of the archtecture of the current binary.
      */
     static QString architecture();
 
     /**
+     * \returns The byte order of the currently opened executable.
+     */
+    static ByteOrder byteOrder();
+
+    /**
+     * \returns The operating system of the current binary.
+     */
+    static core::image::Platform::OperatingSystem operatingSystem();
+
+    /**
      * Converts the current image file to nc's internal representation.
      *
-     * \param[in, out] module          Module.
+     * \param[in, out] image Valid pointer to the executable file image.
      */
-    static void createSections(core::Module *module);
+    static void createSections(core::image::Image *image);
 
     /**
      * \param[in] address              Any address in a function.
@@ -113,23 +131,32 @@ public:
      */
     static ByteAddr screenAddress();
 
+    struct MenuItem;
+
     /**
      * Adds a menu item in the IDA's UI.
      *
-     * param[in] menuItem              Path to the menu item after which the insertion will take place.
-     * param[in] name                  Name of menu item.
-     * param[in] hotkey                Hotkey for menu item.
-     * param[in] callback              Valid pointer to the function which gets called when the user selects it.
-     *                                 If it returns true, IDA refreshes the screen.
+     * param[in] path       Path to the menu into which the item must be inserted.
+     * param[in] name       Name of the menu item.
+     * param[in] after      Name of the menu item after which to insert the item.
+     * param[in] hotkey     Hotkey for the menu item.
+     * param[in] handler    The function to be called when the user selects the menu item.
+     *
+     * \returns A valid pointer to an opaque object to be passed to deleteMenuItem().
      */
-    static void addMenuItem(const QString &menuItem, const QString &name, const QString &hotkey, bool (*callback)());
+    static MenuItem *addMenuItem(
+        const QString &path,
+        const QString &name,
+        const QString &after,
+        const QString &hotkey,
+        std::function<void()> handler);
 
     /**
      * Deletes a menu item in the IDA's UI.
      *
-     * param[in] menuItem              Path to the menu item after which the insertion will take place.
+     * param[in] menuItem Valid pointer to the menu item to delete.
      */
-    static void deleteMenuItem(const QString &menuItem);
+    static void deleteMenuItem(MenuItem *menuItem);
 
     /**
      * Prints a message to IDA console.

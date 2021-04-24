@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,88 +25,96 @@
 
 #include <nc/config.h>
 
+#include <algorithm>
 #include <cassert>
-
-#include <QString>
+#include <cstring> /* memset */
+#include <memory>
 
 #include <boost/optional.hpp>
 
-#include <nc/common/Types.h>
+#include <nc/common/ByteOrder.h>
 
 #include "ByteSource.h"
 
+QT_BEGIN_NAMESPACE
+class QString;
+QT_END_NAMESPACE
+
 namespace nc {
 namespace core {
-
-class Module;
-
 namespace image {
 
 class Reader: public ByteSource {
-    const Module *module_; ///< Module.
+    const ByteSource *externalByteSource_; ///< External byte source.
 
-    public:
-
+public:
     /**
      * Constructor.
      *
-     * \param module Valid pointer to a module.
+     * \param externalByteSource Valid pointer to the byte source to take bytes from.
      */
-    Reader(const Module *module):
-        module_(module)
+    explicit
+    Reader(const ByteSource *externalByteSource):
+        externalByteSource_(externalByteSource)
     {
-        assert(module != NULL);
+        assert(externalByteSource_ != nullptr);
     }
 
     /**
-     * \return Valid pointer to the module.
+     * Reads a sequence of bytes from the external byte source.
+     *
+     * \param[in] addr  Linear address of the first byte to read.
+     * \param[out] buf  Valid pointer to the buffer to read into.
+     * \param[in] size  Number of bytes to read.
+     *
+     * \return Number of bytes actually read and copied into the buffer.
      */
-    const Module *module() const { return module_; }
+    ByteSize readBytes(ByteAddr addr, void *buf, ByteSize size) const override;
 
     /**
-     * \param[in] addr                 Linear address.
-     * \tparam T                       Type of value to read.
+     * Reads an integer value.
      *
-     * \return                         Value of type T at given linear address, 
-     *                                 or boost::none if reading has failed.
+     * \param[in] addr      Address to read from.
+     * \param[in] size      Size of the integer value.
+     * \param[in] byteOrder Byte order used for storing the integer value.
+     *
+     * \tparam T Result type.
+     *
+     * \return The integer value on success, boost::none on failure.
+     *         If sizeof(T) < size, the lower bytes are returned.
+     *         If sizeof(T) > size, the value is zero-extended.
      */
-    template<class T> boost::optional<T> readType(ByteAddr addr) const {
-        // TODO: architecture, byte order.
+    template<class T>
+    boost::optional<T> readInt(ByteAddr addr, ByteSize size, ByteOrder byteOrder) const {
+        assert(size >= 0);
+        assert(byteOrder != ByteOrder::Unknown);
 
-        T result;
-        if (readBytes(addr, &result, sizeof(result)) == sizeof(T)) {
-            return result;
-        } else {
+        std::unique_ptr<char[]> buf(new char[std::max<std::size_t>(size, sizeof(T))]);
+
+        if (readBytes(addr, buf.get(), size) != size) {
             return boost::none;
         }
+
+        ByteOrder::convert(buf.get(), size, byteOrder, ByteOrder::LittleEndian);
+
+        if (static_cast<std::size_t>(size) < sizeof(T)) {
+            memset(buf.get() + size, 0, sizeof(T) - size);
+        }
+
+        ByteOrder::convert(buf.get(), sizeof(T), ByteOrder::LittleEndian, ByteOrder::Current);
+
+        return *reinterpret_cast<T *>(buf.get());
     }
 
     /**
      * Reads an ASCIIZ string.
      *
-     * \param[in] addr                 Linear address of the first byte to read.
-     * \param[in] maxSize              Max number of bytes to read.
+     * \param[in] addr      Linear address of the first byte to read.
+     * \param[in] maxSize   Max number of bytes to read.
      *
-     * \return                         ASCIIZ string without zero char terminator on success, NULL string on failure.
+     * \return ASCIIZ string without zero char terminator on success, nullptr string on failure.
      */
     QString readAsciizString(ByteAddr addr, ByteSize maxSize) const;
-
-    /**
-     * Reads a pointer of the size equal to the bitness of the module's architecture.
-     *
-     * \param[in] addr                 Linear address of the pointer.
-     * \return                         Pointer value, or boost::none in case of a failure.
-     */
-    boost::optional<ByteAddr> readPointer(ByteAddr addr) const;
-
-    /**
-     * Reads a pointer of the given size.
-     *
-     * \param[in] addr                 Linear address of the pointer.
-     * \param[in] size                 Pointer size.
-     * \return                         Pointer value, or boost::none in case of a failure.
-     */
-    boost::optional<ByteAddr> readPointer(ByteAddr addr, ByteSize size) const;
 };
 
 } // namespace image

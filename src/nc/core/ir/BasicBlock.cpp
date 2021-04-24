@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -30,78 +33,87 @@
 #include <nc/common/Escaping.h>
 #include <nc/common/Foreach.h>
 
-#include <boost/range/algorithm/find.hpp>
-
 namespace nc {
 namespace core {
 namespace ir {
 
 BasicBlock::BasicBlock(const boost::optional<ByteAddr> &address):
-    address_(address), successorAddress_(address)
+    address_(address), successorAddress_(address), function_(nullptr)
 {}
 
 BasicBlock::~BasicBlock() {}
+
+void BasicBlock::setAddress(const boost::optional<ByteAddr> &address) {
+    address_ = address;
+    if (!address_) {
+        setSuccessorAddress(boost::none);
+    }
+}
 
 void BasicBlock::setSuccessorAddress(const boost::optional<ByteAddr> &successorAddress) {
     assert((!successorAddress || address()) && "A non-memory-bound basic block cannot have a successor address.");
     successorAddress_ = successorAddress;
 }
 
-void BasicBlock::addStatement(std::unique_ptr<Statement> statement) {
-    assert(statement != NULL);
+Statement *BasicBlock::insert(ilist<Statement>::const_iterator position, std::unique_ptr<Statement> statement) {
+    assert(statement != nullptr);
+    assert(statement->basicBlock() == nullptr);
 
-    statement->setBasicBlock(this);
-    statements_.push_back(std::move(statement));
+    auto result = statement.get();
+    statements_.insert(position, std::move(statement));
+    result->setBasicBlock(this);
+    return result;
 }
 
-void BasicBlock::addStatements(std::vector<std::pair<const Statement *, std::unique_ptr<Statement>>> &&addedStatements) {
-    std::vector<std::unique_ptr<Statement>> newStatements;
+Statement *BasicBlock::pushFront(std::unique_ptr<Statement> statement) {
+    assert(statement != nullptr);
 
-    newStatements.reserve(statements_.size() + addedStatements.size());
-
-    auto i    = addedStatements.begin();
-    auto iend = addedStatements.end();
-
-    foreach (auto &statement, statements_) {
-        Statement *lastStatement = statement.get();
-        newStatements.push_back(std::move(statement));
-
-        while (i != iend && i->first == lastStatement) {
-            assert(i->second != NULL);
-
-            i->second->setBasicBlock(this);
-            newStatements.push_back(std::move(i->second));
-
-            ++i;
-        }
-    }
-
-    assert(i == iend);
-
-    statements_.swap(newStatements);
+    return insert(statements_.begin(), std::move(statement));
 }
 
-void BasicBlock::popBack() {
-    assert(!statements_.empty());
-    statements_.pop_back();
+Statement *BasicBlock::pushBack(std::unique_ptr<Statement> statement) {
+    assert(statement != nullptr);
+
+    return insert(statements_.end(), std::move(statement));
+}
+
+Statement *BasicBlock::insertAfter(const Statement *after, std::unique_ptr<Statement> statement) {
+    assert(after != nullptr);
+    assert(statement != nullptr);
+
+    return insert(++statements_.get_iterator(after), std::move(statement));
+}
+
+Statement *BasicBlock::insertBefore(const Statement *before, std::unique_ptr<Statement> statement) {
+    assert(before != nullptr);
+    assert(statement != nullptr);
+
+    return insert(statements_.get_iterator(before), std::move(statement));
+}
+
+std::unique_ptr<Statement> BasicBlock::erase(Statement *statement) {
+    auto result = statements_.erase(statement);
+    assert(result->basicBlock() == this);
+    result->setBasicBlock(nullptr);
+    return result;
 }
 
 const Statement *BasicBlock::getTerminator() const {
     if (statements().empty()) {
-        return NULL;
+        return nullptr;
     }
 
-    const Statement *terminator = statements().back();
-    if (terminator->isJump() || terminator->isReturn()) {
-        return terminator;
+    auto lastStatement = statements().back();
+    if (lastStatement->isTerminator()) {
+        return lastStatement;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 Jump *BasicBlock::getJump() {
     if (statements().empty()) {
-        return NULL;
+        return nullptr;
     } else {
         return statements().back()->as<Jump>();
     }
@@ -109,35 +121,23 @@ Jump *BasicBlock::getJump() {
 
 const Jump *BasicBlock::getJump() const {
     if (statements().empty()) {
-        return NULL;
+        return nullptr;
     } else {
         return statements().back()->as<Jump>();
     }
 }
 
-const Return *BasicBlock::getReturn() const {
-    if (statements().empty()) {
-        return NULL;
-    } else {
-        return statements().back()->as<Return>();
-    }
-}
-
-std::unique_ptr<BasicBlock> BasicBlock::split(std::size_t index, const boost::optional<ByteAddr> &address) {
-    assert(index <= statements_.size());
-
+std::unique_ptr<BasicBlock> BasicBlock::split(ilist<Statement>::const_iterator position, const boost::optional<ByteAddr> &address) {
     /* Create a new basic block. */
     std::unique_ptr<BasicBlock> result(new BasicBlock(address));
     result->setSuccessorAddress(this->successorAddress());
     this->setSuccessorAddress(address);
 
     /* Move statements to it. */
-    std::size_t size = statements_.size();
-    result->statements_.reserve(size - index);
-    for (std::size_t i = index; i < size; ++i) {
-        result->addStatement(std::move(statements_[i]));
+    result->statements_ = statements_.cut_out(position, statements_.end());
+    foreach (auto statement, result->statements_) {
+        statement->setBasicBlock(result.get());
     }
-    statements_.resize(index);
 
     return result;
 }
@@ -147,7 +147,7 @@ std::unique_ptr<BasicBlock> BasicBlock::clone() const {
     result->setSuccessorAddress(successorAddress());
 
     foreach (const Statement *statement, statements()) {
-        result->addStatement(statement->clone());
+        result->pushBack(statement->clone());
     }
 
     return result;
@@ -162,18 +162,19 @@ void BasicBlock::print(QTextStream &out) const {
     ls << "Address: ";
     if (address()) {
         int integerBase = ls.integerBase();
-        hex(ls) << "0x" << *address();
+        out.setIntegerBase(16);
+        out << "0x" << *address();
         ls.setIntegerBase(integerBase);
     } else {
         ls << "None";
     }
-    ls << endl;
+    ls << '\n';
 
     foreach (const Statement *statement, statements()) {
         ls << *statement;
     }
 
-    out << escapeDotString(label) << "\"];" << endl;
+    out << escapeDotString(label) << "\"];" << '\n';
 }
 
 } // namespace ir

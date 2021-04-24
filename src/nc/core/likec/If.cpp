@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,43 +24,18 @@
 
 #include "If.h"
 
-#include "PrintContext.h"
+#include <nc/common/make_unique.h>
 
 namespace nc {
 namespace core {
 namespace likec {
 
-void If::visitChildNodes(Visitor<TreeNode> &visitor) {
-    Statement::visitChildNodes(visitor);
+void If::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(condition_.get());
+    fun(thenStatement_.get());
 
-    visitor(condition());
-    visitor(thenStatement());
-
-    if (elseStatement() != NULL) {
-        visitor(elseStatement());
-    }
-}
-
-If *If::rewrite() {
-    assert(condition_);
-    assert(thenStatement_);
-
-    rewriteChild(condition_);
-    rewriteChild(thenStatement_);
     if (elseStatement_) {
-        rewriteChild(elseStatement_);
-    }
-    return this;
-}
-
-void If::doPrint(PrintContext &context) const {
-    context.out() << "if (";
-    condition_->print(context);
-    context.out() << ") ";
-    printNestedStatement(thenStatement(), context);
-    if (elseStatement_) {
-        context.out() << " else ";
-        printNestedStatement(elseStatement(), context);
+        fun(elseStatement_.get());
     }
 }
 

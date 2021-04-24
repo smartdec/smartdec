@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -23,7 +26,7 @@
 
 #include <algorithm>
 
-#include <QStringList>
+#include <QColor>
 
 #include <nc/common/CheckedCast.h>
 #include <nc/common/Foreach.h>
@@ -33,6 +36,8 @@
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
 
+#include "Colors.h"
+
 namespace nc { namespace gui {
 
 enum InstructionsModelColumns {
@@ -40,34 +45,26 @@ enum InstructionsModelColumns {
     IMC_COUNT
 };
 
-InstructionsModel::InstructionsModel(QObject *parent):
-    QAbstractItemModel(parent)
+InstructionsModel::InstructionsModel(QObject *parent, std::shared_ptr<const core::arch::Instructions> instructions):
+    QAbstractItemModel(parent),
+    instructions_(std::move(instructions))
 {
-    updateContents();
-}
-
-void InstructionsModel::setInstructions(const std::shared_ptr<const core::arch::Instructions> &instructions) {
-    if (instructions != instructions_) {
-        instructions_ = instructions;
-
-        updateContents();
-    }
-}
-
-void InstructionsModel::updateContents() {
-    beginResetModel();
-
     std::vector<const core::arch::Instruction *> vector;
 
-    if (instructions()) {
-        vector.reserve(instructions()->size());
+    if (instructions_) {
+        instructionsVector_.reserve(instructions_->size());
 
-        foreach (const auto &instruction, instructions()->all()) {
-            vector.push_back(instruction.get());
+        foreach (const auto &instruction, instructions_->all()) {
+            instructionsVector_.push_back(instruction.get());
         }
     }
+}
 
-    instructionsVector_.swap(vector);
+void InstructionsModel::setHighlightedInstructions(std::vector<const core::arch::Instruction *> instructions) {
+    beginResetModel();
+
+    std::sort(instructions.begin(), instructions.end());
+    highlightedInstructions_ = std::move(instructions);
 
     endResetModel();
 }
@@ -90,9 +87,6 @@ QModelIndex InstructionsModel::getIndex(const core::arch::Instruction *instructi
 }
 
 int InstructionsModel::rowCount(const QModelIndex &parent) const {
-    if (!instructions()) {
-        return 0;
-    }
     if (parent == QModelIndex()) {
         return checked_cast<int>(instructionsVector_.size());
     } else {
@@ -105,9 +99,6 @@ int InstructionsModel::columnCount(const QModelIndex & /*parent*/) const {
 }
 
 QModelIndex InstructionsModel::index(int row, int column, const QModelIndex &parent) const {
-    if (!instructions()) {
-        return QModelIndex();
-    }
     if (row < rowCount(parent)) {
         return createIndex(row, column, const_cast<core::arch::Instruction *>(instructionsVector_[row]));
     } else {
@@ -127,6 +118,13 @@ QVariant InstructionsModel::data(const QModelIndex &index, int role) const {
         switch (index.column()) {
             case IMC_INSTRUCTION: return tr("%1:\t%2").arg(instruction->addr(), 0, 16).arg(instruction->toString());
             default: unreachable();
+        }
+    } else if (role == Qt::BackgroundRole) {
+        auto instruction = getInstruction(index);
+        assert(instruction);
+
+        if (std::binary_search(highlightedInstructions_.begin(), highlightedInstructions_.end(), instruction)) {
+            return QColor(highlightColor);
         }
     }
     return QVariant();

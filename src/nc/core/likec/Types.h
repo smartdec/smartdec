@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -87,8 +90,6 @@ class IntegerType: public Type {
     bool isUnsigned() const { return isUnsigned_; }
 
     virtual bool isInteger() const override { return true; }
-    virtual bool isArithmetic() const override { return true; }
-    virtual bool isScalar() const override { return true; }
 
     virtual void print(QTextStream &out) const override;
 };
@@ -106,8 +107,7 @@ class FloatType: public Type {
      */
     FloatType(BitSize size): Type(size, FLOAT) {}
 
-    virtual bool isInteger() const override { return true; }
-    virtual bool isArithmetic() const override { return true; }
+    virtual bool isFloat() const override { return true; }
 
     virtual void print(QTextStream &out) const override;
 };
@@ -116,7 +116,7 @@ class FloatType: public Type {
  * Pointer type.
  */
 class PointerType: public Type {
-    NC_CLASS_WITH_KINDS(Type, pointerKind)
+    NC_BASE_CLASS(Type, pointerKind)
 
     const Type *pointeeType_; ///< Type this one points to.
 
@@ -168,7 +168,6 @@ class PointerType: public Type {
     virtual bool isPointer() const override { return true; }
     virtual bool isVoidPointer() const override { return pointeeType()->isVoid(); }
     virtual bool isStructurePointer() const override { return pointeeType()->isStructure(); }
-    virtual bool isScalar() const override { return true; }
 
     virtual void print(QTextStream &out) const override;
 };
@@ -210,6 +209,8 @@ class ArrayType: public PointerType {
 
     virtual BitSize sizeOf() const override { return elementType()->size() * length(); }
 
+    virtual bool isScalar() const override { return false; }
+
     virtual void print(QTextStream &out) const override;
 };
 
@@ -217,13 +218,13 @@ class ArrayType: public PointerType {
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::ErroneousType, nc::core::likec::Type::ERRONEOUS)
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::VoidType,      nc::core::likec::Type::VOID)
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::IntegerType,   nc::core::likec::Type::INTEGER)
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::FloatType,     nc::core::likec::Type::FLOAT)
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::PointerType,   nc::core::likec::Type::POINTER)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::ErroneousType, nc::core::likec::Type::ERRONEOUS)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::VoidType,      nc::core::likec::Type::VOID)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::IntegerType,   nc::core::likec::Type::INTEGER)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::FloatType,     nc::core::likec::Type::FLOAT)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::PointerType,   nc::core::likec::Type::POINTER)
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::PointerType, nc::core::likec::PointerType, nc::core::likec::PointerType::PLAIN_PTR)
-NC_REGISTER_CLASS_KIND(nc::core::likec::PointerType, nc::core::likec::ArrayType,   nc::core::likec::PointerType::ARRAY_PTR)
+NC_SUBCLASS(nc::core::likec::PointerType, nc::core::likec::PointerType, nc::core::likec::PointerType::PLAIN_PTR)
+NC_SUBCLASS(nc::core::likec::PointerType, nc::core::likec::ArrayType,   nc::core::likec::PointerType::ARRAY_PTR)
 
 /* vim:set et sts=4 sw=4: */

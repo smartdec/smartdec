@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -26,21 +29,13 @@ namespace core {
 namespace ir {
 
 std::unique_ptr<Statement> Statement::clone() const {
-    std::unique_ptr<Statement> result(doClone());
+    auto result = doClone();
 
     if (instruction()) {
         result->setInstruction(instruction());
     }
 
     return result;
-}
-
-void Statement::visitChildTerms(Visitor<Term> & /*visitor*/) {
-    /* Nothing to do */
-}
-
-void Statement::visitChildTerms(Visitor<const Term> & /*visitor*/) const {
-    /* Nothing to do */
 }
 
 } // namespace ir

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -28,14 +31,15 @@
 #include <QString>
 
 namespace nc { namespace core { namespace input {
+
 class Parser;
 
-class ParserRepositoryPrivate;
-
 /**
- * Static repository that stores parser instances.
+ * Static repository of parsers.
  */
 class ParserRepository {
+    std::vector<std::unique_ptr<Parser>> parsers_;
+
 public:
     /**
      * \returns Parser repository instance.
@@ -43,33 +47,25 @@ public:
     static ParserRepository *instance();
 
     /**
-     * Default constructor. 
-     */
-    ParserRepository();
-
-    /**
-     * Registers a parser, if there is no parser with the same name yet.
+     * Registers an parser. The parser must have a name different
+     * from the already registered parsers.
      *
-     * \param[in] parser Valid pointer to the parser to register.
-     *
-     * \return True if the parser was registered, false otherwise.
+     * \param[in] parser Valid pointer to an parser.
      */
     void registerParser(std::unique_ptr<Parser> parser);
 
     /**
      * \param[in] name Name of the parser.
      *
-     * \returns Valid pointer to the parser for the given name, or NULL if no such parser exists.
+     * \returns Valid pointer to the parser with the given name,
+     *          or nullptr if no such parser found.
      */
-    Parser *getParser(const QString &name);
+    const Parser *getParser(const QString &name) const;
 
     /**
      * \returns List of all registered parsers.
      */
-    const std::vector<Parser *> &parsers() const;
-
-private:
-    std::unique_ptr<ParserRepositoryPrivate> d;
+    const std::vector<const Parser *> &parsers() const;
 };
 
 }}} // namespace nc::core::input

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,6 +25,8 @@
 
 #include <nc/config.h>
 
+#include <QString>
+
 #include "Statement.h"
 
 namespace nc {
@@ -34,32 +39,26 @@ namespace likec {
 class InlineAssembly: public Statement {
     QString code_; ///< Assembler code.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] code Assembler code.
      */
-    InlineAssembly(Tree &tree, QString code):
-        Statement(tree, INLINE_ASSEMBLY), code_(code)
+    InlineAssembly(QString code):
+        Statement(INLINE_ASSEMBLY), code_(std::move(code))
     {}
 
     /**
      * \return Assembler code.
      */
     const QString &code() const { return code_; }
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::InlineAssembly, nc::core::likec::Statement::INLINE_ASSEMBLY)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::InlineAssembly, nc::core::likec::Statement::INLINE_ASSEMBLY)
 
 /* vim:set et sts=4 sw=4: */

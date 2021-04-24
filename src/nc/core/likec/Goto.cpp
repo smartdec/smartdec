@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,25 +24,12 @@
 
 #include "Goto.h"
 
-#include "PrintContext.h"
-
 namespace nc {
 namespace core {
 namespace likec {
 
-void Goto::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(destination());
-}
-
-Goto *Goto::rewrite() {
-    rewriteChild(destination_);
-    return this;
-}
-
-void Goto::doPrint(PrintContext &context) const {
-    context.out() << "goto ";
-    destination_->print(context);
-    context.out() << ';';
+void Goto::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(destination_.get());
 }
 
 } // namespace likec

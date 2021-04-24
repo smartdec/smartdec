@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -24,19 +27,10 @@
 
 #include <memory> /* For std::unique_ptr. */
 
-#include <boost/noncopyable.hpp>
-#include <boost/unordered_map.hpp>
-
 #include <QObject>
 
 #include <nc/common/CancellationToken.h>
 #include <nc/common/LogToken.h>
-#include <nc/common/Range.h> /* For nc::find(). */
-#include <nc/common/Types.h>
-
-QT_BEGIN_NAMESPACE
-class QString;
-QT_END_NAMESPACE
 
 namespace nc {
 namespace core {
@@ -46,8 +40,7 @@ namespace arch {
 }
 
 namespace image {
-    class ByteSource;
-    class Section;
+    class Image;
 }
 
 namespace ir {
@@ -55,24 +48,22 @@ namespace ir {
     class Functions;
     class Program;
 
-    namespace calls {
-        class CallsData;
-        class CallingConventionDetector;
+    namespace calling {
+        class Conventions;
+        class Hooks;
+        class Signatures;
     }
     namespace cflow {
-        class Graph;
+        class Graphs;
     }
     namespace dflow {
-        class Dataflow;
-    }
-    namespace misc {
-        class TermToFunction;
+        class Dataflows;
     }
     namespace types {
         class Types;
     }
-    namespace usage {
-        class Usage;
+    namespace liveness {
+        class Livenesses;
     }
     namespace vars {
         class Variables;
@@ -83,29 +74,25 @@ namespace likec {
     class Tree;
 }
 
-class Module;
-
 /**
- * Decompilation context.
- *
- * This class and manages all the information known about the decompiled program.
+ * This class stores all the information that is required and produced during decompilation.
  */
 class Context: public QObject {
     Q_OBJECT
 
-    std::shared_ptr<Module> module_; ///< Module being decompiled.
+    std::shared_ptr<image::Image> image_; ///< Executable image being decompiled.
     std::shared_ptr<const arch::Instructions> instructions_; ///< Instructions being decompiled.
     std::unique_ptr<ir::Program> program_; ///< Program.
     std::unique_ptr<ir::Functions> functions_; ///< Functions.
-    std::unique_ptr<ir::misc::TermToFunction> termToFunction_; ///< Term to function mapping.
-    std::unique_ptr<ir::calls::CallsData> callsData_; ///< Calls data.
-    std::unique_ptr<ir::calls::CallingConventionDetector> callingConventionDetector_; ///< Detector of calling conventions.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::dflow::Dataflow> > dataflows_; ///< Dataflow information.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::usage::Usage> > usages_; ///< Term usage information.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::types::Types> > types_; ///< Information about types.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::vars::Variables> > variables_; ///< Reconstructed variables.
-    boost::unordered_map<const ir::Function *, std::unique_ptr<ir::cflow::Graph> > regionGraphs_; ///< Region graphs.
-    std::unique_ptr<likec::Tree> tree_; ///< Representation of LikeC program.
+    std::unique_ptr<ir::calling::Conventions> conventions_; ///< Assigned calling conventions.
+    std::unique_ptr<ir::calling::Hooks> hooks_; ///< Hooks manager.
+    std::unique_ptr<ir::calling::Signatures> signatures_; ///< Signatures.
+    std::unique_ptr<ir::dflow::Dataflows> dataflows_; ///< Dataflows.
+    std::unique_ptr<ir::vars::Variables> variables_; ///< Reconstructed variables.
+    std::unique_ptr<ir::cflow::Graphs> graphs_; ///< Structured graphs.
+    std::unique_ptr<ir::liveness::Livenesses> livenesses_; ///< Liveness information.
+    std::unique_ptr<ir::types::Types> types_; ///< Information about types.
+    std::unique_ptr<likec::Tree> tree_; ///< Abstract syntax tree of the LikeC program.
     LogToken logToken_; ///< Log token.
     CancellationToken cancellationToken_; ///< Cancellation token.
 
@@ -121,163 +108,178 @@ public:
     ~Context();
 
     /**
-     * \return Valid pointer to the module being decompiled.
-     */
-    std::shared_ptr<Module> module() const { return module_; }
-
-    /**
-     * Sets the module.
+     * Sets the executable image being decompiled.
      *
-     * \param module Valid pointer to a module.
+     * \param image Pointer to the image. Can be nullptr.
      */
-    void setModule(const std::shared_ptr<Module> &module);
+    void setImage(const std::shared_ptr<image::Image> &image);
 
     /**
-     * \returns Valid pointer to the instructions being decompiled.
+     * \return Pointer to the executable image being decompiled. Can be nullptr.
      */
-    const std::shared_ptr<const arch::Instructions> &instructions() const { return instructions_; }
+    std::shared_ptr<image::Image> image() const { return image_; }
 
     /**
-     * Sets the set instructions of the executable file.
+     * Sets the set instructions being decompiled.
      *
-     * \param instructions New set of instructions.
+     * \param instructions Pointer to the new set of instructions. Can be nullptr.
      */
     void setInstructions(const std::shared_ptr<const arch::Instructions> &instructions);
 
     /**
-     * Sets the control flow graph of the program.
+     * \returns Pointer to the instructions being decompiled. Can be nullptr.
+     */
+    const std::shared_ptr<const arch::Instructions> &instructions() const { return instructions_; }
+
+    /**
+     * Sets the intermediate representation of the program.
      *
-     * \param program Valid pointer to the program CFG.
+     * \param program Pointer to the program IR. Can be nullptr.
      */
     void setProgram(std::unique_ptr<ir::Program> program);
 
     /**
-     * \return Pointer to the program. Can be NULL.
+     * \return Pointer to the program. Can be nullptr.
      */
     const ir::Program *program() const { return program_.get(); }
 
     /**
      * Sets the set of functions.
      *
-     * \param functions Valid pointer to the set of functions.
+     * \param functions Pointer to the set of functions. Can be nullptr.
      */
     void setFunctions(std::unique_ptr<ir::Functions> functions);
 
     /**
-     * \return Pointer to the set of functions. Can be NULL.
+     * \return Pointer to the set of functions. Can be nullptr.
      */
     ir::Functions *functions() const { return functions_.get(); }
 
     /**
-     * Sets the calls data.
+     * Sets the assigned calling conventions.
      *
-     * \param callsData Valid pointer to a calls data.
+     * \param conventions Pointer to the assigned calling conventions. Can be nullptr.
      */
-    void setCallsData(std::unique_ptr<ir::calls::CallsData> callsData);
+    void setConventions(std::unique_ptr<ir::calling::Conventions> conventions);
 
     /**
-     * \return Valid pointer to the information on calling conventions of functions.
+     * \return Pointer to the information on calling conventions of functions. Can be nullptr.
      */
-    ir::calls::CallsData *callsData() { return callsData_.get(); }
+    ir::calling::Conventions *conventions() { return conventions_.get(); }
 
     /**
-     * Sets the calling convention detector.
+     * \return Pointer to the information on calling conventions of functions. Can be nullptr.
+     */
+    const ir::calling::Conventions *conventions() const { return conventions_.get(); }
+
+    /**
+     * Sets the hooks manager.
      *
-     * \param detector Valid pointer to the detector.
+     * \param hooks Pointer to the hooks manager. Can be nullptr.
      */
-    void setCallingConventionDetector(std::unique_ptr<ir::calls::CallingConventionDetector> detector);
+    void setHooks(std::unique_ptr<ir::calling::Hooks> hooks);
 
     /**
-     * \return Valid pointer to the calling convention detector.
+     * \return Pointer to the hooks manager. Can be nullptr.
      */
-    ir::calls::CallingConventionDetector *callingConventionDetector() { return callingConventionDetector_.get(); }
+    ir::calling::Hooks *hooks() { return hooks_.get(); }
 
     /**
-     * Sets the term to function mapping.
+     * \return Pointer to the hooks manager. Can be nullptr.
+     */
+    const ir::calling::Hooks *hooks() const { return hooks_.get(); }
+
+    /**
+     * Sets the reconstructed signatures.
      *
-     * \param termToFunction Valid pointer to the term to function mapping.
+     * \param signatures Pointer to the signatures. Can be nullptr.
      */
-    void setTermToFunction(std::unique_ptr<ir::misc::TermToFunction> termToFunction);
+    void setSignatures(std::unique_ptr<ir::calling::Signatures> signatures);
 
     /**
-     * \return Valid pointer to the term to function mapping.
+     * \return Pointer to the signatures of functions. Can be nullptr.
      */
-    const ir::misc::TermToFunction *termToFunction() const { return termToFunction_.get(); }
+    ir::calling::Signatures *signatures() { return signatures_.get(); }
 
     /**
-     * Sets the dataflow information for a function.
+     * \return Pointer to the signatures of functions. Can be nullptr.
+     */
+    const ir::calling::Signatures *signatures() const { return signatures_.get(); }
+
+    /**
+     * Sets the dataflow information for all functions.
      *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] dataflow Dataflow information.
+     * \param[in] dataflows Pointer to the dataflow information. Can be nullptr.
      */
-    void setDataflow(const ir::Function *function, std::unique_ptr<ir::dflow::Dataflow> dataflow);
+    void setDataflows(std::unique_ptr<ir::dflow::Dataflows> dataflows);
 
     /**
-     * \param[in] function Valid pointer to a function.
-     *
-     * \return Pointer to the dataflow information for a given function. Can be NULL.
+     * \return Pointer to the dataflow information for all functions. Can be nullptr.
      */
-    const ir::dflow::Dataflow *getDataflow(const ir::Function *function) const;
+    ir::dflow::Dataflows *dataflows() { return dataflows_.get(); }
 
     /**
-     * Sets the dataflow information for a function.
-     *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] usage Valid pointer to the usage information.
+     * \return Pointer to the dataflow information for all functions. Can be nullptr.
      */
-    void setUsage(const ir::Function *function, std::unique_ptr<ir::usage::Usage> usage);
+    const ir::dflow::Dataflows *dataflows() const { return dataflows_.get(); }
 
     /**
-     * \param[in] function Valid pointer to a function.
+     * Sets the information about reconstructed variables.
      *
-     * \return Pointer to the usage information. Can be NULL.
+     * \param[in] variables Pointer to the information about reconstructed variables. Can be nullptr.
      */
-    const ir::usage::Usage *getUsage(const ir::Function *function) const;
+    void setVariables(std::unique_ptr<ir::vars::Variables> variables);
 
     /**
-     * Sets the type information for a function.
-     *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] types Valid pointer to the type information.
+     * \return Pointer to the information about reconstructed variables. Can be nullptr.
      */
-    void setTypes(const ir::Function *function, std::unique_ptr<ir::types::Types> types);
+    const ir::vars::Variables *variables() const { return variables_.get(); }
 
     /**
-     * \param[in] function Valid pointer to a function.
+     * Sets the structured graphs for all functions.
      *
-     * \return Pointer to the type information for a given function. Can be NULL.
+     * \param[in] graphs Pointer to the graphs. Can be nullptr.
      */
-    const ir::types::Types *getTypes(const ir::Function *function) const;
+    void setGraphs(std::unique_ptr<ir::cflow::Graphs> graphs);
 
     /**
-     * Sets the information about variables for a function.
-     *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] variables Valid pointer to the information about variables.
+     * \return Pointer to the structured graphs. Can be nullptr.
      */
-    void setVariables(const ir::Function *function, std::unique_ptr<ir::vars::Variables> variables);
+    ir::cflow::Graphs *graphs() { return graphs_.get(); }
 
     /**
-     * \param[in] function Valid pointer to a function.
-     *
-     * \return Pointer to the information about variables for a given function. Can be NULL.
+     * \return Pointer to the structured graphs. Can be nullptr.
      */
-    const ir::vars::Variables *getVariables(const ir::Function *function) const;
+    const ir::cflow::Graphs *graphs() const { return graphs_.get(); }
 
     /**
-     * Sets the region graph for a function.
+     * Sets the liveness information for all functions.
      *
-     * \param[in] function Valid pointer to a function.
-     * \param[in] graph Valid pointer to the region graph.
+     * \param[in] liveness Pointer to the liveness information. Can be nullptr.
      */
-    void setRegionGraph(const ir::Function *function, std::unique_ptr<ir::cflow::Graph> graph);
+    void setLivenesses(std::unique_ptr<ir::liveness::Livenesses> liveness);
 
     /**
-     * \param[in] function Valid pointer to a function.
-     *
-     * \return Valid pointer to the region graph of the given function.
+     * \return Pointer to the liveness information for all functions. Can be nullptr.
      */
-    const ir::cflow::Graph *getRegionGraph(const ir::Function *function) const;
+    ir::liveness::Livenesses *livenesses() { return livenesses_.get(); }
+
+    /**
+     * \return Pointer to the liveness information for all functions. Can be nullptr.
+     */
+    const ir::liveness::Livenesses *livenesses() const { return livenesses_.get(); }
+
+    /**
+     * Sets the information about types.
+     *
+     * \param[in] types Pointer to the information about types. Can be nullptr.
+     */
+    void setTypes(std::unique_ptr<ir::types::Types> types);
+
+    /**
+     * \return Pointer to the information about types. Can be nullptr.
+     */
+    const ir::types::Types *types() const { return types_.get(); }
 
     /**
      * Sets the LikeC tree.
@@ -287,7 +289,7 @@ public:
     void setTree(std::unique_ptr<likec::Tree> tree);
 
     /**
-     * \return The LikeC tree. Can be NULL.
+     * \return The LikeC tree. Can be nullptr.
      */
     likec::Tree *tree() const { return tree_.get(); }
 
@@ -315,44 +317,6 @@ public:
      */
     const LogToken &logToken() const { return logToken_; }
 
-    public Q_SLOTS:
-
-    // TODO: remove all functions in this section.
-
-    /**
-     * Parse file.
-     *
-     * \param filename Name of the file to parse.
-     */
-    void parse(const QString &filename);
-
-    /**
-     * Disassembles all code sections.
-     */
-    void disassemble();
-
-    /**
-     * Disassembles an image section.
-     *
-     * \param section Valid pointer to the image section.
-     */
-    void disassemble(const image::Section *section);
-
-    /*
-     * Disassembles all instructions in the given range of addresses.
-     *
-     * \param source Valid pointer to a byte source.
-     * \param begin First address in the range.
-     * \param end First address past the range.
-     */
-    void disassemble(const image::ByteSource *source, ByteAddr begin, ByteAddr end);
-
-    /**
-     * Decompile everything.
-     * The context must be clean, i.e. not decompiled before.
-     */
-    void decompile();
-
     Q_SIGNALS:
 
     /**
@@ -361,7 +325,7 @@ public:
     void instructionsChanged();
 
     /**
-     * Signal emitted when C tree is computed.
+     * Signal emitted when LikeC tree is computed.
      */
     void treeChanged();
 };

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,15 +24,25 @@
 
 #include "Dataflow.h"
 
-#include <nc/core/ir/Term.h>
+#include "Value.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace dflow {
 
+Dataflow::Dataflow() {}
+
+Dataflow::~Dataflow() {}
+
 Value *Dataflow::getValue(const Term *term) {
-    auto &result = values_[term];
+    assert(term != nullptr);
+
+    if (auto source = term->source()) {
+        term = source;
+    }
+
+    auto &result = term2value_[term];
     if (!result) {
         result.reset(new Value(term->size()));
     }
@@ -38,76 +51,6 @@ Value *Dataflow::getValue(const Term *term) {
 
 const Value *Dataflow::getValue(const Term *term) const {
     return const_cast<Dataflow *>(this)->getValue(term);
-}
-
-const ir::MemoryLocation &Dataflow::getMemoryLocation(const Term *term) const {
-    auto i = memoryLocations_.find(term);
-    if (i != memoryLocations_.end()) {
-        return i->second;
-    } else {
-        static const MemoryLocation empty;
-        return empty;
-    }
-}
-
-void Dataflow::setMemoryLocation(const Term *term, const MemoryLocation &memoryLocation) {
-    if (!memoryLocation) {
-        unsetMemoryLocation(term);
-    } else {
-        memoryLocations_[term] = memoryLocation;
-    }
-}
-
-const std::vector<const Term *> &Dataflow::getDefinitions(const Term *term) const {
-    assert(term->isRead());
-
-    auto i = definitions_.find(term);
-    if (i != definitions_.end()) {
-        return *i->second;
-    } else {
-        static const std::vector<const Term *> empty;
-        return empty;
-    }
-}
-
-void Dataflow::setDefinitions(const Term *term, const std::vector<const Term *> &definitions) {
-    assert(term->isRead());
-
-    if (definitions.empty()) {
-        clearDefinitions(term);
-    } else {
-        auto &pointer = definitions_[term];
-        if (pointer) {
-            *pointer = definitions;
-        } else {
-            pointer.reset(new std::vector<const Term *>(definitions));
-        }
-    }
-}
-
-void Dataflow::clearDefinitions(const Term *term) {
-    assert(term->isRead());
-
-    definitions_.erase(term);
-}
-
-const std::vector<const Term *> &Dataflow::getUses(const Term *term) const {
-    auto i = uses_.find(term);
-    if (i != uses_.end()) {
-        return *i->second;
-    } else {
-        static const std::vector<const Term *> empty;
-        return empty;
-    }
-}
-
-void Dataflow::addUse(const Term *term, const Term *use) {
-    auto &pointer = uses_[term];
-    if (!pointer) {
-        pointer.reset(new std::vector<const Term *>(1, use));
-    } else {
-        pointer->push_back(use);
-    }
 }
 
 } // namespace dflow

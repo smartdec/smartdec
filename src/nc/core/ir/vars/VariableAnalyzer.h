@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,18 +25,23 @@
 
 #include <nc/config.h>
 
+#include <cassert>
+
 namespace nc {
 namespace core {
+namespace arch {
+    class Architecture;
+}
 namespace ir {
 
 class Function;
 
-namespace calls {
-    class CallsData;
+namespace calling {
+    class Hooks;
 }
 
 namespace dflow {
-    class Dataflow;
+    class Dataflows;
 }
 
 namespace vars {
@@ -41,57 +49,31 @@ namespace vars {
 class Variables;
 
 /**
- * Class performing reconstruction of variables.
+ * Class performing reconstruction of local and global variables.
  */
 class VariableAnalyzer {
     Variables &variables_; ///< Mapping of terms to variables.
-    const dflow::Dataflow &dataflow_; ///< Dataflow information.
-    calls::CallsData *callsData_; ///< Calls data.
+    const dflow::Dataflows &dataflows_; ///< Dataflow information for each function.
+    const arch::Architecture *architecture_; ///< Architecture.
 
-    public:
-
+public:
     /**
-     * Class constructor.
+     * Constructor.
      *
-     * \param variables Information about variables.
-     * \param dataflow Dataflow information.
-     * \param callsData Valid pointer to the calls data.
+     * \param[out] variables Information about variables.
+     * \param[in] dataflows Dataflow information for each function.
+     * \param[in] architecture Valid pointer to the architecture.
      */
-    VariableAnalyzer(Variables &variables, const dflow::Dataflow &dataflow, calls::CallsData *callsData):
-        variables_(variables), dataflow_(dataflow), callsData_(callsData)
-    {}
+    VariableAnalyzer(Variables &variables, const dflow::Dataflows &dataflows, const arch::Architecture *architecture):
+        variables_(variables), dataflows_(dataflows), architecture_(architecture)
+    {
+        assert(architecture != nullptr);
+    }
 
     /**
-     * Virtual destructor.
+     * Computes mapping of terms to variables.
      */
-    virtual ~VariableAnalyzer() {}
-
-    /**
-     * \return Mapping of terms to variables.
-     */
-    Variables &variables() { return variables_; }
-
-    /**
-     * \return Mapping of terms to variables.
-     */
-    const Variables &variables() const { return variables_; }
-
-    /**
-     * \return Dataflow information.
-     */
-    const dflow::Dataflow &dataflow() const { return dataflow_; }
-
-    /**
-     * \return Pointer to the calls data. Can be NULL.
-     */
-    calls::CallsData *callsData() const { return callsData_; }
-
-    /**
-     * Computes mapping of terms to variables for the given function.
-     *
-     * \param[in] function Function to analyze.
-     */
-    virtual void analyze(const Function *function);
+    void analyze();
 };
 
 } // namespace vars

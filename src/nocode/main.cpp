@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,32 +24,37 @@
 
 #include <nc/config.h>
 
-#include <nc/common/Conversions.h>
+#include <nc/common/Branding.h>
 #include <nc/common/Exception.h>
 #include <nc/common/Foreach.h>
+#include <nc/common/StreamLogger.h>
+#include <nc/common/Unreachable.h>
 
-#include <nc/core/Module.h>
-#include <nc/core/Context.h> 
+#include <nc/core/Context.h>
+#include <nc/core/Driver.h>
+#include <nc/core/arch/Architecture.h>
+#include <nc/core/arch/ArchitectureRepository.h>
 #include <nc/core/arch/Instruction.h>
 #include <nc/core/arch/Instructions.h>
 #include <nc/core/image/Image.h>
+#include <nc/core/image/Section.h>
 #include <nc/core/input/Parser.h>
 #include <nc/core/input/ParserRepository.h>
-
 #include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Functions.h>
 #include <nc/core/ir/Program.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/inlining/CallInliner.h>
-#include <nc/core/ir/cflow/Graph.h>
-
+#include <nc/core/ir/cflow/Graphs.h>
 #include <nc/core/likec/Tree.h>
 
+#include <QCoreApplication>
 #include <QFile>
 #include <QStringList>
 #include <QTextStream>
+
+#include <nc/core/image/Section.h>
 
 const char *self = "nocode";
 
@@ -70,171 +78,130 @@ void openFileForWritingAndCall(const QString &filename, T functor) {
     }
 }
 
-void inlineFunctions(nc::core::Context &context, std::vector<nc::ByteAddr> functionAddresses) {
-    nc::core::ir::inlining::CallInliner inliner;
-
-    foreach (nc::ByteAddr addr, functionAddresses) {
-        auto &functions = context.functions()->getFunctionsAtAddress(addr);
-        if (functions.empty()) {
-            throw nc::Exception(QString("there is no function having address 0x%1 to inline").arg(addr, 0, 16));
-        }
-        const nc::core::ir::Function *inlinedFunction = functions.front();
-
-        foreach (nc::core::ir::Function *function, context.functions()->functions()) {
-            std::vector<const nc::core::ir::Call *> calls;
-
-            foreach (nc::core::ir::BasicBlock *basicBlock, function->basicBlocks()) {
-                foreach (nc::core::ir::Statement *statement, basicBlock->statements()) {
-                    if (const nc::core::ir::Call *call = statement->asCall()) {
-                        if (const nc::core::ir::Constant *constant = call->target()->asConstant()) {
-                            if (constant->value().value() == nc::ConstantValue(addr)) {
-                                calls.push_back(call);
-                            }
-                        }
-                    }
-                }
-            }
-
-            foreach (const nc::core::ir::Call *call, calls) {
-                inliner.perform(function, call, inlinedFunction);
-            }
-        }
-    }
-}
-
-void inlineCalls(nc::core::Context &context, std::vector<nc::ByteAddr> callAddresses) {
-    if (callAddresses.empty()) {
-        return;
-    }
-
-    nc::core::ir::inlining::CallInliner inliner;
-
-    std::sort(callAddresses.begin(), callAddresses.end());
-
-    foreach (nc::core::ir::Function *function, context.functions()->functions()) {
-        std::vector<std::pair<const nc::core::ir::Call *, const nc::core::ir::Function *>> inlines;
-
-        foreach (nc::core::ir::BasicBlock *basicBlock, function->basicBlocks()) {
-            foreach (nc::core::ir::Statement *statement, basicBlock->statements()) {
-                if (statement->instruction() &&
-                    std::binary_search(callAddresses.begin(), callAddresses.end(), statement->instruction()->addr()))
-                {
-                    if (const nc::core::ir::Call *call = statement->asCall()) {
-                        const nc::core::ir::Function *inlinedFunction = NULL;
-
-                        if (const nc::core::ir::Constant *constant = call->target()->asConstant()) {
-                            auto &functions = context.functions()->getFunctionsAtAddress(constant->value().value());
-                            if (!functions.empty()) {
-                                inlinedFunction = functions.front();
-                            }
-                        }
-
-                        if (!inlinedFunction) {
-                            throw nc::Exception(QString("can't detect the function being called at 0x%1").
-                                arg(statement->instruction()->addr(), 0, 16));
-                        }
-
-                        inlines.push_back(std::make_pair(call, inlinedFunction));
-                    }
-                }
-            }
-        }
-
-        foreach (const auto &pair, inlines) {
-            inliner.perform(function, pair.first, pair.second);
-        }
-    }
-}
-
 void printSections(nc::core::Context &context, QTextStream &out) {
-    foreach (const auto *section, context.module()->image()->sections()) {
+    foreach (auto section, context.image()->sections()) {
         QString flags;
         if (section->isReadable()) {
-            flags += "r";
+            flags += QLatin1String("r");
         }
         if (section->isWritable()) {
-            flags += "w";
+            flags += QLatin1String("w");
         }
         if (section->isExecutable()) {
-            flags += "x";
+            flags += QLatin1String("x");
         }
         if (section->isCode()) {
-            flags += ",code";
+            flags += QLatin1String(",code");
         }
         if (section->isData()) {
-            flags += ",data";
+            flags += QLatin1String(",data");
         }
         if (section->isBss()) {
-            flags += ",bss";
+            flags += QLatin1String(",bss");
         }
-        out << QString("section name = '%1', start = 0x%2, size = 0x%3, flags = %4")
-            .arg(section->name()).arg(section->addr(), 0, 16).arg(section->size(), 0, 16).arg(flags) << endl;
+        out << QString(QLatin1String("section name = '%1', start = 0x%2, size = 0x%3, flags = %4"))
+            .arg(section->name()).arg(section->addr(), 0, 16).arg(section->size(), 0, 16).arg(flags) << '\n';
+    }
+    auto entrypoint = context.image()->entrypoint();
+    if (entrypoint) {
+        out << QString(QLatin1String("entry point = 0x%1")).arg(*entrypoint, 0, 16) << '\n';
+    }
+}
+
+void printSymbols(nc::core::Context &context, QTextStream &out) {
+    foreach (const auto *symbol, context.image()->symbols()) {
+        QString value;
+        if (symbol->value()) {
+            value = QString("%1").arg(*symbol->value(), 0, 16);
+        } else {
+            value = QLatin1String("Undefined");
+        }
+        out << QString("symbol name = '%1', type = %2, value = 0x%3, section = %4")
+            .arg(symbol->name()).arg(symbol->type().getName()).arg(value)
+            .arg(symbol->section() ? symbol->section()->name() : QString()) << '\n';
     }
 }
 
 void printRegionGraphs(nc::core::Context &context, QTextStream &out) {
-    out << "digraph Functions" << " { compound=true; " << endl;
-    foreach (const auto *function, context.functions()->functions()) {
-        context.getRegionGraph(function)->print(out);
+    out << "digraph Functions { compound=true; " << '\n';
+    foreach (const auto *function, context.functions()->list()) {
+        context.graphs()->at(function)->print(out);
     }
-    out << "}" << endl;
+    out << "}" << '\n';
 }
 
 void help() {
-    qout << "Usage: " << self << " [options] [--] file..." << endl;
-    qout << endl;
-    qout << "Options:" << endl;
-    qout << "  --help, -h                  Produce this help message and exit." << endl;
-    qout << "  --list-parsers              List available parsers and exit." << endl;
-    qout << "  --inline-function=ADDR      Inline a function with given address everywhere." << endl;
-    qout << "  --inline-call=ADDR          Inline a call at given address." << endl;
-    qout << "  --print-instructions[=FILE] Dump parsed instructions to the file." << endl;
-    qout << "  --print-cfg[=FILE]          Dump control flow graph in DOT language to the file." << endl;
-    qout << "  --print-ir[=FILE]           Dump intermediate representation in DOT language to the file." << endl;
-    qout << "  --print-regions[=FILE]      Dump results of structural analysis in DOT language to the file." << endl;
-    qout << "  --print-cxx[=FILE]          Print reconstructed program into given file." << endl;
-    qout << endl;
-    qout << "Program loads a disassembly text or executable image from given file or files" << endl;
-    qout << "and prints what it is said to (by default, it prints C++ code). When output" << endl;
-    qout << "file name is '-', stdout is used." << endl;
-}
+    auto branding = nc::branding();
+    branding.setApplicationName("Nocode");
 
-void listParsers() {
-    qout << "Available parsers:" << endl;
-    foreach(nc::core::input::Parser *parser, nc::core::input::ParserRepository::instance()->parsers()) {
-        qout << "  " << parser->name() << endl;
+    qout << "Usage: " << self << " [options] [--] file..." << '\n'
+         << '\n'
+         << "Options:" << '\n'
+         << "  --help, -h                  Produce this help message and quit." << '\n'
+         << "  --verbose, -v               Print progress information to stderr." << '\n'
+         << "  --print-sections[=FILE]     Print information about sections of the executable file." << '\n'
+         << "  --print-symbols[=FILE]      Print the symbols from the executable file." << '\n'
+         << "  --print-instructions[=FILE] Print parsed instructions to the file." << '\n'
+         << "  --print-cfg[=FILE]          Print control flow graph in DOT language to the file." << '\n'
+         << "  --print-ir[=FILE]           Print intermediate representation in DOT language to the file." << '\n'
+         << "  --print-regions[=FILE]      Print results of structural analysis in DOT language to the file." << '\n'
+         << "  --print-cxx[=FILE]          Print reconstructed program into given file." << '\n'
+         << "  --from[=ADDR]               From disassemble boundary." << '\n'
+         << "  --to[=ADDR]                 To disassemble boundary." << '\n'
+         << '\n'
+         << branding.applicationName() << " is a command-line native code to C/C++ decompiler." << '\n'
+         << "It parses given files, decompiles them, and prints the requested" << '\n'
+         << "information (by default, C++ code) to the specified files." << '\n'
+         << "When a file name is '-' or omitted, stdout is used." << '\n'
+         << '\n';
+
+    qout << "Version: " << branding.applicationVersion() << '\n';
+
+    qout << "Available architectures:";
+    foreach (auto architecture, nc::core::arch::ArchitectureRepository::instance()->architectures()) {
+        qout << " " << architecture->name();
     }
+    qout << '\n';
+    qout << "Available parsers:";
+    foreach(auto parser, nc::core::input::ParserRepository::instance()->parsers()) {
+        qout << " " << parser->name();
+    }
+    qout << '\n';
+    qout << "Report bugs to: " << branding.reportBugsTo() << '\n';
+    qout << "License: " << branding.licenseName() << " <" << branding.licenseUrl() << ">" << '\n';
 }
 
 int main(int argc, char *argv[]) {
+    QCoreApplication app(argc, argv);
+
     try {
-        QStringList args;
-
-        for (int i = 1; i < argc; ++i) {
-            args.append(QString(argv[i]));
-        }
-
         QString sectionsFile;
+        QString symbolsFile;
         QString instructionsFile;
         QString cfgFile;
         QString irFile;
         QString regionsFile;
         QString cxxFile;
+        nc::ByteAddr from_addr = 0;
+        nc::ByteAddr to_addr = 0;
+
         bool autoDefault = true;
+        bool verbose = false;
 
         std::vector<nc::ByteAddr> functionAddresses;
         std::vector<nc::ByteAddr> callAddresses;
 
         QStringList files;
 
-        for (int i = 0; i < args.size(); ++i) {
+        auto args = QCoreApplication::arguments();
+
+        for (int i = 1; i < args.size(); ++i) {
             QString arg = args[i];
             if (arg == "--help" || arg == "-h") {
                 help();
                 return 1;
-            } else if (arg == "--list-parsers") {
-                listParsers();
-                return 1;
+            } else if (arg == "--verbose" || arg == "-v") {
+                verbose = true;
 
             #define FILE_OPTION(option, variable)       \
             } else if (arg == option) {                 \
@@ -243,28 +210,23 @@ int main(int argc, char *argv[]) {
             } else if (arg.startsWith(option "=")) {    \
                 variable = arg.section('=', 1);         \
                 autoDefault = false;
+            #define ADDR_OPTION(option, variable)                   \
+            } else if (arg.startsWith(option "=")) {                \
+                bool ok;                                            \
+                variable = arg.section('=', 1).toInt(&ok,16);       \
+                autoDefault = true;
 
             FILE_OPTION("--print-sections", sectionsFile)
+            FILE_OPTION("--print-symbols", symbolsFile)
             FILE_OPTION("--print-instructions", instructionsFile)
             FILE_OPTION("--print-cfg", cfgFile)
             FILE_OPTION("--print-ir", irFile)
             FILE_OPTION("--print-regions", regionsFile)
             FILE_OPTION("--print-cxx", cxxFile)
+            ADDR_OPTION("--from", from_addr)
+            ADDR_OPTION("--to", to_addr)
 
             #undef FILE_OPTION
-
-            #define ADDR_OPTION(option, variable)                                   \
-            } else if (arg.startsWith(option "=")) {                                \
-                QString s = arg.section('=', 1);                                    \
-                nc::ByteAddr address;                                               \
-                if (!nc::stringToInt<nc::ByteAddr>(s, &address)) {                  \
-                    throw nc::Exception(QString("bad address value: %1").arg(s));   \
-                }                                                                   \
-                variable.push_back(address);                                        \
-
-            ADDR_OPTION("--inline-function", functionAddresses)
-            ADDR_OPTION("--inline-call",     callAddresses)
-
             #undef ADDR_OPTION
 
             } else if (arg == "--") {
@@ -288,9 +250,13 @@ int main(int argc, char *argv[]) {
 
         nc::core::Context context;
 
+        if (verbose) {
+            context.setLogToken(nc::LogToken(std::make_shared<nc::StreamLogger>(qerr)));
+        }
+
         foreach (const QString &filename, files) {
             try {
-                context.parse(filename);
+                nc::core::Driver::parse(context, filename);
             } catch (const nc::Exception &e) {
                 throw nc::Exception(filename + ":" + e.unicodeWhat());
             } catch (const std::exception &e) {
@@ -298,28 +264,32 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // FIXME
-        #if 0
-        inlineFunctions(context, functionAddresses);
-        inlineCalls(context, callAddresses);
-        #endif
+        openFileForWritingAndCall(sectionsFile, [&](QTextStream &out) { printSections(context, out); });
+        openFileForWritingAndCall(symbolsFile, [&](QTextStream &out) { printSymbols(context, out); });
 
-        openFileForWritingAndCall(sectionsFile,     [&](QTextStream &out) { printSections(context, out); });
+        if (!instructionsFile.isEmpty() || !cfgFile.isEmpty() || !irFile.isEmpty() || !regionsFile.isEmpty() || !cxxFile.isEmpty()) {
+            if(from_addr && to_addr)
+            {
+                foreach (const nc::core::image::Section *section, context.image()->sections())
+                    if( from_addr >= section->addr() && to_addr <= section->endAddr() )
+                        nc::core::Driver::disassemble(context, section, from_addr, to_addr);
+            }
+            else
+                nc::core::Driver::disassemble(context);
 
-        if (!instructionsFile.isEmpty()) {
-            context.disassemble();
+            openFileForWritingAndCall(instructionsFile, [&](QTextStream &out) { context.instructions()->print(out); });
+
+            if (!cfgFile.isEmpty() || !irFile.isEmpty() || !regionsFile.isEmpty() || !cxxFile.isEmpty()) {
+                nc::core::Driver::decompile(context);
+
+                openFileForWritingAndCall(cfgFile,     [&](QTextStream &out) { context.program()->print(out); });
+                openFileForWritingAndCall(irFile,      [&](QTextStream &out) { context.functions()->print(out); });
+                openFileForWritingAndCall(regionsFile, [&](QTextStream &out) { printRegionGraphs(context, out); });
+                openFileForWritingAndCall(cxxFile,     [&](QTextStream &out) { context.tree()->print(out); });
+            }
         }
-        openFileForWritingAndCall(instructionsFile, [&](QTextStream &out) { context.instructions()->print(out); });
-
-        if (!cfgFile.isEmpty() || !irFile.isEmpty() || !regionsFile.isEmpty() || !cxxFile.isEmpty()) {
-            context.decompile();
-        }
-        openFileForWritingAndCall(cfgFile,          [&](QTextStream &out) { context.program()->print(out); });
-        openFileForWritingAndCall(irFile,           [&](QTextStream &out) { context.functions()->print(out); });
-        openFileForWritingAndCall(regionsFile,      [&](QTextStream &out) { printRegionGraphs(context, out); });
-        openFileForWritingAndCall(cxxFile,          [&](QTextStream &out) { context.tree()->print(out); });
     } catch (const nc::Exception &e) {
-        qerr << self << ": " << e.unicodeWhat() << endl;
+        qerr << self << ": " << e.unicodeWhat() << '\n';
         return 1;
     }
 

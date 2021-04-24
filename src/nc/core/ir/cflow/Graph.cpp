@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -23,42 +26,31 @@
 
 #include <QTextStream>
 
-#include <nc/common/Foreach.h>
+#include <nc/common/make_unique.h>
 
 #include "Edge.h"
-#include "Node.h"
+#include "Region.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace cflow {
 
-Graph::~Graph() {
-    foreach (Node *node, nodes_) {
-        delete node;
-    }
-    foreach (Edge *edge, edges_) {
-        delete edge;
-    }
-}
+Graph::Graph(): root_(nullptr) {}
 
-void Graph::addNode(Node *node) {
-    nodes_.push_back(node);
-}
+Graph::~Graph() {}
 
 Edge *Graph::createEdge(Node *tail, Node *head) {
-    Edge *edge = new Edge(tail, head);
-    edges_.push_back(edge);
-    return edge;
+    auto edge = std::make_unique<Edge>(tail, head);
+    auto result = edge.get();
+
+    edges_.push_back(std::move(edge));
+
+    return result;
 }
 
 void Graph::print(QTextStream &out) const {
     out << *root();
-    foreach (const Edge *edge, edges_) {
-        if (edge->tail() && edge->head()) {
-            out << "node" << edge->tail() << " -> node" << edge->head() << endl;
-        }
-    }
 }
 
 } // namespace cflow

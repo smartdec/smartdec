@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -23,63 +26,17 @@
 
 #include <nc/common/Foreach.h>
 
-#include "PrintContext.h"
-
 namespace nc {
 namespace core {
 namespace likec {
 
-void Block::visitChildNodes(Visitor<TreeNode> &visitor) {
-    Statement::visitChildNodes(visitor);
-
+void Block::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     foreach (const auto &declaration, declarations_) {
-        visitor(declaration.get());
+        fun(declaration.get());
     }
     foreach (const auto &statement, statements_) {
-        visitor(statement.get());
+        fun(statement.get());
     }
-}
-
-Block *Block::rewrite() {
-    rewriteChildren(declarations_);
-    rewriteChildren(statements_);
-    return this;
-}
-
-void Block::doPrint(PrintContext &context) const {
-    context.out() << "{" << endl;
-    context.indentMore();
-
-    foreach (const auto &declaration, declarations_) {
-        context.outIndent();
-        declaration->print(context);
-        context.out() << endl;
-    }
-
-    if (!declarations_.empty() && !statements_.empty()) {
-        context.out() << endl;
-    }
-
-    foreach (const auto &statement, statements_) {
-        bool isCaseLabel =
-            statement->statementKind() == Statement::CASE_LABEL ||
-            statement->statementKind() == Statement::DEFAULT_LABEL;
-
-        if (isCaseLabel) {
-            context.indentLess();
-        }
-
-        context.outIndent();
-        statement->print(context);
-        context.out() << endl;
-
-        if (isCaseLabel) {
-            context.indentMore();
-        }
-    }
-
-    context.indentLess();
-    context.outIndent() << "}";
 }
 
 } // namespace likec

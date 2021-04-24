@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -30,6 +33,8 @@ namespace nc {
 namespace core {
 namespace likec {
 
+class Expression;
+
 /**
  * Do-While loop.
  */
@@ -37,23 +42,21 @@ class DoWhile: public Statement {
     std::unique_ptr<Statement> body_; ///< Loop body.
     std::unique_ptr<Expression> condition_; ///< Loop condition.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] condition Valid pointer to the loop condition.
      * \param[in] body Valid pointer to the loop body.
      */
-    DoWhile(Tree &tree, std::unique_ptr<Statement> body, std::unique_ptr<Expression> condition):
-        Statement(tree, DO_WHILE), body_(std::move(body)), condition_(std::move(condition))
+    DoWhile(std::unique_ptr<Statement> body, std::unique_ptr<Expression> condition):
+        Statement(DO_WHILE), body_(std::move(body)), condition_(std::move(condition))
     {}
 
     /**
      * \return Loop body.
      */
-    Statement *body() { return body_.get(); }
+    std::unique_ptr<Statement> &body() { return body_; }
 
     /**
      * \return Loop body.
@@ -63,25 +66,21 @@ class DoWhile: public Statement {
     /**
      * \return Loop condition.
      */
-    Expression *condition() { return condition_.get(); }
+    std::unique_ptr<Expression> &condition() { return condition_; }
 
     /**
      * \return Loop condition.
      */
     const Expression *condition() const { return condition_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual DoWhile *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::DoWhile, nc::core::likec::Statement::DO_WHILE)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::DoWhile, nc::core::likec::Statement::DO_WHILE)
 
 /* vim:set et sts=4 sw=4: */

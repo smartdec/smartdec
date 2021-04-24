@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -29,10 +32,17 @@ QT_BEGIN_NAMESPACE
 class QIODevice;
 QT_END_NAMESPACE
 
-namespace nc { namespace core {
+namespace nc {
+
+class LogToken;
+
+namespace core {
 
 class Instructions;
-class Module;
+
+namespace image {
+    class Image;
+}
 
 namespace input {
 
@@ -54,13 +64,15 @@ namespace input {
  * enough for the whole application.
  */
 class Parser: public QObject {
+    QString name_; ///< Name of this parser.
+
 public:
     /**
      * Constructor.
      * 
-     * \param[in] name                 Name of this parser.
+     * \param[in] name Name of this parser.
      */
-    Parser(const QString &name): mName(name) {}
+    Parser(QString name): name_(std::move(name)) {}
 
     /**
      * Virtual destructor.
@@ -68,45 +80,44 @@ public:
     virtual ~Parser() {}
 
     /**
-     * \returns                        Name of this parser.
+     * \returns Name of this parser.
      */
-    const QString &name() const { return mName; }
+    const QString &name() const { return name_; }
 
     /**
-     * \param[in] source               Valid pointer to the data source.
-     * \returns                        Whether the data at source looks like
-     *                                 something that can be parsed with this parser.
+     * \param[in] source Valid pointer to the data source.
+     *
+     * \returns Whether the data at source looks like
+     *          something that can be parsed with this parser.
      */
     bool canParse(QIODevice *source) const;
 
     /**
-     * Parse data from the given IO device.
+     * Parse executable image from the given IO device.
      *
-     * \param[in] source                Valid pointer to the data source.
-     * \param[in,out] module            Valid pointer to the module.
+     * \param[in] source Valid pointer to the data source.
+     * \param[out] image Valid pointer to the image.
+     * \param[in] log Log token.
      */
-    void parse(QIODevice *source, Module *module) const;
+    void parse(QIODevice *source, image::Image *image, const LogToken &log) const;
 
 protected:
-
     /**
-     * \param[in] source               Data source.
-     * \returns                        Whether the data at source looks like
-     *                                 something that can be parsed with this parser.
+     * \param[in] source Data source.
+     *
+     * \returns Whether the data at source looks like
+     *          something that can be parsed with this parser.
      */
     virtual bool doCanParse(QIODevice *source) const = 0;
 
     /**
-     * Actually parse data from the given IO device.
+     * Actually parses executable image from the given IO device.
      *
-     * \param[in] source                Data source.
-     * \param[in,out] module            Valid pointer to the module.
+     * \param[in] source Data source.
+     * \param[out] image Valid pointer to the image.
+     * \param[in] log Log token.
      */
-    virtual void doParse(QIODevice *source, Module *module) const = 0;
-
-private:
-
-    QString mName; ///< Name of this parser.
+    virtual void doParse(QIODevice *source, image::Image *image, const LogToken &log) const = 0;
 };
 
 }}} // namespace nc::core::input

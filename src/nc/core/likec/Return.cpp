@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -22,33 +25,14 @@
 #include "Return.h"
 
 #include "Expression.h"
-#include "PrintContext.h"
 
 namespace nc {
 namespace core {
 namespace likec {
 
-void Return::visitChildNodes(Visitor<TreeNode> &visitor) {
-    if (returnValue()) {
-        visitor(returnValue());
-    }
-}
-
-Statement *Return::rewrite() {
-    if (returnValue()) {
-        rewriteChild(returnValue_);
-    }
-
-    return this;
-}
-
-void Return::doPrint(PrintContext &context) const {
-    if (returnValue()) {
-        context.out() << "return ";
-        returnValue()->print(context);
-        context.out() << ";";
-    } else {
-        context.out() << "return;";
+void Return::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    if (returnValue_) {
+        fun(returnValue_.get());
     }
 }
 

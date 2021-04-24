@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -23,51 +26,47 @@
 #include <nc/config.h>
 
 #include <cassert>
+#include <memory>
 
+#include "LabelDeclaration.h"
+#include "LabelIdentifier.h"
 #include "Statement.h"
 
 namespace nc {
 namespace core {
 namespace likec {
 
-class LabelDeclaration;
-
 /**
  * Label in place of a statement.
  */
 class LabelStatement: public Statement {
-    LabelDeclaration *label_; ///< Label.
+    std::unique_ptr<LabelIdentifier> identifier_;
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
-     * \param[in] label Label.
+     * \param[in] identifier Valid pointer to the label identifier.
      */
-    LabelStatement(Tree &tree, LabelDeclaration *label):
-        Statement(tree, LABEL_STATEMENT), label_(label)
+    LabelStatement(std::unique_ptr<LabelIdentifier> identifier):
+        Statement(LABEL_STATEMENT), identifier_(std::move(identifier))
     {
-        assert(label);
+        assert(identifier_);
+
+        /* Do not count our identifier as a real reference. */
+        identifier_->declaration()->incReferenceCount(-1);
     }
 
     /**
-     * \return Label.
+     * \return Valid pointer to the label identifier.
      */
-    LabelDeclaration *label() const { return label_; }
-
-    LabelStatement *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &callback) const override;
+    LabelIdentifier *identifier() const { return identifier_.get(); }
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::LabelStatement, nc::core::likec::Statement::LABEL_STATEMENT)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::LabelStatement, nc::core::likec::Statement::LABEL_STATEMENT)
 
 /* vim:set et sts=4 sw=4: */

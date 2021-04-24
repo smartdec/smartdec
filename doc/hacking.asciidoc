@@ -1,0 +1,86 @@
+Snowman: Use of Programming Language and Libraries
+==================================================
+:toc:
+
+Snowman is written in $$C++$$ and uses the following libraries:
+
+    * http://www.boost.org/[Boost] (header-only libraries),
+    * http://qt-project.org/[Qt] (QtCore, QtGui components).
+
+As a build system we use http://cmake.org/[CMake].
+
+Use of $$C++$$
+--------------
+
+$$C++11$$ Features
+~~~~~~~~~~~~~~~~~~
+We use the following features of C++11:
+
+    * automatic type inference (`auto`);
+    * lambda functions;
+    * rvalue references;
+    * `std::unique_ptr` (supersedes `std::auto_ptr`);
+    * static assertions;
+    * explicit overrides (`<nc/config.h>` defines `override` to an empty string on compilers not supporting this feature);
+
+Wikipedia contains a good survey of these and other $$C++11$$ enhancements:
+
+    * http://en.wikipedia.org/wiki/C++11
+    * http://ru.wikipedia.org/wiki/C++11
+
+Standard Library
+~~~~~~~~~~~~~~~~
+We extensively use the $$C++$$ standard library.
+However, we prefer Qt classes for I/O and `QString` to `std::string`.
+We also prefer the de facto faster unordered containers from Boost to the standard unordered containers.
+
+Exceptions
+~~~~~~~~~~
+The decompiler project uses exceptions for error handling.
+The `nc::Exception` class (see `<nc/common/Exception.h>`) derives from `std::exception` and `boost::exception` and provides Unicode error messages.
+All classes of exceptions inside the project must be derived from `nc::Exception`.
+
+Language Extensions
+~~~~~~~~~~~~~~~~~~~
+The following language extensions are used:
+
+    * `foreach` — a statement for iterating over a range (array, container) defined in `<nc/common/Foreach.h>`.
+      Effectively, it is an alias either for C++11 range-based `for` or (for older compilers) `BOOST_FOREACH`.
+    * Fast implementation of dynamic_cast.
+      See `<nc/common/Subclass.h>` for details.
+    * `std::make_unique` — a function for convenient and exception-safe creation of unique pointers (available since C++14).
+      It is defined in `<nc/common/make_unique.h>`.
+
+Coding Conventions
+------------------
+
+Spacing
+~~~~~~~
+Indentation step is 4 spaces.
+Spaces are always used instead of tabs.
+`clang-format` is your friend.
+
+Naming
+~~~~~~
+Class names are written in `CamelCase` starting with a capital.
+Names of functions, variables are written in `camelCase` starting with a lower-case.
+Names of `enum` constants and macros are written in `ALL_CAPITALS`.
+Names of private class fields `endWithUnderscore_`.
+
+Include Guards
+~~~~~~~~~~~~~~
+The project uses `#pragma once` as include guard.
+It is de facto supported by all modern compilers, more robust, and saves typing, in comparison to classic guards.
+
+All header files in the project must have `#include <nc/config.h>` as its first include.
+
+Pointers and Ownership
+~~~~~~~~~~~~~~~~~~~~~~
+We use `std::make_unique` to create and acquire exclusive ownership over an object on the heap.
+The ownership is transferred by passing the `std::unique_ptr` object.
+
+Doxygen
+~~~~~~~
+We use http://www.doxygen.org/[Doxygen] comments for documenting code.
+
+When describing function's parameters or return values having (plain or smart) pointer types, we use phrases 'Valid pointer to XXX' and 'Pointer to XXX. Can be nullptr'.

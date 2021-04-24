@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -23,31 +26,42 @@
 
 #include <QTextStream>
 
-#include <nc/common/Foreach.h>
-#include <nc/common/SizedValue.h>
 #include <nc/common/Unreachable.h>
+#include <nc/common/make_unique.h>
 
 namespace nc {
 namespace core {
 namespace ir {
 
-void Constant::print(QTextStream &out) const {
-    int integerBase = out.integerBase();
-    hex(out) << "0x" << value().value();
-    out.setIntegerBase(integerBase);
+std::unique_ptr<Term> Constant::doClone() const {
+    return std::make_unique<Constant>(value());
 }
+
+void Constant::doCallOnChildren(const std::function<void(Term *)> &) {}
+
+void Constant::print(QTextStream &out) const {
+    out << QString(QLatin1String("0x%1")).arg(value().value(), 0, 16);
+}
+
+std::unique_ptr<Term> Intrinsic::doClone() const {
+    return std::make_unique<Intrinsic>(intrinsicKind(), size());
+}
+
+void Intrinsic::doCallOnChildren(const std::function<void(Term *)> &) {}
 
 void Intrinsic::print(QTextStream &out) const {
-    out << "intrinsic";
-}
-
-void Undefined::print(QTextStream &out) const {
-    out << "undefined";
+    out << "intrinsic(" << intrinsicKind() << ")";
 }
 
 MemoryLocationAccess::MemoryLocationAccess(const MemoryLocation &memoryLocation):
     Term(MEMORY_LOCATION_ACCESS, memoryLocation.size<SmallBitSize>()), memoryLocation_(memoryLocation)
 {}
+
+std::unique_ptr<Term> MemoryLocationAccess::doClone() const {
+    return std::make_unique<MemoryLocationAccess>(memoryLocation());
+}
+
+void MemoryLocationAccess::doCallOnChildren(const std::function<void(Term *)> &) {}
 
 void MemoryLocationAccess::print(QTextStream &out) const {
     out << memoryLocation_;
@@ -55,16 +69,14 @@ void MemoryLocationAccess::print(QTextStream &out) const {
 
 Dereference::Dereference(std::unique_ptr<Term> address, Domain domain, SmallBitSize size):
     Term(DEREFERENCE, size), domain_(domain), address_(std::move(address))
-{
-    address_->initFlags(READ);
+{}
+
+std::unique_ptr<Term> Dereference::doClone() const {
+    return std::make_unique<Dereference>(address()->clone(), domain(), size());
 }
 
-void Dereference::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(address_.get());
-}
-
-void Dereference::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(address_.get());
+void Dereference::doCallOnChildren(const std::function<void(Term *)> &fun) {
+    fun(address());
 }
 
 void Dereference::print(QTextStream &out) const {
@@ -76,54 +88,33 @@ UnaryOperator::UnaryOperator(int operatorKind, std::unique_ptr<Term> operand, Sm
     operatorKind_(operatorKind), 
     operand_(std::move(operand))
 {
-    assert(operand_ != NULL);
+    assert(operand_ != nullptr);
 
-    operand_->initFlags(READ);
-}
-
-UnaryOperator::UnaryOperator(int operatorKind, std::unique_ptr<Term> operand):
-    Term(UNARY_OPERATOR, operand->size()), 
-    operatorKind_(operatorKind), 
-    operand_(std::move(operand))
-{
-    operand_->initFlags(READ);
-}
-
-void UnaryOperator::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(operand_.get());
-}
-
-void UnaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(operand_.get());
-}
-
-boost::optional<SizedValue> UnaryOperator::apply(const SizedValue &a) const {
-    switch (operatorKind()) {
-        case BITWISE_NOT:
-            return SizedValue(~a.value(), size());
-        case LOGICAL_NOT:
-            return SizedValue(!a.value(), size());
-        case NEGATION:
-            return SizedValue(-a.signedValue(), size());
-        case SIGN_EXTEND:
-            return SizedValue(a.signedValue(), size());
-        case ZERO_EXTEND:
-            return SizedValue(a.value(), size());
-        case RESIZE:
-            return SizedValue(a.value(), size());
-        default:
-            unreachable();
-            return boost::none;
+    switch (operatorKind) {
+        case NOT: case NEGATION:
+            assert(size == operand_->size());
+            break;
+        case SIGN_EXTEND: case ZERO_EXTEND:
+            assert(size > operand_->size());
+            break;
+        case TRUNCATE:
+            assert(size < operand_->size());
+            break;
     }
+}
+
+std::unique_ptr<Term> UnaryOperator::doClone() const {
+    return std::make_unique<UnaryOperator>(operatorKind(), operand()->clone(), size());
+}
+
+void UnaryOperator::doCallOnChildren(const std::function<void(Term *)> &fun) {
+    fun(operand());
 }
 
 void UnaryOperator::print(QTextStream &out) const {
     switch (operatorKind()) {
-        case BITWISE_NOT:
+        case NOT:
             out << '~';
-            break;
-        case LOGICAL_NOT:
-            out << '!';
             break;
         case NEGATION:
             out << '-';
@@ -134,8 +125,8 @@ void UnaryOperator::print(QTextStream &out) const {
         case ZERO_EXTEND:
             out << "zero_extend ";
             break;
-        case RESIZE:
-            out << "resize ";
+        case TRUNCATE:
+            out << "truncate ";
             break;
         default:
             unreachable();
@@ -147,109 +138,61 @@ void UnaryOperator::print(QTextStream &out) const {
 BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right, SmallBitSize size):
     Term(BINARY_OPERATOR, size), operatorKind_(operatorKind), left_(std::move(left)), right_(std::move(right))
 {
-    assert(left_ != NULL);
-    assert(right_ != NULL);
+    assert(left_ != nullptr);
+    assert(right_ != nullptr);
 
-    left_->initFlags(READ);
-    right_->initFlags(READ);
-}
+    switch (operatorKind) {
+        case AND: case OR: case XOR:
+        case ADD: case SUB: case MUL:
+        case SIGNED_DIV: case SIGNED_REM:
+        case UNSIGNED_DIV: case UNSIGNED_REM:
+            assert(left_->size() == right_->size());
+            assert(size == left_->size());
+            break;
 
-BinaryOperator::BinaryOperator(int operatorKind, std::unique_ptr<Term> left, std::unique_ptr<Term> right):
-    Term(BINARY_OPERATOR, left->size()), operatorKind_(operatorKind), left_(std::move(left)), right_(std::move(right))
-{
-    left_->initFlags(READ);
-    right_->initFlags(READ);
-}
+        case SHL: case SHR: case SAR:
+            assert(size == left_->size());
+            break;
 
-void BinaryOperator::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(left_.get());
-    visitor(right_.get());
-}
-
-void BinaryOperator::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(left_.get());
-    visitor(right_.get());
-}
-
-boost::optional<SizedValue> BinaryOperator::apply(const SizedValue &a, const SizedValue &b) const {
-    switch (operatorKind()) {
-        case ADD:
-            return SizedValue(a.value() + b.value(), size());
-        case SUB:
-            return SizedValue(a.value() - b.value(), size());
-        case MUL:
-            return SizedValue(a.value() * b.value(), size());
-        case SIGNED_DIV:
-            if (b.value() != 0) {
-                return SizedValue(a.signedValue() / b.signedValue(), size());
-            } else {
-                return boost::none;
-            }
-        case UNSIGNED_DIV:
-            if (b.value() != 0) {
-                return SizedValue(a.value() / b.value(), size());
-            } else {
-                return boost::none;
-            }
-        case SIGNED_REM:
-            if (b.value() != 0) {
-                return SizedValue(a.signedValue() % b.signedValue(), size());
-            } else {
-                return boost::none;
-            }
-        case UNSIGNED_REM:
-            if (b.value() != 0) {
-                return SizedValue(a.value() % b.value(), size());
-            } else {
-                return boost::none;
-            }
-        case BITWISE_AND:
-            return SizedValue(a.value() & b.value(), size());
-        case LOGICAL_AND:
-            return SizedValue(a.value() && b.value(), size());
-        case BITWISE_OR:
-            return SizedValue(a.value() | b.value(), size());
-        case LOGICAL_OR:
-            return SizedValue(a.value() || b.value(), size());
-        case BITWISE_XOR:
-            return SizedValue(a.value() ^ b.value(), size());
-        case SHL:
-            return SizedValue(a.value() << b.value(), size());
-        case SHR:
-            return SizedValue(a.value() >> b.value(), size());
-        case SAR:
-            return SizedValue(a.signedValue() >> b.value(), size());
         case EQUAL:
-            return SizedValue(a.value() == b.value(), size());
-        case SIGNED_LESS:
-            return SizedValue(a.signedValue() < b.signedValue(), size());
-        case SIGNED_LESS_OR_EQUAL:
-            return SizedValue(a.signedValue() <= b.signedValue(), size());
-        case SIGNED_GREATER:
-            return SizedValue(a.signedValue() > b.signedValue(), size());
-        case SIGNED_GREATER_OR_EQUAL:
-            return SizedValue(a.signedValue() >= b.signedValue(), size());
-        case UNSIGNED_LESS:
-            return SizedValue(a.value() < b.value(), size());
-        case UNSIGNED_LESS_OR_EQUAL:
-            return SizedValue(a.value() <= b.value(), size());
-        case UNSIGNED_GREATER:
-            return SizedValue(a.value() > b.value(), size());
-        case UNSIGNED_GREATER_OR_EQUAL:
-            return SizedValue(a.value() >= b.value(), size());
-        default:
-            unreachable();
-            return boost::none;
+        case SIGNED_LESS: case SIGNED_LESS_OR_EQUAL:
+        case UNSIGNED_LESS: case UNSIGNED_LESS_OR_EQUAL:
+            assert(left_->size() == right_->size());
+            assert(size == 1);
+            break;
     }
 }
 
-BinaryOperator *BinaryOperator::doClone() const {
-    return new BinaryOperator(operatorKind(), left()->clone(), right()->clone(), size());
+std::unique_ptr<Term> BinaryOperator::doClone() const {
+    return std::make_unique<BinaryOperator>(operatorKind(), left()->clone(), right()->clone(), size());
+}
+
+void BinaryOperator::doCallOnChildren(const std::function<void(Term *)> &fun) {
+    fun(left());
+    fun(right());
 }
 
 void BinaryOperator::print(QTextStream &out) const {
     out << '(' << *left() << ' ';
     switch (operatorKind()) {
+        case AND:
+            out << '&';
+            break;
+        case OR:
+            out << '|';
+            break;
+        case XOR:
+            out << '^';
+            break;
+        case SHL:
+            out << "<<";
+            break;
+        case SHR:
+            out << ">>>";
+            break;
+        case SAR:
+            out << ">>";
+            break;
         case ADD:
             out << '+';
             break;
@@ -262,38 +205,14 @@ void BinaryOperator::print(QTextStream &out) const {
         case SIGNED_DIV:
             out << "(signed)/";
             break;
-        case UNSIGNED_DIV:
-            out << "(unsigned)/";
-            break;
         case SIGNED_REM:
             out << "(signed)%";
             break;
+        case UNSIGNED_DIV:
+            out << "(unsigned)/";
+            break;
         case UNSIGNED_REM:
             out << "(unsigned)%";
-            break;
-        case BITWISE_AND:
-            out << '&';
-            break;
-        case LOGICAL_AND:
-            out << "&&";
-            break;
-        case BITWISE_OR:
-            out << '|';
-            break;
-        case LOGICAL_OR:
-            out << "||";
-            break;
-        case BITWISE_XOR:
-            out << '^';
-            break;
-        case SHL:
-            out << "<<";
-            break;
-        case SHR:
-            out << ">>>";
-            break;
-        case SAR:
-            out << ">>";
             break;
         case EQUAL:
             out << "==";
@@ -304,59 +223,17 @@ void BinaryOperator::print(QTextStream &out) const {
         case SIGNED_LESS_OR_EQUAL:
             out << "(signed)<=";
             break;
-        case SIGNED_GREATER:
-            out << "(signed)>";
-            break;
-        case SIGNED_GREATER_OR_EQUAL:
-            out << "(signed)>=";
-            break;
         case UNSIGNED_LESS:
             out << "(unsigned)<";
             break;
         case UNSIGNED_LESS_OR_EQUAL:
             out << "(unsigned)<=";
             break;
-        case UNSIGNED_GREATER:
-            out << "(unsigned)>";
-            break;
-        case UNSIGNED_GREATER_OR_EQUAL:
-            out << "(unsigned)>=";
-            break;
         default:
             unreachable();
             break;
     }
     out << ' ' << *right() << ')';
-}
-
-
-Choice::Choice(std::unique_ptr<Term> preferredTerm, std::unique_ptr<Term> defaultTerm):
-    Term(CHOICE, preferredTerm->size()), preferredTerm_(std::move(preferredTerm)), defaultTerm_(std::move(defaultTerm))
-{
-    assert(preferredTerm_ != NULL);
-    assert(defaultTerm_ != NULL);
-    assert(preferredTerm_->size() == defaultTerm_->size());
-
-    preferredTerm_->initFlags(READ);
-    defaultTerm_->initFlags(READ);
-}
-
-Choice *Choice::doClone() const {
-    return new Choice(preferredTerm()->clone(), defaultTerm()->clone());
-}
-
-void Choice::visitChildTerms(Visitor<Term> &visitor) {
-    visitor(preferredTerm_.get());
-    visitor(defaultTerm_.get());
-}
-
-void Choice::visitChildTerms(Visitor<const Term> &visitor) const {
-    visitor(preferredTerm_.get());
-    visitor(defaultTerm_.get());
-}
-
-void Choice::print(QTextStream &out) const {
-    out << "choice(" << *preferredTerm() << " over " << *defaultTerm() << ')';
 }
 
 } // namespace ir

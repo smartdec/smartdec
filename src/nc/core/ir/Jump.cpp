@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -23,81 +26,55 @@
 
 #include <QTextStream>
 
+#include <nc/common/make_unique.h>
+
 #include "Term.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 
-Jump::Jump(std::unique_ptr<Term> condition, JumpTarget &&thenTarget, JumpTarget &&elseTarget):
+Jump::Jump(std::unique_ptr<Term> condition, JumpTarget thenTarget, JumpTarget elseTarget):
     Statement(JUMP), condition_(std::move(condition)),
     thenTarget_(std::move(thenTarget)), elseTarget_(std::move(elseTarget))
 {
-    assert(condition_ != NULL && "Jump condition must be not NULL.");
+    assert(condition_ != nullptr && "Jump condition must be not nullptr.");
     assert(thenTarget_ && "Then target must be valid.");
     assert(elseTarget_ && "Else target must be valid.");
 
-    condition_->initFlags(Term::READ);
-    condition_->setStatementRecursively(this);
+    condition_->setStatement(this);
 
     if (thenTarget_.address()) {
-        thenTarget_.address()->initFlags(Term::READ);
-        thenTarget_.address()->setStatementRecursively(this);
+        thenTarget_.address()->setStatement(this);
     }
     if (elseTarget_.address()) {
-        elseTarget_.address()->initFlags(Term::READ);
-        elseTarget_.address()->setStatementRecursively(this);
+        elseTarget_.address()->setStatement(this);
     }
 }
 
-Jump::Jump(JumpTarget &&thenTarget):
+Jump::Jump(JumpTarget thenTarget):
     Statement(JUMP), thenTarget_(std::move(thenTarget))
 {
     assert(thenTarget_ && "Jump target must be valid.");
 
     if (thenTarget_.address()) {
-        thenTarget_.address()->initFlags(Term::READ);
-        thenTarget_.address()->setStatementRecursively(this);
+        thenTarget_.address()->setStatement(this);
     }
 }
 
-void Jump::visitChildTerms(Visitor<Term> &visitor) {
-    if (condition_.get()) {
-        visitor(condition_.get());
-    }
-    if (thenTarget().address()) {
-        visitor(thenTarget().address());
-    }
-    if (elseTarget().address()) {
-        visitor(elseTarget().address());
-    }
-}
-
-void Jump::visitChildTerms(Visitor<const Term> &visitor) const {
-    if (condition_.get()) {
-        visitor(condition_.get());
-    }
-    if (thenTarget().address()) {
-        visitor(thenTarget().address());
-    }
-    if (elseTarget().address()) {
-        visitor(elseTarget().address());
-    }
-}
-
-Jump *Jump::doClone() const {
+std::unique_ptr<Statement> Jump::doClone() const {
     if (isConditional()) {
-        return new Jump(condition()->clone(), JumpTarget(thenTarget()), JumpTarget(elseTarget()));
+        return std::make_unique<Jump>(condition()->clone(), thenTarget(), elseTarget());
     } else {
-        return new Jump(JumpTarget(thenTarget()));
+        return std::make_unique<Jump>(thenTarget());
     }
 }
 
 void Jump::print(QTextStream &out) const {
     if (isConditional()) {
-        out << "if " << *condition() << " goto " << thenTarget() << " else goto " << elseTarget() << endl;
+        out << "if " << *condition() << " goto " << thenTarget() << " else goto " << elseTarget() << '\n';
     } else {
-        out << "goto " << thenTarget() << endl;
+        out << "goto " << thenTarget() << '\n';
     }
 }
 

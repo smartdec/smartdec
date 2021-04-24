@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -23,10 +26,9 @@
 #include <nc/config.h>
 
 #include <vector>
-#include <memory> /* unique_ptr */
+#include <memory>
 
 #include "Expression.h"
-#include "VariableDeclaration.h"
 
 namespace nc {
 namespace core {
@@ -39,21 +41,19 @@ class CallOperator: public Expression {
     std::unique_ptr<Expression> callee_; ///< Callee.
     std::vector<std::unique_ptr<Expression> > arguments_; ///< Function arguments.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] callee Callee.
      */
-    CallOperator(Tree &tree, std::unique_ptr<Expression> callee):
-        Expression(tree, CALL_OPERATOR), callee_(std::move(callee)) {}
+    explicit CallOperator(std::unique_ptr<Expression> callee):
+        Expression(CALL_OPERATOR), callee_(std::move(callee)) {}
 
     /**
      * \return Callee.
      */
-    Expression *callee() { return callee_.get(); }
+    std::unique_ptr<Expression> &callee() { return callee_; }
 
     /**
      * \return Callee.
@@ -63,7 +63,14 @@ class CallOperator: public Expression {
     /**
      * Function arguments.
      */
-    const std::vector<std::unique_ptr<Expression> > &arguments() const { return arguments_; }
+    std::vector<std::unique_ptr<Expression>> &arguments() { return arguments_; }
+
+    /**
+     * Function arguments.
+     */
+    const std::vector<Expression *> &arguments() const {
+        return reinterpret_cast<const std::vector<Expression *> &>(arguments_);
+    }
 
     /**
      * Adds argument to the function call and takes ownership of argument's expression.
@@ -71,24 +78,18 @@ class CallOperator: public Expression {
      * \param argument Valid pointer to an expression.
      */
     void addArgument(std::unique_ptr<Expression> argument) {
-        assert(argument != NULL);
+        assert(argument != nullptr);
         arguments_.push_back(std::move(argument));
     }
 
-    virtual const Type *getType() const override;
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual CallOperator *rewrite() override;
-    virtual int precedence() const override { return 2; }
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::CallOperator, nc::core::likec::Expression::CALL_OPERATOR)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::CallOperator, nc::core::likec::Expression::CALL_OPERATOR)
 
 /* vim:set et sts=4 sw=4: */

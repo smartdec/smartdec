@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -22,6 +25,7 @@
 #include "SectionsView.h"
 
 #include <QMenu>
+#include <QSortFilterProxyModel>
 #include <QTreeView>
 
 #include "SectionsModel.h"
@@ -31,24 +35,29 @@ namespace gui {
 
 SectionsView::SectionsView(QWidget *parent):
     TreeView(tr("Sections"), parent),
-    model_(NULL)
+    model_(nullptr)
 {
     treeView()->setItemsExpandable(false);
     treeView()->setRootIsDecorated(false);
     treeView()->setSelectionBehavior(QAbstractItemView::SelectRows);
     treeView()->setSelectionMode(QAbstractItemView::ExtendedSelection);
     treeView()->setUniformRowHeights(true);
+    treeView()->setSortingEnabled(true);
+
+    proxyModel_ = new QSortFilterProxyModel(this);
+    proxyModel_->setSortRole(SectionsModel::SortRole);
+    treeView()->setModel(proxyModel_);
 }
 
 void SectionsView::setModel(SectionsModel *model) {
     if (model != model_) {
         model_ = model;
-        treeView()->setModel(model);
+        proxyModel_->setSourceModel(model);
     }
 }
 
 const core::image::Section *SectionsView::selectedSection() const {
-    return model_->getSection(treeView()->currentIndex());
+    return model_->getSection(proxyModel_->mapToSource(treeView()->currentIndex()));
 }
 
 } // namespace gui

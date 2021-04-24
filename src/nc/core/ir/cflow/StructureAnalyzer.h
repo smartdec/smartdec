@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -21,6 +24,8 @@
 #pragma once
 
 #include <nc/config.h>
+
+#include <memory>
 
 namespace nc {
 namespace core {
@@ -47,8 +52,7 @@ class StructureAnalyzer {
     /** Dataflow information. */
     const dflow::Dataflow &dataflow_;
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
@@ -64,8 +68,7 @@ class StructureAnalyzer {
      */
     void analyze();
 
-    private:
-
+private:
     /**
      * Runs structural analysis in the region.
      *
@@ -129,6 +132,24 @@ class StructureAnalyzer {
      * \return True if the region was reduced.
      */
     bool reduceSwitch(Node *entry);
+
+    /**
+     * Inserts a subregion into a region.
+     * Can fail if the structure of the parent region gets broken because
+     * of this insertion. For example, if the entry node of the region
+     * is in the inserted subregion, but is not subregion's entry node.
+     *
+     * All nodes of the subregion are removed from the region.
+     * All edges from the nodes of the subregion become edges from the subregion.
+     * All edges to the entry node of the subregion become edges to the subregion.
+     * All other edges as well as duplicate edges are deleted.
+     *
+     * \param region Valid pointer to the region.
+     * \param subregion Valid pointer to the subregion.
+     *
+     * \return Pointer to the subregion on success, nullptr on failure.
+     */
+    Region *insertSubregion(Region *region, std::unique_ptr<Region> subregion);
 };
 
 } // namespace cflow

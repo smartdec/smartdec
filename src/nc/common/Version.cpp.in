@@ -1,0 +1,10 @@
+namespace nc {
+
+extern const char version[] = "@NC_VERSION@";
+extern const char reportBugsTo[] = "@NC_REPORT_BUGS_TO@";
+extern const char licenseName[] = "@NC_LICENSE_NAME@";
+extern const char licenseUrl[] = "@NC_LICENSE_URL@";
+
+} // namespace nc
+
+/* vim:set et sts=4 sw=4: */

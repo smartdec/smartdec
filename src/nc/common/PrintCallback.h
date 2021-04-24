@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -20,12 +23,14 @@
 
 #pragma once
 
+#include <nc/config.h>
+
 namespace nc {
 
 /**
  * Callback template class used to report events when something starts or ends printing.
  *
- * \tparam T Type of objects passed to callback.
+ * \tparam T Type of objects passed to the callback.
  */
 template<class T>
 class PrintCallback {
@@ -36,14 +41,14 @@ class PrintCallback {
      *
      * \param[in] what What starts printing.
      */
-    virtual void onStartPrinting(T *what) = 0;
+    virtual void onStartPrinting(T what) = 0;
 
     /**
      * Callback function called when something ends being printed.
      *
      * \param[in] what What ends printing.
      */
-    virtual void onEndPrinting(T *what) = 0;
+    virtual void onEndPrinting(T what) = 0;
 
     /**
      * Virtual destructor.

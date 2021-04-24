@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -23,9 +26,8 @@
 #include <nc/config.h>
 
 #include <vector>
-#include <memory> /* unique_ptr */
+#include <memory>
 
-#include "Commentable.h"
 #include "Declaration.h"
 
 namespace nc {
@@ -35,22 +37,26 @@ namespace likec {
 /**
  * Compilation unit.
  */
-class CompilationUnit: public TreeNode, public Commentable {
-    std::vector<std::unique_ptr<Declaration> > declarations_; ///< Declarations.
+class CompilationUnit: public TreeNode {
+    std::vector<std::unique_ptr<Declaration>> declarations_; ///< Declarations.
 
-    public:
-
+public:
     /**
-     * Class constructor.
-     *
-     * \param[in] tree Owning tree.
+     * Constructor.
      */
-    CompilationUnit(Tree &tree): TreeNode(tree, COMPILATION_UNIT) {}
+    CompilationUnit(): TreeNode(COMPILATION_UNIT) {}
 
     /**
      * \return Declarations.
      */
-    const std::vector<std::unique_ptr<Declaration> > &declarations() const { return declarations_; }
+    std::vector<std::unique_ptr<Declaration>> &declarations() { return declarations_; }
+
+    /**
+     * \return Declarations.
+     */
+    const std::vector<Declaration *> &declarations() const {
+        return reinterpret_cast<const std::vector<Declaration *> &>(declarations_);
+    }
 
     /**
      * Adds a declaration to the unit.
@@ -62,19 +68,14 @@ class CompilationUnit: public TreeNode, public Commentable {
         declarations_.push_back(std::move(declaration));
     }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-
-    virtual CompilationUnit *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::TreeNode, nc::core::likec::CompilationUnit, nc::core::likec::TreeNode::COMPILATION_UNIT)
+NC_SUBCLASS(nc::core::likec::TreeNode, nc::core::likec::CompilationUnit, nc::core::likec::TreeNode::COMPILATION_UNIT)
 
 /* vim:set et sts=4 sw=4: */

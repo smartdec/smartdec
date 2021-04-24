@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,17 +24,16 @@
 
 #include "VariableDeclaration.h"
 
-#include "PrintContext.h"
-#include "Type.h"
-
 namespace nc {
 namespace core {
 namespace likec {
 
-void VariableDeclaration::doPrint(PrintContext &context) const {
-    printComment(context);
+void VariableDeclaration::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(variableIdentifier_.get());
 
-    context.out() << *type() << ' ' << identifier() << ';';
+    if (initialValue_) {
+        fun(initialValue_.get());
+    }
 }
 
 } // namespace likec

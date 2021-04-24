@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -24,11 +27,13 @@
 
 #include "Statement.h"
 
-#include <memory> /* unique_ptr */
+#include <memory>
 
 namespace nc {
 namespace core {
 namespace likec {
+
+class Expression;
 
 /**
  * Switch.
@@ -37,23 +42,21 @@ class Switch: public Statement {
     std::unique_ptr<Expression> expression_; ///< Switch expression.
     std::unique_ptr<Statement> body_; ///< Switch body.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] expression Valid pointer to the switch expression.
      * \param[in] body Valid pointer to the switch body.
      */
-    Switch(Tree &tree, std::unique_ptr<Expression> &&expression, std::unique_ptr<Statement> &&body):
-        Statement(tree, SWITCH), expression_(std::move(expression)), body_(std::move(body))
+    Switch(std::unique_ptr<Expression> expression, std::unique_ptr<Statement> body):
+        Statement(SWITCH), expression_(std::move(expression)), body_(std::move(body))
     {}
 
     /**
      * \return Switch expression.
      */
-    Expression *expression() { return expression_.get(); }
+    std::unique_ptr<Expression> &expression() { return expression_; }
 
     /**
      * \return Switch expression.
@@ -63,25 +66,21 @@ class Switch: public Statement {
     /**
      * \return Switch body.
      */
-    Statement *body() { return body_.get(); }
+    std::unique_ptr<Statement> &body() { return body_; }
 
     /**
      * \return Switch body.
      */
     const Statement *body() const { return body_.get(); }
 
-    virtual void visitChildNodes(Visitor<TreeNode> &visitor) override;
-    virtual Switch *rewrite() override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
+protected:
+    void doCallOnChildren(const std::function<void(TreeNode *)> &fun) override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Statement, nc::core::likec::Switch, nc::core::likec::Statement::SWITCH)
+NC_SUBCLASS(nc::core::likec::Statement, nc::core::likec::Switch, nc::core::likec::Statement::SWITCH)
 
 /* vim:set et sts=4 sw=4: */

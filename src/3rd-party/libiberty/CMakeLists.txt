@@ -4,7 +4,11 @@ set(SOURCES
     demangle.h
 )
 
-if(CMAKE_COMPILER_IS_GNUCC)
+if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+    add_definitions(-Wno-unused-function -Wno-implicit-fallthrough)
+endif()
+
+if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     add_definitions(-Wno-unused-function)
 endif()
 

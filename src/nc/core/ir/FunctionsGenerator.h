@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -40,15 +43,15 @@ class Program;
  * Generator of functions from control flow graph.
  */
 class FunctionsGenerator {
-    public:
-
+public:
     /**
      * Virtual destructor.
      */
     virtual ~FunctionsGenerator() {}
 
     /**
-     * Discovers functions in the control flow graph and 
+     * Discovers functions in the control flow graph and creates corresponding
+     * Function objects.
      *
      * \param[in] program Intermediate representation of a program.
      * \param[out] functions Where to add newly created functions.
@@ -58,24 +61,24 @@ class FunctionsGenerator {
     /**
      * Creates a function out of a set of nodes and, optionally, entry basic block.
      *
-     * \param[in] nodes Nodes belonging to a function.
+     * \param[in] basicBlocks Basic blocks belonging to the function.
      * \param[in] entry Entry basic block of a function, if known.
      *
-     * \return Created function.
+     * \return Valid pointer to the created function.
      */
-    virtual std::unique_ptr<Function> makeFunction(const std::vector<const BasicBlock *> &nodes, const BasicBlock *entry = 0) const;
+    virtual std::unique_ptr<Function> makeFunction(const std::vector<const BasicBlock *> &basicBlocks, const BasicBlock *entry = nullptr) const;
 
     /**
      * Mapping from basic blocks to basic blocks.
      */
     typedef boost::unordered_map<const BasicBlock *, BasicBlock *> BasicBlockMap;
-    
+
     /**
      * Clones basic blocks and arcs between them.
      * Pointers to basic blocks in Jump statements are patched accordingly too.
      *
-     * \param[in] basicBlocks           Vector of valid pointers to basic blocks being cloned.
-     * \param     function              Function to add basic blocks to.
+     * \param basicBlocks   Vector of valid pointers to basic blocks being cloned.
+     * \param function      Function to add basic blocks to.
      *
      * \return Mapping of basic blocks to their clones.
      */

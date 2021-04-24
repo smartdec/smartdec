@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,27 +24,40 @@
 
 #include "Section.h"
 
-#include <nc/core/Module.h>
-#include <nc/core/image/Image.h>
-
 namespace nc {
 namespace core {
 namespace image {
 
-Section::Section(const Module *module, const QString &name, ByteAddr addr, ByteSize size):
-    Reader(module), name_(name), addr_(addr), size_(size),
+Section::Section(const QString &name, ByteAddr addr, ByteSize size):
+    name_(name), addr_(addr), size_(size),
     isAllocated_(false),
     isReadable_(false), isWritable_(false), isExecutable_(false),
     isCode_(false), isData_(false), isBss_(false)
 {}
 
 ByteSize Section::readBytes(ByteAddr addr, void *buf, ByteSize size) const {
-    if (externalByteSource()) {
-        return externalByteSource()->readBytes(addr - addr_, buf, size);
-    } else if (module()->image()->externalByteSource()) {
-        return module()->image()->externalByteSource()->readBytes(addr, buf, size);
-    } else {
+    auto offset = addr - addr_;
+
+    if (offset < 0 || offset >= size_) {
         return 0;
+    }
+
+    size = std::min(size, size_ - offset);
+
+    if (externalByteSource()) {
+        return externalByteSource()->readBytes(addr, buf, size);
+    } else {
+        auto copiedSize = std::min(size, content_.size() - offset);
+        if (copiedSize > 0) {
+            memcpy(buf, content_.constData() + offset, copiedSize);
+        }
+
+        auto zeroedSize = std::min(size, offset + size - content_.size());
+        if (zeroedSize > 0) {
+            memset(static_cast<char *>(buf) + size - zeroedSize, 0, zeroedSize);
+        }
+
+        return size;
     }
 }
 

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -19,39 +22,18 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <nc/config.h>
+#include "CompilationUnit.h"
 
 #include <nc/common/Foreach.h>
-
-#include "CompilationUnit.h"
-#include "PrintContext.h"
 
 namespace nc {
 namespace core {
 namespace likec {
 
-void CompilationUnit::visitChildNodes(Visitor<TreeNode> &visitor) {
-    TreeNode::visitChildNodes(visitor);
-
+void CompilationUnit::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
     foreach (const auto &declaration, declarations_) {
-        visitor(declaration.get());
+        fun(declaration.get());
     }
-}
-
-void CompilationUnit::doPrint(PrintContext &context) const {
-    printComment(context);
-
-    foreach (const auto &declaration, declarations_) {
-        context.out() << endl;
-        context.outIndent();
-        declaration->print(context);
-        context.out() << endl;
-    }
-}
-
-CompilationUnit *CompilationUnit::rewrite() {
-    rewriteChildren(declarations_);
-    return this;
 }
 
 } // namespace likec

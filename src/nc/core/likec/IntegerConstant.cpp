@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,24 +24,23 @@
 
 #include "IntegerConstant.h"
 
-#include "PrintContext.h"
-
 namespace nc {
 namespace core {
 namespace likec {
 
-IntegerConstant::IntegerConstant(Tree &tree, const SizedValue &value, const IntegerType *type):
-    Expression(tree, INTEGER_CONSTANT), value_(value), type_(type)
+IntegerConstant::IntegerConstant(const SizedValue &value, const IntegerType *type):
+    Expression(INTEGER_CONSTANT), value_(value), type_(type)
+{
+    assert(value.size() == type->size());
+}
+
+IntegerConstant::IntegerConstant(ConstantValue value, const IntegerType *type):
+    Expression(INTEGER_CONSTANT), value_(SizedValue(type->size(), value)), type_(type)
 {}
 
-void IntegerConstant::doPrint(PrintContext &context) const {
-    SignedConstantValue val = value().size() > 1 ? value().signedValue() : value().value();
-
-    if ((0 <= val && val <= 100) || (-100 <= val && val < 0 && !type()->isUnsigned())) {
-        context.out() << val;
-    } else {
-        context.out() << hex << "0x" << value().value() << dec;
-    }
+void IntegerConstant::setValue(const SizedValue &value) {
+    assert(value.size() == type_->size());
+    value_ = value;
 }
 
 } // namespace likec

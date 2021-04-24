@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -37,8 +40,7 @@ class LogManager: public QObject {
      */
     LogManager() {}
 
-    public:
-
+public:
     /**
      * \return Valid pointer to a global unique instance of LogManager.
      */
@@ -51,7 +53,7 @@ class LogManager: public QObject {
      * \param type Message type.
      * \param msg Message text.
      */
-    void log(QtMsgType type, const char *msg);
+    void log(QtMsgType type, const QString &msg);
 
     /**
      * Propagates given log message via the message() signal.
@@ -60,8 +62,7 @@ class LogManager: public QObject {
      */
     void log(const QString &text);
 
-    Q_SIGNAL
-
+Q_SIGNAL
     /**
      * A signal emitted when there is a new message to be shown.
      *

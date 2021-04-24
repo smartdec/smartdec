@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -68,10 +71,14 @@ public:
     /**
      * \return Nodes on cyclic paths from the entry to the entry.
      */
+    std::vector<Node *> &loopNodes() { return loopNodes_; }
+
+    /**
+     * \return Nodes on cyclic paths from the entry to the entry.
+     */
     const std::vector<Node *> &loopNodes() const { return loopNodes_; }
 
 private:
-
     /**
      * Visits given node and, if the node is not entry, recursively
      * visits all its WHITE predecessors. All the visited nodes are

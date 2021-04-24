@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -23,16 +26,12 @@
 #include <nc/config.h>
 
 #include <cassert>
-#include <memory> /* For std::unique_ptr. */
-#include <vector>
-
-#include <QString>
+#include <memory>
 
 #include <boost/noncopyable.hpp>
 
 #include <nc/common/Printable.h>
-
-#include "CommentText.h"
+#include <nc/common/ilist.h>
 
 namespace nc {
 namespace core {
@@ -43,27 +42,34 @@ class BasicBlock;
 /**
  * Intermediate representation of a function.
  */
-class Function: public PrintableBase<Function>, boost::noncopyable {
+class Function: public PrintableBase<Function>, public nc::ilist_item, boost::noncopyable {
+public:
+    typedef nc::ilist<BasicBlock> BasicBlocks;
+
+private:
     BasicBlock *entry_; ///< Entry basic block.
-    std::vector<std::unique_ptr<BasicBlock>> basicBlocks_; ///< All basic blocks of the function.
-    QString name_; ///< Name of this function.
-    CommentText comment_; ///< Comment to be displayed before a definition or declaration of this function.
+    BasicBlocks basicBlocks_; ///< All basic blocks of the function.
 
 public:
     /**
-     * Class constructor.
+     * Constructor.
      */
     Function();
 
     /**
-     * Class destructor.
+     * Destructor.
      */
     ~Function();
 
     /**
-     * \return Pointer to the entry basic block. Can be NULL.
+     * \return Pointer to the entry basic block. Can be nullptr.
      */
-    BasicBlock *entry() const { return entry_; }
+    BasicBlock *entry() { return entry_; }
+
+    /**
+     * \return Pointer to the entry basic block. Can be nullptr.
+     */
+    const BasicBlock *entry() const { return entry_; }
 
     /**
      * Sets the function's entry.
@@ -71,23 +77,22 @@ public:
      * \param entry Valid pointer to the new entry basic block.
      */
     void setEntry(BasicBlock *entry) {
-        assert(entry != NULL && "Function's entry must be not NULL.");
+        assert(entry != nullptr && "Function's entry must be not nullptr.");
         entry_ = entry;
     }
 
     /**
      * \return All basic blocks of the function.
+     *
+     * \warning Do not insert basic blocks into the container directly.
+     *          Use methods of Function class instead.
      */
-    const std::vector<BasicBlock *> &basicBlocks() {
-        return reinterpret_cast<const std::vector<BasicBlock *> &>(basicBlocks_);
-    }
+    BasicBlocks &basicBlocks() { return basicBlocks_; }
 
     /**
      * \return All basic blocks of the function.
      */
-    const std::vector<const BasicBlock *> &basicBlocks() const {
-        return reinterpret_cast<const std::vector<const BasicBlock *> &>(basicBlocks_);
-    }
+    const BasicBlocks &basicBlocks() const { return basicBlocks_; }
 
     /**
      * Adds basic block to the function. The function doesn't have ownership of basic blocks.
@@ -107,26 +112,6 @@ public:
      * \param[in] out Output stream.
      */
     void print(QTextStream &out) const;
-
-    /**
-     * \return Name for this function.
-     */
-    const QString &name() const { return name_; }
-
-    /**
-     * \param[in] name                 Name for this function.
-     */
-    void setName(const QString &name) { name_ = name; }
-
-    /**
-     * \return Comment for this function.
-     */
-    CommentText &comment() { return comment_; }
-
-    /**
-     * \return Comment for this function.
-     */
-    const CommentText &comment() const { return comment_; }
 };
 
 } // namespace ir

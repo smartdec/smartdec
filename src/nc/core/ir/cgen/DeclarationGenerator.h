@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -24,6 +27,8 @@
 
 #include <boost/noncopyable.hpp>
 
+#include <nc/core/ir/calling/CalleeId.h>
+
 #include "CodeGenerator.h"
 
 namespace nc {
@@ -37,11 +42,10 @@ namespace likec {
 
 namespace ir {
 
-class Function;
 class Term;
 
-namespace types {
-    class Types;
+namespace calling {
+    class FunctionSignature;
 }
 
 namespace cgen {
@@ -50,20 +54,20 @@ namespace cgen {
  * Generator of function declarations.
  */
 class DeclarationGenerator: boost::noncopyable {
-    CodeGenerator &parent_; ///< Parent code generator.
-    const Function *function_; ///< Function under consideration.
-    const types::Types *types_; ///< Reconstructed types.
-    likec::FunctionDeclaration *declaration_; ///< Function's declaration.
+    CodeGenerator &parent_;
+    calling::CalleeId calleeId_;
+    const calling::FunctionSignature *signature_;
+    likec::FunctionDeclaration *declaration_;
 
-    public:
-
+public:
     /**
      * Constructor.
      *
      * \param parent Parent code generator.
-     * \param function Valid pointer to the function being declared.
+     * \param calleeId Id of the function.
+     * \param signature Valid pointer to the function's signature.
      */
-    DeclarationGenerator(CodeGenerator &parent, const Function *function);
+    DeclarationGenerator(CodeGenerator &parent, const calling::CalleeId &calleeId, const calling::FunctionSignature *signature);
 
     /**
      * Virtual destructor.
@@ -81,14 +85,10 @@ class DeclarationGenerator: boost::noncopyable {
     likec::Tree &tree() const { return parent().tree(); }
 
     /**
-     * \return Function being translated.
+     * \return Pointer to the signature of the function, for which
+     *         declaration is generated. Can be nullptr.
      */
-    const Function *function() const { return function_; }
-
-    /**
-     * \return Reconstructed types.
-     */
-    const types::Types &types() const { return *types_; }
+    const calling::FunctionSignature *signature() const { return signature_; }
 
     /**
      * \return Function's declaration.
@@ -109,6 +109,7 @@ class DeclarationGenerator: boost::noncopyable {
      */
     std::unique_ptr<likec::FunctionDeclaration> createDeclaration();
 
+protected:
     /**
      * \return Type of function's return value.
      */
@@ -120,13 +121,13 @@ class DeclarationGenerator: boost::noncopyable {
     bool variadic() const;
 
     /**
-     * Creates a declaration of function argument for given term.
+     * Creates the declaration of a function's argument.
      * Declaration is automatically added to the list of formal arguments
      * of current function's declaration.
      *
-     * \param[in] term Term.
+     * \param[in] term Valid pointer to the term representing the argument.
      *
-     * \return Created declaration of function's formal argument.
+     * \return Created declaration of function's argument.
      */
     likec::ArgumentDeclaration *makeArgumentDeclaration(const Term *term);
 };

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,46 +24,47 @@
 
 #include "DefinitionGenerator.h"
 
-#include <cstdint> /* For std::uintptr_t. */
-
-#include <nc/core/Context.h>
-#include <nc/core/Module.h>
-#include <nc/core/arch/Architecture.h>
-#include <nc/core/arch/Instruction.h>
-#include <nc/core/arch/Registers.h>
-#ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
-#include <nc/core/image/Image.h>
-#endif
-
 #include <nc/common/Foreach.h>
+#include <nc/common/Range.h>
 #include <nc/common/Unreachable.h>
 #include <nc/common/make_unique.h>
 
+#include <nc/core/arch/Architecture.h>
+#include <nc/core/arch/Instruction.h>
+#include <nc/core/image/Image.h>
+#ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
+#include <nc/core/image/Reader.h>
+#include <nc/core/image/Section.h>
+#endif
 #include <nc/core/ir/BasicBlock.h>
+#include <nc/core/ir/CFG.h>
+#include <nc/core/ir/Dominators.h>
 #include <nc/core/ir/Function.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/calls/CallAnalyzer.h>
-#include <nc/core/ir/calls/CallsData.h>
-#include <nc/core/ir/calls/FunctionAnalyzer.h>
-#include <nc/core/ir/calls/FunctionSignature.h>
-#include <nc/core/ir/calls/ReturnAnalyzer.h>
+#include <nc/core/ir/calling/CallHook.h>
+#include <nc/core/ir/calling/Hooks.h>
+#include <nc/core/ir/calling/EntryHook.h>
+#include <nc/core/ir/calling/Signatures.h>
+#include <nc/core/ir/calling/ReturnHook.h>
 #include <nc/core/ir/cflow/BasicNode.h>
 #include <nc/core/ir/cflow/Dfs.h>
-#include <nc/core/ir/cflow/Graph.h>
+#include <nc/core/ir/cflow/Graphs.h>
 #include <nc/core/ir/cflow/Switch.h>
-#include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Dataflows.h>
+#include <nc/core/ir/dflow/Uses.h>
+#include <nc/core/ir/dflow/Utils.h>
+#include <nc/core/ir/dflow/Value.h>
+#include <nc/core/ir/liveness/Livenesses.h>
 #include <nc/core/ir/types/Type.h>
 #include <nc/core/ir/types/Types.h>
-#include <nc/core/ir/usage/Usage.h>
 #include <nc/core/ir/vars/Variables.h>
 #include <nc/core/likec/BinaryOperator.h>
 #include <nc/core/likec/Block.h>
 #include <nc/core/likec/Break.h>
 #include <nc/core/likec/CallOperator.h>
 #include <nc/core/likec/CaseLabel.h>
-#include <nc/core/likec/CommentStatement.h>
 #include <nc/core/likec/Continue.h>
 #include <nc/core/likec/DefaultLabel.h>
 #include <nc/core/likec/DoWhile.h>
@@ -78,95 +82,94 @@
 #include <nc/core/likec/Switch.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/likec/Typecast.h>
+#include <nc/core/likec/Types.h>
 #include <nc/core/likec/UnaryOperator.h>
+#include <nc/core/likec/UndeclaredIdentifier.h>
 #include <nc/core/likec/VariableIdentifier.h>
 #include <nc/core/likec/While.h>
 
 #include "SwitchContext.h"
+#include "Utils.h"
 
 namespace nc {
 namespace core {
 namespace ir {
 namespace cgen {
 
-DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *function):
-    DeclarationGenerator(parent, function),
-    dataflow_(parent.context().getDataflow(function)),
-    variables_(parent.context().getVariables(function)),
-    usage_(parent.context().getUsage(function)),
-    regionGraph_(parent.context().getRegionGraph(function)),
-    definition_(NULL),
-    serial_(0)
+DefinitionGenerator::DefinitionGenerator(CodeGenerator &parent, const Function *function, const CancellationToken &canceled):
+    DeclarationGenerator(parent, calling::CalleeId(function), parent.signatures().getSignature(function).get()),
+    function_(function),
+    dataflow_(*parent.dataflows().at(function)),
+    graph_(*parent.graphs().at(function)),
+    liveness_(*parent.livenesses().at(function)),
+    uses_(std::make_unique<dflow::Uses>(dataflow_)),
+    cfg_(std::make_unique<CFG>(function->basicBlocks())),
+    dominators_(std::make_unique<Dominators>(*cfg_, canceled)),
+    hookStatements_(getHookStatements(function, dataflow_, parent.hooks())),
+    definition_(nullptr)
 {
+    assert(function != nullptr);
 }
 
+DefinitionGenerator::~DefinitionGenerator() {}
+
 void DefinitionGenerator::setDefinition(likec::FunctionDefinition *definition) {
-    assert(!definition_); 
+    assert(!definition_);
     definition_ = definition;
     setDeclaration(definition);
 }
 
 std::unique_ptr<likec::FunctionDefinition> DefinitionGenerator::createDefinition() {
-    auto functionDefinition = std::make_unique<likec::FunctionDefinition>(tree(),
-        function()->name(), makeReturnType(), variadic());
+    auto nameAndComment = parent().nameGenerator().getFunctionName(function_);
 
-    functionDefinition->setComment(function()->comment().text());
+    auto functionDefinition = std::make_unique<likec::FunctionDefinition>(tree(),
+        std::move(nameAndComment.name()), makeReturnType(), signature()->variadic());
+
+    functionDefinition->setComment(std::move(nameAndComment.comment()));
 
     setDefinition(functionDefinition.get());
 
-    if (const calls::FunctionSignature *signature = context().callsData()->getFunctionSignature(function())) {
-        if (calls::FunctionAnalyzer *functionAnalyzer = context().callsData()->getFunctionAnalyzer(function())) {
-            foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
-                makeArgumentDeclaration(functionAnalyzer->getArgumentTerm(memoryLocation));
-            }
-        }
-    }
+    if (auto entryHook = parent().hooks().getEntryHook(function_)) {
+        foreach (const auto &argument, signature()->arguments()) {
+            auto term = entryHook->getArgumentTerm(argument.get());
+            assert(term != nullptr && "Entry hook must have clones of all arguments in the signature.");
+            assert(dataflow_.getMemoryLocation(term) && "Argument must have a memory location.");
 
-    parent().setFunctionDeclaration(function(), functionDefinition.get());
+            auto variable = parent().variables().getVariable(term);
+            assert(variable != nullptr && "Each term with a memory location must belong to a variable.");
 
-    if (calls::FunctionAnalyzer *functionAnalyzer = context().callsData()->getFunctionAnalyzer(function())) {
-        foreach (const ir::Statement *statement, functionAnalyzer->entryStatements()) {
-            if (auto likecStatement = makeStatement(statement, NULL, NULL, NULL)) {
-                definition()->block()->addStatement(std::move(likecStatement));
+            if (variable->memoryLocation() == dataflow_.getMemoryLocation(term)) {
+                auto &variableDeclaration = variableDeclarations_[variable];
+                assert(!variableDeclaration);
+                variableDeclaration = makeArgumentDeclaration(term);
+            } else {
+                auto variableDeclaration = makeArgumentDeclaration(term);
+                definition()->block()->addStatement(std::make_unique<likec::ExpressionStatement>(
+                    std::make_unique<likec::BinaryOperator>(
+                        likec::BinaryOperator::ASSIGN,
+                        makeVariableAccess(term),
+                        std::make_unique<likec::VariableIdentifier>(variableDeclaration))));
             }
         }
     }
 
     SwitchContext switchContext;
-    makeStatements(regionGraph().root(), definition()->block(), NULL, NULL, NULL, switchContext);
+    makeStatements(graph_.root(), definition()->block().get(), nullptr, nullptr, nullptr, switchContext);
 
     return functionDefinition;
 }
 
-likec::ArgumentDeclaration *DefinitionGenerator::makeArgumentDeclaration(const Term *term) {
-    likec::VariableDeclaration *&variableDeclaration = variableDeclarations_[variables().getVariable(term)];
-    assert(!variableDeclaration);
+likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(const vars::Variable *variable) {
+    assert(variable != nullptr);
+    assert(variable->isLocal());
 
-    likec::ArgumentDeclaration *result = DeclarationGenerator::makeArgumentDeclaration(term);
-    variableDeclaration = result;
-
-    return result;
-}
-
-likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(const Term *term) {
-    likec::VariableDeclaration *&result = variableDeclarations_[variables().getVariable(term)];
+    likec::VariableDeclaration *&result = variableDeclarations_[variable];
     if (!result) {
-        QString basename(QLatin1String("v"));
+        auto nameAndComment = parent().nameGenerator().getLocalVariableName(variable->memoryLocation(), variableDeclarations_.size());
 
-#ifdef NC_REGISTER_VARIABLE_NAMES
-        if(const MemoryLocationAccess *access = term->asMemoryLocationAccess()) {
-            if (const arch::Register *reg = context().module()->architecture()->registers()->regizter(access->memoryLocation())) {
-                basename = reg->lowercaseName();
-                if (basename.isEmpty() || basename[basename.size() - 1].isDigit()) {
-                    basename.push_back('_');
-                }
-            }
-        }
-#endif
-
-        auto variableDeclaration = std::make_unique<likec::VariableDeclaration>(tree(),
-            QString("%1%2").arg(basename).arg(++serial_),
-            parent().makeType(types().getType(term)));
+        auto variableDeclaration = std::make_unique<likec::VariableDeclaration>(
+            std::move(nameAndComment.name()), parent().makeVariableType(variable));
+        variableDeclaration->setComment(std::move(nameAndComment.comment()));
 
         result = variableDeclaration.get();
         definition()->block()->addDeclaration(std::move(variableDeclaration));
@@ -174,13 +177,22 @@ likec::VariableDeclaration *DefinitionGenerator::makeLocalVariableDeclaration(co
     return result;
 }
 
+likec::VariableDeclaration *DefinitionGenerator::makeVariableDeclaration(const vars::Variable *variable) {
+    assert(variable != nullptr);
+
+    if (variable->isGlobal()) {
+        return parent().makeGlobalVariableDeclaration(variable);
+    } else {
+        return makeLocalVariableDeclaration(variable);
+    }
+}
+
 likec::LabelDeclaration *DefinitionGenerator::makeLabel(const BasicBlock *basicBlock) {
     likec::LabelDeclaration *&result = labels_[basicBlock];
     if (!result) {
         auto label = std::make_unique<likec::LabelDeclaration>(
-            tree(),
             basicBlock->address() ?
-                QString("addr_0x%1_%2").arg(basicBlock->address().get(), 0, 16).arg(labels_.size()) :
+                QString("addr_%1_%2").arg(basicBlock->address().get(), 0, 16).arg(labels_.size()) :
                 QString("label_%1").arg(labels_.size())
             );
         result = label.get();
@@ -190,20 +202,21 @@ likec::LabelDeclaration *DefinitionGenerator::makeLabel(const BasicBlock *basicB
 }
 
 void DefinitionGenerator::addLabels(const BasicBlock *basicBlock, likec::Block *block, SwitchContext &switchContext) {
-    assert(basicBlock != NULL);
-    assert(block != NULL);
+    assert(basicBlock != nullptr);
+    assert(block != nullptr);
 
     /* Add usual label. */
-    block->addStatement(std::make_unique<likec::LabelStatement>(tree(), makeLabel(basicBlock)));
+    block->addStatement(
+        std::make_unique<likec::LabelStatement>(std::make_unique<likec::LabelIdentifier>(makeLabel(basicBlock))));
 
     /* Add case labels. */
     if (basicBlock->address()) {
         if (basicBlock == switchContext.defaultBasicBlock()) {
-            block->addStatement(std::make_unique<likec::DefaultLabel>(tree()));
+            block->addStatement(std::make_unique<likec::DefaultLabel>());
         } else {
             foreach (ConstantValue value, switchContext.getCaseValues(*basicBlock->address())) {
-                block->addStatement(std::make_unique<likec::CaseLabel>(tree(), 
-                    std::make_unique<likec::IntegerConstant>(tree(), value, switchContext.valueType())));
+                block->addStatement(std::make_unique<likec::CaseLabel>(
+                    std::make_unique<likec::IntegerConstant>(value, switchContext.valueType())));
             }
         }
         switchContext.eraseCaseValues(*basicBlock->address());
@@ -257,56 +270,54 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
             std::unique_ptr<likec::Expression> condition(makeExpression(region->nodes()[0], block,
                 region->nodes()[1]->getEntryBasicBlock(), region->nodes()[2]->getEntryBasicBlock(), switchContext));
 
-            auto thenBlock = std::make_unique<likec::Block>(tree());
+            auto thenBlock = std::make_unique<likec::Block>();
             makeStatements(region->nodes()[1], thenBlock.get(), nextBB, breakBB, continueBB, switchContext);
 
-            auto elseBlock = std::make_unique<likec::Block>(tree());
+            auto elseBlock = std::make_unique<likec::Block>();
             makeStatements(region->nodes()[2], elseBlock.get(), nextBB, breakBB, continueBB, switchContext);
 
-            block->addStatement(std::make_unique<likec::If>(tree(), std::move(condition), std::move(thenBlock), std::move(elseBlock)));
+            block->addStatement(std::make_unique<likec::If>(std::move(condition), std::move(thenBlock), std::move(elseBlock)));
 
             break;
         }
         case cflow::Region::IF_THEN: {
             assert(region->nodes().size() == 2);
-            assert(region->exitBasicBlock() != NULL);
+            assert(region->exitBasicBlock() != nullptr);
 
             std::unique_ptr<likec::Expression> condition(makeExpression(region->nodes()[0], block,
                 region->nodes()[1]->getEntryBasicBlock(), region->exitBasicBlock(), switchContext));
 
-            auto thenBlock = std::make_unique<likec::Block>(tree());
+            auto thenBlock = std::make_unique<likec::Block>();
             makeStatements(region->nodes()[1], thenBlock.get(), nextBB, breakBB, continueBB, switchContext);
 
-            block->addStatement(std::make_unique<likec::If>(tree(), std::move(condition), std::move(thenBlock)));
+            block->addStatement(std::make_unique<likec::If>(std::move(condition), std::move(thenBlock)));
 
             break;
         }
         case cflow::Region::LOOP: {
             assert(region->nodes().size() > 0);
 
-            auto condition = std::make_unique<likec::IntegerConstant>(tree(), 1, tree().makeIntegerType(tree().intSize(), false));
+            auto condition = std::make_unique<likec::IntegerConstant>(1, tree().makeIntegerType(tree().intSize(), false));
 
             cflow::Dfs dfs(region);
 
-            auto body = std::make_unique<likec::Block>(tree());
+            auto body = std::make_unique<likec::Block>();
             const BasicBlock *entryBB = region->entry()->getEntryBasicBlock();
 
             makeStatements(dfs.preordering(), body.get(), entryBB, nextBB, entryBB, switchContext);
 
-            block->addStatement(std::make_unique<likec::While>(tree(), std::move(condition), std::move(body)));
+            block->addStatement(std::make_unique<likec::While>(std::move(condition), std::move(body)));
 
             break;
         }
         case cflow::Region::WHILE: {
             assert(region->nodes().size() > 0);
-            assert(region->exitBasicBlock() != NULL);
+            assert(region->exitBasicBlock() != nullptr);
 
             addLabels(region->entry()->getEntryBasicBlock(), block, switchContext);
 
-            cflow::Node *bodyEntry = region->entry()->uniqueSuccessor();
-
-            auto condition = makeExpression(region->entry(), NULL,
-                bodyEntry ? bodyEntry->getEntryBasicBlock() : region->entry()->getEntryBasicBlock(),
+            auto condition = makeExpression(region->entry(), nullptr,
+                region->entry()->uniqueSuccessor()->getEntryBasicBlock(),
                 region->exitBasicBlock(), switchContext);
 
             cflow::Dfs dfs(region);
@@ -315,12 +326,12 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
             assert(nodes.front() == region->entry());
             nodes.erase(nodes.begin());
 
-            auto body = std::make_unique<likec::Block>(tree());
+            auto body = std::make_unique<likec::Block>();
             const BasicBlock *conditionBB = region->entry()->getEntryBasicBlock();
 
             makeStatements(nodes, body.get(), conditionBB, region->exitBasicBlock(), conditionBB, switchContext);
 
-            block->addStatement(std::make_unique<likec::While>(tree(), std::move(condition), std::move(body)));
+            block->addStatement(std::make_unique<likec::While>(std::move(condition), std::move(body)));
 
             if (auto jump = makeJump(region->exitBasicBlock(), nextBB, breakBB, continueBB)) {
                 block->addStatement(std::move(jump));
@@ -330,8 +341,8 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
         }
         case cflow::Region::DO_WHILE: {
             assert(region->nodes().size() > 0);
-            assert(region->exitBasicBlock() != NULL);
-            assert(region->loopCondition() != NULL);
+            assert(region->exitBasicBlock() != nullptr);
+            assert(region->loopCondition() != nullptr);
 
             cflow::Dfs dfs(region);
             auto &nodes = dfs.preordering();
@@ -339,7 +350,7 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
             assert(nc::contains(nodes, region->loopCondition()));
             nodes.erase(std::find(nodes.begin(), nodes.end(), region->loopCondition()));
 
-            auto body = std::make_unique<likec::Block>(tree());
+            auto body = std::make_unique<likec::Block>();
             const BasicBlock *conditionBB = region->loopCondition()->getEntryBasicBlock();
 
             makeStatements(nodes, body.get(), conditionBB, nextBB, conditionBB, switchContext);
@@ -349,7 +360,7 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
                 region->exitBasicBlock(),
                 switchContext);
 
-            block->addStatement(std::make_unique<likec::DoWhile>(tree(), std::move(body), std::move(condition)));
+            block->addStatement(std::make_unique<likec::DoWhile>(std::move(body), std::move(condition)));
 
             if (auto jump = makeJump(region->exitBasicBlock(), nextBB, breakBB, continueBB)) {
                 block->addStatement(std::move(jump));
@@ -366,9 +377,10 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
             auto makeStatementsButLast = [&](const BasicBlock *basicBlock) {
                 addLabels(basicBlock, block, switchContext);
 
-                for (std::size_t i = 0, size = basicBlock->statements().size() - 1; i < size; ++i) {
-                    /* We do not care about breakBB and other: we will not create gotos. */
-                    if (auto likecStatement = makeStatement(basicBlock->statements()[i], NULL, NULL, NULL)) {
+                auto iend = --basicBlock->statements().end();
+                for (auto i = basicBlock->statements().begin(); i != iend; ++i) {
+                    /* We do not care about breakBB and others: we will not create gotos. */
+                    if (auto likecStatement = makeStatement(*i, nullptr, nullptr, nullptr)) {
                         block->addStatement(std::move(likecStatement));
                     }
                 }
@@ -384,12 +396,12 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
 
             /* The jump via the jump table. */
             const Jump *jump = witch->switchNode()->basicBlock()->getJump();
-            assert(jump != NULL);
+            assert(jump != nullptr);
             assert(jump->isUnconditional());
 
             /* The jump table. */
             const JumpTable *jumpTable = jump->thenTarget().table();
-            assert(jumpTable != NULL);
+            assert(jumpTable != nullptr);
 
             /*
              * Make a new switch context.
@@ -415,7 +427,8 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
             /*
              * Generate the switch expression.
              */
-            auto expression = std::make_unique<likec::Typecast>(tree(),
+            auto expression = std::make_unique<likec::Typecast>(
+                likec::Typecast::REINTERPRET_CAST,
                 newSwitchContext.valueType(),
                 makeExpression(witch->switchTerm()));
 
@@ -430,7 +443,7 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
                     [witch](const cflow::Node *node){ return node == witch->boundsCheckNode() || node == witch->switchNode(); }),
                 nodes.end());
 
-            auto body = std::make_unique<likec::Block>(tree());
+            auto body = std::make_unique<likec::Block>();
 
             makeStatements(nodes, body.get(), exitBB, exitBB, continueBB, newSwitchContext);
 
@@ -439,17 +452,17 @@ void DefinitionGenerator::makeStatements(const cflow::Node *node, likec::Block *
              */
             foreach (const auto &pair, newSwitchContext.caseValuesMap()) {
                 foreach (ConstantValue value, pair.second) {
-                    body->addStatement(std::make_unique<likec::CaseLabel>(tree(), 
-                        std::make_unique<likec::IntegerConstant>(tree(), value, newSwitchContext.valueType())));
+                    body->addStatement(std::make_unique<likec::CaseLabel>(
+                        std::make_unique<likec::IntegerConstant>(value, newSwitchContext.valueType())));
                 }
-                body->addStatement(std::make_unique<likec::Goto>(tree(),
-                    std::make_unique<likec::IntegerConstant>(tree(),
+                body->addStatement(std::make_unique<likec::Goto>(
+                    std::make_unique<likec::IntegerConstant>(
                         pair.first,
                         tree().makeIntegerType(tree().pointerSize(), true))));
             }
 
             /* Generate the switch. */
-            block->addStatement(std::make_unique<likec::Switch>(tree(), std::move(expression), std::move(body)));
+            block->addStatement(std::make_unique<likec::Switch>(std::move(expression), std::move(body)));
 
             /* Generate a jump to the exit basic block, if it's not the nextBB. */
             if (auto jump = makeJump(exitBB, nextBB, breakBB, continueBB)) {
@@ -479,9 +492,9 @@ void DefinitionGenerator::makeStatements(const std::vector<cflow::Node *> &nodes
 }
 
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const cflow::Node *node, likec::Block *block, const BasicBlock *thenBB, const BasicBlock *elseBB, SwitchContext &switchContext) {
-    assert(node != NULL);
-    assert(thenBB != NULL);
-    assert(elseBB != NULL);
+    assert(node != nullptr);
+    assert(thenBB != nullptr);
+    assert(elseBB != nullptr);
     assert(node->isCondition() && "Can only generate expressions from condition nodes.");
 
     std::unique_ptr<likec::Expression> result;
@@ -503,10 +516,10 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const cfl
                        (jump->thenTarget().basicBlock() == elseBB && jump->elseTarget().basicBlock() == thenBB));
 
                 if (jump->thenTarget().basicBlock() != thenBB) {
-                    expression = std::make_unique<likec::UnaryOperator>(tree(), likec::UnaryOperator::LOGICAL_NOT,
-                        std::move(expression));
+                    expression = std::make_unique<likec::UnaryOperator>(likec::UnaryOperator::LOGICAL_NOT,
+                                                                        std::move(expression));
                 }
-            } else if (auto stmt = makeStatement(statement, NULL, NULL, NULL)) {
+            } else if (auto stmt = makeStatement(statement, nullptr, nullptr, nullptr)) {
                 if (block) {
                     block->addStatement(std::move(stmt));
                 } else if (likec::ExpressionStatement *expressionStatement = stmt->as<likec::ExpressionStatement>()) {
@@ -518,7 +531,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const cfl
                 if (!result) {
                     result = std::move(expression);
                 } else {
-                    result = std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::COMMA,
+                    result = std::make_unique<likec::BinaryOperator>(likec::BinaryOperator::COMMA,
                         std::move(result), std::move(expression));
                 }
             }
@@ -549,22 +562,22 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const cfl
         }
 
         const cflow::BasicNode *b = n->as<cflow::BasicNode>();
-        assert(b != NULL);
+        assert(b != nullptr);
 
         const Jump *j = b->basicBlock()->getJump();
-        assert(j != NULL);
+        assert(j != nullptr);
 
         if (j->thenTarget().basicBlock() == thenBB || j->elseTarget().basicBlock() == thenBB) {
             auto left  = makeExpression(region->nodes()[0], block, thenBB, region->nodes()[1]->getEntryBasicBlock(), switchContext);
-            auto right = makeExpression(region->nodes()[1], NULL, thenBB, elseBB, switchContext);
+            auto right = makeExpression(region->nodes()[1], nullptr, thenBB, elseBB, switchContext);
 
-            result = std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::LOGICAL_OR,
+            result = std::make_unique<likec::BinaryOperator>(likec::BinaryOperator::LOGICAL_OR,
                 std::move(left), std::move(right));
         } else if (j->thenTarget().basicBlock() == elseBB || j->elseTarget().basicBlock() == elseBB) {
             auto left  = makeExpression(region->nodes()[0], block, region->nodes()[1]->getEntryBasicBlock(), elseBB, switchContext);
-            auto right = makeExpression(region->nodes()[1], NULL, thenBB, elseBB, switchContext);
+            auto right = makeExpression(region->nodes()[1], nullptr, thenBB, elseBB, switchContext);
 
-            result = std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::LOGICAL_AND,
+            result = std::make_unique<likec::BinaryOperator>(likec::BinaryOperator::LOGICAL_AND,
                 std::move(left), std::move(right));
         } else {
             assert(!"First component of compound condition must contain a jump to thenBB or elseBB.");
@@ -573,7 +586,7 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const cfl
         assert(!"Node must be a basic block node or a region.");
     }
 
-    assert(result != NULL && "Something is very wrong.");
+    assert(result != nullptr && "Something is very wrong.");
 
     return result;
 }
@@ -581,29 +594,33 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const cfl
 std::unique_ptr<likec::Statement> DefinitionGenerator::makeStatement(const Statement *statement, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB) {
     assert(statement);
 
+    if (nc::contains(hookStatements_, statement)) {
+        return nullptr;
+    }
+
     auto result = doMakeStatement(statement, nextBB, breakBB, continueBB);
 
-    if (result != NULL) {
-        class StatementSetterVisitor: public Visitor<likec::TreeNode> {
+    if (result != nullptr) {
+        class StatementSetter {
             const ir::Statement *statement_;
 
         public:
-            StatementSetterVisitor(const ir::Statement *statement): statement_(statement) {
-                assert(statement != NULL);
+            StatementSetter(const ir::Statement *statement): statement_(statement) {
+                assert(statement != nullptr);
             }
 
-            virtual void operator()(likec::TreeNode *node) override {
+            void operator()(likec::TreeNode *node) {
                 if (auto stmt = node->as<likec::Statement>()) {
-                    if (stmt->statement() == NULL) {
+                    if (stmt->statement() == nullptr) {
                         stmt->setStatement(statement_);
-                        stmt->visitChildNodes(*this);
+                        stmt->callOnChildren(*this);
                     }
                 }
             }
         };
 
-        StatementSetterVisitor visitor(statement);
-        visitor(result.get());
+        StatementSetter setter(statement);
+        setter(result.get());
     }
 
     return result;
@@ -611,51 +628,51 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::makeStatement(const State
 
 std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Statement *statement, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB) {
     switch (statement->kind()) {
-        case Statement::COMMENT: {
-            return std::make_unique<likec::CommentStatement>(tree(), statement->asComment()->text());
-        }
         case Statement::INLINE_ASSEMBLY: {
-            return std::make_unique<likec::InlineAssembly>(tree(), statement->instruction() ? statement->instruction()->toString(): QString());
+            return std::make_unique<likec::InlineAssembly>(
+                statement->instruction() ? statement->instruction()->toString() : QString());
         }
         case Statement::ASSIGNMENT: {
             const Assignment *assignment = statement->asAssignment();
 
-            if (usage().isUsed(assignment->left()) && !isIntermediate(assignment->left())) {
-                std::unique_ptr<likec::Expression> left(makeExpression(assignment->left()));
-                std::unique_ptr<likec::Expression> right(makeExpression(assignment->right()));
-
-                return std::make_unique<likec::ExpressionStatement>(tree(),
-                    std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::ASSIGN,
-                        std::move(left),
-                        std::make_unique<likec::Typecast>(tree(),
-                            parent().makeType(types().getType(assignment->left())),
-                            std::move(right))));
-            } else {
-                return NULL;
+            if (!liveness_.isLive(assignment->left())) {
+                return nullptr;
             }
-        }
-        case Statement::KILL: {
-            return NULL;
+
+            if (isSubstituted(assignment->left())) {
+                return nullptr;
+            }
+
+            std::unique_ptr<likec::Expression> left(makeExpression(assignment->left()));
+            std::unique_ptr<likec::Expression> right(makeExpression(assignment->right()));
+
+            return std::make_unique<likec::ExpressionStatement>(
+                std::make_unique<likec::BinaryOperator>(likec::BinaryOperator::ASSIGN,
+                    std::move(left),
+                    std::make_unique<likec::Typecast>(
+                        likec::Typecast::REINTERPRET_CAST,
+                        parent().makeType(parent().types().getType(assignment->left())),
+                        std::move(right))));
         }
         case Statement::JUMP: {
             const Jump *jump = statement->asJump();
 
             if (jump->isConditional()) {
-                auto thenJump = makeJump(jump->thenTarget(), nextBB, breakBB, continueBB);
-                auto elseJump = makeJump(jump->elseTarget(), nextBB, breakBB, continueBB);
+                auto thenJump = makeJump(jump, jump->thenTarget(), nextBB, breakBB, continueBB);
+                auto elseJump = makeJump(jump, jump->elseTarget(), nextBB, breakBB, continueBB);
                 auto condition = makeExpression(jump->condition());
 
-                if (thenJump == NULL) {
-                    if (elseJump == NULL) {
-                        return NULL;
+                if (thenJump == nullptr) {
+                    if (elseJump == nullptr) {
+                        return nullptr;
                     } else {
                         std::swap(thenJump, elseJump);
-                        condition = std::make_unique<likec::UnaryOperator>(tree(), likec::UnaryOperator::LOGICAL_NOT, std::move(condition));
+                        condition = std::make_unique<likec::UnaryOperator>(likec::UnaryOperator::LOGICAL_NOT, std::move(condition));
                     }
                 }
-                return std::make_unique<likec::If>(tree(), std::move(condition), std::move(thenJump), std::move(elseJump));
+                return std::make_unique<likec::If>(std::move(condition), std::move(thenJump), std::move(elseJump));
             } else {
-                return makeJump(jump->thenTarget(), nextBB, breakBB, continueBB);
+                return makeJump(jump, jump->thenTarget(), nextBB, breakBB, continueBB);
             }
         }
         case Statement::CALL: {
@@ -663,10 +680,10 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
 
             std::unique_ptr<likec::Expression> target;
 
-            const dflow::Value *targetValue = dataflow().getValue(call->target());
-            if (targetValue->isConstant()) {
-                if (likec::FunctionDeclaration *functionDeclaration = parent().makeFunctionDeclaration(targetValue->constantValue().value())) {
-                    target = std::make_unique<likec::FunctionIdentifier>(tree(), functionDeclaration);
+            auto targetValue = dataflow_.getValue(call->target());
+            if (targetValue->abstractValue().isConcrete()) {
+                if (auto functionDeclaration = parent().makeFunctionDeclaration(targetValue->abstractValue().asConcrete().value())) {
+                    target = std::make_unique<likec::FunctionIdentifier>(functionDeclaration);
                     target->setTerm(call->target());
                 }
             }
@@ -675,97 +692,112 @@ std::unique_ptr<likec::Statement> DefinitionGenerator::doMakeStatement(const Sta
                 target = makeExpression(call->target());
             }
 
-            auto callOperator = std::make_unique<likec::CallOperator>(tree(), std::move(target));
+            auto callOperator = std::make_unique<likec::CallOperator>(std::move(target));
 
-            if (const calls::FunctionSignature *signature = context().callsData()->getFunctionSignature(call)) {
-                if (calls::CallAnalyzer *callAnalyzer = context().callsData()->getCallAnalyzer(call)) {
-                    foreach (const MemoryLocation &memoryLocation, signature->arguments()) {
-                        callOperator->addArgument(makeExpression(callAnalyzer->getArgumentTerm(memoryLocation)));
+            if (auto callSignature = parent().signatures().getSignature(call)) {
+                if (auto callHook = parent().hooks().getCallHook(call)) {
+                    foreach (const auto &argument, callSignature->arguments()) {
+                        callOperator->addArgument(makeExpression(callHook->getArgumentTerm(argument.get())));
                     }
 
-                    if (signature->returnValue()) {
-                        const Term *returnValueTerm = callAnalyzer->getReturnValueTerm(signature->returnValue());
+                    if (callSignature->returnValue()) {
+                        const Term *returnValueTerm = callHook->getReturnValueTerm(callSignature->returnValue().get());
 
-                        return std::make_unique<likec::ExpressionStatement>(tree(),
-                            std::make_unique<likec::BinaryOperator>(tree(),
-                                likec::BinaryOperator::ASSIGN,
-                                makeExpression(returnValueTerm),
-                                std::make_unique<likec::Typecast>(tree(),
-                                    parent().makeType(types().getType(returnValueTerm)),
-                                    std::move(callOperator))));
+                        if (liveness_.isLive(returnValueTerm)) {
+                            return std::make_unique<likec::ExpressionStatement>(
+                                std::make_unique<likec::BinaryOperator>(
+                                    likec::BinaryOperator::ASSIGN,
+                                    makeExpression(returnValueTerm),
+                                    std::make_unique<likec::Typecast>(
+                                        likec::Typecast::REINTERPRET_CAST,
+                                        parent().makeType(parent().types().getType(returnValueTerm)),
+                                        std::move(callOperator))));
+                        }
                     }
                 }
             }
 
-            return std::make_unique<likec::ExpressionStatement>(tree(), std::move(callOperator));
+            return std::make_unique<likec::ExpressionStatement>(std::move(callOperator));
         }
-        case Statement::RETURN: {
-            if (const calls::FunctionSignature *signature = context().callsData()->getFunctionSignature(function())) {
-                if (calls::ReturnAnalyzer *returnAnalyzer = context().callsData()->getReturnAnalyzer(function(), statement->asReturn())) {
-                    if (signature->returnValue()) {
-                        return std::make_unique<likec::Return>(
-                            tree(),
-                            makeExpression(returnAnalyzer->getReturnValueTerm(signature->returnValue())));
-                    }
-                }
-            }
-            return std::make_unique<likec::Return>(tree());
+        case Statement::HALT: {
+            return nullptr;
+        }
+        case Statement::TOUCH: {
+            return nullptr;
+        }
+        case Statement::CALLBACK: {
+            return nullptr;
         }
     }
 
     unreachable();
-    return NULL;
+    return nullptr;
 }
 
-std::unique_ptr<likec::Statement> DefinitionGenerator::makeJump(const BasicBlock *target, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB) {
+std::unique_ptr<likec::Statement> DefinitionGenerator::makeJump(const BasicBlock *target, const BasicBlock *nextBB,
+                                                                const BasicBlock *breakBB,
+                                                                const BasicBlock *continueBB) {
     if (target == nextBB) {
-        return NULL;
+        return nullptr;
     } else if (target == breakBB) {
-        return std::make_unique<likec::Break>(tree());
+        return std::make_unique<likec::Break>();
     } else if (target == continueBB) {
-        return std::make_unique<likec::Continue>(tree());
+        return std::make_unique<likec::Continue>();
     } else {
-        return std::make_unique<likec::Goto>(tree(),
-                std::make_unique<likec::LabelIdentifier>(tree(), makeLabel(target)));
+        return std::make_unique<likec::Goto>(
+                std::make_unique<likec::LabelIdentifier>(makeLabel(target)));
     }
 }
 
-std::unique_ptr<likec::Statement> DefinitionGenerator::makeJump(const JumpTarget &target, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB) {
+std::unique_ptr<likec::Statement> DefinitionGenerator::makeJump(const Jump *jump, const JumpTarget &target,
+                                                                const BasicBlock *nextBB, const BasicBlock *breakBB,
+                                                                const BasicBlock *continueBB) {
+    assert(jump != nullptr);
+
     if (target.basicBlock()) {
         return makeJump(target.basicBlock(), nextBB, breakBB, continueBB);
     } else if (target.address()) {
-        return std::make_unique<likec::Goto>(tree(), makeExpression(target.address()));
+        if (dflow::isReturnAddress(target.address(), dataflow_)) {
+            if (signature()->returnValue()) {
+                if (auto returnHook = parent().hooks().getReturnHook(jump)) {
+                    return std::make_unique<likec::Return>(
+                        makeExpression(returnHook->getReturnValueTerm(signature()->returnValue().get())));
+                }
+            }
+            return std::make_unique<likec::Return>();
+        }
+        return std::make_unique<likec::Goto>(makeExpression(target.address()));
     } else {
-        return std::make_unique<likec::Goto>(tree(), std::make_unique<likec::String>(tree(), QLatin1String("???")));
+        return std::make_unique<likec::Goto>(std::make_unique<likec::String>(QLatin1String("???")));
     }
 }
 
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const Term *term) {
-    assert(term != NULL);
+    assert(term != nullptr);
 
     auto result = doMakeExpression(term);
-    assert(result != NULL);
+    assert(result != nullptr);
 
-    class TermSetterVisitor: public Visitor<likec::TreeNode> {
+    class TermSetter {
         const ir::Term *term_;
 
     public:
-        TermSetterVisitor(const ir::Term *term): term_(term) {
-            assert(term != NULL);
+        TermSetter(const ir::Term *term): term_(term) {
+            assert(term != nullptr);
         }
 
-        virtual void operator()(likec::TreeNode *node) override {
+        void operator()(likec::TreeNode *node) {
             if (auto expression = node->as<likec::Expression>()) {
-                if (expression->term() == NULL) {
+                if (expression->term() == nullptr) {
                     expression->setTerm(term_);
-                    expression->visitChildNodes(*this);
+                    expression->callOnChildren(*this);
                 }
             }
         }
     };
 
-    TermSetterVisitor visitor(term);
-    visitor(result.get());
+    TermSetter setter(term);
+    setter(result.get());
 
     return result;
 }
@@ -773,56 +805,47 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeExpression(const Ter
 std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const Term *term) {
 #ifdef NC_PREFER_CONSTANTS_TO_EXPRESSIONS
     if (term->isRead()) {
-        const dflow::Value *value = dataflow().getValue(term);
+        const dflow::Value *value = dataflow_.getValue(term);
 
-        if (value->isConstant()) {
-            return makeConstant(term, value->constantValue());
+        if (value->abstractValue().isConcrete()) {
+            return makeConstant(term, value->abstractValue().asConcrete());
         }
     }
 #endif
+
+    if (term->isRead()) {
+        if (const Term *substitute = getSubstitute(term)) {
+            return makeExpression(substitute);
+        }
+    }
+
+    if (parent().variables().getVariable(term)) {
+        return makeVariableAccess(term);
+    }
 
     switch (term->kind()) {
         case Term::INT_CONST: {
             return makeConstant(term, term->asConstant()->value());
         }
         case Term::INTRINSIC: {
-            return std::make_unique<likec::CallOperator>(tree(), std::make_unique<likec::String>(tree(), "intrinsic"));
-        }
-        case Term::UNDEFINED: {
-            return std::make_unique<likec::CallOperator>(tree(), std::make_unique<likec::String>(tree(), "undefined"));
+            return doMakeExpression(term->as<Intrinsic>());
         }
         case Term::MEMORY_LOCATION_ACCESS: {
-            const MemoryLocationAccess *access = term->asMemoryLocationAccess();
-            if (context().module()->architecture()->isGlobalMemory(access->memoryLocation())) {
-                return std::make_unique<likec::VariableIdentifier>(
-                    tree(),
-                    parent().makeGlobalVariableDeclaration(access->memoryLocation(), types().getType(term)));
-            } else if (isIntermediate(term)) {
-                return makeExpression(dataflow().getDefinitions(term).front()->assignee());
-            } else {
-                return std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(term));
-            }
+            assert(!"The term must belong to a variable.");
+            return nullptr;
         }
         case Term::DEREFERENCE: {
-            const Dereference *dereference = term->asDereference();
-            if (const MemoryLocation &memoryLocation = dataflow().getMemoryLocation(term)) {
-                if (context().module()->architecture()->isGlobalMemory(memoryLocation)) {
-                    return std::make_unique<likec::VariableIdentifier>(
-                        tree(),
-                        parent().makeGlobalVariableDeclaration(memoryLocation, types().getType(term)));
-                } else if (isIntermediate(dereference)) {
-                    return makeExpression(dataflow().getDefinitions(dereference).front()->assignee());
-                } else {
-                    return std::make_unique<likec::VariableIdentifier>(tree(), makeLocalVariableDeclaration(dereference));
-                }
-            } else {
-                const types::Type *type = types().getType(dereference);
-                const types::Type *addressType = types().getType(dereference->address());
-                return std::make_unique<likec::UnaryOperator>(tree(), likec::UnaryOperator::DEREFERENCE,
-                    std::make_unique<likec::Typecast>(tree(),
-                        tree().makePointerType(addressType->size(), parent().makeType(type)),
-                        makeExpression(dereference->address())));
-            }
+            assert(!dataflow_.getMemoryLocation(term) && "The term must belong to a variable.");
+
+            auto dereference = term->asDereference();
+            auto type = parent().types().getType(dereference);
+            auto addressType = parent().types().getType(dereference->address());
+
+            return std::make_unique<likec::UnaryOperator>(likec::UnaryOperator::DEREFERENCE,
+                std::make_unique<likec::Typecast>(
+                    likec::Typecast::REINTERPRET_CAST,
+                    tree().makePointerType(addressType->size(), parent().makeType(type)),
+                    makeExpression(dereference->address())));
         }
         case Term::UNARY_OPERATOR: {
             return doMakeExpression(term->asUnaryOperator());
@@ -830,17 +853,9 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
         case Term::BINARY_OPERATOR: {
             return doMakeExpression(term->asBinaryOperator());
         }
-        case Term::CHOICE: {
-            const Choice *choice = term->asChoice();
-            if (!dataflow().getDefinitions(choice->preferredTerm()).empty()) {
-                return makeExpression(choice->preferredTerm());
-            } else {
-                return makeExpression(choice->defaultTerm());
-            }
-        }
         default: {
             unreachable();
-            return NULL;
+            return nullptr;
         }
     }
 }
@@ -849,209 +864,273 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const U
     std::unique_ptr<likec::Expression> operand(makeExpression(unary->operand()));
 
     switch (unary->operatorKind()) {
-        case UnaryOperator::BITWISE_NOT: {
-            const types::Type *operandType = types().getType(unary->operand());
-            return std::make_unique<likec::UnaryOperator>(tree(), likec::UnaryOperator::BITWISE_NOT,
-                std::make_unique<likec::Typecast>(tree(),
-                    tree().makeIntegerType(operandType->size(), operandType->isUnsigned()), std::move(operand)));
-        }
-        case UnaryOperator::LOGICAL_NOT: {
-            const types::Type *operandType = types().getType(unary->operand());
-            return std::make_unique<likec::UnaryOperator>(tree(), likec::UnaryOperator::LOGICAL_NOT,
-                std::make_unique<likec::Typecast>(tree(),
+        case UnaryOperator::NOT: {
+            const types::Type *operandType = parent().types().getType(unary->operand());
+            return std::make_unique<likec::UnaryOperator>(
+                likec::UnaryOperator::BITWISE_NOT,
+                std::make_unique<likec::Typecast>(
+                    likec::Typecast::REINTERPRET_CAST,
                     tree().makeIntegerType(operandType->size(), operandType->isUnsigned()), std::move(operand)));
         }
         case UnaryOperator::NEGATION: {
-            const types::Type *operandType = types().getType(unary->operand());
-            return std::make_unique<likec::UnaryOperator>(tree(), likec::UnaryOperator::NEGATION,
-                std::make_unique<likec::Typecast>(tree(),
+            const types::Type *operandType = parent().types().getType(unary->operand());
+            return std::make_unique<likec::UnaryOperator>(
+                likec::UnaryOperator::NEGATION,
+                std::make_unique<likec::Typecast>(
+                    likec::Typecast::REINTERPRET_CAST,
                     tree().makeIntegerType(operandType->size(), operandType->isUnsigned()), std::move(operand)));
         }
         case UnaryOperator::SIGN_EXTEND: {
-            return std::make_unique<likec::Typecast>(tree(),
-                tree().makeIntegerType(unary->size(), false),
-                std::make_unique<likec::Typecast>(tree(),
-                    tree().makeIntegerType(unary->operand()->size(), false), std::move(operand)));
+            return std::make_unique<likec::Typecast>(
+                likec::Typecast::STATIC_CAST, tree().makeIntegerType(unary->size(), false),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(unary->operand()->size(), false),
+                                                  std::move(operand)));
         }
         case UnaryOperator::ZERO_EXTEND: {
-            return std::make_unique<likec::Typecast>(tree(),
-                tree().makeIntegerType(unary->size(), true),
-                std::make_unique<likec::Typecast>(tree(),
-                    tree().makeIntegerType(unary->operand()->size(), true), std::move(operand)));
+            return std::make_unique<likec::Typecast>(
+                likec::Typecast::STATIC_CAST, tree().makeIntegerType(unary->size(), true),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(unary->operand()->size(), true),
+                                                  std::move(operand)));
         }
-        case UnaryOperator::RESIZE: {
-            const types::Type *type = types().getType(unary);
-            return std::make_unique<likec::Typecast>(tree(), parent().makeType(type), std::move(operand));
+        case UnaryOperator::TRUNCATE: {
+            const types::Type *type = parent().types().getType(unary);
+            const types::Type *operandType = parent().types().getType(unary->operand());
+            return std::make_unique<likec::Typecast>(
+                likec::Typecast::STATIC_CAST, tree().makeIntegerType(unary->size(), type->isUnsigned()),
+                std::make_unique<likec::Typecast>(
+                    likec::Typecast::REINTERPRET_CAST,
+                    tree().makeIntegerType(unary->operand()->size(), operandType->isUnsigned()), std::move(operand)));
         }
         default:
             unreachable();
-            return NULL;
     }
 }
 
 std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const BinaryOperator *binary) {
-    const types::Type *leftType = types().getType(binary->left());
-    const types::Type *rightType = types().getType(binary->right());
+    const types::Type *leftType = parent().types().getType(binary->left());
+    const types::Type *rightType = parent().types().getType(binary->right());
 
     std::unique_ptr<likec::Expression> left(makeExpression(binary->left()));
     std::unique_ptr<likec::Expression> right(makeExpression(binary->right()));
 
     switch (binary->operatorKind()) {
-        case BinaryOperator::ADD:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::ADD,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), leftType->isUnsigned()), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
+        case BinaryOperator::AND:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::BITWISE_AND,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), leftType->isUnsigned()),
+                                                  std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), rightType->isUnsigned()),
+                                                  std::move(right)));
 
-        case BinaryOperator::SUB:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::SUB,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), leftType->isUnsigned()), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
+        case BinaryOperator::OR:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::BITWISE_OR,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), leftType->isUnsigned()),
+                                                  std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), rightType->isUnsigned()),
+                                                  std::move(right)));
 
-        case BinaryOperator::MUL:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::MUL,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), leftType->isUnsigned()), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
-
-        case BinaryOperator::SIGNED_DIV:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::DIV,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), false), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), false), std::move(right)));
-
-        case BinaryOperator::UNSIGNED_DIV:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::DIV,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), true), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), true), std::move(right)));
-
-        case BinaryOperator::SIGNED_REM:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::REM,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), false), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), false), std::move(right)));
-
-        case BinaryOperator::UNSIGNED_REM:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::REM,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), true), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), true), std::move(right)));
-
-        case BinaryOperator::BITWISE_AND:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::BITWISE_AND,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), leftType->isUnsigned()), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
-
-        case BinaryOperator::LOGICAL_AND:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::LOGICAL_AND,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), leftType->isUnsigned()), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
-
-        case BinaryOperator::BITWISE_OR:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::BITWISE_OR,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), leftType->isUnsigned()), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
-
-        case BinaryOperator::LOGICAL_OR:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::LOGICAL_OR,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), leftType->isUnsigned()), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
-
-        case BinaryOperator::BITWISE_XOR:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::BITWISE_XOR,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), leftType->isUnsigned()), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
+        case BinaryOperator::XOR:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::BITWISE_XOR,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), leftType->isUnsigned()),
+                                                  std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), rightType->isUnsigned()),
+                                                  std::move(right)));
 
         case BinaryOperator::SHL:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::SHL,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), leftType->isUnsigned()), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
-
-        case BinaryOperator::SAR:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::SHR,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), false), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::SHL,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), leftType->isUnsigned()),
+                                                  std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), rightType->isUnsigned()),
+                                                  std::move(right)));
 
         case BinaryOperator::SHR:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::SHR,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), true), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), rightType->isUnsigned()), std::move(right)));
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::SHR,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), true), std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), rightType->isUnsigned()),
+                                                  std::move(right)));
+
+        case BinaryOperator::SAR:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::SHR,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), false), std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), rightType->isUnsigned()),
+                                                  std::move(right)));
+
+        case BinaryOperator::ADD:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::ADD,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), leftType->isUnsigned()),
+                                                  std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), rightType->isUnsigned()),
+                                                  std::move(right)));
+
+        case BinaryOperator::SUB:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::SUB,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), leftType->isUnsigned()),
+                                                  std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), rightType->isUnsigned()),
+                                                  std::move(right)));
+
+        case BinaryOperator::MUL:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::MUL,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), leftType->isUnsigned()),
+                                                  std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), rightType->isUnsigned()),
+                                                  std::move(right)));
+
+        case BinaryOperator::SIGNED_DIV:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::DIV,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), false), std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), false), std::move(right)));
+
+        case BinaryOperator::SIGNED_REM:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::REM,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), false), std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), false), std::move(right)));
+
+        case BinaryOperator::UNSIGNED_DIV:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::DIV,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), true), std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), true), std::move(right)));
+
+        case BinaryOperator::UNSIGNED_REM:
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::REM,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), true), std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), true), std::move(right)));
 
         case BinaryOperator::EQUAL:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::EQ,
+            return std::make_unique<likec::BinaryOperator>(likec::BinaryOperator::EQ,
                 std::move(left),
                 std::move(right));
 
         case BinaryOperator::SIGNED_LESS:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::LT,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), false), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), false), std::move(right)));
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::LT,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), false), std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), false), std::move(right)));
 
         case BinaryOperator::SIGNED_LESS_OR_EQUAL:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::LEQ,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), false), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), false), std::move(right)));
-
-        case BinaryOperator::SIGNED_GREATER:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::GT,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), false), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), false), std::move(right)));
-
-        case BinaryOperator::SIGNED_GREATER_OR_EQUAL:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::GEQ,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), false), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), false), std::move(right)));
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::LEQ,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), false), std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), false), std::move(right)));
 
         case BinaryOperator::UNSIGNED_LESS:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::LT,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), true), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), true), std::move(right)));
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::LT,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), true), std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), true), std::move(right)));
 
         case BinaryOperator::UNSIGNED_LESS_OR_EQUAL:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::LEQ,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), true), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), true), std::move(right)));
-
-        case BinaryOperator::UNSIGNED_GREATER:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::GT,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), true), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), true), std::move(right)));
-
-        case BinaryOperator::UNSIGNED_GREATER_OR_EQUAL:
-            return std::make_unique<likec::BinaryOperator>(tree(), likec::BinaryOperator::GEQ,
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(leftType->size(), true), std::move(left)),
-                std::make_unique<likec::Typecast>(tree(), tree().makeIntegerType(rightType->size(), true), std::move(right)));
+            return std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::LEQ,
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(leftType->size(), true), std::move(left)),
+                std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                                                  tree().makeIntegerType(rightType->size(), true), std::move(right)));
 
         default:
             unreachable();
-            return NULL;
+            return nullptr;
     }
 }
 
-#ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
-namespace {
-
-bool isAscii(const QString &string) {
-    foreach (QChar c, string) {
-        if (c >= 0x80) {
-            return false;
-        }
+std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const Intrinsic *intrinsic) {
+    switch (intrinsic->intrinsicKind()) {
+        case Intrinsic::UNDEFINED:
+            return makeIntrinsicCall(
+                QLatin1String("__undefined"),
+                parent().makeType(parent().types().getType(intrinsic)));
+        case Intrinsic::ZERO_STACK_OFFSET:
+            return makeIntrinsicCall(
+                QLatin1String("__zero_stack_offset"),
+                parent().tree().makePointerType(parent().tree().pointerSize(), parent().tree().makeVoidType()));
+        case Intrinsic::RETURN_ADDRESS:
+            return makeIntrinsicCall(
+                QLatin1String("__return_address"),
+                parent().tree().makePointerType(parent().tree().pointerSize(), parent().tree().makeVoidType()));
     }
-    return true;
+    return makeIntrinsicCall(QLatin1String("__intrinsic"), parent().makeType(parent().types().getType(intrinsic)));
 }
 
-} // anonymous namespace
-#endif
+std::unique_ptr<likec::Expression> DefinitionGenerator::makeIntrinsicCall(QLatin1String name,
+                                                                          const likec::Type *returnType) {
+    return std::make_unique<likec::CallOperator>(std::make_unique<likec::UndeclaredIdentifier>(
+        name, std::make_unique<likec::FunctionPointerType>(parent().tree().pointerSize(), returnType)));
+}
 
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term *term, const SizedValue &value) {
-    const types::Type *type = types().getType(term);
+    const types::Type *type = parent().types().getType(term);
+
+#ifdef NC_PREFER_FUNCTIONS_TO_CONSTANTS
+    if (auto section = parent().image().getSectionContainingAddress(value.value())) {
+        if (section->isCode()) {
+            if (auto functionDeclaration = parent().makeFunctionDeclaration(value.value())) {
+                return std::make_unique<likec::FunctionIdentifier>(functionDeclaration);
+            }
+        }
+    }
+#endif
 
 #ifdef NC_PREFER_CSTRINGS_TO_CONSTANTS
-    if (type->pointee() && type->pointee()->size() == 1) {
-        foreach (const core::image::Section *section, parent().context().module()->image()->sections()) {
-            if (section->isAllocated() && section->containsAddress(value.value())) {
-                QString string = section->readAsciizString(value.value(), 1024);
-
-                if (!string.isNull() && isAscii(string)) {
-                    return std::make_unique<likec::String>(tree(), string);
+    {
+        auto isAscii = [](const QString &string) -> bool {
+            foreach (QChar c, string) {
+                if (c >= 0x80 || (c < 0x20 && c != '\r' && c != '\n' && c != '\t')) {
+                    return false;
                 }
-                break;
             }
+            return true;
+        };
+
+        QString string = image::Reader(&parent().image()).readAsciizString(value.value(), 1024);
+
+        if (!string.isEmpty() && isAscii(string)) {
+            return std::make_unique<likec::String>(string);
         }
     }
 #endif
@@ -1059,53 +1138,226 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
 #ifdef NC_PREFER_GLOBAL_VARIABLES_TO_CONSTANTS
     if (type->pointee() && type->pointee()->size()) {
         return std::make_unique<likec::UnaryOperator>(
-            tree(),
             likec::UnaryOperator::REFERENCE,
             std::make_unique<likec::VariableIdentifier>(
-                tree(),
                 parent().makeGlobalVariableDeclaration(
                     MemoryLocation(MemoryDomain::MEMORY, value.value() * CHAR_BIT, type->pointee()->size()),
                     type)));
     }
 #endif
 
-    return std::make_unique<likec::Typecast>(tree(),
-        parent().makeType(type),
-        std::make_unique<likec::IntegerConstant>(
-            tree(),
-            value,
-            tree().makeIntegerType(type->size(), type->isUnsigned())
-        ));
+    return std::make_unique<likec::IntegerConstant>(value, tree().makeIntegerType(value.size(), type->isUnsigned()));
 }
 
-bool DefinitionGenerator::isIntermediate(const Term *term) const {
-    if (term->isWrite()) {
-        const std::vector<const Term *> &reads = dataflow().getUses(term);
+std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const Term *term) {
+    assert(term != nullptr);
 
-        const Term *usedRead;
+    const auto &termLocation = dataflow_.getMemoryLocation(term);
+    assert(termLocation);
 
-        int usedReadsCount = 0;
-        foreach (const Term *read, reads) {
-            if (usage().isUsed(read)) {
-                ++usedReadsCount;
-                usedRead = read;
-            }
+    auto variable = parent().variables().getVariable(term);
+    assert(variable != nullptr);
+
+    auto identifier = std::make_unique<likec::VariableIdentifier>(makeVariableDeclaration(variable));
+
+    if (termLocation == variable->memoryLocation()) {
+        return identifier;
+    } else {
+        /*
+         * Generate pointer arithmetics to get to the right part of the variable.
+         *
+         * Note: this does not handle the case of non-byte-aligned locations.
+         * However, I am not sure whether they can be reliably handled in C at all.
+         */
+        auto variableAddress = std::make_unique<likec::Typecast>(
+            likec::Typecast::REINTERPRET_CAST,
+            tree().makeIntegerType(tree().pointerSize(), false),
+            std::make_unique<likec::UnaryOperator>(
+                likec::UnaryOperator::REFERENCE,
+                std::move(identifier)));
+
+        std::unique_ptr<likec::Expression> termAddress;
+        if (termLocation.addr() == variable->memoryLocation().addr()) {
+            termAddress = std::move(variableAddress);
+        } else {
+            termAddress = std::make_unique<likec::BinaryOperator>(
+                likec::BinaryOperator::ADD,
+                std::move(variableAddress),
+                std::make_unique<likec::IntegerConstant>(
+                    (termLocation.addr() - variable->memoryLocation().addr()) / CHAR_BIT,
+                    tree().makeIntegerType(tree().pointerSize(), false)));
         }
 
-        if (usedReadsCount == 1 && term->assignee()) {
-            const Term *write = term->assignee();
+        return std::make_unique<likec::UnaryOperator>(
+            likec::UnaryOperator::DEREFERENCE,
+            std::make_unique<likec::Typecast>(
+                likec::Typecast::REINTERPRET_CAST,
+                tree().makePointerType(parent().makeType(parent().types().getType(term))),
+                std::move(termAddress)));
+    }
+}
 
-            return usedRead->statement() && write->statement() &&
-                   usedRead->statement()->basicBlock() == write->statement()->basicBlock() &&
-                   usedRead->statement()->basicBlock() != NULL;
+const Term *DefinitionGenerator::getSubstitute(const Term *read) {
+    assert(read != nullptr);
+    assert(read->isRead());
+    assert(liveness_.isLive(read));
+
+    if (auto write = getTheOnlyDefinition(read, dataflow_)) {
+        if (isSubstituted(write)) {
+            return write->source();
         }
+    }
+    return nullptr;
+}
+
+bool DefinitionGenerator::isSubstituted(const Term *write) {
+    assert(write != nullptr);
+    assert(write->isWrite());
+    assert(liveness_.isLive(write));
+
+    auto i = isSubstituted_.find(write);
+    if (i != isSubstituted_.end()) {
+        /* The result is being computed? */
+        if (i->second == boost::none) {
+            /* Cyclic dependency. */
+            i->second = false;
+        }
+        return *i->second;
+    }
+
+    /* Mark the result as being computed. */
+    isSubstituted_.emplace_hint(i, std::make_pair(write, boost::none));
+
+    auto result = computeIsSubstituted(write);
+
+    auto &cached = isSubstituted_[write];
+    if (!cached) {
+        cached = result;
+    }
+
+    return result;
+}
+
+bool DefinitionGenerator::computeIsSubstituted(const Term *write) {
+    auto source = write->source();
+    if (!source) {
         return false;
     }
-    if (term->isRead()) {
-        const std::vector<const Term *> &writes = dataflow().getDefinitions(term);
-        return writes.size() == 1 && isIntermediate(writes.front());
+
+    if (nc::contains(hookStatements_, write->statement())) {
+        return false;
     }
-    return false;
+
+    const auto &memoryLocation = dataflow_.getMemoryLocation(write);
+    if (!memoryLocation) {
+        return false;
+    }
+
+    if (!parent().variables().getVariable(write)->isLocal()) {
+        return false;
+    }
+
+    std::size_t nuses = 0;
+
+    foreach (const auto &use, uses_->getUses(write)) {
+        auto read = use.term();
+
+        if (liveness_.isLive(read)) {
+            if (dataflow_.getMemoryLocation(read) != memoryLocation) {
+                return false;
+            }
+
+            auto theOnlyDefinition = getTheOnlyDefinition(read, dataflow_);
+            if (!theOnlyDefinition) {
+                return false;
+            }
+            assert(theOnlyDefinition == write);
+
+            if (!isDominating(write->statement(), read->statement(), *dominators_)) {
+                return false;
+            }
+
+            if (!canBeMoved(source, read->statement())) {
+                return false;
+            }
+
+            ++nuses;
+        }
+    }
+
+    assert(nuses >= 1 && "Live write must have at least one live read.");
+
+    if (nuses > 1) {
+        auto sourceSubstitute = getSubstitute(source);
+        if (!sourceSubstitute) {
+            sourceSubstitute = source;
+        }
+        if (sourceSubstitute->kind() == Term::UNARY_OPERATOR || sourceSubstitute->kind() == Term::BINARY_OPERATOR) {
+            /* We do not want to substitute complex expressions multiple times. */
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool DefinitionGenerator::canBeMoved(const Term *term, const Statement *destination) {
+    assert(term != nullptr);
+    assert(term->isRead());
+    assert(destination != nullptr);
+    assert(liveness_.isLive(term));
+
+#ifdef NC_PREFER_CONSTANTS_TO_EXPRESSIONS
+    if (dataflow_.getValue(term)->abstractValue().isConcrete()) {
+        return true;
+    }
+#endif
+
+    if (auto substitute = getSubstitute(term)) {
+        return canBeMoved(substitute, destination);
+    }
+
+    switch (term->kind()) {
+        case Term::INT_CONST:
+        case Term::INTRINSIC: {
+            return true;
+        }
+        case Term::MEMORY_LOCATION_ACCESS:
+        case Term::DEREFERENCE: {
+            if (auto variable = parent().variables().getVariable(term)) {
+                /*
+                 * This assumes that our dataflow analysis has successfully
+                 * detected all accesses to the local variable, which obviously
+                 * cannot always be the case.
+                 */
+                return variable->isLocal() &&
+                     allOfStatementsBetween(
+                        term->statement(), destination, *cfg_,
+                        [&](const Statement *statement) -> bool {
+                            auto term = getWrittenTerm(statement);
+                            return !term || parent().variables().getVariable(term) != variable;
+                        }) == true;
+            }
+
+            Domain domain = *getDomain(term);
+            return allOfStatementsBetween(
+                term->statement(), destination, *cfg_,
+                [&](const Statement *statement) -> bool {
+                    auto term = getWrittenTerm(statement);
+                    return !term || getDomain(term) != domain;
+                }) == true;
+        }
+        case Term::UNARY_OPERATOR: {
+            auto unary = term->asUnaryOperator();
+            return canBeMoved(unary->operand(), destination);
+        }
+        case Term::BINARY_OPERATOR: {
+            auto binary = term->asBinaryOperator();
+            return canBeMoved(binary->left(), destination) &&
+                   canBeMoved(binary->right(), destination);
+        }
+    }
+    unreachable();
 }
 
 } // namespace cgen

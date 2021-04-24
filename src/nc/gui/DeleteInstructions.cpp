@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -46,7 +49,7 @@ DeleteInstructions::DeleteInstructions(Project *project, const std::vector<const
 }
 
 void DeleteInstructions::work() {
-    project_->logToken() << tr("Deleting %1 instruction(s)...", NULL, static_cast<int>(instructions_.size())).arg(instructions_.size());
+    project_->logToken().info(tr("Deleting %1 instruction(s)...", nullptr, static_cast<int>(instructions_.size())).arg(instructions_.size()));
 
     auto newInstructions = std::make_shared<core::arch::Instructions>(*project_->instructions());
     foreach (const auto &instruction, instructions_) {
@@ -55,7 +58,7 @@ void DeleteInstructions::work() {
 
     project_->setInstructions(newInstructions);
 
-    project_->logToken() << tr("Deletion completed.", NULL, static_cast<int>(instructions_.size()));
+    project_->logToken().info(tr("Deletion completed.", nullptr, static_cast<int>(instructions_.size())));
 }
 
 }} // namespace nc::gui

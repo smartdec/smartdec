@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -37,7 +40,7 @@ namespace nc {
 namespace core {
 namespace ir {
 
-CFG::CFG(const std::vector<const BasicBlock *> &basicBlocks):
+CFG::CFG(const BasicBlocks &basicBlocks):
     basicBlocks_(basicBlocks)
 {
     foreach (const BasicBlock *basicBlock, basicBlocks) {
@@ -80,8 +83,8 @@ void CFG::addConnections(const BasicBlock *predecessor, const JumpTarget &jumpTa
 }
 
 void CFG::addConnection(const BasicBlock *predecessor, const BasicBlock *successor) {
-    assert(predecessor != NULL);
-    assert(successor != NULL);
+    assert(predecessor != nullptr);
+    assert(successor != nullptr);
 
     successors_[predecessor].push_back(successor);
     predecessors_[successor].push_back(predecessor);
@@ -94,7 +97,7 @@ void CFG::print(QTextStream &out) const {
 
     foreach (auto &pair, successors_) {
         foreach (const BasicBlock *successor, pair.second) {
-            out << "basicBlock" << pair.first << " -> basicBlock" << successor << ';' << endl;
+            out << "basicBlock" << pair.first << " -> basicBlock" << successor << ';' << '\n';
         }
     }
 }

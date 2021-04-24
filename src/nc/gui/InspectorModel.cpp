@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -25,14 +28,16 @@
 
 #include <nc/core/Context.h>
 #include <nc/core/arch/Instruction.h>
+#include <nc/core/ir/BasicBlock.h>
 #include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Statements.h>
 #include <nc/core/ir/Terms.h>
-#include <nc/core/ir/dflow/Dataflow.h>
+#include <nc/core/ir/dflow/Dataflows.h>
 #include <nc/core/ir/dflow/Value.h>
-#include <nc/core/ir/misc/TermToFunction.h>
 #include <nc/core/likec/BinaryOperator.h>
 #include <nc/core/likec/CallOperator.h>
+#include <nc/core/likec/CaseLabel.h>
+#include <nc/core/likec/DefaultLabel.h>
 #include <nc/core/likec/DoWhile.h>
 #include <nc/core/likec/Expression.h>
 #include <nc/core/likec/ExpressionStatement.h>
@@ -40,63 +45,47 @@
 #include <nc/core/likec/FunctionIdentifier.h>
 #include <nc/core/likec/Goto.h>
 #include <nc/core/likec/If.h>
+#include <nc/core/likec/InlineAssembly.h>
 #include <nc/core/likec/IntegerConstant.h>
 #include <nc/core/likec/LabelIdentifier.h>
 #include <nc/core/likec/MemberAccessOperator.h>
 #include <nc/core/likec/Return.h>
 #include <nc/core/likec/String.h>
 #include <nc/core/likec/StructType.h>
+#include <nc/core/likec/Switch.h>
 #include <nc/core/likec/Tree.h>
 #include <nc/core/likec/Typecast.h>
 #include <nc/core/likec/UnaryOperator.h>
+#include <nc/core/likec/UndeclaredIdentifier.h>
 #include <nc/core/likec/VariableIdentifier.h>
 #include <nc/core/likec/While.h>
 
 #include "InspectorItem.h"
-#include "ParentTrackingVisitor.h"
+#include "ParentTracker.h"
 
 namespace nc { namespace gui {
 
-InspectorModel::InspectorModel(QObject *parent):
-    QAbstractItemModel(parent)
+InspectorModel::InspectorModel(QObject *parent, std::shared_ptr<const core::Context> context):
+    QAbstractItemModel(parent), context_(std::move(context)), root_(new InspectorItem(""))
 {
-    updateContents();
+    if (context_ && context_->tree()) {
+        root_->setNode(context_->tree()->root());
+    }
 }
 
 InspectorModel::~InspectorModel() {}
-
-void InspectorModel::setContext(const std::shared_ptr<const core::Context> &context) {
-    if (context != context_) {
-        context_ = context;
-        updateContents();
-    }
-}
-
-void InspectorModel::updateContents() {
-    beginResetModel();
-
-    node2parent_.clear();
-
-    root_.reset(new InspectorItem(""));
-
-    if (context() && context()->tree()) {
-        root_->setNode(context()->tree()->root());
-    }
-
-    endResetModel();
-}
 
 InspectorItem *InspectorModel::getItem(const QModelIndex &index) const {
     if (index == QModelIndex()) {
         return root();
     } else {
-        assert(index.internalPointer() != NULL);
+        assert(index.internalPointer() != nullptr);
         return static_cast<InspectorItem *>(index.internalPointer());
     }
 }
 
 QModelIndex InspectorModel::getIndex(const InspectorItem *item) const {
-    assert(item != NULL);
+    assert(item != nullptr);
     if (item == root()) {
         return QModelIndex();
     } else {
@@ -122,10 +111,8 @@ void expand(InspectorItem *item, const core::ir::Statement *statement) {
     }
 
     switch (statement->kind()) {
-        case core::ir::Statement::COMMENT: {
-            auto *comment = statement->asComment();
-            item->addComment("Comment");
-            item->addChild(tr("text = %1").arg(comment->text()));
+        case core::ir::Statement::INLINE_ASSEMBLY: {
+            item->addComment("Inline Assembly");
             break;
         }
         case core::ir::Statement::ASSIGNMENT: {
@@ -133,12 +120,6 @@ void expand(InspectorItem *item, const core::ir::Statement *statement) {
             item->addComment("Assignment");
             item->addChild(tr("left"), assignment->left());
             item->addChild(tr("right"), assignment->right());
-            break;
-        }
-        case core::ir::Statement::KILL: {
-            auto *kill = statement->asKill();
-            item->addComment("Kill");
-            item->addChild(tr("term"), kill->term());
             break;
         }
         case core::ir::Statement::JUMP: {
@@ -157,8 +138,15 @@ void expand(InspectorItem *item, const core::ir::Statement *statement) {
             item->addChild(tr("target"), call->target());
             break;
         }
-        case core::ir::Statement::RETURN: {
-            item->addComment("Return");
+        case core::ir::Statement::TOUCH: {
+            auto *touch = statement->asTouch();
+            item->addComment("Touch");
+            item->addChild(tr("access type = %1").arg(touch->term()->accessType()));
+            item->addChild(tr("term"), touch->term());
+            break;
+        }
+        case core::ir::Statement::CALLBACK: {
+            item->addComment("Callback");
             break;
         }
         default: {
@@ -175,43 +163,53 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
     }
     item->addChild(tr("size = %1").arg(term->size()));
 
-    if (const core::ir::Function *function = context->termToFunction()->getFunction(term)) {
-        auto dataflow = context->getDataflow(function);
+    if (term->statement() && term->statement()->basicBlock() && term->statement()->basicBlock()->function()) {
+        auto &dataflow = *context->dataflows()->at(term->statement()->basicBlock()->function());
 
-        if (const core::ir::dflow::Value *value = dataflow->getValue(term)) {
+        if (const core::ir::dflow::Value *value = dataflow.getValue(term)) {
             InspectorItem *valueItem = item->addChild(tr("value properties"));
-            if (value->isConstant()) {
-                valueItem->addChild(tr("constant value = %1").arg(value->constantValue().value()));
+            if (value->abstractValue().isConcrete()) {
+                valueItem->addChild(tr("constant value = %1").arg(value->abstractValue().asConcrete().value()));
+                valueItem->addChild(tr("signed constant value = %1").arg(value->abstractValue().asConcrete().signedValue()));
             } else {
-                valueItem->addChild(tr("not a constant"));
+                valueItem->addChild(tr("zero bits = %1").arg(value->abstractValue().zeroBits(), 0, 16));
+                valueItem->addChild(tr("one bits = %1").arg(value->abstractValue().oneBits(), 0, 16));
             }
             if (value->isStackOffset()) {
-                valueItem->addChild(tr("stack offset = %1").arg(value->stackOffset().signedValue()));
+                valueItem->addChild(tr("stack offset = %1").arg(value->stackOffset()));
+            } else if (value->isNotStackOffset()) {
+                valueItem->addChild(tr("definitely not a stack offset"));
             } else {
                 valueItem->addChild(tr("not a stack offset"));
             }
-            if (value->isMultiplication()) {
-                valueItem->addChild(tr("is multiplication"));
-            } else if (value->isNotMultiplication()) {
-                valueItem->addChild(tr("is not multiplication"));
+            if (value->isProduct()) {
+                valueItem->addChild(tr("is a product"));
+            } else if (value->isNotProduct()) {
+                valueItem->addChild(tr("is not a product"));
             }
+            if (value->isReturnAddress()) {
+                valueItem->addChild(tr("is a return address"));
+            } else if (value->isNotReturnAddress()) {
+                valueItem->addChild(tr("is not a return address"));
+            }
+        }
+
+        if (auto &memoryLocation = dataflow.getMemoryLocation(term)) {
+            item->addChild(tr("computed memory location = %1").arg(memoryLocation.toString()));
         }
 
         if (term->isRead()) {
             InspectorItem *definitionsItem = item->addChild(tr("definitions"));
-            foreach (const core::ir::Term *definition, dataflow->getDefinitions(term)) {
-                definitionsItem->addChild("", definition);
-            }
-        }
 
-        if (term->isWrite()) {
-            InspectorItem *usesItem = item->addChild(tr("uses"));
-            foreach (const core::ir::Term *use, dataflow->getUses(term)) {
-                usesItem->addChild("", use);
+            foreach (auto &chunk, dataflow.getDefinitions(term).chunks()) {
+                auto chunkItem = definitionsItem->addChild(chunk.location().toString());
+                foreach (auto definition, chunk.definitions()) {
+                    chunkItem->addChild("", definition);
+                }
             }
         }
     } else {
-        item->addChild("function = NULL");
+        item->addChild("function = nullptr");
     }
 
     switch (term->kind()) {
@@ -225,10 +223,6 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
             auto *intrinsic = term->asIntrinsic();
             item->addComment(tr("Intrinsic"));
             item->addChild(tr("intrinsic kind = %1").arg(intrinsic->intrinsicKind()));
-            break;
-        }
-        case core::ir::Term::UNDEFINED: {
-            item->addChild(tr("Undefined"));
             break;
         }
         case core::ir::Term::MEMORY_LOCATION_ACCESS: {
@@ -257,13 +251,6 @@ void expand(InspectorItem *item, const core::ir::Term *term, const core::Context
             item->addChild(tr("operator kind = %1").arg(binary->operatorKind()));
             item->addChild(tr("left"), binary->left());
             item->addChild(tr("right"), binary->right());
-            break;
-        }
-        case core::ir::Term::CHOICE: {
-            auto *choice = term->asChoice();
-            item->addComment(tr("Choice"));
-            item->addChild(tr("preferred term"), choice->preferredTerm());
-            item->addChild(tr("default term"), choice->defaultTerm());
             break;
         }
         default: {
@@ -330,7 +317,7 @@ void expand(InspectorItem *item, const core::likec::Expression *expression) {
 
             auto arguments = item->addChild(tr("arguments"));
             foreach (const auto &argument, call->arguments()) {
-                arguments->addChild("", argument.get());
+                arguments->addChild("", argument);
             }
             break;
         }
@@ -385,12 +372,18 @@ void expand(InspectorItem *item, const core::likec::Expression *expression) {
             item->addChild(tr("declaration"), identifier->declaration());
             break;
         }
+        case core::likec::Expression::UNDECLARED_IDENTIFIER: {
+            auto identifier = expression->as<core::likec::UndeclaredIdentifier>();
+            item->addComment(tr("Undeclared Identifier"));
+            item->addChild(tr("name = %1").arg(identifier->name()));
+            item->addChild(tr("type = %1").arg(identifier->type()->toString()));
+            break;
+        }
         default: {
             item->addComment(tr("expression kind = %1").arg(expression->expressionKind()));
             break;
         }
     }
-    item->addChild(tr("type"), expression->getType());
 }
 
 void expand(InspectorItem *item, const core::likec::Statement *statement) {
@@ -405,12 +398,12 @@ void expand(InspectorItem *item, const core::likec::Statement *statement) {
 
             InspectorItem *declarations = item->addChild(tr("declarations"));
             foreach (const auto &declaration, block->declarations()) {
-                declarations->addChild(declaration->identifier(), declaration.get());
+                declarations->addChild(declaration->identifier(), declaration);
             }
 
             InspectorItem *statements = item->addChild(tr("statements"));
             foreach (const auto &statement, block->statements()) {
-                statements->addChild("", statement.get());
+                statements->addChild("", statement);
             }
             break;
         }
@@ -470,6 +463,29 @@ void expand(InspectorItem *item, const core::likec::Statement *statement) {
             item->addChild(tr("body"), loop->body());
             break;
         }
+        case core::likec::Statement::INLINE_ASSEMBLY: {
+            auto assembly = statement->as<core::likec::InlineAssembly>();
+            item->addComment(tr("Inline assembly"));
+            item->addChild(tr("code = %1").arg(assembly->code()));
+            break;
+        }
+        case core::likec::Statement::SWITCH: {
+            auto witch = statement->as<core::likec::Switch>();
+            item->addComment(tr("Switch"));
+            item->addChild(tr("expression"), witch->expression());
+            item->addChild(tr("body"), witch->body());
+            break;
+        }
+        case core::likec::Statement::CASE_LABEL: {
+            auto label = statement->as<core::likec::CaseLabel>();
+            item->addComment(tr("Case label"));
+            item->addChild(tr("expression"), label->expression());
+            break;
+        }
+        case core::likec::Statement::DEFAULT_LABEL: {
+            item->addComment(tr("Default label"));
+            break;
+        }
         default: {
             item->addComment(tr("statement kind = %1").arg(statement->statementKind()));
             break;
@@ -483,7 +499,7 @@ void expand(InspectorItem *item, const core::likec::TreeNode *node) {
             const core::likec::CompilationUnit *unit = node->as<core::likec::CompilationUnit>();
             item->addComment(tr("Compilation unit"));
             foreach (const auto &declaration, unit->declarations()) {
-                item->addChild(declaration->identifier(), declaration.get());
+                item->addChild(declaration->identifier(), declaration);
             }
             break;
         }
@@ -568,7 +584,7 @@ void expand(InspectorItem *item, const core::likec::Type *type) {
 } // namespace detail
 
 void InspectorModel::expand(InspectorItem *item) const {
-    assert(item != NULL);
+    assert(item != nullptr);
 
     if (item->expanded()) {
         return;
@@ -577,7 +593,7 @@ void InspectorModel::expand(InspectorItem *item) const {
     if (item->node()) {
         detail::expand(item, item->node());
     } else if (item->term()) {
-        detail::expand(item, item->term(), context().get());
+        detail::expand(item, item->term(), context_.get());
     } else if (item->statement()) {
         detail::expand(item, item->statement());
     } else if (item->instruction()) {
@@ -613,7 +629,7 @@ QModelIndex InspectorModel::parent(const QModelIndex &index) const {
     if (item == root()) {
         return QModelIndex();
     } else {
-        assert(item->parent() != NULL);
+        assert(item->parent() != nullptr);
         return getIndex(item->parent());
     }
 }
@@ -625,17 +641,15 @@ QVariant InspectorModel::data(const QModelIndex &index, int role) const {
     return QVariant();
 }
 
-inline void InspectorModel::computeParentRelation() {
-    if (!node2parent_.empty() || !context()->tree()) {
-        return;
+const core::likec::TreeNode *InspectorModel::getParent(const core::likec::TreeNode *node) {
+    if (context_ == nullptr || context_->tree() == nullptr) {
+        return nullptr;
     }
 
-    ParentTrackingVisitor visitor(node2parent_);
-    visitor(context()->tree()->root());
-}
-
-const core::likec::TreeNode *InspectorModel::getParent(const core::likec::TreeNode *node) {
-    computeParentRelation();
+    if (node2parent_.empty()) {
+        ParentTracker tracker(node2parent_);
+        tracker(context_->tree()->root());
+    }
 
     return nc::find(node2parent_, node);
 }

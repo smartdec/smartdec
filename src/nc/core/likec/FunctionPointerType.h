@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -38,8 +41,7 @@ class FunctionPointerType: public Type {
     std::vector<const Type *> argumentTypes_; ///< Types of function arguments.
     bool variadic_; ///< True, if function has variable number of arguments.
 
-    public: 
-
+public:
     /**
      * Class constructor.
      *
@@ -47,7 +49,7 @@ class FunctionPointerType: public Type {
      * \param[in] returnType Function return type.
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    FunctionPointerType(BitSize size, const Type *returnType = 0, bool variadic = false):
+    FunctionPointerType(BitSize size, const Type *returnType = nullptr, bool variadic = false):
         Type(size, FUNCTION_POINTER), returnType_(returnType), variadic_(variadic)
     {}
 
@@ -85,7 +87,7 @@ class FunctionPointerType: public Type {
      *
      * \param[in] variadic Whether function has variable number of arguments.
      */
-    void setEllipsis(bool variadic) { variadic_ = variadic; }
+    void setVariadic(bool variadic) { variadic_ = variadic; }
 
     virtual void print(QTextStream &out) const override;
 };
@@ -94,6 +96,6 @@ class FunctionPointerType: public Type {
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Type, nc::core::likec::FunctionPointerType, nc::core::likec::Type::FUNCTION_POINTER)
+NC_SUBCLASS(nc::core::likec::Type, nc::core::likec::FunctionPointerType, nc::core::likec::Type::FUNCTION_POINTER)
 
 /* vim:set et sts=4 sw=4: */

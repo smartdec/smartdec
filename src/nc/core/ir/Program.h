@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -45,15 +48,25 @@ namespace ir {
  * Intermediate representation of a program.
  */
 class Program: public PrintableBase<Program>, boost::noncopyable {
+public:
+    typedef nc::ilist<BasicBlock> BasicBlocks;
+
+private:
     typedef Range<ByteAddr> AddrRange;
 
-    std::vector<std::unique_ptr<BasicBlock>> basicBlocks_; ///< Basic blocks.
-    std::map<AddrRange, BasicBlock *> range2basicBlock_; ///< Mapping of a range of addresses to the basic block covering the range.
+    class ToTheLeft {
+    public:
+        bool operator()(const AddrRange &a, const AddrRange &b) const {
+            return a.end() <= b.start() && a != b;
+        }
+    };
+
+    BasicBlocks basicBlocks_; ///< Basic blocks.
+    std::map<AddrRange, BasicBlock *, ToTheLeft> range2basicBlock_; ///< Mapping of a range of addresses to the basic block covering the range.
     boost::unordered_map<ByteAddr, BasicBlock *> start2basicBlock_; ///< Mapping of an address to the basic block at this address.
     boost::unordered_set<ByteAddr> calledAddresses_; ///< Addresses having calls to them.
 
-    public:
-
+public:
     /**
      * Constructor.
      */
@@ -66,29 +79,28 @@ class Program: public PrintableBase<Program>, boost::noncopyable {
 
     /**
      * \return All basic blocks of the program.
+     *
+     * \warning Do not insert basic blocks into this container directly.
+     *          Use methods of Program class instead.
      */
-    const std::vector<BasicBlock *> &basicBlocks() {
-        return reinterpret_cast<const std::vector<BasicBlock *> &>(basicBlocks_);
-    }
+    BasicBlocks &basicBlocks() { return basicBlocks_; }
 
     /**
      * \return All basic blocks of the program.
      */
-    const std::vector<const BasicBlock *> &basicBlocks() const {
-        return reinterpret_cast<const std::vector<const BasicBlock *> &>(basicBlocks_);
-    }
+    const BasicBlocks &basicBlocks() const { return basicBlocks_; }
 
     /**
      * \param address       Address.
      *
-     * \return Pointer to the basic block starting at given address. Can be NULL.
+     * \return Pointer to the basic block starting at the given address. Can be nullptr.
      */
     BasicBlock *getBasicBlockStartingAt(ByteAddr address) const;
 
     /**
      * \param address       Address.
      *
-     * \return Pointer to the basic block covering given address. Can be NULL.
+     * \return Pointer to the basic block covering the given address. Can be nullptr.
      */
     BasicBlock *getBasicBlockCovering(ByteAddr address) const;
 
@@ -100,12 +112,13 @@ class Program: public PrintableBase<Program>, boost::noncopyable {
     /**
      * \param[in] address Start address of the basic block.
      *
-     * \return Valid pointer to a memory-bound basic block starting at given address.
-     *         When block with given starting already exists, it is returned.
-     *         When given address is in the middle of existing basic block, the latter
-     *         is split into two basic blocks, and the second one is returned.
-     *         When given address is not covered by any existing block, a new
-     *         empty memory-bound block is created and returned.
+     * \return Valid pointer to a memory-bound basic block starting at the given
+     *         address. If a basic block with the given starting address already
+     *         exists, it is returned. When the given address is in the middle
+     *         of an existing basic block, the latter is split into two basic
+     *         blocks, and the one with the higher address is returned. If the
+     *         given address is not covered by any existing block, a new empty
+     *         memory-bound block is created and returned.
      */
     BasicBlock *createBasicBlock(ByteAddr address);
 
@@ -143,8 +156,7 @@ class Program: public PrintableBase<Program>, boost::noncopyable {
      */
     void print(QTextStream &out) const;
 
-    private:
-
+private:
     /**
      * Takes ownership of given basic block.
      *

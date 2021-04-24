@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -21,29 +24,14 @@
 
 #include "ExpressionStatement.h"
 
-#include <cassert>
-
 #include "Expression.h"
-#include "PrintContext.h"
 
 namespace nc {
 namespace core {
 namespace likec {
 
-void ExpressionStatement::visitChildNodes(Visitor<TreeNode> &visitor) {
-    visitor(expression());
-}
-
-Statement *ExpressionStatement::rewrite() {
-    rewriteChild(expression_);
-    assert(expression_);
-
-    return this;
-}
-
-void ExpressionStatement::doPrint(PrintContext &context) const {
-    expression_->print(context);
-    context.out() << ';';
+void ExpressionStatement::doCallOnChildren(const std::function<void(TreeNode *)> &fun) {
+    fun(expression_.get());
 }
 
 } // namespace likec

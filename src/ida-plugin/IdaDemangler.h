@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -28,7 +31,7 @@ namespace nc {
 namespace ida {
 
 /**
- * Demangler using IDA Pro's facilities.
+ * Demangler using IDA's facilities.
  */
 class IdaDemangler: public core::mangling::Demangler {
     public:

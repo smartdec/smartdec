@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -40,12 +43,11 @@ public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] identifier Name of this field.
      * \param[in] type Valid pointer to the type of this variable.
      */
-    MemberDeclaration(Tree &tree, const QString &identifier, const Type *type):
-        Declaration(tree, MEMBER_DECLARATION, identifier), type_(type)
+    MemberDeclaration(const QString &identifier, const Type *type):
+        Declaration(MEMBER_DECLARATION, identifier), type_(type)
     {
         assert(type);
     }
@@ -54,17 +56,12 @@ public:
      * \return Valid pointer to the type of this variable.
      */
     const Type *type() const { return type_; }
-
-    virtual MemberDeclaration *rewrite() override { return this; }
-
-protected:
-    virtual void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Declaration, nc::core::likec::MemberDeclaration, nc::core::likec::Declaration::MEMBER_DECLARATION)
+NC_SUBCLASS(nc::core::likec::Declaration, nc::core::likec::MemberDeclaration, nc::core::likec::Declaration::MEMBER_DECLARATION)
 
 /* vim:set et sts=4 sw=4: */

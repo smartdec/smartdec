@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -36,34 +39,26 @@ namespace likec {
 class String: public Expression {
     QString characters_; ///< Characters of the string.
 
-    public:
-
+public:
     /**
      * Class constructor.
      *
-     * \param[in] tree Owning tree.
      * \param[in] characters Characters of the string.
      */
-    String(Tree &tree, const QString &characters):
-        Expression(tree, STRING), characters_(characters)
+    explicit String(QString characters):
+        Expression(STRING), characters_(std::move(characters))
     {}
 
     /**
      * \return Characters of the string.
      */
     const QString &characters() const { return characters_; }
-
-    const Type *getType() const override;
-
-    protected:
-
-    virtual void doPrint(PrintContext &context) const override;
 };
 
 } // namespace likec
 } // namespace core
 } // namespace nc
 
-NC_REGISTER_CLASS_KIND(nc::core::likec::Expression, nc::core::likec::String, nc::core::likec::Expression::STRING)
+NC_SUBCLASS(nc::core::likec::Expression, nc::core::likec::String, nc::core::likec::Expression::STRING)
 
 /* vim:set et sts=4 sw=4: */

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -23,7 +26,8 @@
 
 #include <nc/common/Foreach.h>
 
-#include "PrintContext.h"
+#include "Simplifier.h"
+#include "TreePrinter.h"
 #include "Types.h"
 
 namespace nc {
@@ -32,17 +36,12 @@ namespace likec {
 
 void Tree::rewriteRoot() {
     if (root_) {
-        CompilationUnit *result = root_->rewrite();
-        if (result != root_.get()) {
-            root_.reset(result);
-        }
+        root_ = Simplifier(*this).simplify(std::move(root_));
     }
 }
 
-void Tree::print(QTextStream &out, PrintCallback<const TreeNode> *callback) const {
-    PrintContext context(out, callback);
-
-    root()->print(context);
+void Tree::print(QTextStream &out, PrintCallback<const TreeNode *> *callback) const {
+    TreePrinter(out, callback).print(root());
 }
 
 const VoidType *Tree::makeVoidType() {
@@ -145,21 +144,6 @@ const Type *Tree::usualArithmeticConversion(const Type *leftType, const Type *ri
     }
 
     return makeErroneousType();
-}
-
-QString Tree::cleanName(const QString &name) {
-    QString result;
-    result.reserve(name.size());
-
-    foreach (QChar c, name) {
-        if (c.isLetterOrNumber()) {
-            result += c;
-        } else if (!result.isEmpty() && result[result.size() - 1] != '_') {
-            result += '_';
-        }
-    }
-
-    return result;
 }
 
 } // namespace likec

@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 /* * SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
  * Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
  * Alexander Fokin, Sergey Levin, Leonid Tsvetkov
@@ -22,7 +25,9 @@
 
 #include <nc/config.h>
 
+#include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
 #include "DeclarationGenerator.h"
 
@@ -43,6 +48,10 @@ namespace ir {
 
 class BinaryOperator;
 class BasicBlock;
+class CFG;
+class Dominators;
+class Intrinsic;
+class Jump;
 class JumpTarget;
 class Statement;
 class UnaryOperator;
@@ -54,15 +63,15 @@ namespace cflow {
 
 namespace dflow {
     class Dataflow;
+    class Uses;
 }
 
 namespace vars {
     class Variable;
-    class Variables;
 }
 
-namespace usage {
-    class Usage;
+namespace liveness {
+    class Liveness;
 }
 
 namespace cgen {
@@ -73,50 +82,33 @@ class SwitchContext;
  * Generator of function definitions.
  */
 class DefinitionGenerator: public DeclarationGenerator {
-    const dflow::Dataflow *dataflow_; ///< Dataflow information.
-    const vars::Variables *variables_; ///< Information about variables.
-    const usage::Usage *usage_; ///< Information about necessity of terms for code generation.
-    const cflow::Graph *regionGraph_; ///< Control flow graph after structural analysis.
+    const Function *function_;
+    const dflow::Dataflow &dataflow_;
+    const cflow::Graph &graph_;
+    const liveness::Liveness &liveness_;
+    std::unique_ptr<dflow::Uses> uses_;
+    std::unique_ptr<CFG> cfg_;
+    std::unique_ptr<Dominators> dominators_;
+    boost::unordered_set<const Statement *> hookStatements_;
 
-    likec::FunctionDefinition *definition_; ///< Function's definition.
+    likec::FunctionDefinition *definition_;
 
-    int serial_; ///< Last serial number of local variable.
-    boost::unordered_map<const ir::vars::Variable *, likec::VariableDeclaration *> variableDeclarations_; ///< Local variables of current function definition.
+    boost::unordered_map<const ir::vars::Variable *, likec::VariableDeclaration *> variableDeclarations_;
+    boost::unordered_map<const BasicBlock *, likec::LabelDeclaration *> labels_;
+    boost::unordered_map<const Term *, boost::optional<bool>> isSubstituted_;
 
-    boost::unordered_map<const BasicBlock *, likec::LabelDeclaration *> labels_; ///< Labels inside the function.
-
-    public:
-
+public:
     /**
      * \param[in] parent Parent code generator.
      * \param[in] function Valid pointer to the function being translated.
+     * \param[in] canceled Cancellation token.
      */
-    DefinitionGenerator(CodeGenerator &parent, const Function *function);
+    DefinitionGenerator(CodeGenerator &parent, const Function *function, const CancellationToken &canceled);
 
     /**
-     * \return Context with the analyzer program.
+     * Destructor.
      */
-    core::Context &context() const { return parent().context(); }
-
-    /**
-     * \return Dataflow information about the function.
-     */
-    const dflow::Dataflow &dataflow() const { return *dataflow_; }
-
-    /**
-     * \return Information about variables of the function.
-     */
-    const vars::Variables &variables() const { return *variables_; }
-
-    /**
-     * \return Information about necessity of terms for code generation.
-     */
-    const usage::Usage &usage() const { return *usage_; }
-
-    /**
-     * \return Control flow graph after structural analysis.
-     */
-    const cflow::Graph &regionGraph() const { return *regionGraph_; }
+    ~DefinitionGenerator();
 
     /**
      * \return Generated function's definition.
@@ -137,28 +129,20 @@ class DefinitionGenerator: public DeclarationGenerator {
      */
     std::unique_ptr<likec::FunctionDefinition> createDefinition();
 
-    protected:
+private:
+    /**
+     * \param[in] variable Valid pointer to a local variable.
+     *
+     * \return Valid pointer to the local variable declaration.
+     */
+    likec::VariableDeclaration *makeLocalVariableDeclaration(const vars::Variable *variable);
 
     /**
-     * Creates a declaration of function argument for given term.
-     * Declaration is automatically added to the list of formal arguments
-     * of function's declaration and to the list of its variables.
+     * \param[in] variable Valid pointer to a variable.
      *
-     * \param[in] term Valid pointer to a term.
-     *
-     * \return Created declaration of function's formal argument.
+     * \return Valid pointer to the declaration of this variable.
      */
-    likec::ArgumentDeclaration *makeArgumentDeclaration(const Term *term);
-
-    /**
-     * Returns a declaration of variable for given term.
-     * If necessary, the declaration is created and added to current function's code.
-     *
-     * \param[in] term Valid pointer to a term.
-     *
-     * \return Local variable declaration for the term.
-     */
-    likec::VariableDeclaration *makeLocalVariableDeclaration(const Term *term);
+    likec::VariableDeclaration *makeVariableDeclaration(const vars::Variable *variable);
 
     /**
      * \param[in] basicBlock Valid pointer to a basic block.
@@ -182,9 +166,9 @@ class DefinitionGenerator: public DeclarationGenerator {
      *
      * \param node          Valid pointer to the node to generate code for.
      * \param block         Valid pointer to the block where the code will be added.
-     * \param nextBB        Pointer to the basic block getting control after the generated code. Can be NULL.
-     * \param breakBB       Pointer to the basic block getting control by 'break' statement. Can be NULL.
-     * \param continueBB    Pointer to the basic block getting control by 'continue' statement. Can be NULL.
+     * \param nextBB        Pointer to the basic block getting control after the generated code. Can be nullptr.
+     * \param breakBB       Pointer to the basic block getting control by 'break' statement. Can be nullptr.
+     * \param continueBB    Pointer to the basic block getting control by 'continue' statement. Can be nullptr.
      * \param switchContext Switch context.
      */
     void makeStatements(const cflow::Node *node, likec::Block *block, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB, SwitchContext &switchContext);
@@ -194,9 +178,9 @@ class DefinitionGenerator: public DeclarationGenerator {
      *
      * \param nodes         Valid pointers to the node to generate code for.
      * \param block         Valid pointer to the block where the code will be added.
-     * \param nextBB        Pointer to the basic block getting control after the generated code. Can be NULL.
-     * \param breakBB       Pointer to the basic block getting control by 'break' statement. Can be NULL.
-     * \param continueBB    Pointer to the basic block getting control by 'continue' statement. Can be NULL.
+     * \param nextBB        Pointer to the basic block getting control after the generated code. Can be nullptr.
+     * \param breakBB       Pointer to the basic block getting control by 'break' statement. Can be nullptr.
+     * \param continueBB    Pointer to the basic block getting control by 'continue' statement. Can be nullptr.
      * \param switchContext Switch context.
      */
     void makeStatements(const std::vector<cflow::Node *> &nodes, likec::Block *block, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB, SwitchContext &switchContext);
@@ -205,7 +189,7 @@ class DefinitionGenerator: public DeclarationGenerator {
      * Creates an expression from a condition node.
      *
      * \param node Valid pointer to the node.
-     * \param block Pointer to the block. Can be NULL.
+     * \param block Pointer to the block. Can be nullptr.
      * \param thenBB Valid pointer to the basic block that will get control if the generated expression is true.
      * \param elseBB Valid pointer to the basic block that will get control if the generated expression is false.
      * \param switchContext Switch context.
@@ -220,9 +204,9 @@ class DefinitionGenerator: public DeclarationGenerator {
      *
      * \param[in] statement     Valid pointer to an IR Statement.
      * \param[in] nextBB        Pointer to the basic block, whose code will textually
-     *                          follow the basic block of the statement. Can be NULL.
-     * \param[in] breakBB       Pointer to the basic block getting control by break statement. Can be NULL.
-     * \param[in] continueBB    Pointer to the basic block getting control by continue statement. Can be NULL.
+     *                          follow the basic block of the statement. Can be nullptr.
+     * \param[in] breakBB       Pointer to the basic block getting control by break statement. Can be nullptr.
+     * \param[in] continueBB    Pointer to the basic block getting control by continue statement. Can be nullptr.
      *
      * \return Valid pointer to created LikeC statement.
      */
@@ -241,33 +225,34 @@ class DefinitionGenerator: public DeclarationGenerator {
      *
      * \return Valid pointer to created LikeC statement.
      */
-    virtual std::unique_ptr<likec::Statement> doMakeStatement(const Statement *statement, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB);
+    std::unique_ptr<likec::Statement> doMakeStatement(const Statement *statement, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB);
 
     /**
      * Creates a goto statement to the given target.
      *
      * \param[in] target        Valid pointer to the target basic block.
      * \param[in] nextBB        Pointer to the basic block, whose code will textually
-     *                          follow the basic block of the created statement. Can be NULL.
-     * \param[in] breakBB       Pointer to the basic block getting control by break statement. Can be NULL.
-     * \param[in] continueBB    Pointer to the basic block getting control by continue statement. Can be NULL.
+     *                          follow the basic block of the created statement. Can be nullptr.
+     * \param[in] breakBB       Pointer to the basic block getting control by break statement. Can be nullptr.
+     * \param[in] continueBB    Pointer to the basic block getting control by continue statement. Can be nullptr.
      *
-     * \return Pointer to the created goto, break, or continue statement, or NULL if the target is equal to nextBB.
+     * \return Pointer to the created goto, break, or continue statement, or nullptr if the target is equal to nextBB.
      */
     std::unique_ptr<likec::Statement> makeJump(const BasicBlock *target, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB);
 
     /**
-     * Creates a goto statement to given target.
+     * Creates an appropriate LikeC statement for a jump to the given target.
      *
-     * \param[in] target   Valid pointer to the target basic block.
+     * \param[in] jump          Valid pointer to a jump statement.
+     * \param[in] target        Target of that jump to generate LikeC statement for.
      * \param[in] nextBB        Pointer to the basic block, whose code will textually
-     *                          follow the basic block of the created statement. Can be NULL.
-     * \param[in] breakBB       Pointer to the basic block getting control by break statement. Can be NULL.
-     * \param[in] continueBB    Pointer to the basic block getting control by continue statement. Can be NULL.
+     *                          follow the basic block of the created statement. Can be nullptr.
+     * \param[in] breakBB       Pointer to the basic block getting control by break statement. Can be nullptr.
+     * \param[in] continueBB    Pointer to the basic block getting control by continue statement. Can be nullptr.
      *
-     * \return Pointer to the created goto, break, or continue statement, or NULL if the target is equal to nextBB.
+     * \return Pointer to the created return, goto, break, or continue statement, or nullptr if the target is equal to nextBB.
      */
-    std::unique_ptr<likec::Statement> makeJump(const JumpTarget &target, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB);
+    std::unique_ptr<likec::Statement> makeJump(const Jump *jump, const JumpTarget &target, const BasicBlock *nextBB, const BasicBlock *breakBB, const BasicBlock *continueBB);
 
     /**
      * Creates a LikeC expression for given term and sets the pointer to source IR term
@@ -275,7 +260,7 @@ class DefinitionGenerator: public DeclarationGenerator {
      *
      * \param[in] term Term to create expression from.
      *
-     * \return Valid pointer to created LikeC expression.
+     * \return Valid pointer to the created LikeC expression.
      */
     std::unique_ptr<likec::Expression> makeExpression(const Term *term);
 
@@ -284,27 +269,45 @@ class DefinitionGenerator: public DeclarationGenerator {
      *
      * \param[in] term Term to create expression from.
      *
-     * \return Valid pointer to created LikeC expression.
+     * \return Valid pointer to the created LikeC expression.
      */
-    virtual std::unique_ptr<likec::Expression> doMakeExpression(const Term *term);
+    std::unique_ptr<likec::Expression> doMakeExpression(const Term *term);
 
     /**
-     * Actually creates a LikeC expression for given UnaryOperator.
+     * Actually creates a LikeC expression for a given UnaryOperator.
      *
      * \param[in] unary Term to create expression from.
      *
-     * \return Valid pointer to created LikeC expression.
+     * \return Valid pointer to the created LikeC expression.
      */
-    virtual std::unique_ptr<likec::Expression> doMakeExpression(const UnaryOperator *unary);
+    std::unique_ptr<likec::Expression> doMakeExpression(const UnaryOperator *unary);
 
     /**
-     * Actually creates a LikeC expression for given BinaryOperator.
+     * Actually creates a LikeC expression for a given BinaryOperator.
      *
      * \param[in] binary Term to create expression from.
      *
-     * \return Valid pointer to created LikeC expression.
+     * \return Valid pointer to the created LikeC expression.
      */
-    virtual std::unique_ptr<likec::Expression> doMakeExpression(const BinaryOperator *binary);
+    std::unique_ptr<likec::Expression> doMakeExpression(const BinaryOperator *binary);
+
+    /**
+     * Actually creates a LikeC expression for a given Intrinsic.
+     *
+     * \param[in] intrinsic Term to create expression from.
+     *
+     * \return Valid pointer to the created LikeC expression.
+     */
+    std::unique_ptr<likec::Expression> doMakeExpression(const Intrinsic *intrinsic);
+
+    /**
+     * \param[in] name Name of an intrinsic function.
+     * \param[in] returnType Valid pointer to a LikeC type.
+     *
+     * \return Valid pointer to a LikeC call expression calling an intrinsic
+     *         with the given name and return type without arguments.
+     */
+    std::unique_ptr<likec::Expression> makeIntrinsicCall(QLatin1String name, const likec::Type *returnType);
 
     /**
      * Creates an integer constant with given value from given term.
@@ -312,14 +315,47 @@ class DefinitionGenerator: public DeclarationGenerator {
      * \param[in] term Valid pointer to a term.
      * \param[in] value Value of the constant.
      */
-    virtual std::unique_ptr<likec::Expression> makeConstant(const Term *term, const SizedValue &value);
+    std::unique_ptr<likec::Expression> makeConstant(const Term *term, const SizedValue &value);
 
     /**
-     * \param[in] term Valid pointer to a term.
+     * Creates an access to a variable associated with a term.
      *
-     * \return True if this term represents a variable which is defined once and used once.
+     * \param term Valid pointer to the term.
      */
-    bool isIntermediate(const Term *term) const;
+    std::unique_ptr<likec::Expression> makeVariableAccess(const Term *term);
+
+    /**
+     * \param[in] read Valid pointer to a read term.
+     *
+     * \return Pointer to the term, code for which should be generated
+     *         instead of the code for this term, or nullptr if the
+     *         code for the argument term must be generated.
+     */
+    const Term *getSubstitute(const Term *read);
+
+    /**
+     * \param[in] write Valid pointer to a write term.
+     *
+     * \return True iff the write->source() can be safely put
+     *         in all the places where the value written by
+     *         the write term is used.
+     */
+    bool isSubstituted(const Term *write);
+
+    /**
+     * Actually computes what isSubstituted returns.
+     */
+    bool computeIsSubstituted(const Term *write);
+
+    /**
+     * \param[in] source Valid pointer to a read term.
+     * \param[in] destination Valid pointer to a statement in the same function.
+     *
+     * \return True iff the code generated for the source term
+     *         can be put in place of the code for the destination
+     *         statement without changing the semantics of the program.
+     */
+    bool canBeMoved(const Term *term, const Statement *destination);
 };
 
 } // namespace cgen

@@ -2,6 +2,7 @@ set(MOC_HEADERS
     Activity.h
     Command.h
     CommandQueue.h
+    CppSyntaxHighlighter.h
     CxxDocument.h
     CxxView.h
     Decompilation.h
@@ -23,6 +24,8 @@ set(MOC_HEADERS
     SearchWidget.h
     SectionsModel.h
     SectionsView.h
+    SymbolsModel.h
+    SymbolsView.h
     TextEditSearcher.h
     TextView.h
     TreeView.h
@@ -31,6 +34,7 @@ set(MOC_HEADERS
 
 set(SOURCES
     Activity.cpp
+    Colors.h
     Command.cpp
     CommandQueue.cpp
     CppSyntaxHighlighter.cpp
@@ -52,19 +56,26 @@ set(SOURCES
     LogManager.cpp
     LogView.cpp
     MainWindow.cpp
+    ParentTracker.h
     Project.cpp
+    RangeNode.h
+    RangeTree.cpp
+    RangeTree.h
+    RangeTreeBuilder.h
     SearchWidget.cpp
     SectionsModel.cpp
     SectionsView.cpp
+    SymbolsModel.cpp
+    SymbolsView.cpp
     TextEditSearcher.cpp
     TextView.cpp
     TreeView.cpp
     TreeViewSearcher.cpp
 )
 
-qt4_wrap_cpp(SOURCES ${MOC_HEADERS})
+qt4_wrap_cpp(SOURCES ${MOC_HEADERS} OPTIONS -DQ_MOC_RUN)
 
 add_library(nc-gui ${SOURCES})
-target_link_libraries(nc-gui nc-core ${Boost_LIBRARIES} ${QT_LIBRARIES})
+target_link_libraries(nc-gui nc ${Boost_LIBRARIES} ${NC_QT_CORE} ${NC_QT_WIDGETS})
 
 # vim:set et sts=4 sw=4 nospell:

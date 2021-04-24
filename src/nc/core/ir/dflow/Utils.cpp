@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -25,9 +28,11 @@
 
 #include <nc/common/Range.h>
 #include <nc/common/Unreachable.h>
+#include <nc/core/ir/Jump.h>
 #include <nc/core/ir/Terms.h>
 
 #include "Dataflow.h"
+#include "Value.h"
 
 namespace nc {
 namespace core {
@@ -38,7 +43,7 @@ class Term;
 namespace dflow {
 
 const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
-    assert(term != NULL);
+    assert(term != nullptr);
 
     /* Terms that were already seen. */
     boost::unordered_set<const Term *> visited;
@@ -47,22 +52,19 @@ const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
         visited.insert(term);
 
         if (term->isWrite()) {
-            if (term->assignee()) {
-                term = term->assignee();
+            if (auto source = term->source()) {
+                term = source;
             } else {
                 break;
             }
         } else if (term->isRead()) {
-            const std::vector<const Term *> &definitions = dataflow.getDefinitions(term);
+            auto &definitions = dataflow.getDefinitions(term);
 
-            if (definitions.size() == 1) {
-                term = definitions.front();
-            } else if (const Choice *choice = term->as<Choice>()) {
-                if (!dataflow.getDefinitions(choice->preferredTerm()).empty()) {
-                    term = choice->preferredTerm();
-                } else {
-                    term = choice->defaultTerm();
-                }
+            if (definitions.chunks().size() == 1 &&
+                definitions.chunks().front().location() == dataflow.getMemoryLocation(term) &&
+                definitions.chunks().front().definitions().size() == 1)
+            {
+                term = definitions.chunks().front().definitions().front();
             } else {
                 break;
             }
@@ -72,6 +74,22 @@ const Term *getFirstCopy(const Term *term, const Dataflow &dataflow) {
     } while (!nc::contains(visited, term));
 
     return term;
+}
+
+bool isReturn(const Jump *jump, const Dataflow &dataflow) {
+    assert(jump != nullptr);
+
+    return isReturnAddress(jump->thenTarget(), dataflow) || isReturnAddress(jump->elseTarget(), dataflow);
+}
+
+bool isReturnAddress(const JumpTarget &target, const Dataflow &dataflow) {
+    return target.address() && isReturnAddress(target.address(), dataflow);
+}
+
+bool isReturnAddress(const Term *term, const Dataflow &dataflow) {
+    assert(term != nullptr);
+
+    return dataflow.getValue(term)->isReturnAddress();
 }
 
 } // namespace dflow

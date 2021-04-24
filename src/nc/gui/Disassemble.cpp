@@ -1,3 +1,6 @@
+/* The file is part of Snowman decompiler. */
+/* See doc/licenses.asciidoc for the licensing information. */
+
 //
 // SmartDec decompiler - SmartDec is a native code to C/C++ decompiler
 // Copyright (C) 2015 Alexander Chernov, Katerina Troshina, Yegor Derevenets,
@@ -41,10 +44,10 @@ Disassemble::Disassemble(Project *project, const core::image::ByteSource *source
 }
 
 void Disassemble::work() {
-    project_->logToken() << tr("Disassembling addresses %2 to %3...").arg(begin_, 0, 16).arg(end_, 0, 16);
+    project_->logToken().info(tr("Disassembling addresses %2 to %3...").arg(begin_, 0, 16).arg(end_, 0, 16));
 
     auto context = std::make_shared<core::Context>();
-    context->setModule(project_->module());
+    context->setImage(project_->image());
     context->setInstructions(project_->instructions());
     context->setCancellationToken(cancellationToken());
     context->setLogToken(project_->logToken());
